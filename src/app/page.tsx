@@ -15,7 +15,7 @@ function StatCounter({ value, label, icon: Icon }: { value: string; label: strin
   return (
     <div className="flex flex-col items-center sm:items-start gap-1 p-3 border border-fn-gborder bg-fn-card/50 rounded-sm flex-1 min-w-[110px]">
       <Icon size={13} className="text-fn-green" />
-      <span className="font-display text-xl sm:text-2xl font-black text-white glow-text">{value}</span>
+      <span className="font-display text-xl sm:text-2xl font-black text-fn-text glow-text">{value}</span>
       <span className="fn-label">{label}</span>
     </div>
   );
@@ -45,7 +45,7 @@ function AthleteCard({ athlete, rank }: { athlete: typeof athletes[0]; rank: num
       </div>
       {/* Info */}
       <div className="p-3">
-        <div className="text-[11px] font-bold text-white tracking-wide mb-0.5">{athlete.tag}</div>
+        <div className="text-[11px] font-bold text-fn-text tracking-wide mb-0.5">{athlete.tag}</div>
         <div className="fn-label mb-2">{athlete.rank}</div>
         <div className="grid grid-cols-3 gap-1">
           {[
@@ -54,7 +54,7 @@ function AthleteCard({ athlete, rank }: { athlete: typeof athletes[0]; rank: num
             { v: athlete.matches, l: "MTH" },
           ].map(({ v, l }) => (
             <div key={l} className="text-center">
-              <div className="text-[10px] font-bold text-white">{v}</div>
+              <div className="text-[10px] font-bold text-fn-text">{v}</div>
               <div className="fn-label text-[7px]">{l}</div>
             </div>
           ))}
@@ -77,7 +77,7 @@ function WagerPreviewCard({ market }: { market: typeof wagerMarkets[0] }) {
         }`}>{market.tag}</span>
         <span className="fn-label">{market.poolSize}</span>
       </div>
-      <h3 className="text-xs font-bold text-white leading-snug mb-3">{market.question}</h3>
+      <h3 className="text-xs font-bold text-fn-text leading-snug mb-3">{market.question}</h3>
       <div className="grid grid-cols-2 gap-2 mb-3">
         <button className="pred-yes rounded-sm px-2 py-2.5 text-center">
           <div className="text-[10px] font-bold">BUY YES</div>
@@ -129,7 +129,7 @@ export default function HomePage() {
       </div>
 
       {/* Hero */}
-      <section className="relative min-h-[85vh] flex flex-col justify-center px-4 sm:px-8 lg:px-12 bg-hero-grd bg-grid-fn bg-grid overflow-hidden">
+      <section className="relative min-h-[85vh] flex flex-col justify-center px-4 sm:px-8 lg:px-12 hero-gradient bg-grid-fn bg-grid overflow-hidden">
         {/* Decorative corner lines */}
         <div className="absolute top-8 left-4 w-16 h-16 border-l-2 border-t-2 border-fn-green/30 pointer-events-none" />
         <div className="absolute bottom-8 right-4 w-16 h-16 border-r-2 border-b-2 border-fn-green/30 pointer-events-none" />
@@ -140,7 +140,7 @@ export default function HomePage() {
             SECTOR 11: TACTICAL COMMAND INTERFACE
           </p>
           <h1 className="font-display font-black uppercase leading-none mb-6">
-            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-white tracking-tight">FRAG</span>
+            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">FRAG</span>
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-green tracking-tight glow-text">NAIJA</span>
           </h1>
           <p className="text-fn-text text-xs sm:text-sm tracking-wider max-w-lg mb-8 leading-relaxed">
@@ -218,7 +218,7 @@ export default function HomePage() {
             <tbody>
               {recentTransfers.map((t, i) => (
                 <tr key={i} className="border-b border-fn-gborder/50 hover:bg-fn-card/50 transition-colors">
-                  <td className="py-3 pr-4 text-[11px] font-bold text-white">{t.player}</td>
+                  <td className="py-3 pr-4 text-[11px] font-bold text-fn-text">{t.player}</td>
                   <td className="py-3 pr-4 text-[10px] text-fn-muted">{t.from}</td>
                   <td className="py-3 pr-4 text-[10px] text-fn-text">{t.to}</td>
                   <td className="py-3 pr-4 text-[10px] text-fn-yellow font-bold">{t.value}</td>

@@ -43,7 +43,7 @@ export default function TournamentsPage() {
           <span className="inline-block text-[8px] font-bold tracking-widest uppercase bg-fn-green/20 text-fn-green border border-fn-gborder px-2 py-1 mb-3">
             ● IN PROGRESS
           </span>
-          <h1 className="font-display text-4xl sm:text-6xl font-black uppercase text-white tracking-tight leading-none mb-2">
+          <h1 className="font-display text-4xl sm:text-6xl font-black uppercase text-fn-text tracking-tight leading-none mb-2">
             TOURNAMENTS
           </h1>
           <p className="text-fn-muted text-xs tracking-wider mb-6">
@@ -55,7 +55,7 @@ export default function TournamentsPage() {
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <div>
                 <div className="fn-label mb-1">FEATURED TOURNAMENT</div>
-                <h2 className="font-display text-xl sm:text-3xl font-black uppercase text-white tracking-wide">
+                <h2 className="font-display text-xl sm:text-3xl font-black uppercase text-fn-text tracking-wide">
                   PUBG MOBILE NATIONAL<br />CHAMPIONSHIP 2026
                 </h2>
               </div>
@@ -71,7 +71,7 @@ export default function TournamentsPage() {
                 { v: "Group Phase", l: "Stage"      },
               ].map(({ v, l }) => (
                 <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-2.5 text-center">
-                  <div className="text-xs sm:text-sm font-bold text-white mb-0.5">{v}</div>
+                  <div className="text-xs sm:text-sm font-bold text-fn-text mb-0.5">{v}</div>
                   <div className="fn-label">{l}</div>
                 </div>
               ))}
@@ -96,7 +96,7 @@ export default function TournamentsPage() {
               <div key={i} className="bg-fn-card border border-fn-gborder rounded-sm p-3 flex items-center justify-between gap-3 hover:border-fn-green/30 transition-colors">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-white truncate">{m.home}</span>
+                    <span className="text-[10px] font-bold text-fn-text truncate">{m.home}</span>
                     <span className="text-fn-green font-mono font-black text-sm">{m.homeScore}</span>
                     <span className="text-fn-muted text-xs">—</span>
                     <span className="text-fn-red font-mono font-black text-sm">{m.awayScore}</span>
@@ -152,13 +152,13 @@ export default function TournamentsPage() {
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full" style={{ background: row.color }} />
-                          <span className="text-[11px] font-bold text-white">{row.team}</span>
+                          <span className="text-[11px] font-bold text-fn-text">{row.team}</span>
                         </div>
                       </td>
                       <td className="py-3 pr-4 text-[10px] text-fn-muted">{row.gp}</td>
                       <td className="py-3 pr-4 text-[10px] text-fn-green font-bold">{row.w}</td>
                       <td className="py-3 pr-4 text-[10px] text-fn-red">{row.l}</td>
-                      <td className="py-3 pr-4 text-[10px] font-bold text-white">{row.pts}</td>
+                      <td className="py-3 pr-4 text-[10px] font-bold text-fn-text">{row.pts}</td>
                       <td className="py-3 text-[10px] text-fn-text text-right">{row.kills}</td>
                     </tr>
                   ))}
@@ -195,7 +195,7 @@ export default function TournamentsPage() {
                     {round.matches.map((m, i) => (
                       <div key={i} className={`bg-fn-card border rounded-sm p-3 ${m.done ? "border-fn-gborder" : "border-fn-green/30"}`}>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-bold text-white">{m.home}</span>
+                          <span className="text-[10px] font-bold text-fn-text">{m.home}</span>
                           <span className={`text-sm font-mono font-black ${m.done ? "text-fn-green" : "text-fn-muted"}`}>
                             {m.homeScore ?? "—"}
                           </span>
@@ -230,7 +230,7 @@ export default function TournamentsPage() {
                     <div className="text-fn-green font-mono font-bold text-sm">{m.time}</div>
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white">{m.home} <span className="text-fn-muted font-normal">vs</span> {m.away}</div>
+                    <div className="text-xs font-bold text-fn-text">{m.home} <span className="text-fn-muted font-normal">vs</span> {m.away}</div>
                     <div className="fn-label">{m.game}</div>
                   </div>
                 </div>

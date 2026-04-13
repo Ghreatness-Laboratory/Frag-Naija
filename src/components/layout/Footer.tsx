@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="font-display text-base font-black text-fn-green tracking-widest">FRAG</span>
-              <span className="font-display text-base font-black text-white tracking-widest">NAIJA</span>
+              <span className="font-display text-base font-black text-fn-text tracking-widest">NAIJA</span>
             </div>
             <p className="text-[9px] text-fn-muted tracking-wider uppercase">
               © 2024 Frag Naija. Tactical Command Interface. All Rights Reserved.

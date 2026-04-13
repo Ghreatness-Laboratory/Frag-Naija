@@ -13,7 +13,7 @@ export default function TeamsPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="fn-label mb-1">SECTOR HIERARCHY</div>
-            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-white tracking-tight">
+            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-fn-text tracking-tight">
               TACTICAL SQUADS
             </h1>
             <p className="text-fn-muted text-[10px] tracking-wider mt-1">
@@ -54,7 +54,7 @@ export default function TeamsPage() {
                     style={{ background: `${t.color}18`, border: `1px solid ${t.color}30`, color: t.color }}>
                     {t.tag[0]}
                   </div>
-                  <div className="text-[10px] font-bold text-white truncate">{t.name}</div>
+                  <div className="text-[10px] font-bold text-fn-text truncate">{t.name}</div>
                   <div className="fn-label">{t.tag}</div>
                   <div className="mt-1 text-[9px]" style={{ color: t.color }}>#{t.rank}</div>
                 </button>
@@ -77,7 +77,7 @@ export default function TeamsPage() {
                   <span className="font-display text-4xl font-black" style={{ color: selected.color }}>#{selected.rank}</span>
                 </div>
               </div>
-              <h2 className="font-display text-2xl font-black uppercase text-white mb-1">{selected.name}</h2>
+              <h2 className="font-display text-2xl font-black uppercase text-fn-text mb-1">{selected.name}</h2>
               <p className="fn-label mb-4">{selected.region}</p>
 
               <div className="grid grid-cols-2 gap-2 mb-4">
@@ -88,7 +88,7 @@ export default function TeamsPage() {
                   { v: selected.prize,   l: "Earnings" },
                 ].map(({ v, l }) => (
                   <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-2 text-center">
-                    <div className="text-xs font-bold text-white">{v}</div>
+                    <div className="text-xs font-bold text-fn-text">{v}</div>
                     <div className="fn-label">{l}</div>
                   </div>
                 ))}
@@ -115,7 +115,7 @@ export default function TeamsPage() {
                       {player[0]}
                     </div>
                     <div className="flex-1">
-                      <div className="text-[11px] font-bold text-white">{player}</div>
+                      <div className="text-[11px] font-bold text-fn-text">{player}</div>
                       <div className="fn-label">Active Operator</div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -141,7 +141,7 @@ export default function TeamsPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="fn-label mb-0.5">SECTOR RANKINGS</div>
-              <h2 className="font-display text-2xl font-black uppercase text-white">OPERATIONAL LEADERBOARD</h2>
+              <h2 className="font-display text-2xl font-black uppercase text-fn-text">OPERATIONAL LEADERBOARD</h2>
             </div>
             <button className="fn-btn-ghost text-[10px] flex items-center gap-1">
               FULL REPORT <ChevronRight size={11} />
@@ -174,7 +174,7 @@ export default function TeamsPage() {
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full" style={{ background: col }} />
-                          <span className="text-[11px] font-bold text-white">{row.team}</span>
+                          <span className="text-[11px] font-bold text-fn-text">{row.team}</span>
                         </div>
                       </td>
                       <td className="py-3 pr-4 text-[10px] text-fn-green font-bold">{row.wins}%</td>

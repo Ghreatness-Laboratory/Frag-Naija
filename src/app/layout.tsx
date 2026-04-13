@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/layout/Sidebar";
 import Footer from "@/components/layout/Footer";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Frag Naija — Tactical Command Interface",
@@ -11,17 +12,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head />
       <body className="bg-fn-black text-fn-text font-mono antialiased">
-        <Navbar />
-        <div className="flex min-h-screen pt-14">
-          <Sidebar />
-          <main className="flex-1 ml-12 lg:ml-14 overflow-hidden">
-            {children}
-          </main>
-        </div>
-        <Footer />
+        <ThemeProvider>
+          <Navbar />
+          <div className="flex min-h-screen pt-14">
+            <Sidebar />
+            <main className="flex-1 ml-12 lg:ml-14 overflow-hidden">
+              {children}
+            </main>
+          </div>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

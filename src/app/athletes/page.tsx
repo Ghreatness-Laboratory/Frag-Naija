@@ -8,7 +8,7 @@ function StatBar({ label, value, color = "#00ff41" }: { label: string; value: nu
     <div className="mb-3">
       <div className="flex justify-between items-center mb-1">
         <span className="fn-label">{label}</span>
-        <span className="text-[10px] font-bold text-white">{value}%</span>
+        <span className="text-[10px] font-bold text-fn-text">{value}%</span>
       </div>
       <div className="stat-bar">
         <div
@@ -33,7 +33,7 @@ export default function AthletesPage() {
         <div className="p-4 border-b border-fn-gborder flex items-center justify-between">
           <div>
             <div className="fn-label mb-0.5">SECTOR ROSTER</div>
-            <h1 className="font-display text-xl font-black uppercase text-white">ATHLETES</h1>
+            <h1 className="font-display text-xl font-black uppercase text-fn-text">ATHLETES</h1>
           </div>
           <span className="text-[9px] font-bold text-fn-green border border-fn-gborder px-2 py-1">{athletes.length} TOTAL</span>
         </div>
@@ -56,7 +56,7 @@ export default function AthletesPage() {
                   {a.tag[0]}
                 </div>
                 <div className="min-w-0">
-                  <div className={`text-[11px] font-bold truncate ${isActive ? "text-white" : "text-fn-text"}`}>{a.tag}</div>
+                  <div className={`text-[11px] font-bold truncate ${isActive ? "text-fn-text" : "text-fn-text"}`}>{a.tag}</div>
                   <div className="fn-label truncate">{a.rank}</div>
                 </div>
                 {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-fn-green flex-shrink-0" />}
@@ -99,7 +99,7 @@ export default function AthletesPage() {
                   </span>
                   <span className="text-[9px] text-fn-muted font-bold tracking-widest">#{selected.rankNum}</span>
                 </div>
-                <h2 className="font-display text-3xl sm:text-4xl font-black uppercase text-white tracking-wide">{selected.tag}</h2>
+                <h2 className="font-display text-3xl sm:text-4xl font-black uppercase text-fn-text tracking-wide">{selected.tag}</h2>
                 <p className="text-fn-muted text-[10px] tracking-wider">{selected.rank} · {selected.team}</p>
               </div>
 
@@ -111,7 +111,7 @@ export default function AthletesPage() {
                   { v: selected.matches, l: "MATCHES" },
                 ].map(({ v, l }) => (
                   <div key={l} className="text-center">
-                    <div className="font-display text-2xl sm:text-3xl font-black text-white">{v}</div>
+                    <div className="font-display text-2xl sm:text-3xl font-black text-fn-text">{v}</div>
                     <div className="fn-label">{l}</div>
                   </div>
                 ))}
@@ -153,7 +153,7 @@ export default function AthletesPage() {
                         <Icon size={14} className="text-fn-green" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-bold text-white mb-0.5">{ab.name}</div>
+                        <div className="text-[11px] font-bold text-fn-text mb-0.5">{ab.name}</div>
                         <div className="text-[9px] text-fn-muted leading-relaxed">{ab.desc}</div>
                       </div>
                     </div>
@@ -176,7 +176,7 @@ export default function AthletesPage() {
                   <div key={i} className={`flex items-center gap-4 p-3 border rounded-sm ${h.active ? "border-fn-green/30 bg-fn-green/5" : "border-fn-gborder"}`}>
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${h.active ? "bg-fn-green animate-pulse-g" : "bg-fn-muted"}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold text-white tracking-wide">{h.team}</div>
+                      <div className="text-[10px] font-bold text-fn-text tracking-wide">{h.team}</div>
                       <div className="fn-label">{h.role}</div>
                     </div>
                     {h.active && (

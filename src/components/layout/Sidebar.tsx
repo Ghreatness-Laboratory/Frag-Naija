@@ -29,7 +29,7 @@ export default function Sidebar() {
             className={`group relative w-9 h-9 flex flex-col items-center justify-center rounded-sm transition-all ${
               isActive
                 ? "bg-fn-green/15 text-fn-green border border-fn-gborder"
-                : "text-fn-muted hover:text-fn-text hover:bg-white/5"
+                : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
             }`}
           >
             <Icon size={15} strokeWidth={isActive ? 2.5 : 1.5} />
