@@ -1,8 +1,17 @@
 # Frag Naija
 
-Frag Naija is a Nigeria-focused esports platform built with Next.js. It combines public-facing tournament content, athlete and team discovery, highlight reels, transfer tracking, and a wager flow backed by Supabase and Paystack.
+Frag Naija is a Nigeria-focused esports media and engagement platform. The product is designed to feel like a tactical command center for the local competitive gaming scene, where fans can follow elite squads, discover standout players, watch highlights, track transfers, monitor tournament action, and interact with live wager markets around major matchups.
 
-The project currently ships with:
+At the product level, Frag Naija brings together:
+- a home page that frames the platform as Nigeria's esports command hub
+- athlete discovery and ranking views for top players
+- team and roster exploration for tactical squads
+- tournament coverage with standings, brackets, and live-feed presentation
+- a highlight theatre for match replays, clutch moments, and tactical logs
+- a transfer window for player movement and market activity
+- a wager zone for prediction-style markets and payout flows
+
+Technically, the project currently ships with:
 - a styled frontend for home, athletes, teams, tournaments, transfer window, highlights, and wager views
 - REST-style API routes under `src/app/api`
 - a feature-based backend layer under `src/features`
@@ -11,6 +20,7 @@ The project currently ships with:
 
 ## Table of Contents
 
+- [Product Overview](#product-overview)
 - [Tech Stack](#tech-stack)
 - [What The App Covers](#what-the-app-covers)
 - [Project Structure](#project-structure)
@@ -22,6 +32,24 @@ The project currently ships with:
 - [Current State Of The Frontend](#current-state-of-the-frontend)
 - [Scripts](#scripts)
 - [Deployment Notes](#deployment-notes)
+
+## Product Overview
+
+Frag Naija is not just a scoreboard or admin panel. It is structured like a fan-facing esports destination with multiple engagement layers:
+
+- **Discover**: browse athletes, squads, and featured talent in the Nigerian scene
+- **Follow**: keep up with tournaments, live feeds, standings, and match narratives
+- **Watch**: consume archived highlights, tactical logs, and replay-style content
+- **Track**: monitor transfers, free-agent movement, and roster activity
+- **Engage**: enter the wager zone for prediction-style participation around matches and outcomes
+
+The frontend language, page names, and visual design all reinforce that product direction:
+
+- athletes are presented like elite operators
+- teams are presented like tactical commands and squads
+- tournaments are framed as national circuits and championship events
+- highlights are presented as a "theatre of war"
+- wagers are framed as a tactical prediction market
 
 ## Tech Stack
 
@@ -36,12 +64,12 @@ The project currently ships with:
 
 ## What The App Covers
 
-- **Athletes**: player profiles, rankings, roster browsing
-- **Teams**: team records, roster aggregation, regional context
-- **Tournaments**: listing, status tracking, prize pool metadata
-- **Transfers**: player movement and transfer activity
-- **Highlights**: featured clips and highlight records
-- **Wagers**: active markets, bet placement flow, settlement, wallets
+- **Athletes**: player profiles, rankings, operator-style presentation, roster browsing
+- **Teams**: team records, roster aggregation, regional context, leaderboard-style views
+- **Tournaments**: listing, standings, bracket coverage, live-feed presentation, prize pool metadata
+- **Transfers**: player movement, rumours, pending payables, and transfer activity
+- **Highlights**: featured clips, archive coverage, replays, montages, and tactical logs
+- **Wagers**: active markets, prediction-style buy yes/buy no flow, settlement, and wallets
 - **Admin-only operations**: protected create/update/delete flows and upload support
 
 ## Project Structure
@@ -210,6 +238,8 @@ That means the project is in a hybrid state:
 
 - **frontend presentation** is largely mock-driven
 - **backend/API** is ready for live Supabase-backed flows
+
+In practical terms, the product experience is already visible, but some of the public pages are still using seeded content to simulate the final experience while the live backend catches up.
 
 ## Scripts
 
