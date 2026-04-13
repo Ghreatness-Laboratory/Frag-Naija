@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
-import { checkAdmin } from '@/lib/checkAdmin';
+import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { checkAdmin } from '@/features/shared/server/adminAuth';
 
 const ALLOWED_BUCKETS = ['athletes', 'teams', 'highlights'];
 const MAX_SIZE_MB = 10;

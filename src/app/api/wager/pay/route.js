@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { initializeTransaction, generateReference } from '@/lib/paystack';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getWagerForPlacement } from '@/features/wagers/server';
 
 export async function POST(request) {
   try {
@@ -22,13 +22,10 @@ export async function POST(request) {
     }
 
     // Fetch wager to get odds and verify it's active
-    const { data: wager, error: we } = await supabaseAdmin
-      .from('wagers')
-      .select('id, status, closes_at, yes_odds, no_odds')
-      .eq('id', wager_id)
-      .single();
-
-    if (we || !wager) {
+    let wager;
+    try {
+      wager = await getWagerForPlacement(wager_id);
+    } catch {
       return NextResponse.json({ error: 'Wager not found' }, { status: 404 });
     }
 
