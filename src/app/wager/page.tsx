@@ -1,305 +1,544 @@
 "use client";
-import { useState } from "react";
-import { wagerMarkets, elitePredictors, activePredictions } from "@/lib/data";
-import type { WagerMarket } from "@/lib/data";
-import { Zap, TrendingUp, BarChart2, Bookmark, Clock, ChevronDown, ChevronUp, Trophy } from "lucide-react";
 
-// ─── Probability bar ──────────────────────────────────────────────────────────
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  BarChart2,
+  Bookmark,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Trophy,
+  Wallet,
+  Zap,
+} from "lucide-react";
+
+import { elitePredictors, activePredictions } from "@/lib/data";
+import { useActiveWagers, useMe, usePlaceWager } from "@/lib/hooks";
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(amount || 0);
+}
+
+function formatCompactCurrency(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount || 0);
+}
+
+function formatCountdown(value?: string | null) {
+  if (!value) {
+    return "Closing time TBD";
+  }
+
+  const closesAt = new Date(value);
+  if (Number.isNaN(closesAt.getTime())) {
+    return value;
+  }
+
+  const diff = closesAt.getTime() - Date.now();
+  if (diff <= 0) {
+    return "Closed";
+  }
+
+  const totalMinutes = Math.floor(diff / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h left`;
+  }
+
+  return `${hours}h ${minutes}m left`;
+}
+
+function getPoolAmount(market: Record<string, unknown>) {
+  const directPool = Number(
+    market.pool_size ??
+      market.pool ??
+      market.total_pool ??
+      market.amount_pool ??
+      market.totalPool ??
+      0
+  );
+
+  if (directPool > 0) {
+    return directPool;
+  }
+
+  return Number(market.yes_pool ?? 0) + Number(market.no_pool ?? 0);
+}
+
+function getTradeCount(market: Record<string, unknown>) {
+  const directCount = Number(
+    market.trades ??
+      market.trade_count ??
+      market.bet_count ??
+      market.total_bets ??
+      0
+  );
+
+  if (directCount > 0) {
+    return directCount;
+  }
+
+  return Number(market.yes_count ?? 0) + Number(market.no_count ?? 0);
+}
+
+function getImpliedSplit(yesOddsRaw: unknown, noOddsRaw: unknown) {
+  const yesOdds = Number(yesOddsRaw);
+  const noOdds = Number(noOddsRaw);
+
+  if (yesOdds > 0 && noOdds > 0) {
+    const yesProbability = 1 / yesOdds;
+    const noProbability = 1 / noOdds;
+    const total = yesProbability + noProbability;
+
+    const yes = Math.round((yesProbability / total) * 100);
+    return { yes, no: 100 - yes };
+  }
+
+  return { yes: 50, no: 50 };
+}
+
+function getMarketTag(market: Record<string, unknown>) {
+  if (market.hot) {
+    return {
+      label: "HOT MARKET",
+      className: "bg-fn-red/20 text-fn-red border-fn-red/30",
+    };
+  }
+
+  return {
+    label: "LIVE WAGER",
+    className: "bg-fn-green/20 text-fn-green border-fn-gborder",
+  };
+}
+
+function getMarketQuestion(market: Record<string, unknown>) {
+  return (
+    market.question ??
+    market.title ??
+    market.prompt ??
+    market.name ??
+    "Untitled wager market"
+  );
+}
+
+function getMarketSubtitle(market: Record<string, unknown>) {
+  const subtitle =
+    market.subtitle ??
+    market.description ??
+    market.match_name ??
+    market.market_type ??
+    market.category;
+
+  if (subtitle) {
+    return String(subtitle);
+  }
+
+  return `Closes ${formatCountdown(String(market.closes_at ?? ""))}`;
+}
+
 function ProbBar({ yes, no }: { yes: number; no: number }) {
   return (
-    <div className="flex rounded-sm overflow-hidden h-1.5 mb-1">
+    <div className="mb-1 flex h-1.5 overflow-hidden rounded-sm">
       <div className="bg-fn-green/70 transition-all" style={{ width: `${yes}%` }} />
-      <div className="bg-fn-red/70 transition-all"   style={{ width: `${no}%`  }} />
+      <div className="bg-fn-red/70 transition-all" style={{ width: `${no}%` }} />
     </div>
   );
 }
 
-// ─── Tag badge ────────────────────────────────────────────────────────────────
-function TagBadge({ tag }: { tag: WagerMarket["tag"] }) {
-  const styles: Record<WagerMarket["tag"], string> = {
-    "CRITICAL MATCH": "bg-fn-red/20 text-fn-red border-fn-red/30",
-    "REGIONAL FINALS": "bg-fn-yellow/20 text-fn-yellow border-fn-yellow/30",
-    "STAT WAGER":     "bg-fn-green/20 text-fn-green border-fn-gborder",
-    "CLUTCH MOMENT":  "bg-purple-500/20 text-purple-400 border-purple-500/30",
-    "MVP PICK":       "bg-fn-amber/20 text-fn-amber border-fn-amber/30",
-  };
-  return (
-    <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 border rounded-sm ${styles[tag]}`}>
-      {tag}
-    </span>
-  );
-}
-
-// ─── Main wager card (Bayse-style) ────────────────────────────────────────────
-function WagerCard({ market }: { market: WagerMarket }) {
-  const [picked, setPicked] = useState<Record<string, "yes" | "no" | null>>({});
+function WagerCard({
+  market,
+  email,
+  onPlaced,
+}: {
+  market: Record<string, unknown>;
+  email?: string | null;
+  onPlaced?: () => void;
+}) {
+  const [picked, setPicked] = useState<"YES" | "NO" | null>(null);
   const [amount, setAmount] = useState("500");
   const [saved, setSaved] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const { placeWager, loading } = usePlaceWager();
 
-  const pick = (optIdx: number, side: "yes" | "no") => {
-    const key = `${market.id}-${optIdx}`;
-    setPicked((p) => ({ ...p, [key]: p[key] === side ? null : side }));
-  };
+  const { yes, no } = getImpliedSplit(market.yes_odds, market.no_odds);
+  const yesOdds = Number(market.yes_odds ?? 0);
+  const noOdds = Number(market.no_odds ?? 0);
+  const numericAmount = Number(amount || 0);
+  const activeEmail = email ?? null;
+  const canSubmit = Boolean(activeEmail && picked && numericAmount >= 100 && !loading);
+  const potentialReturn =
+    picked === "YES"
+      ? numericAmount * yesOdds
+      : picked === "NO"
+        ? numericAmount * noOdds
+        : 0;
+  const tag = getMarketTag(market);
+
+  async function handlePlaceWager() {
+    if (!activeEmail) {
+      setMessage("Sign in first to place a wager.");
+      return;
+    }
+
+    if (!picked) {
+      setMessage("Choose YES or NO before placing a wager.");
+      return;
+    }
+
+    if (numericAmount < 100) {
+      setMessage("Minimum wager amount is NGN 100.");
+      return;
+    }
+
+    setMessage(null);
+
+    try {
+      const result = await placeWager({
+        wager_id: market.id,
+        selection: picked,
+        amount: numericAmount,
+        email: activeEmail,
+      });
+
+      onPlaced?.();
+      window.location.href = result.authorization_url;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to start checkout.");
+    }
+  }
 
   return (
-    <div className="bg-fn-card border border-fn-gborder rounded-sm overflow-hidden hover:border-fn-green/30 transition-all">
-      {/* Card header */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-3">
-          <TagBadge tag={market.tag} />
+    <div className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/30">
+      <div className="px-4 pb-3 pt-4">
+        <div className="mb-3 flex items-center justify-between">
+          <span
+            className={`rounded-sm border px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest ${tag.className}`}
+          >
+            {tag.label}
+          </span>
           <div className="flex items-center gap-2">
-            <span className="fn-label">{market.poolSize} POOL</span>
-            <button onClick={() => setSaved(!saved)} className="transition-colors">
-              <Bookmark size={13} className={saved ? "text-fn-green fill-fn-green" : "text-fn-muted hover:text-fn-text"} />
+            <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} pool</span>
+            <button onClick={() => setSaved((current) => !current)} className="transition-colors">
+              <Bookmark
+                size={13}
+                className={saved ? "fill-fn-green text-fn-green" : "text-fn-muted hover:text-fn-text"}
+              />
             </button>
           </div>
         </div>
-        <h3 className="text-sm sm:text-base font-bold text-fn-text leading-snug mb-1">{market.question}</h3>
-        <p className="fn-label">{market.subtitle}</p>
+
+        <h3 className="mb-1 text-sm font-bold leading-snug text-fn-text sm:text-base">
+          {String(getMarketQuestion(market))}
+        </h3>
+        <p className="fn-label">{getMarketSubtitle(market)}</p>
       </div>
 
-      {/* Options */}
-      <div className="px-4 pb-3 space-y-4">
-        {market.options.map((opt, i) => {
-          const key = `${market.id}-${i}`;
-          const choice = picked[key];
-          const showReturn = choice !== null && choice !== undefined;
+      <div className="space-y-4 px-4 pb-3">
+        <div>
+          <ProbBar yes={yes} no={no} />
+          <div className="mb-3 flex justify-between fn-label">
+            <span className="text-fn-green">YES {yes}%</span>
+            <span className="text-fn-red">NO {no}%</span>
+          </div>
 
-          return (
-            <div key={i}>
-              {opt.sublabel && (
-                <div className="fn-label mb-2">{opt.sublabel}</div>
-              )}
-              {/* Probability bar */}
-              <ProbBar yes={opt.yesPrice} no={opt.noPrice} />
-              <div className="flex justify-between fn-label mb-3">
-                <span className="text-fn-green">YES {opt.yesPrice}%</span>
-                <span className="text-fn-red">NO {opt.noPrice}%</span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setPicked((current) => (current === "YES" ? null : "YES"))}
+              className={`rounded-sm px-3 py-3 text-center transition-all ${
+                picked === "YES" ? "pred-yes active" : "pred-yes"
+              }`}
+            >
+              <div className="mb-0.5 text-[10px] font-bold">BUY YES</div>
+              <div className="font-display text-xl font-black">{yesOdds.toFixed(2)}x</div>
+              <div className="mt-0.5 text-[8px] opacity-80">
+                {formatCurrency(numericAmount || 1000)} {"->"}{" "}
+                {formatCurrency((numericAmount || 1000) * yesOdds)}
               </div>
-
-              {/* Buy buttons */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => pick(i, "yes")}
-                  className={`pred-yes rounded-sm px-3 py-3 text-center transition-all ${choice === "yes" ? "active" : ""}`}
-                >
-                  <div className="text-[10px] font-bold mb-0.5">BUY YES</div>
-                  <div className="font-display text-xl font-black">₦{opt.yesPrice}</div>
-                  {showReturn && choice === "yes" && (
-                    <div className="text-[8px] mt-0.5 opacity-80">Returns: {opt.yesReturn}</div>
-                  )}
-                </button>
-                <button
-                  onClick={() => pick(i, "no")}
-                  className={`pred-no rounded-sm px-3 py-3 text-center transition-all ${choice === "no" ? "active" : ""}`}
-                >
-                  <div className="text-[10px] font-bold mb-0.5">BUY NO</div>
-                  <div className="font-display text-xl font-black">₦{opt.noPrice}</div>
-                  {showReturn && choice === "no" && (
-                    <div className="text-[8px] mt-0.5 opacity-80">Returns: {opt.noReturn}</div>
-                  )}
-                </button>
+            </button>
+            <button
+              onClick={() => setPicked((current) => (current === "NO" ? null : "NO"))}
+              className={`rounded-sm px-3 py-3 text-center transition-all ${
+                picked === "NO" ? "pred-no active" : "pred-no"
+              }`}
+            >
+              <div className="mb-0.5 text-[10px] font-bold">BUY NO</div>
+              <div className="font-display text-xl font-black">{noOdds.toFixed(2)}x</div>
+              <div className="mt-0.5 text-[8px] opacity-80">
+                {formatCurrency(numericAmount || 1000)} {"->"}{" "}
+                {formatCurrency((numericAmount || 1000) * noOdds)}
               </div>
+            </button>
+          </div>
 
-              {/* If YES is chosen, show return breakdown */}
-              {choice === "yes" && (
-                <div className="mt-2 flex justify-between items-center text-[9px] text-fn-muted bg-fn-green/5 border border-fn-gborder/50 rounded-sm px-2 py-1.5">
-                  <span>₦{amount} →</span>
-                  <span className="text-fn-green font-bold">{opt.yesReturn.split("→")[1]?.trim()}</span>
-                </div>
-              )}
-              {choice === "no" && (
-                <div className="mt-2 flex justify-between items-center text-[9px] text-fn-muted bg-fn-red/5 border border-fn-gborder/50 rounded-sm px-2 py-1.5">
-                  <span>₦{amount} →</span>
-                  <span className="text-fn-red font-bold">{opt.noReturn.split("→")[1]?.trim()}</span>
-                </div>
-              )}
+          {picked && (
+            <div
+              className={`mt-2 flex items-center justify-between rounded-sm border px-2 py-1.5 text-[9px] ${
+                picked === "YES"
+                  ? "border-fn-gborder/50 bg-fn-green/5 text-fn-muted"
+                  : "border-fn-gborder/50 bg-fn-red/5 text-fn-muted"
+              }`}
+            >
+              <span>{formatCurrency(numericAmount)} stake</span>
+              <span className={picked === "YES" ? "font-bold text-fn-green" : "font-bold text-fn-red"}>
+                Potential return {formatCurrency(potentialReturn)}
+              </span>
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
 
-      {/* Amount + place wager */}
       <div className="px-4 pb-4">
         <div className="flex gap-2">
-          <div className="flex-1 flex items-center bg-fn-dark border border-fn-gborder rounded-sm px-3">
-            <span className="fn-label mr-2">AMOUNT</span>
+          <div className="flex flex-1 items-center rounded-sm border border-fn-gborder bg-fn-dark px-3">
+            <span className="mr-2 fn-label">AMOUNT</span>
             <input
               type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="flex-1 bg-transparent text-fn-text text-[11px] font-bold outline-none py-2.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
               min="100"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className="flex-1 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
           <button
-            className={`fn-btn text-[10px] px-4 whitespace-nowrap ${Object.values(picked).every((v) => !v) ? "opacity-50 cursor-not-allowed" : ""}`}
-            disabled={Object.values(picked).every((v) => !v)}
+            onClick={handlePlaceWager}
+            className={`fn-btn whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
+            disabled={!canSubmit}
           >
-            PLACE WAGER
+            {loading ? "PROCESSING..." : "PLACE WAGER"}
           </button>
         </div>
-        {/* Quick amounts */}
-        <div className="flex gap-1.5 mt-2">
-          {["250", "500", "1000", "2500"].map((v) => (
+
+        <div className="mt-2 flex gap-1.5">
+          {["250", "500", "1000", "2500"].map((value) => (
             <button
-              key={v}
-              onClick={() => setAmount(v)}
-              className={`px-2 py-1 text-[8px] font-bold tracking-wide border rounded-sm transition-all ${
-                amount === v ? "border-fn-green text-fn-green bg-fn-green/10" : "border-fn-gborder text-fn-muted hover:border-fn-green/40 hover:text-fn-text"
+              key={value}
+              onClick={() => setAmount(value)}
+              className={`rounded-sm border px-2 py-1 text-[8px] font-bold tracking-wide transition-all ${
+                amount === value
+                  ? "border-fn-green bg-fn-green/10 text-fn-green"
+                  : "border-fn-gborder text-fn-muted hover:border-fn-green/40 hover:text-fn-text"
               }`}
             >
-              ₦{parseInt(v).toLocaleString()}
+              {formatCurrency(Number(value))}
             </button>
           ))}
         </div>
+
+        {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
+        {message && <p className="mt-2 text-[9px] text-fn-red">{message}</p>}
       </div>
 
-      {/* Footer stats */}
-      <div className="px-4 py-2.5 border-t border-fn-gborder flex items-center justify-between bg-fn-dark/50">
+      <div className="flex items-center justify-between border-t border-fn-gborder bg-fn-dark/50 px-4 py-2.5">
         <div className="flex items-center gap-1 text-[9px] text-fn-muted">
-          <BarChart2 size={10} /> {market.trades.toLocaleString()} trades
+          <BarChart2 size={10} /> {getTradeCount(market).toLocaleString()} trades
         </div>
         <div className="flex items-center gap-1 text-[9px] text-fn-muted">
-          <Clock size={10} /> {market.endsIn}
+          <Clock size={10} /> {formatCountdown(String(market.closes_at ?? ""))}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function WagerPage() {
   const [showAll, setShowAll] = useState(false);
-  const displayed = showAll ? wagerMarkets : wagerMarkets.slice(0, 4);
+  const searchParams = useSearchParams();
+  const status = searchParams.get("status");
+  const { data: wagers, loading: wagersLoading, error: wagersError, refetch } = useActiveWagers();
+  const { data: me, loading: meLoading } = useMe();
+
+  const allMarkets = Array.isArray(wagers) ? wagers : [];
+  const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
+  const walletBalance = Number(me?.wallet?.balance ?? 0);
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <div className="px-4 sm:px-8 lg:px-12 py-6 border-b border-fn-gborder bg-fn-card/20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-fn bg-grid opacity-20 pointer-events-none" />
+      <div className="relative overflow-hidden border-b border-fn-gborder bg-fn-card/20 px-4 py-6 sm:px-8 lg:px-12">
+        <div className="pointer-events-none absolute inset-0 bg-grid-fn bg-grid opacity-20" />
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="fn-label mb-1 flex items-center gap-1.5">
+            <div className="mb-1 flex items-center gap-1.5 fn-label">
               <Zap size={9} className="text-fn-green" /> TACTICAL HUB 06
             </div>
-            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-fn-text tracking-tight">
+            <h1 className="font-display text-4xl font-black uppercase tracking-tight text-fn-text sm:text-5xl">
               WAGER ZONE
             </h1>
           </div>
-          {/* Balance */}
-          <div className="flex items-center gap-3 bg-fn-card border border-fn-yellow/30 rounded-sm px-4 py-3">
-            <div className="w-8 h-8 rounded-full bg-fn-yellow/20 border border-fn-yellow/40 flex items-center justify-center text-sm">🪙</div>
+
+          <div className="flex items-center gap-3 rounded-sm border border-fn-yellow/30 bg-fn-card px-4 py-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-fn-yellow/40 bg-fn-yellow/20 text-sm">
+              <Wallet size={14} className="text-fn-yellow" />
+            </div>
             <div>
               <div className="fn-label">CURRENT BALANCE</div>
-              <div className="font-display text-xl font-black text-fn-yellow">5,000 <span className="text-sm font-mono text-fn-amber">FRG COINS</span></div>
+              <div className="font-display text-xl font-black text-fn-yellow">
+                {meLoading ? "Loading..." : formatCurrency(walletBalance)}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-4 sm:px-8 lg:px-12 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Markets feed */}
-          <div className="xl:col-span-2 space-y-4">
-            <div className="fn-label flex items-center gap-2">
-              <span className="live-dot" /> LIVE MARKETS — {wagerMarkets.length} OPEN
+      <div className="px-4 py-6 sm:px-8 lg:px-12">
+        {status === "success" && (
+          <div className="mb-4 rounded-sm border border-fn-green/30 bg-fn-green/10 px-4 py-3 text-[11px] text-fn-text">
+            Payment completed. Your wager is being confirmed and will show up after Paystack webhook processing.
+          </div>
+        )}
+
+        {wagersError && (
+          <div className="mb-4 rounded-sm border border-fn-red/30 bg-fn-red/10 px-4 py-3 text-[11px] text-fn-text">
+            Unable to load live markets right now: {wagersError}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <div className="space-y-4 xl:col-span-2">
+            <div className="flex items-center gap-2 fn-label">
+              <span className="live-dot" /> LIVE MARKETS - {allMarkets.length} OPEN
             </div>
 
-            {displayed.map((m) => <WagerCard key={m.id} market={m} />)}
+            {wagersLoading && (
+              <div className="rounded-sm border border-fn-gborder bg-fn-card p-6 text-[11px] text-fn-muted">
+                Loading active wager markets...
+              </div>
+            )}
 
-            {wagerMarkets.length > 4 && (
+            {!wagersLoading && !allMarkets.length && (
+              <div className="rounded-sm border border-fn-gborder bg-fn-card p-6">
+                <p className="text-sm font-bold text-fn-text">No live markets are open right now.</p>
+                <p className="mt-2 text-[11px] text-fn-muted">
+                  New tactical markets will appear here as soon as the admin desk opens them.
+                </p>
+              </div>
+            )}
+
+            {displayedMarkets.map((market) => (
+              <WagerCard
+                key={String(market.id)}
+                market={market}
+                email={me?.email}
+                onPlaced={refetch}
+              />
+            ))}
+
+            {allMarkets.length > 4 && (
               <button
-                onClick={() => setShowAll(!showAll)}
-                className="w-full fn-btn-outline text-[10px] flex items-center justify-center gap-2 py-3"
+                onClick={() => setShowAll((current) => !current)}
+                className="fn-btn-outline flex w-full items-center justify-center gap-2 py-3 text-[10px]"
               >
                 {showAll ? (
-                  <><ChevronUp size={12} /> SHOW LESS</>
+                  <>
+                    <ChevronUp size={12} /> SHOW LESS
+                  </>
                 ) : (
-                  <><ChevronDown size={12} /> LOAD {wagerMarkets.length - 4} MORE MARKETS</>
+                  <>
+                    <ChevronDown size={12} /> LOAD {allMarkets.length - 4} MORE MARKETS
+                  </>
                 )}
               </button>
             )}
           </div>
 
-          {/* Right sidebar */}
-          <div className="xl:col-span-1 space-y-4">
-            {/* Elite Predictors */}
-            <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
-              <div className="flex items-center gap-2 mb-4">
+          <div className="space-y-4 xl:col-span-1">
+            <div className="rounded-sm border border-fn-gborder bg-fn-card p-4">
+              <div className="mb-4 flex items-center gap-2">
                 <Trophy size={12} className="text-fn-yellow" />
                 <span className="fn-label text-fn-text">ELITE PREDICTORS</span>
               </div>
               <div className="space-y-2">
-                {elitePredictors.map((p, i) => (
-                  <div key={p.tag} className="flex items-center gap-3 p-2 bg-fn-dark border border-fn-gborder rounded-sm hover:border-fn-green/30 transition-colors">
-                    <span className={`text-[9px] font-bold w-5 text-center ${i === 0 ? "text-fn-yellow" : i === 1 ? "text-fn-text" : "text-fn-muted"}`}>
-                      {String(i + 1).padStart(2, "0")}
+                {elitePredictors.map((predictor, index) => (
+                  <div
+                    key={predictor.tag}
+                    className="flex items-center gap-3 rounded-sm border border-fn-gborder bg-fn-dark p-2 transition-colors hover:border-fn-green/30"
+                  >
+                    <span
+                      className={`w-5 text-center text-[9px] font-bold ${
+                        index === 0 ? "text-fn-yellow" : index === 1 ? "text-fn-text" : "text-fn-muted"
+                      }`}
+                    >
+                      {String(index + 1).padStart(2, "0")}
                     </span>
-                    <div className="w-7 h-7 bg-fn-green/10 border border-fn-gborder rounded-sm flex items-center justify-center text-[9px] font-bold text-fn-green flex-shrink-0">
-                      {p.tag[0]}
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm border border-fn-gborder bg-fn-green/10 text-[9px] font-bold text-fn-green">
+                      {predictor.tag[0]}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold text-fn-text truncate">{p.tag}</div>
-                      <div className="fn-label">{p.accuracy} accuracy</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[10px] font-bold text-fn-text">{predictor.tag}</div>
+                      <div className="fn-label">{predictor.accuracy} accuracy</div>
                     </div>
-                    <span className="text-[9px] font-bold text-fn-green flex-shrink-0">{p.weekly}</span>
+                    <span className="flex-shrink-0 text-[9px] font-bold text-fn-green">{predictor.weekly}</span>
                   </div>
                 ))}
               </div>
-              <button className="mt-3 fn-btn-outline w-full text-[9px] py-2">VIEW ALL RANKINGS</button>
+              <button className="fn-btn-outline mt-3 w-full py-2 text-[9px]">VIEW ALL RANKINGS</button>
             </div>
 
-            {/* Summary stats */}
-            <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
+            <div className="rounded-sm border border-fn-gborder bg-fn-card p-4">
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { v: "1,248",  l: "Wagers Placed", icon: BarChart2 },
-                  { v: "₦2.8M",  l: "Total Won",     icon: TrendingUp },
-                ].map(({ v, l, icon: Icon }) => (
-                  <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-3 text-center">
-                    <Icon size={12} className="text-fn-green mx-auto mb-1" />
-                    <div className="font-display text-xl font-black text-fn-text">{v}</div>
-                    <div className="fn-label">{l}</div>
+                  { value: allMarkets.length.toLocaleString(), label: "Open Markets", icon: BarChart2 },
+                  { value: formatCompactCurrency(walletBalance), label: "Wallet Balance", icon: Wallet },
+                ].map(({ value, label, icon: Icon }) => (
+                  <div key={label} className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-center">
+                    <Icon size={12} className="mx-auto mb-1 text-fn-green" />
+                    <div className="font-display text-xl font-black text-fn-text">{value}</div>
+                    <div className="fn-label">{label}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Active Predictions */}
-            <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="rounded-sm border border-fn-gborder bg-fn-card p-4">
+              <div className="mb-3 flex items-center justify-between">
                 <span className="fn-label">MY ACTIVE PREDICTIONS</span>
                 <span className="text-[9px] font-bold text-fn-green">{activePredictions.length} ACTIVE</span>
               </div>
               <div className="space-y-2">
-                {activePredictions.map((pred, i) => (
-                  <div key={i} className="p-3 bg-fn-dark border border-fn-gborder rounded-sm">
-                    <div className="flex items-start justify-between gap-2 mb-1">
+                {activePredictions.map((prediction, index) => (
+                  <div key={index} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                    <div className="mb-1 flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-[10px] font-bold text-fn-text leading-tight">{pred.event}</div>
-                        <div className="fn-label">{pred.subtitle}</div>
+                        <div className="text-[10px] font-bold leading-tight text-fn-text">{prediction.event}</div>
+                        <div className="fn-label">{prediction.subtitle}</div>
                       </div>
-                      <span className="text-[7px] font-bold tracking-widest px-1.5 py-0.5 flex-shrink-0"
-                        style={{ background: `${pred.statusColor}20`, color: pred.statusColor, border: `1px solid ${pred.statusColor}40` }}>
-                        {pred.status}
+                      <span
+                        className="flex-shrink-0 px-1.5 py-0.5 text-[7px] font-bold tracking-widest"
+                        style={{
+                          background: `${prediction.statusColor}20`,
+                          color: prediction.statusColor,
+                          border: `1px solid ${prediction.statusColor}40`,
+                        }}
+                      >
+                        {prediction.status}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-1 mt-2">
+                    <div className="mt-2 grid grid-cols-3 gap-1">
                       {[
-                        { v: pred.type,      l: "TYPE"   },
-                        { v: pred.odds,      l: "ODDS"   },
-                        { v: pred.stake,     l: "STAKE"  },
-                      ].map(({ v, l }) => (
-                        <div key={l} className="text-center">
-                          <div className="text-[9px] font-bold text-fn-green truncate">{v}</div>
-                          <div className="fn-label text-[7px]">{l}</div>
+                        { value: prediction.type, label: "TYPE" },
+                        { value: prediction.odds, label: "ODDS" },
+                        { value: prediction.stake, label: "STAKE" },
+                      ].map(({ value, label }) => (
+                        <div key={label} className="text-center">
+                          <div className="truncate text-[9px] font-bold text-fn-green">{value}</div>
+                          <div className="fn-label text-[7px]">{label}</div>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-2 pt-2 border-t border-fn-gborder/50 flex justify-between">
+                    <div className="mt-2 flex justify-between border-t border-fn-gborder/50 pt-2">
                       <span className="fn-label">EST. RETURN</span>
-                      <span className="text-[10px] font-bold text-fn-green">{pred.estReturn}</span>
+                      <span className="text-[10px] font-bold text-fn-green">{prediction.estReturn}</span>
                     </div>
                   </div>
                 ))}
