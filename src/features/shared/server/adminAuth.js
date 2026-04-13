@@ -1,13 +1,14 @@
 import { cookies } from 'next/headers';
 
 import { unauthorized } from './api';
+import { getAdminSessionCookieName, verifyAdminSessionToken } from './adminSession';
 
-export function checkAdmin() {
+export async function checkAdmin() {
   try {
     const cookieStore = cookies();
-    const adminAuth = cookieStore.get('admin_auth')?.value;
+    const adminAuth = cookieStore.get(getAdminSessionCookieName())?.value;
 
-    if (!adminAuth || adminAuth !== process.env.ADMIN_PASSWORD) {
+    if (!(await verifyAdminSessionToken(adminAuth))) {
       return unauthorized('Unauthorized - admin access required');
     }
 

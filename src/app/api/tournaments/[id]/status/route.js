@@ -3,7 +3,7 @@ import { updateTournamentStatus } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 
 export async function PATCH(request, { params }) {
-  const authErr = checkAdmin();
+  const authErr = await checkAdmin();
   if (authErr) return authErr;
 
   try {
