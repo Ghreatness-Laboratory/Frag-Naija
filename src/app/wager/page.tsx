@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BarChart2,
@@ -15,6 +15,17 @@ import {
 
 import { elitePredictors, activePredictions } from "@/lib/data";
 import { useActiveWagers, useMe, usePlaceWager } from "@/lib/hooks";
+
+type CurrentUser = {
+  email?: string | null;
+  wallet?: {
+    balance?: number | string | null;
+  } | null;
+} | null;
+
+type CurrentMarket = Record<string, unknown> & {
+  id: string | number;
+};
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-NG", {
@@ -352,16 +363,18 @@ function WagerCard({
   );
 }
 
-export default function WagerPage() {
+function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
   const { data: wagers, loading: wagersLoading, error: wagersError, refetch } = useActiveWagers();
   const { data: me, loading: meLoading } = useMe();
+  const currentUser = me as CurrentUser;
+  const liveWagers = (Array.isArray(wagers) ? wagers : []) as CurrentMarket[];
 
-  const allMarkets = Array.isArray(wagers) ? wagers : [];
+  const allMarkets = liveWagers;
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
-  const walletBalance = Number(me?.wallet?.balance ?? 0);
+  const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
 
   return (
     <div className="min-h-screen">
@@ -429,7 +442,7 @@ export default function WagerPage() {
               <WagerCard
                 key={String(market.id)}
                 market={market}
-                email={me?.email}
+                email={currentUser?.email}
                 onPlaced={refetch}
               />
             ))}
@@ -548,5 +561,13 @@ export default function WagerPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function WagerPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-fn-dark" />}>
+      <WagerPageContent />
+    </Suspense>
   );
 }
