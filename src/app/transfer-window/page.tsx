@@ -44,7 +44,7 @@ export default function TransferWindowPage() {
         <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div>
             <div className="fn-label mb-1">CONTRACT ANALYSIS</div>
-            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-white tracking-tight">
+            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-fn-text tracking-tight">
               TRANSFER<br />WINDOW
             </h1>
           </div>
@@ -124,7 +124,7 @@ export default function TransferWindowPage() {
                               <div className="w-7 h-7 bg-fn-green/15 border border-fn-gborder flex items-center justify-center text-[10px] font-bold text-fn-green">
                                 {t.player[0]}
                               </div>
-                              <span className="text-[11px] font-bold text-white">{t.player}</span>
+                              <span className="text-[11px] font-bold text-fn-text">{t.player}</span>
                             </div>
                           </td>
                           <td className="py-3.5 pr-4 text-[10px] text-fn-muted">{t.from}</td>
@@ -160,7 +160,7 @@ export default function TransferWindowPage() {
                       <span className="font-display text-2xl font-black text-fn-green">{agent.tag[0]}</span>
                     </div>
                     <div className="text-[8px] font-bold text-fn-yellow tracking-widest uppercase mb-1">{agent.badge}</div>
-                    <div className="text-xs font-bold text-white mb-0.5">{agent.tag}</div>
+                    <div className="text-xs font-bold text-fn-text mb-0.5">{agent.tag}</div>
                     <div className="fn-label mb-3">{agent.rank}</div>
 
                     <div className="grid grid-cols-3 gap-1 mb-3 text-center">
@@ -170,7 +170,7 @@ export default function TransferWindowPage() {
                         { v: agent.winRate,  l: "W/R"   },
                       ].map(({ v, l }) => (
                         <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-1.5">
-                          <div className="text-[10px] font-bold text-white">{v}</div>
+                          <div className="text-[10px] font-bold text-fn-text">{v}</div>
                           <div className="fn-label text-[7px]">{l}</div>
                         </div>
                       ))}

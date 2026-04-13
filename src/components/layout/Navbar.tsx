@@ -2,7 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, User, ChevronRight } from "lucide-react";
+import { Menu, X, User, ChevronRight, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 const navLinks = [
   { label: "Home",            href: "/" },
@@ -13,6 +14,20 @@ const navLinks = [
   { label: "Highlights",      href: "/highlights" },
 ];
 
+function ThemeToggle({ className = "" }: { className?: string }) {
+  const { theme, toggle } = useTheme();
+  return (
+    <button
+      onClick={toggle}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label="Toggle theme"
+      className={`w-8 h-8 flex items-center justify-center border border-fn-gborder text-fn-muted hover:text-fn-green hover:border-fn-green/50 rounded-sm transition-all ${className}`}
+    >
+      {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+    </button>
+  );
+}
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const path = usePathname();
@@ -21,17 +36,13 @@ export default function Navbar() {
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-fn-dark border-b border-fn-gborder flex items-center px-3 sm:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 mr-6 shrink-0">
-          <span className="font-display text-lg sm:text-xl font-black text-fn-green tracking-widest glow-text">
-            FRAG
-          </span>
-          <span className="font-display text-lg sm:text-xl font-black text-white tracking-widest">
-            NAIJA
-          </span>
+        <Link href="/" className="flex items-center gap-1.5 mr-6 shrink-0">
+          <span className="font-display text-lg sm:text-xl font-black text-fn-green tracking-widest glow-text">FRAG</span>
+          <span className="font-display text-lg sm:text-xl font-black text-fn-text tracking-widest">NAIJA</span>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden lg:flex items-center gap-1 flex-1">
+        <div className="hidden lg:flex items-center gap-0.5 flex-1">
           {navLinks.map((l) => (
             <Link
               key={l.href}
@@ -39,7 +50,7 @@ export default function Navbar() {
               className={`px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all rounded-sm ${
                 path === l.href
                   ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
-                  : "text-fn-muted hover:text-fn-text hover:bg-white/5"
+                  : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
               }`}
             >
               {l.label}
@@ -47,8 +58,8 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Wager link pill - always visible on desktop */}
-        <div className="hidden lg:flex items-center gap-3 ml-auto">
+        {/* Desktop: actions */}
+        <div className="hidden lg:flex items-center gap-2 ml-auto">
           <Link
             href="/wager"
             className={`px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all rounded-sm ${
@@ -59,20 +70,20 @@ export default function Navbar() {
           >
             ⚡ WAGER
           </Link>
-          <button className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors">
-            Login
-          </button>
+          <ThemeToggle />
+          <button className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors">Login</button>
           <button className="fn-btn text-[10px] px-3 py-1.5">Sign Up</button>
         </div>
 
-        {/* Mobile: wager + burger */}
+        {/* Mobile: actions */}
         <div className="flex items-center gap-2 ml-auto lg:hidden">
           <Link
             href="/wager"
             className="text-fn-amber text-[9px] font-bold tracking-widest uppercase border border-fn-amber/30 px-2.5 py-1 rounded-sm"
           >
-            ⚡ WAGER
+            ⚡
           </Link>
+          <ThemeToggle />
           <button
             onClick={() => setOpen(!open)}
             className="p-2 text-fn-muted hover:text-fn-green transition-colors"
@@ -90,18 +101,21 @@ export default function Navbar() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="absolute top-14 right-0 bottom-0 w-72 bg-fn-dark border-l border-fn-gborder flex flex-col"
+            className="absolute top-14 right-0 bottom-0 w-72 bg-fn-dark border-l border-fn-gborder flex flex-col animate-slide-u"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-fn-gborder">
               <div className="fn-label mb-1">Navigation</div>
-              <div className="flex items-center gap-2 mt-2">
-                <User size={14} className="text-fn-muted" />
-                <span className="text-[10px] text-fn-muted">Not logged in</span>
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-2">
+                  <User size={13} className="text-fn-muted" />
+                  <span className="text-[10px] text-fn-muted">Not logged in</span>
+                </div>
+                <ThemeToggle />
               </div>
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
-              {[...navLinks, { label: "Wager Zone", href: "/wager" }].map((l) => (
+              {[...navLinks, { label: "⚡ Wager Zone", href: "/wager" }].map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
@@ -109,7 +123,7 @@ export default function Navbar() {
                   className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
                     path === l.href
                       ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
-                      : "text-fn-muted hover:text-fn-text hover:bg-white/5"
+                      : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
                   }`}
                 >
                   {l.label}

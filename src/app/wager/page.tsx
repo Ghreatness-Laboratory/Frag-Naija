@@ -54,7 +54,7 @@ function WagerCard({ market }: { market: WagerMarket }) {
             </button>
           </div>
         </div>
-        <h3 className="text-sm sm:text-base font-bold text-white leading-snug mb-1">{market.question}</h3>
+        <h3 className="text-sm sm:text-base font-bold text-fn-text leading-snug mb-1">{market.question}</h3>
         <p className="fn-label">{market.subtitle}</p>
       </div>
 
@@ -183,7 +183,7 @@ export default function WagerPage() {
             <div className="fn-label mb-1 flex items-center gap-1.5">
               <Zap size={9} className="text-fn-green" /> TACTICAL HUB 06
             </div>
-            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-white tracking-tight">
+            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-fn-text tracking-tight">
               WAGER ZONE
             </h1>
           </div>
@@ -240,7 +240,7 @@ export default function WagerPage() {
                       {p.tag[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold text-white truncate">{p.tag}</div>
+                      <div className="text-[10px] font-bold text-fn-text truncate">{p.tag}</div>
                       <div className="fn-label">{p.accuracy} accuracy</div>
                     </div>
                     <span className="text-[9px] font-bold text-fn-green flex-shrink-0">{p.weekly}</span>
@@ -259,7 +259,7 @@ export default function WagerPage() {
                 ].map(({ v, l, icon: Icon }) => (
                   <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-3 text-center">
                     <Icon size={12} className="text-fn-green mx-auto mb-1" />
-                    <div className="font-display text-xl font-black text-white">{v}</div>
+                    <div className="font-display text-xl font-black text-fn-text">{v}</div>
                     <div className="fn-label">{l}</div>
                   </div>
                 ))}
@@ -277,7 +277,7 @@ export default function WagerPage() {
                   <div key={i} className="p-3 bg-fn-dark border border-fn-gborder rounded-sm">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <div className="min-w-0">
-                        <div className="text-[10px] font-bold text-white leading-tight">{pred.event}</div>
+                        <div className="text-[10px] font-bold text-fn-text leading-tight">{pred.event}</div>
                         <div className="fn-label">{pred.subtitle}</div>
                       </div>
                       <span className="text-[7px] font-bold tracking-widest px-1.5 py-0.5 flex-shrink-0"

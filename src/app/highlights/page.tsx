@@ -48,7 +48,7 @@ export default function HighlightsPage() {
       <div className="px-4 sm:px-8 lg:px-12 pt-8 pb-4 border-b border-fn-gborder">
         <div className="fn-label mb-1">TACTICAL VISUAL INTERFACE // HIGHLIGHTS ARCHIVE</div>
         <h1 className="font-display font-black uppercase leading-none">
-          <span className="block text-5xl sm:text-7xl text-white">THE THEATRE</span>
+          <span className="block text-5xl sm:text-7xl text-fn-text">THE THEATRE</span>
           <span className="block text-5xl sm:text-7xl text-fn-green glow-text">OF WAR</span>
         </h1>
       </div>
@@ -100,10 +100,10 @@ export default function HighlightsPage() {
               {/* Labels */}
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-fn-black/90 to-transparent">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[8px] font-bold bg-fn-red px-2 py-0.5 text-white tracking-widest uppercase">● PREMIERE</span>
+                  <span className="text-[8px] font-bold bg-fn-red px-2 py-0.5 text-fn-text tracking-widest uppercase">● PREMIERE</span>
                   <span className="text-[8px] text-fn-muted">Athlegame vs OP Squad</span>
                 </div>
-                <h2 className="font-display text-xl sm:text-2xl font-black uppercase text-white">
+                <h2 className="font-display text-xl sm:text-2xl font-black uppercase text-fn-text">
                   GRAND FINALS: NAIJA CUP SEASON 4
                 </h2>
                 <div className="flex items-center gap-4 mt-2 text-[9px] text-fn-muted">
@@ -132,12 +132,12 @@ export default function HighlightsPage() {
                   <div className="relative w-20 h-14 bg-fn-dark border border-fn-gborder flex-shrink-0 overflow-hidden rounded-sm flex items-center justify-center">
                     <div className="absolute inset-0 bg-gradient-to-br from-teal-900 to-fn-black opacity-70" />
                     <Play size={14} className="relative text-fn-green group-hover:scale-110 transition-transform" fill="#00ff41" />
-                    <span className="absolute bottom-1 right-1 text-[7px] font-bold text-white bg-black/70 px-1">{v.duration}</span>
+                    <span className="absolute bottom-1 right-1 text-[7px] font-bold text-fn-text bg-black/70 px-1">{v.duration}</span>
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="fn-label text-[7px] mb-0.5">{v.category}</div>
-                    <p className="text-[10px] font-bold text-white leading-snug line-clamp-2">{v.title}</p>
+                    <p className="text-[10px] font-bold text-fn-text leading-snug line-clamp-2">{v.title}</p>
                     <div className="flex items-center gap-2 mt-1 text-[8px] text-fn-muted">
                       <Eye size={8} /> {v.views}
                       <span>·</span>
@@ -214,7 +214,7 @@ export default function HighlightsPage() {
                     </div>
                     {/* Info */}
                     <div className="mt-2 px-1">
-                      <h3 className="text-[11px] font-bold text-white leading-snug mb-1 line-clamp-2 group-hover:text-fn-green transition-colors">{v.title}</h3>
+                      <h3 className="text-[11px] font-bold text-fn-text leading-snug mb-1 line-clamp-2 group-hover:text-fn-green transition-colors">{v.title}</h3>
                       <div className="flex items-center gap-3 text-[9px] text-fn-muted">
                         <span className="flex items-center gap-1"><Eye size={9} /> {v.views}</span>
                         <span>· by {v.creator}</span>
@@ -231,7 +231,7 @@ export default function HighlightsPage() {
           <div className="mb-5">
             <div className="fn-label text-fn-muted mb-0.5">LIVE TRANSMISSIONS</div>
             <div className="flex items-end justify-between flex-wrap gap-2">
-              <h2 className="font-display text-2xl sm:text-3xl font-black uppercase text-white">COMMANDER CAMS</h2>
+              <h2 className="font-display text-2xl sm:text-3xl font-black uppercase text-fn-text">COMMANDER CAMS</h2>
               <p className="text-[9px] text-fn-muted max-w-xs text-right leading-relaxed">
                 Direct vertical feed from player headquarters. Tactical facial feeds and live comms
               </p>
@@ -264,7 +264,7 @@ export default function HighlightsPage() {
 
                   {/* Info overlay */}
                   <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-fn-black/90 to-transparent">
-                    <div className="text-[9px] font-bold text-white">{cam.tag}</div>
+                    <div className="text-[9px] font-bold text-fn-text">{cam.tag}</div>
                     <div className="text-[7px] text-fn-muted italic">{cam.quote}</div>
                   </div>
                 </div>
