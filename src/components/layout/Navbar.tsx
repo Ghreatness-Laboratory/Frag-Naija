@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon, LogOut } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 const navLinks = [
@@ -30,32 +30,35 @@ function ThemeToggle({ className = "" }: { className?: string }) {
 
 type MeUser = { username?: string; email: string } | null;
 
-function useMe() {
-  const [user, setUser] = useState<MeUser>(undefined as unknown as MeUser);
+function useAuthState() {
+  // undefined = still loading; null = not logged in; object = logged in
+  const [user,    setUser]    = useState<MeUser | undefined>(undefined);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then(r => r.ok ? r.json() : null)
-      .then(data => setUser(data))
-      .catch(() => setUser(null));
+    Promise.all([
+      fetch("/api/auth/me").then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch("/api/auth/admin/check").then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([userData, adminData]) => {
+      setUser(userData ?? null);
+      setIsAdmin(adminData?.isAdmin ?? false);
+    });
   }, []);
 
-  return user;
+  return { user, isAdmin };
 }
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const path   = usePathname();
-  const router = useRouter();
-  const user   = useMe();
+  const path            = usePathname();
+  const { user, isAdmin } = useAuthState();
+
+  const displayName = user?.username || user?.email?.split("@")[0];
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.refresh();
-    router.push("/");
+    window.location.href = "/";
   }
-
-  const displayName = user?.username || user?.email?.split("@")[0];
 
   return (
     <>
@@ -97,7 +100,7 @@ export default function Navbar() {
           </Link>
           <ThemeToggle />
 
-          {/* Auth area — show nothing while loading (user === undefined) */}
+          {/* Auth area — nothing while loading to avoid flash */}
           {user === null && (
             <>
               <Link
@@ -112,7 +115,25 @@ export default function Navbar() {
             </>
           )}
           {user && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-fn-green/10 border border-fn-green/30 text-fn-green rounded-sm text-[10px] font-bold uppercase tracking-wider hover:bg-fn-green/20 transition-all"
+                >
+                  <Shield size={10} /> Admin
+                </Link>
+              )}
+              <Link
+                href="/wallet"
+                className={`flex items-center gap-1 px-2.5 py-1.5 border rounded-sm text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  path === "/wallet"
+                    ? "text-fn-green bg-fn-green/10 border-fn-green/30"
+                    : "text-fn-muted border-fn-gborder hover:text-fn-green hover:border-fn-green/30"
+                }`}
+              >
+                <Wallet size={10} /> Wallet
+              </Link>
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-fn-card border border-fn-gborder rounded-sm">
                 <User size={11} className="text-fn-green" />
                 <span className="text-[10px] text-fn-text font-bold uppercase tracking-wider truncate max-w-[100px]">
@@ -187,6 +208,30 @@ export default function Navbar() {
                   <ChevronRight size={12} />
                 </Link>
               ))}
+              {user && (
+                <Link
+                  href="/wallet"
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
+                    path === "/wallet"
+                      ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
+                      : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
+                  }`}
+                >
+                  <span className="flex items-center gap-2"><Wallet size={12} /> Wallet</span>
+                  <ChevronRight size={12} />
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase text-fn-green bg-fn-green/10 border border-fn-green/20 transition-all"
+                >
+                  <span className="flex items-center gap-2"><Shield size={12} /> Admin Panel</span>
+                  <ChevronRight size={12} />
+                </Link>
+              )}
             </nav>
             <div className="p-4 border-t border-fn-gborder flex gap-2">
               {user ? (

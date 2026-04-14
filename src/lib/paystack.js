@@ -6,8 +6,6 @@ const PAYSTACK_BASE   = 'https://api.paystack.co';
  * Initialize a Paystack transaction.
  * Amount should be in NGN (naira) — we convert to kobo here.
  */
-export async function initializeTransaction({ email, amount, metadata, reference }) {
-  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
   const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
     method: 'POST',
     headers: {
@@ -19,7 +17,7 @@ export async function initializeTransaction({ email, amount, metadata, reference
       amount:       Math.round(amount * 100), // NGN → kobo
       metadata,
       reference,
-      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wager?status=success`,
+      callback_url: callback_url ?? `${process.env.NEXT_PUBLIC_SITE_URL}/wager?status=success`,
     }),
   });
   return res.json();

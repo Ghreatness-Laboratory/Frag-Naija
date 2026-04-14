@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 
@@ -25,8 +24,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
-      router.push('/');
-      router.refresh();
+      // Full reload so the Navbar re-fetches user state
+      window.location.href = '/';
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Login failed');
     } finally {

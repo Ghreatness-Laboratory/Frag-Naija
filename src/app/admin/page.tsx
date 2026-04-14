@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight } from 'lucide-react';
+import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight, Banknote } from 'lucide-react';
 
 const SECTIONS = [
   { href: '/admin/athletes',    icon: Users,          label: 'Athletes',    desc: 'Add players, update stats & photos',  color: 'text-fn-green' },
@@ -10,6 +10,7 @@ const SECTIONS = [
   { href: '/admin/tournaments', icon: Trophy,         label: 'Tournaments', desc: 'Schedule and update tournaments',       color: 'text-fn-amber' },
   { href: '/admin/wagers',      icon: Swords,         label: 'Wagers',      desc: 'Create markets, toggle hot, settle',   color: 'text-fn-red' },
   { href: '/admin/highlights',  icon: Film,           label: 'Highlights',  desc: 'Upload clips and Theatre of War vids', color: 'text-fn-gdim' },
+  { href: '/admin/finance',     icon: Banknote,       label: 'Finance',     desc: 'Transactions, settings, manual credit', color: 'text-fn-green' },
 ];
 
 export default function AdminDashboard() {
