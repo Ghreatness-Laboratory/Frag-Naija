@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield } from "lucide-react";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 const navLinks = [
@@ -31,7 +31,6 @@ function ThemeToggle({ className = "" }: { className?: string }) {
 type MeUser = { username?: string; email: string } | null;
 
 function useAuthState() {
-  // undefined = still loading; null = not logged in; object = logged in
   const [user,    setUser]    = useState<MeUser | undefined>(undefined);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -100,13 +99,9 @@ export default function Navbar() {
           </Link>
           <ThemeToggle />
 
-          {/* Auth area — nothing while loading to avoid flash */}
           {user === null && (
             <>
-              <Link
-                href="/login"
-                className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors"
-              >
+              <Link href="/login" className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors">
                 Login
               </Link>
               <Link href="/register" className="fn-btn text-[10px] px-3 py-1.5">
@@ -114,6 +109,7 @@ export default function Navbar() {
               </Link>
             </>
           )}
+
           {user && (
             <div className="flex items-center gap-1.5">
               {isAdmin && (
@@ -134,6 +130,16 @@ export default function Navbar() {
               >
                 <Wallet size={10} /> Wallet
               </Link>
+              <Link
+                href="/security"
+                className={`flex items-center gap-1 px-2.5 py-1.5 border rounded-sm text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  path === "/security"
+                    ? "text-fn-green bg-fn-green/10 border-fn-green/30"
+                    : "text-fn-muted border-fn-gborder hover:text-fn-green hover:border-fn-green/30"
+                }`}
+              >
+                <ShieldCheck size={10} /> Security
+              </Link>
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-fn-card border border-fn-gborder rounded-sm">
                 <User size={11} className="text-fn-green" />
                 <span className="text-[10px] text-fn-text font-bold uppercase tracking-wider truncate max-w-[100px]">
@@ -153,10 +159,7 @@ export default function Navbar() {
 
         {/* Mobile: actions */}
         <div className="flex items-center gap-2 ml-auto lg:hidden">
-          <Link
-            href="/wager"
-            className="text-fn-amber text-[9px] font-bold tracking-widest uppercase border border-fn-amber/30 px-2.5 py-1 rounded-sm"
-          >
+          <Link href="/wager" className="text-fn-amber text-[9px] font-bold tracking-widest uppercase border border-fn-amber/30 px-2.5 py-1 rounded-sm">
             ⚡
           </Link>
           <ThemeToggle />
@@ -209,18 +212,32 @@ export default function Navbar() {
                 </Link>
               ))}
               {user && (
-                <Link
-                  href="/wallet"
-                  onClick={() => setOpen(false)}
-                  className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
-                    path === "/wallet"
-                      ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
-                      : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
-                  }`}
-                >
-                  <span className="flex items-center gap-2"><Wallet size={12} /> Wallet</span>
-                  <ChevronRight size={12} />
-                </Link>
+                <>
+                  <Link
+                    href="/wallet"
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
+                      path === "/wallet"
+                        ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
+                        : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2"><Wallet size={12} /> Wallet</span>
+                    <ChevronRight size={12} />
+                  </Link>
+                  <Link
+                    href="/security"
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
+                      path === "/security"
+                        ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
+                        : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2"><ShieldCheck size={12} /> Security</span>
+                    <ChevronRight size={12} />
+                  </Link>
+                </>
               )}
               {isAdmin && (
                 <Link
@@ -243,18 +260,10 @@ export default function Navbar() {
                 </button>
               ) : (
                 <>
-                  <Link
-                    href="/login"
-                    onClick={() => setOpen(false)}
-                    className="flex-1 fn-btn-outline text-[10px] py-2 text-center"
-                  >
+                  <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn-outline text-[10px] py-2 text-center">
                     Login
                   </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setOpen(false)}
-                    className="flex-1 fn-btn text-[10px] py-2 text-center"
-                  >
+                  <Link href="/register" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
                     Sign Up
                   </Link>
                 </>
