@@ -1,11 +1,13 @@
 import crypto from 'crypto';
 
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_BASE   = 'https://api.paystack.co';
 
 /**
  * Initialize a Paystack transaction.
  * Amount should be in NGN (naira) — we convert to kobo here.
  */
+export async function initializeTransaction({ email, amount, metadata, reference, callback_url }) {
   const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
     method: 'POST',
     headers: {
@@ -27,7 +29,6 @@ const PAYSTACK_BASE   = 'https://api.paystack.co';
  * Verify a transaction by reference (for manual checks).
  */
 export async function verifyTransaction(reference) {
-  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
   const res = await fetch(`${PAYSTACK_BASE}/transaction/verify/${reference}`, {
     headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
   });
@@ -39,7 +40,6 @@ export async function verifyTransaction(reference) {
  * rawBody must be the raw Buffer/string from the request.
  */
 export function verifyWebhookSignature(rawBody, signature) {
-  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
   const hash = crypto
     .createHmac('sha512', PAYSTACK_SECRET)
     .update(rawBody)
