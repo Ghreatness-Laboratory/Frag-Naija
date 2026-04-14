@@ -11,7 +11,7 @@ const PAYSTACK_BASE   = 'https://api.paystack.co';
     headers: {
       Authorization: `Bearer ${PAYSTACK_SECRET}`,
       'Content-Type': 'application/json',
-    },
+    }
     body: JSON.stringify({
       email,
       amount:       Math.round(amount * 100), // NGN → kobo
