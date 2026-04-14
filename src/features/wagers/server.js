@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { getSetting } from '@/features/settings/server';
 
 export async function getWagers() {
   const { data, error } = await supabaseAdmin
@@ -124,7 +125,8 @@ export async function toggleWagerHot(id) {
 }
 
 export async function settleWager(id, outcome) {
-  const status = outcome === 'YES' ? 'Settled - YES Wins' : 'Settled - NO Wins';
+  // Note: status values must match the CHECK constraint in schema.sql (em-dash)
+  const status = outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
 
   const { error: updateWagerError } = await supabaseAdmin.from('wagers').update({ status }).eq('id', id);
   if (updateWagerError) throw updateWagerError;
@@ -143,11 +145,16 @@ export async function settleWager(id, outcome) {
     .eq('status', 'Active');
   if (betsError) throw betsError;
 
+  // Max payout cap: convert $USD limit to NGN using stored exchange rate
+  const usdNgnRate   = Number(await getSetting('usd_ngn_rate'))   || 1600;
+  const maxPayoutUsd = Number(await getSetting('max_payout_usd')) || 2000;
+  const maxPayoutNgn = usdNgnRate * maxPayoutUsd;
+
   let winners = 0;
-  let losers = 0;
+  let losers  = 0;
 
   for (const bet of bets) {
-    const won = bet.selection === outcome;
+    const won        = bet.selection === outcome;
     const nextStatus = won ? 'Won' : 'Lost';
 
     await supabaseAdmin.from('wager_bets').update({ status: nextStatus }).eq('id', bet.id);
@@ -157,8 +164,8 @@ export async function settleWager(id, outcome) {
       continue;
     }
 
-    const odds = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
-    const payout = Number(bet.amount) * Number(odds);
+    const odds   = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
+    const payout = Math.min(Number(bet.amount) * Number(odds), maxPayoutNgn);
 
     const { data: wallet } = await supabaseAdmin
       .from('wallets')
@@ -170,7 +177,7 @@ export async function settleWager(id, outcome) {
       await supabaseAdmin
         .from('wallets')
         .update({
-          balance: Number(wallet.balance) + payout,
+          balance:   Number(wallet.balance)   + payout,
           total_won: Number(wallet.total_won) + payout,
           updated_at: new Date().toISOString(),
         })
@@ -181,6 +188,43 @@ export async function settleWager(id, outcome) {
   }
 
   return { settled: true, winners, losers };
+}
+
+export async function cancelWager(id) {
+  const { data: bets, error: betsError } = await supabaseAdmin
+    .from('wager_bets')
+    .select('*')
+    .eq('wager_id', id)
+    .eq('status', 'Active');
+  if (betsError) throw betsError;
+
+  const { error: cancelErr } = await supabaseAdmin
+    .from('wagers')
+    .update({ status: 'Cancelled' })
+    .eq('id', id);
+  if (cancelErr) throw cancelErr;
+
+  // Refund all active bets
+  for (const bet of bets) {
+    await supabaseAdmin.from('wager_bets').update({ status: 'Refunded' }).eq('id', bet.id);
+
+    if (!bet.user_id) continue;
+
+    const { data: wallet } = await supabaseAdmin
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', bet.user_id)
+      .single();
+
+    if (wallet) {
+      await supabaseAdmin
+        .from('wallets')
+        .update({ balance: Number(wallet.balance) + Number(bet.amount), updated_at: new Date().toISOString() })
+        .eq('user_id', bet.user_id);
+    }
+  }
+
+  return { cancelled: true, refunded: bets.length };
 }
 
 export async function deleteWager(id) {

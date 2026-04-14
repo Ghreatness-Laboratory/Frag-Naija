@@ -178,6 +178,48 @@ BEGIN
 END;
 $$;
 
+-- ─── TRANSACTIONS ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id         UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  reference       TEXT NOT NULL UNIQUE,
+  type            TEXT NOT NULL DEFAULT 'deposit'
+                    CHECK (type IN ('deposit', 'credit', 'debit')),
+  amount_paid     NUMERIC(12,2) NOT NULL,
+  fee             NUMERIC(12,2) NOT NULL DEFAULT 0,
+  amount_credited NUMERIC(12,2) NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'completed'
+                    CHECK (status IN ('pending', 'completed', 'failed', 'suspicious')),
+  note            TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "transactions_own_read"    ON transactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "transactions_admin_write" ON transactions FOR ALL   USING (false);
+
+-- ─── PLATFORM SETTINGS ───────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS platform_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "settings_public_read"  ON platform_settings FOR SELECT USING (true);
+CREATE POLICY "settings_admin_write"  ON platform_settings FOR ALL   USING (false);
+
+-- Default settings (idempotent)
+INSERT INTO platform_settings (key, value) VALUES
+  ('min_deposit_ngn',      '500'),
+  ('platform_fee_percent', '10'),
+  ('deposits_enabled',     'true'),
+  ('usd_ngn_rate',         '1600'),
+  ('max_payout_usd',       '2000')
+ON CONFLICT (key) DO NOTHING;
+
 -- ─── STORAGE BUCKETS ─────────────────────────────────────────────────────────
 -- Run these in Supabase Dashboard > Storage > New Bucket, or via the API.
 -- They cannot be created via SQL directly.
