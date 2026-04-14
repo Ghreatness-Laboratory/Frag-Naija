@@ -28,14 +28,31 @@ export default function AdminTournamentsPage() {
 
   function openAdd() { setEditing(null); setForm({ ...EMPTY }); setError(''); setOpen(true); }
 
+  function openEdit(row: Record<string,unknown>) {
+    setEditing(row);
+    setForm({
+      name:       String(row.name       ?? ''),
+      game:       String(row.game       ?? 'PUBG Mobile'),
+      prize_pool: String(row.prize_pool ?? ''),
+      currency:   String(row.currency   ?? 'NGN'),
+      start_date: String(row.start_date ?? ''),
+      end_date:   String(row.end_date   ?? ''),
+      status:     String(row.status     ?? 'Upcoming'),
+      format:     String(row.format     ?? ''),
+      region:     String(row.region     ?? 'Nigeria'),
+      image_url:  String(row.image_url  ?? ''),
+    });
+    setError(''); setOpen(true);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true); setError('');
     try {
       const body = { ...form, prize_pool: Number(form.prize_pool) || 0 };
-      const url = editing ? `/api/tournaments/${editing.id}` : '/api/tournaments';
+      const url    = editing ? `/api/tournaments/${editing.id}` : '/api/tournaments';
       const method = editing ? 'PUT' : 'POST';
-      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res  = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setOpen(false); load();
@@ -49,7 +66,7 @@ export default function AdminTournamentsPage() {
   }
 
   async function handleDelete(row: Record<string,unknown>) {
-    if (!confirm(`Delete ${row.name}?`)) return;
+    if (!confirm(`Delete "${row.name}"?`)) return;
     await fetch(`/api/tournaments/${row.id}`, { method: 'DELETE' });
     load();
   }
@@ -69,7 +86,7 @@ export default function AdminTournamentsPage() {
       </div>
 
       <AdminTable
-        loading={loading} rows={rows} onDelete={handleDelete}
+        loading={loading} rows={rows} onEdit={openEdit} onDelete={handleDelete}
         emptyText="No tournaments yet"
         extraActions={row => (
           <select
@@ -83,11 +100,11 @@ export default function AdminTournamentsPage() {
           </select>
         )}
         columns={[
-          { key: 'name',        label: 'Name' },
-          { key: 'prize_pool',  label: 'Prize', render: r => `₦${Number(r.prize_pool||0).toLocaleString()}` },
-          { key: 'start_date',  label: 'Start' },
-          { key: 'end_date',    label: 'End' },
-          { key: 'status',      label: 'Status', render: r => {
+          { key: 'name',       label: 'Name' },
+          { key: 'prize_pool', label: 'Prize',  render: r => `₦${Number(r.prize_pool||0).toLocaleString()}` },
+          { key: 'start_date', label: 'Start' },
+          { key: 'end_date',   label: 'End' },
+          { key: 'status',     label: 'Status', render: r => {
             const c = r.status === 'Live' ? 'bg-fn-green/10 text-fn-green' : r.status === 'Upcoming' ? 'bg-fn-yellow/10 text-fn-yellow' : 'bg-fn-muted/10 text-fn-muted';
             return <span className={`text-xs px-2 py-0.5 rounded-full ${c}`}>{String(r.status)}</span>;
           }},
@@ -95,9 +112,11 @@ export default function AdminTournamentsPage() {
         ]}
       />
 
-      <AdminModal title="Add Tournament" open={open} onClose={() => setOpen(false)}>
+      <AdminModal title={editing ? 'Edit Tournament' : 'Add Tournament'} open={open} onClose={() => setOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <Field label="Tournament Name" required><Input value={form.name} onChange={f('name')} placeholder="e.g. Naija Pro League S2" required /></Field>
+          <Field label="Tournament Name" required>
+            <Input value={form.name} onChange={f('name')} placeholder="e.g. Naija Pro League S2" required />
+          </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Game"><Input value={form.game} onChange={f('game')} /></Field>
             <Field label="Region"><Input value={form.region} onChange={f('region')} /></Field>
@@ -127,7 +146,7 @@ export default function AdminTournamentsPage() {
           </div>
           <Field label="Image URL"><Input value={form.image_url} onChange={f('image_url')} placeholder="https://..." /></Field>
           {error && <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">{error}</p>}
-          <SubmitBtn loading={saving} label="Add Tournament" />
+          <SubmitBtn loading={saving} label={editing ? 'Update Tournament' : 'Add Tournament'} />
         </form>
       </AdminModal>
     </div>
