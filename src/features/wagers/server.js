@@ -49,7 +49,7 @@ export async function getWagerById(id) {
 export async function getWagerForPlacement(wagerId) {
   const { data, error } = await supabaseAdmin
     .from('wagers')
-    .select('id, status, closes_at, yes_odds, no_odds')
+    .select('id, status, closes_at, yes_odds, no_odds, type, options')
     .eq('id', wagerId)
     .single();
   if (error) throw error;
@@ -72,7 +72,7 @@ export async function getUserWagers(userId) {
   const wagerIds = [...new Set(bets.map((bet) => bet.wager_id).filter(Boolean))];
   const { data: wagers, error: wagersError } = await supabaseAdmin
     .from('wagers')
-    .select('id, question, title, subtitle, description, closes_at, yes_odds, no_odds, status')
+    .select('id, question, title, subtitle, description, closes_at, yes_odds, no_odds, type, options, status')
     .in('id', wagerIds);
   if (wagersError) throw wagersError;
 
@@ -80,7 +80,16 @@ export async function getUserWagers(userId) {
 
   return bets.map((bet) => {
     const wager = wagersById.get(String(bet.wager_id));
-    const odds = bet.selection === 'YES' ? Number(wager?.yes_odds ?? 0) : Number(wager?.no_odds ?? 0);
+    let odds = 0;
+    if (wager) {
+      if (wager.type === 'player_pick') {
+        const opts = Array.isArray(wager.options) ? wager.options : [];
+        const opt = opts.find((o) => o.label === bet.selection);
+        odds = Number(opt?.odds ?? 0);
+      } else {
+        odds = bet.selection === 'YES' ? Number(wager.yes_odds ?? 0) : Number(wager.no_odds ?? 0);
+      }
+    }
 
     return {
       ...bet,
@@ -125,18 +134,27 @@ export async function toggleWagerHot(id) {
 }
 
 export async function settleWager(id, outcome) {
-  // Note: status values must match the CHECK constraint in schema.sql (em-dash)
-  const status = outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
-
-  const { error: updateWagerError } = await supabaseAdmin.from('wagers').update({ status }).eq('id', id);
-  if (updateWagerError) throw updateWagerError;
-
+  // Fetch the wager first to determine type and options
   const { data: wager, error: wagerError } = await supabaseAdmin
     .from('wagers')
-    .select('yes_odds, no_odds')
+    .select('yes_odds, no_odds, type, options')
     .eq('id', id)
     .single();
   if (wagerError) throw wagerError;
+
+  const wagerType = wager.type ?? 'binary';
+
+  // Determine settled status
+  let status;
+  if (wagerType === 'player_pick') {
+    status = 'Settled';
+  } else {
+    // Note: em-dash must match the CHECK constraint in schema.sql
+    status = outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
+  }
+
+  const { error: updateWagerError } = await supabaseAdmin.from('wagers').update({ status }).eq('id', id);
+  if (updateWagerError) throw updateWagerError;
 
   const { data: bets, error: betsError } = await supabaseAdmin
     .from('wager_bets')
@@ -164,7 +182,16 @@ export async function settleWager(id, outcome) {
       continue;
     }
 
-    const odds   = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
+    // Determine odds: player_pick uses per-option odds, binary uses yes/no odds
+    let odds;
+    if (wagerType === 'player_pick') {
+      const opts = Array.isArray(wager.options) ? wager.options : [];
+      const winningOption = opts.find((o) => o.label === outcome);
+      odds = winningOption?.odds ?? 1;
+    } else {
+      odds = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
+    }
+
     const payout = Math.min(Number(bet.amount) * Number(odds), maxPayoutNgn);
 
     const { data: wallet } = await supabaseAdmin
@@ -187,6 +214,14 @@ export async function settleWager(id, outcome) {
     if (bet.user_id) {
       await supabaseAdmin
         .from('wallet_transactions')
+        .insert([{
+          user_id:     bet.user_id,
+          wager_id:    bet.wager_id,
+          bet_id:      bet.id,
+          type:        'Payout',
+          amount:      payout,
+          description: `Payout for wager ${bet.wager_id}`,
+        }]);
     }
 
     winners += 1;
@@ -266,6 +301,14 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
   if (user_id) {
     await supabaseAdmin
       .from('wallet_transactions')
+      .insert([{
+        user_id,
+        wager_id,
+        bet_id:      data.id,
+        type:        'Stake',
+        amount:      Number(amount) * -1,
+        description: `Stake placed on wager ${wager_id}`,
+      }]);
   }
 
   return data;

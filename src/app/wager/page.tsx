@@ -215,6 +215,8 @@ function ProbBar({ yes, no }: { yes: number; no: number }) {
   );
 }
 
+type PlayerOption = { label: string; odds: number };
+
 function WagerCard({
   market,
   email,
@@ -224,11 +226,16 @@ function WagerCard({
   email?: string | null;
   onPlaced?: () => void;
 }) {
-  const [picked, setPicked] = useState<"YES" | "NO" | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
   const [amount, setAmount] = useState("500");
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const { placeWager, loading } = usePlaceWager();
+
+  const isPlayerPick = market.type === "player_pick";
+  const playerOptions: PlayerOption[] = isPlayerPick
+    ? ((Array.isArray(market.options) ? market.options : []) as PlayerOption[])
+    : [];
 
   const { yes, no } = getImpliedSplit(market.yes_odds, market.no_odds);
   const yesOdds = Number(market.yes_odds ?? 0);
@@ -236,32 +243,23 @@ function WagerCard({
   const numericAmount = Number(amount || 0);
   const activeEmail = email ?? null;
   const canSubmit = Boolean(activeEmail && picked && numericAmount >= 100 && !loading);
-  const potentialReturn =
-    picked === "YES"
+
+  const pickedOption = isPlayerPick ? playerOptions.find((o) => o.label === picked) : null;
+  const potentialReturn = isPlayerPick
+    ? pickedOption ? numericAmount * pickedOption.odds : 0
+    : picked === "YES"
       ? numericAmount * yesOdds
       : picked === "NO"
         ? numericAmount * noOdds
         : 0;
+
   const tag = getMarketTag(market);
 
   async function handlePlaceWager() {
-    if (!activeEmail) {
-      setMessage("Sign in first to place a wager.");
-      return;
-    }
-
-    if (!picked) {
-      setMessage("Choose YES or NO before placing a wager.");
-      return;
-    }
-
-    if (numericAmount < 100) {
-      setMessage("Minimum wager amount is NGN 100.");
-      return;
-    }
-
+    if (!activeEmail) { setMessage("Sign in first to place a wager."); return; }
+    if (!picked) { setMessage(isPlayerPick ? "Pick a player before placing a wager." : "Choose YES or NO before placing a wager."); return; }
+    if (numericAmount < 100) { setMessage("Minimum wager amount is NGN 100."); return; }
     setMessage(null);
-
     try {
       const result = await placeWager({
         wager_id: market.id,
@@ -269,7 +267,6 @@ function WagerCard({
         amount: numericAmount,
         email: activeEmail,
       });
-
       onPlaced?.();
       window.location.href = result.authorization_url;
     } catch (error) {
@@ -281,18 +278,20 @@ function WagerCard({
     <div className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/30">
       <div className="px-4 pb-3 pt-4">
         <div className="mb-3 flex items-center justify-between">
-          <span
-            className={`rounded-sm border px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest ${tag.className}`}
-          >
-            {tag.label}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`rounded-sm border px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest ${tag.className}`}>
+              {tag.label}
+            </span>
+            {isPlayerPick && (
+              <span className="rounded-sm border border-fn-yellow/30 bg-fn-yellow/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-fn-yellow">
+                Player Pick
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} pool</span>
             <button onClick={() => setSaved((current) => !current)} className="transition-colors">
-              <Bookmark
-                size={13}
-                className={saved ? "fill-fn-green text-fn-green" : "text-fn-muted hover:text-fn-text"}
-              />
+              <Bookmark size={13} className={saved ? "fill-fn-green text-fn-green" : "text-fn-muted hover:text-fn-text"} />
             </button>
           </div>
         </div>
@@ -303,58 +302,89 @@ function WagerCard({
         <p className="fn-label">{getMarketSubtitle(market)}</p>
       </div>
 
-      <div className="space-y-4 px-4 pb-3">
-        <div>
-          <ProbBar yes={yes} no={no} />
-          <div className="mb-3 flex justify-between fn-label">
-            <span className="text-fn-green">YES {yes}%</span>
-            <span className="text-fn-red">NO {no}%</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setPicked((current) => (current === "YES" ? null : "YES"))}
-              className={`rounded-sm px-3 py-3 text-center transition-all ${
-                picked === "YES" ? "pred-yes active" : "pred-yes"
-              }`}
-            >
-              <div className="mb-0.5 text-[10px] font-bold">BUY YES</div>
-              <div className="font-display text-xl font-black">{yesOdds.toFixed(2)}x</div>
-              <div className="mt-0.5 text-[8px] opacity-80">
-                {formatCurrency(numericAmount || 1000)} {"->"}{" "}
-                {formatCurrency((numericAmount || 1000) * yesOdds)}
-              </div>
-            </button>
-            <button
-              onClick={() => setPicked((current) => (current === "NO" ? null : "NO"))}
-              className={`rounded-sm px-3 py-3 text-center transition-all ${
-                picked === "NO" ? "pred-no active" : "pred-no"
-              }`}
-            >
-              <div className="mb-0.5 text-[10px] font-bold">BUY NO</div>
-              <div className="font-display text-xl font-black">{noOdds.toFixed(2)}x</div>
-              <div className="mt-0.5 text-[8px] opacity-80">
-                {formatCurrency(numericAmount || 1000)} {"->"}{" "}
-                {formatCurrency((numericAmount || 1000) * noOdds)}
-              </div>
-            </button>
-          </div>
-
-          {picked && (
-            <div
-              className={`mt-2 flex items-center justify-between rounded-sm border px-2 py-1.5 text-[9px] ${
-                picked === "YES"
-                  ? "border-fn-gborder/50 bg-fn-green/5 text-fn-muted"
-                  : "border-fn-gborder/50 bg-fn-red/5 text-fn-muted"
-              }`}
-            >
-              <span>{formatCurrency(numericAmount)} stake</span>
-              <span className={picked === "YES" ? "font-bold text-fn-green" : "font-bold text-fn-red"}>
-                Potential return {formatCurrency(potentialReturn)}
-              </span>
+      <div className="space-y-3 px-4 pb-3">
+        {isPlayerPick ? (
+          /* ── Player Pick UI ── */
+          <div>
+            <p className="fn-label mb-2">Pick a player to back</p>
+            <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
+              {playerOptions.map((opt) => {
+                const isSelected = picked === opt.label;
+                return (
+                  <button
+                    key={opt.label}
+                    onClick={() => setPicked((cur) => (cur === opt.label ? null : opt.label))}
+                    className={`rounded-sm border px-3 py-3 text-left transition-all ${
+                      isSelected
+                        ? "border-fn-green bg-fn-green/10"
+                        : "border-fn-gborder hover:border-fn-green/40 bg-fn-dark/60"
+                    }`}
+                  >
+                    <div className={`text-[10px] font-bold truncate ${isSelected ? "text-fn-green" : "text-fn-text"}`}>
+                      {opt.label}
+                    </div>
+                    <div className="font-display text-lg font-black text-fn-green mt-0.5">
+                      {Number(opt.odds).toFixed(2)}×
+                    </div>
+                    <div className="mt-0.5 text-[8px] text-fn-muted">
+                      {formatCurrency(numericAmount || 1000)} → {formatCurrency((numericAmount || 1000) * opt.odds)}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </div>
+
+            {picked && (
+              <div className="mt-2 flex items-center justify-between rounded-sm border border-fn-gborder/50 bg-fn-green/5 px-2 py-1.5 text-[9px]">
+                <span className="text-fn-muted">{formatCurrency(numericAmount)} stake on <strong className="text-fn-text">{picked}</strong></span>
+                <span className="font-bold text-fn-green">→ {formatCurrency(potentialReturn)}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── Binary YES / NO UI ── */
+          <div>
+            <ProbBar yes={yes} no={no} />
+            <div className="mb-3 flex justify-between fn-label">
+              <span className="text-fn-green">YES {yes}%</span>
+              <span className="text-fn-red">NO {no}%</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setPicked((current) => (current === "YES" ? null : "YES"))}
+                className={`rounded-sm px-3 py-3 text-center transition-all ${picked === "YES" ? "pred-yes active" : "pred-yes"}`}
+              >
+                <div className="mb-0.5 text-[10px] font-bold">BUY YES</div>
+                <div className="font-display text-xl font-black">{yesOdds.toFixed(2)}x</div>
+                <div className="mt-0.5 text-[8px] opacity-80">
+                  {formatCurrency(numericAmount || 1000)} {"->"} {formatCurrency((numericAmount || 1000) * yesOdds)}
+                </div>
+              </button>
+              <button
+                onClick={() => setPicked((current) => (current === "NO" ? null : "NO"))}
+                className={`rounded-sm px-3 py-3 text-center transition-all ${picked === "NO" ? "pred-no active" : "pred-no"}`}
+              >
+                <div className="mb-0.5 text-[10px] font-bold">BUY NO</div>
+                <div className="font-display text-xl font-black">{noOdds.toFixed(2)}x</div>
+                <div className="mt-0.5 text-[8px] opacity-80">
+                  {formatCurrency(numericAmount || 1000)} {"->"} {formatCurrency((numericAmount || 1000) * noOdds)}
+                </div>
+              </button>
+            </div>
+
+            {picked && (
+              <div className={`mt-2 flex items-center justify-between rounded-sm border px-2 py-1.5 text-[9px] ${
+                picked === "YES" ? "border-fn-gborder/50 bg-fn-green/5 text-fn-muted" : "border-fn-gborder/50 bg-fn-red/5 text-fn-muted"
+              }`}>
+                <span>{formatCurrency(numericAmount)} stake</span>
+                <span className={picked === "YES" ? "font-bold text-fn-green" : "font-bold text-fn-red"}>
+                  Potential return {formatCurrency(potentialReturn)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="px-4 pb-4">

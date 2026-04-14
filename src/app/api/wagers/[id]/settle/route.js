@@ -8,10 +8,10 @@ export async function PATCH(request, { params }) {
 
   try {
     const { outcome } = await request.json();
-    if (!outcome || !['YES', 'NO'].includes(outcome)) {
-      return NextResponse.json({ error: 'outcome must be YES or NO' }, { status: 400 });
+    if (!outcome || typeof outcome !== 'string' || !outcome.trim()) {
+      return NextResponse.json({ error: 'outcome is required' }, { status: 400 });
     }
-    const result = await settleWager(params.id, outcome);
+    const result = await settleWager(params.id, outcome.trim());
     return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
