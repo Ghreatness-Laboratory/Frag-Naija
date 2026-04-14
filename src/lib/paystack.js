@@ -18,7 +18,7 @@ const PAYSTACK_BASE   = 'https://api.paystack.co';
       metadata,
       reference,
       callback_url: callback_url ?? `${process.env.NEXT_PUBLIC_SITE_URL}/wager?status=success`,
-    }),
+    })
   });
   return res.json();
 }
