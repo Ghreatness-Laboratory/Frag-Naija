@@ -56,6 +56,47 @@ export async function getWagerForPlacement(wagerId) {
   return data;
 }
 
+export async function getUserWagers(userId) {
+  const { data: bets, error: betsError } = await supabaseAdmin
+    .from('wager_bets')
+    .select('id, wager_id, selection, amount, potential, status, created_at, reference')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (betsError) throw betsError;
+
+  if (!bets?.length) {
+    return [];
+  }
+
+  const wagerIds = [...new Set(bets.map((bet) => bet.wager_id).filter(Boolean))];
+  const { data: wagers, error: wagersError } = await supabaseAdmin
+    .from('wagers')
+    .select('id, question, title, subtitle, description, closes_at, yes_odds, no_odds, status')
+    .in('id', wagerIds);
+  if (wagersError) throw wagersError;
+
+  const wagersById = new Map((wagers || []).map((wager) => [String(wager.id), wager]));
+
+  return bets.map((bet) => {
+    const wager = wagersById.get(String(bet.wager_id));
+    const odds = bet.selection === 'YES' ? Number(wager?.yes_odds ?? 0) : Number(wager?.no_odds ?? 0);
+
+    return {
+      ...bet,
+      wager_status: wager?.status ?? null,
+      odds,
+      wager: wager
+        ? {
+            id: wager.id,
+            question: wager.question || wager.title || 'Untitled wager market',
+            subtitle: wager.subtitle || wager.description || null,
+            closes_at: wager.closes_at,
+          }
+        : null,
+    };
+  });
+}
+
 export async function createWager(body) {
   const { data, error } = await supabaseAdmin.from('wagers').insert([body]).select().single();
   if (error) throw error;

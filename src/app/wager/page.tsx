@@ -13,8 +13,8 @@ import {
   Zap,
 } from "lucide-react";
 
-import { elitePredictors, activePredictions } from "@/lib/data";
-import { useActiveWagers, useMe, usePlaceWager } from "@/lib/hooks";
+import { elitePredictors } from "@/lib/data";
+import { useActiveWagers, useMe, useMyWagers, usePlaceWager } from "@/lib/hooks";
 
 type CurrentUser = {
   email?: string | null;
@@ -25,6 +25,21 @@ type CurrentUser = {
 
 type CurrentMarket = Record<string, unknown> & {
   id: string | number;
+};
+
+type CurrentUserWager = {
+  id: string | number;
+  selection?: "YES" | "NO" | string | null;
+  amount?: number | string | null;
+  potential?: number | string | null;
+  status?: string | null;
+  created_at?: string | null;
+  odds?: number | string | null;
+  wager?: {
+    question?: string | null;
+    subtitle?: string | null;
+    closes_at?: string | null;
+  } | null;
 };
 
 function formatCurrency(amount: number) {
@@ -69,6 +84,24 @@ function formatCountdown(value?: string | null) {
   }
 
   return `${hours}h ${minutes}m left`;
+}
+
+function formatShortDate(value?: string | null) {
+  if (!value) {
+    return "Time TBD";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-NG", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function getPoolAmount(market: Record<string, unknown>) {
@@ -369,8 +402,15 @@ function WagerPageContent() {
   const status = searchParams.get("status");
   const { data: wagers, loading: wagersLoading, error: wagersError, refetch } = useActiveWagers();
   const { data: me, loading: meLoading } = useMe();
+  const {
+    data: myWagers,
+    loading: myWagersLoading,
+    error: myWagersError,
+    refetch: refetchMyWagers,
+  } = useMyWagers();
   const currentUser = me as CurrentUser;
   const liveWagers = (Array.isArray(wagers) ? wagers : []) as CurrentMarket[];
+  const currentUserWagers = (Array.isArray(myWagers) ? myWagers : []) as CurrentUserWager[];
 
   const allMarkets = liveWagers;
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
@@ -443,7 +483,10 @@ function WagerPageContent() {
                 key={String(market.id)}
                 market={market}
                 email={currentUser?.email}
-                onPlaced={refetch}
+                onPlaced={() => {
+                  refetch();
+                  refetchMyWagers();
+                }}
               />
             ))}
 
@@ -516,46 +559,81 @@ function WagerPageContent() {
             <div className="rounded-sm border border-fn-gborder bg-fn-card p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="fn-label">MY ACTIVE PREDICTIONS</span>
-                <span className="text-[9px] font-bold text-fn-green">{activePredictions.length} ACTIVE</span>
+                <span className="text-[9px] font-bold text-fn-green">{currentUserWagers.length} ACTIVE</span>
               </div>
-              <div className="space-y-2">
-                {activePredictions.map((prediction, index) => (
-                  <div key={index} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
-                    <div className="mb-1 flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-bold leading-tight text-fn-text">{prediction.event}</div>
-                        <div className="fn-label">{prediction.subtitle}</div>
-                      </div>
-                      <span
-                        className="flex-shrink-0 px-1.5 py-0.5 text-[7px] font-bold tracking-widest"
-                        style={{
-                          background: `${prediction.statusColor}20`,
-                          color: prediction.statusColor,
-                          border: `1px solid ${prediction.statusColor}40`,
-                        }}
-                      >
-                        {prediction.status}
-                      </span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-3 gap-1">
-                      {[
-                        { value: prediction.type, label: "TYPE" },
-                        { value: prediction.odds, label: "ODDS" },
-                        { value: prediction.stake, label: "STAKE" },
-                      ].map(({ value, label }) => (
-                        <div key={label} className="text-center">
-                          <div className="truncate text-[9px] font-bold text-fn-green">{value}</div>
-                          <div className="fn-label text-[7px]">{label}</div>
+              {myWagersLoading ? (
+                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
+                  Loading your wager history...
+                </div>
+              ) : !currentUser?.email ? (
+                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
+                  Sign in to view your active predictions and settled wager history.
+                </div>
+              ) : myWagersError ? (
+                <div className="rounded-sm border border-fn-red/30 bg-fn-red/10 p-3 text-[10px] text-fn-text">
+                  Unable to load your wagers right now: {myWagersError}
+                </div>
+              ) : !currentUserWagers.length ? (
+                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
+                  You have not placed any wagers yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {currentUserWagers.slice(0, 5).map((prediction) => {
+                    const selection = String(prediction.selection ?? "N/A");
+                    const statusLabel = String(prediction.status ?? "Pending");
+                    const statusTone =
+                      statusLabel === "Won"
+                        ? { bg: "#00ff4120", color: "#00ff41", border: "#00ff4140" }
+                        : statusLabel === "Lost"
+                          ? { bg: "#ff4d4f20", color: "#ff4d4f", border: "#ff4d4f40" }
+                          : { bg: "#f0c04020", color: "#f0c040", border: "#f0c04040" };
+
+                    return (
+                      <div key={String(prediction.id)} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                        <div className="mb-1 flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-bold leading-tight text-fn-text">
+                              {prediction.wager?.question || "Untitled wager market"}
+                            </div>
+                            <div className="fn-label">
+                              {prediction.wager?.subtitle || `Closes ${formatShortDate(prediction.wager?.closes_at)}`}
+                            </div>
+                          </div>
+                          <span
+                            className="flex-shrink-0 px-1.5 py-0.5 text-[7px] font-bold tracking-widest"
+                            style={{
+                              background: statusTone.bg,
+                              color: statusTone.color,
+                              border: `1px solid ${statusTone.border}`,
+                            }}
+                          >
+                            {statusLabel}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                    <div className="mt-2 flex justify-between border-t border-fn-gborder/50 pt-2">
-                      <span className="fn-label">EST. RETURN</span>
-                      <span className="text-[10px] font-bold text-fn-green">{prediction.estReturn}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <div className="mt-2 grid grid-cols-3 gap-1">
+                          {[
+                            { value: selection, label: "PICK" },
+                            { value: `${Number(prediction.odds ?? 0).toFixed(2)}x`, label: "ODDS" },
+                            { value: formatCurrency(Number(prediction.amount ?? 0)), label: "STAKE" },
+                          ].map(({ value, label }) => (
+                            <div key={label} className="text-center">
+                              <div className="truncate text-[9px] font-bold text-fn-green">{value}</div>
+                              <div className="fn-label text-[7px]">{label}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-2 flex justify-between border-t border-fn-gborder/50 pt-2">
+                          <span className="fn-label">POTENTIAL</span>
+                          <span className="text-[10px] font-bold text-fn-green">
+                            {formatCurrency(Number(prediction.potential ?? 0))}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
