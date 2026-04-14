@@ -13,6 +13,14 @@ export async function POST(request) {
       );
     }
 
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return NextResponse.json({ error: 'PAYSTACK_SECRET_KEY is not configured' }, { status: 500 });
+    }
+
+    if (!process.env.NEXT_PUBLIC_SITE_URL) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_SITE_URL is not configured' }, { status: 500 });
+    }
+
     if (!['YES', 'NO'].includes(selection)) {
       return NextResponse.json({ error: 'selection must be YES or NO' }, { status: 400 });
     }
@@ -57,7 +65,10 @@ export async function POST(request) {
     });
 
     if (!result.status) {
-      return NextResponse.json({ error: result.message || 'Payment initialization failed' }, { status: 502 });
+      return NextResponse.json(
+        { error: `Paystack: ${result.message || 'Payment initialization failed'}` },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json({
