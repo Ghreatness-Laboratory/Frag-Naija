@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 const navLinks = [
@@ -28,9 +28,34 @@ function ThemeToggle({ className = "" }: { className?: string }) {
   );
 }
 
+type MeUser = { username?: string; email: string } | null;
+
+function useMe() {
+  const [user, setUser] = useState<MeUser>(undefined as unknown as MeUser);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setUser(data))
+      .catch(() => setUser(null));
+  }, []);
+
+  return user;
+}
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const path = usePathname();
+  const path   = usePathname();
+  const router = useRouter();
+  const user   = useMe();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.refresh();
+    router.push("/");
+  }
+
+  const displayName = user?.username || user?.email?.split("@")[0];
 
   return (
     <>
@@ -71,8 +96,38 @@ export default function Navbar() {
             ⚡ WAGER
           </Link>
           <ThemeToggle />
-          <button className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors">Login</button>
-          <button className="fn-btn text-[10px] px-3 py-1.5">Sign Up</button>
+
+          {/* Auth area — show nothing while loading (user === undefined) */}
+          {user === null && (
+            <>
+              <Link
+                href="/login"
+                className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors"
+              >
+                Login
+              </Link>
+              <Link href="/register" className="fn-btn text-[10px] px-3 py-1.5">
+                Sign Up
+              </Link>
+            </>
+          )}
+          {user && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-fn-card border border-fn-gborder rounded-sm">
+                <User size={11} className="text-fn-green" />
+                <span className="text-[10px] text-fn-text font-bold uppercase tracking-wider truncate max-w-[100px]">
+                  {displayName}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                className="w-8 h-8 flex items-center justify-center border border-fn-gborder text-fn-muted hover:text-fn-red hover:border-fn-red/50 rounded-sm transition-all"
+              >
+                <LogOut size={13} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Mobile: actions */}
@@ -108,8 +163,10 @@ export default function Navbar() {
               <div className="fn-label mb-1">Navigation</div>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-2">
-                  <User size={13} className="text-fn-muted" />
-                  <span className="text-[10px] text-fn-muted">Not logged in</span>
+                  <User size={13} className={user ? "text-fn-green" : "text-fn-muted"} />
+                  <span className="text-[10px] text-fn-muted">
+                    {user ? displayName : "Not logged in"}
+                  </span>
                 </div>
                 <ThemeToggle />
               </div>
@@ -132,8 +189,31 @@ export default function Navbar() {
               ))}
             </nav>
             <div className="p-4 border-t border-fn-gborder flex gap-2">
-              <button className="flex-1 fn-btn-outline text-[10px] py-2">Login</button>
-              <button className="flex-1 fn-btn text-[10px] py-2">Sign Up</button>
+              {user ? (
+                <button
+                  onClick={() => { setOpen(false); handleLogout(); }}
+                  className="flex-1 fn-btn-outline text-[10px] py-2 flex items-center justify-center gap-1.5"
+                >
+                  <LogOut size={12} /> Logout
+                </button>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="flex-1 fn-btn-outline text-[10px] py-2 text-center"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className="flex-1 fn-btn text-[10px] py-2 text-center"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
