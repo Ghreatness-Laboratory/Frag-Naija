@@ -1,8 +1,6 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Wallet, ArrowDownCircle, Clock, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
@@ -60,7 +58,7 @@ function statusBadge(status: string) {
   );
 }
 
-export default function WalletPage() {
+function WalletContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
@@ -74,8 +72,8 @@ export default function WalletPage() {
   const [payErr,    setPayErr]    = useState('');
   const [showSuccess, setShowSuccess] = useState(searchParams.get('status') === 'success');
 
-  const fee        = amount ? Math.round(Number(amount) * FEE_PERCENT) / 100 : 0;
-  const credited   = amount ? Number(amount) - fee : 0;
+  const fee      = amount ? Math.round(Number(amount) * FEE_PERCENT) / 100 : 0;
+  const credited = amount ? Number(amount) - fee : 0;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,7 +89,6 @@ export default function WalletPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Remove ?status=success from URL after showing banner
   useEffect(() => {
     if (showSuccess) {
       const t = setTimeout(() => {
@@ -137,7 +134,6 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-fn-black p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-      {/* Success banner */}
       {showSuccess && (
         <div className="mb-6 flex items-center gap-3 bg-fn-green/10 border border-fn-green/30 rounded-lg p-4">
           <CheckCircle className="w-5 h-5 text-fn-green shrink-0" />
@@ -148,7 +144,6 @@ export default function WalletPage() {
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Wallet className="w-6 h-6 text-fn-green" />
@@ -158,9 +153,7 @@ export default function WalletPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Balance + stats */}
         <div className="lg:col-span-1 space-y-4">
-          {/* Balance card */}
           <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
             <p className="text-fn-muted text-xs uppercase tracking-widest mb-1">Available Balance</p>
             {loading ? (
@@ -170,7 +163,6 @@ export default function WalletPage() {
             )}
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-fn-card border border-fn-gborder rounded-lg p-4">
               <p className="text-fn-muted text-[10px] uppercase tracking-widest mb-1">Total Won</p>
@@ -182,7 +174,6 @@ export default function WalletPage() {
             </div>
           </div>
 
-          {/* Notices */}
           <div className="bg-fn-dark border border-fn-gborder rounded-lg p-4 space-y-2">
             <p className="text-fn-muted text-[11px] leading-relaxed">
               <span className="text-fn-yellow font-bold">Fee notice:</span> A 10% platform fee applies to all deposits. Minimum deposit is ₦500.
@@ -193,7 +184,6 @@ export default function WalletPage() {
           </div>
         </div>
 
-        {/* Deposit form */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
             <div className="flex items-center gap-2 mb-5">
@@ -202,7 +192,6 @@ export default function WalletPage() {
             </div>
 
             <form onSubmit={handleDeposit} className="space-y-4">
-              {/* Amount input */}
               <div>
                 <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Amount (NGN)</label>
                 <div className="relative">
@@ -217,7 +206,6 @@ export default function WalletPage() {
                     placeholder="1,000"
                   />
                 </div>
-                {/* Quick amounts */}
                 <div className="flex gap-2 mt-2">
                   {[500, 1000, 5000, 10000].map((v) => (
                     <button
@@ -232,7 +220,6 @@ export default function WalletPage() {
                 </div>
               </div>
 
-              {/* Fee breakdown */}
               {amount && Number(amount) > 0 && (
                 <div className="bg-fn-dark border border-fn-gborder rounded p-4 space-y-2 text-sm font-mono">
                   <div className="flex justify-between text-fn-muted">
@@ -264,7 +251,6 @@ export default function WalletPage() {
             </form>
           </div>
 
-          {/* Transaction history */}
           <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
             <div className="flex items-center gap-2 mb-5">
               <Clock className="w-5 h-5 text-fn-muted" />
@@ -309,5 +295,17 @@ export default function WalletPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function WalletPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-fn-black flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-fn-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <WalletContent />
+    </Suspense>
   );
 }
