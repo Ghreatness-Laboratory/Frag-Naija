@@ -3,11 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 import { createWallet } from '@/features/wagers/server';
 
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code');
+  const requestUrl = new URL(request.url);
+  const code  = requestUrl.searchParams.get('code');
+  const error = requestUrl.searchParams.get('error');
 
-  if (!code) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/login?error=missing_code`);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
+
+  if (error || !code) {
+    return NextResponse.redirect(`${siteUrl}/login?error=${error || 'missing_code'}`);
   }
 
   const supabase = createClient(
@@ -15,19 +18,20 @@ export async function GET(request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error || !data?.session) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/login?error=oauth_failed`);
+  if (exchangeError || !data?.session) {
+    console.error('OAuth exchange error:', exchangeError?.message);
+    return NextResponse.redirect(`${siteUrl}/login?error=oauth_failed`);
   }
 
   // Ensure wallet exists for new OAuth users
   try { await createWallet(data.session.user.id); } catch {}
 
-  const response = NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/`);
+  const response = NextResponse.redirect(`${siteUrl}/`);
   response.cookies.set('sb-access-token', data.session.access_token, {
     httpOnly: true,
-    secure:   process.env.NODE_ENV === 'production',
+    secure:   true,
     sameSite: 'lax',
     maxAge:   60 * 60 * 24 * 7,
     path:     '/',
