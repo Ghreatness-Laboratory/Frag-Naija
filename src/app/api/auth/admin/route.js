@@ -8,6 +8,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'password is required' }, { status: 400 });
     }
 
+    if (!process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: 'ADMIN_PASSWORD environment variable is not set on the server' }, { status: 500 });
+    }
+
     if (password !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
