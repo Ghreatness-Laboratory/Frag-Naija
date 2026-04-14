@@ -143,6 +143,24 @@ ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wallets_own_read"   ON wallets FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "wallets_admin_all"  ON wallets FOR ALL   USING (false);
 
+-- ─── WALLET TRANSACTIONS ─────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  wager_id    UUID REFERENCES wagers(id) ON DELETE SET NULL,
+  bet_id      UUID REFERENCES wager_bets(id) ON DELETE SET NULL,
+  type        TEXT NOT NULL CHECK (type IN ('Stake', 'Payout', 'Refund', 'Adjustment')),
+  amount      NUMERIC(12,2) NOT NULL, -- negative for stake, positive for payout/refund
+  currency    TEXT DEFAULT 'NGN',
+  description TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE wallet_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "wallet_tx_own_read"   ON wallet_transactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "wallet_tx_admin_all"  ON wallet_transactions FOR ALL   USING (false);
+
 -- ─── HIGHLIGHTS ───────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS highlights (

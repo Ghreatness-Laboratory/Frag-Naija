@@ -177,6 +177,21 @@ export async function settleWager(id, outcome) {
         .eq('user_id', bet.user_id);
     }
 
+    if (bet.user_id) {
+      await supabaseAdmin
+        .from('wallet_transactions')
+        .insert([
+          {
+            user_id: bet.user_id,
+            wager_id: bet.wager_id,
+            bet_id: bet.id,
+            type: 'Payout',
+            amount: payout,
+            description: `Payout for wager ${bet.wager_id}`,
+          },
+        ]);
+    }
+
     winners += 1;
   }
 
@@ -214,6 +229,21 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
 
   await supabaseAdmin.rpc('increment_wager_pool', { wager_id, amount });
 
+  if (user_id) {
+    await supabaseAdmin
+      .from('wallet_transactions')
+      .insert([
+        {
+          user_id,
+          wager_id,
+          bet_id: data.id,
+          type: 'Stake',
+          amount: Number(amount) * -1,
+          description: `Stake placed on wager ${wager_id}`,
+        },
+      ]);
+  }
+
   return data;
 }
 
@@ -239,4 +269,16 @@ export async function getUserIdByEmail(email) {
   const { data } = await supabaseAdmin.auth.admin.listUsers();
   const user = data?.users?.find((entry) => entry.email === email);
   return user?.id ?? null;
+}
+
+export async function getWalletTransactions(userId, { limit = 10 } = {}) {
+  const { data, error } = await supabaseAdmin
+    .from('wallet_transactions')
+    .select('id, type, amount, currency, description, wager_id, bet_id, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+
+  return data;
 }

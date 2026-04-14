@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 import { elitePredictors } from "@/lib/data";
-import { useActiveWagers, useMe, useMyWagers, usePlaceWager } from "@/lib/hooks";
+import { useActiveWagers, useMe, useMyWagers, usePlaceWager, useWalletTransactions } from "@/lib/hooks";
 
 type CurrentUser = {
   email?: string | null;
@@ -40,6 +40,15 @@ type CurrentUserWager = {
     subtitle?: string | null;
     closes_at?: string | null;
   } | null;
+};
+
+type WalletTransaction = {
+  id: string | number;
+  type?: string | null;
+  amount?: number | string | null;
+  currency?: string | null;
+  description?: string | null;
+  created_at?: string | null;
 };
 
 function formatCurrency(amount: number) {
@@ -102,6 +111,11 @@ function formatShortDate(value?: string | null) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function formatTransactionAmount(amount: number) {
+  const absAmount = Math.abs(amount);
+  return `${amount >= 0 ? "+" : "-"}${formatCurrency(absAmount)}`;
 }
 
 function getPoolAmount(market: Record<string, unknown>) {
@@ -408,9 +422,16 @@ function WagerPageContent() {
     error: myWagersError,
     refetch: refetchMyWagers,
   } = useMyWagers();
+  const {
+    data: walletTransactions,
+    loading: walletTxLoading,
+    error: walletTxError,
+    refetch: refetchWalletTx,
+  } = useWalletTransactions(8);
   const currentUser = me as CurrentUser;
   const liveWagers = (Array.isArray(wagers) ? wagers : []) as CurrentMarket[];
   const currentUserWagers = (Array.isArray(myWagers) ? myWagers : []) as CurrentUserWager[];
+  const walletTxList = (Array.isArray(walletTransactions) ? walletTransactions : []) as WalletTransaction[];
 
   const allMarkets = liveWagers;
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
@@ -486,6 +507,7 @@ function WagerPageContent() {
                 onPlaced={() => {
                   refetch();
                   refetchMyWagers();
+                  refetchWalletTx();
                 }}
               />
             ))}
@@ -627,6 +649,60 @@ function WagerPageContent() {
                           <span className="fn-label">POTENTIAL</span>
                           <span className="text-[10px] font-bold text-fn-green">
                             {formatCurrency(Number(prediction.potential ?? 0))}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-sm border border-fn-gborder bg-fn-card p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="fn-label">WALLET ACTIVITY</span>
+                <span className="text-[9px] font-bold text-fn-green">{walletTxList.length} ITEMS</span>
+              </div>
+              {walletTxLoading ? (
+                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
+                  Loading wallet history...
+                </div>
+              ) : !currentUser?.email ? (
+                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
+                  Sign in to see wallet transactions and payout history.
+                </div>
+              ) : walletTxError ? (
+                <div className="rounded-sm border border-fn-red/30 bg-fn-red/10 p-3 text-[10px] text-fn-text">
+                  Unable to load wallet history: {walletTxError}
+                </div>
+              ) : !walletTxList.length ? (
+                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
+                  No wallet activity yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {walletTxList.map((tx) => {
+                    const amount = Number(tx.amount ?? 0);
+                    const tone = amount >= 0 ? "text-fn-green" : "text-fn-red";
+                    return (
+                      <div key={String(tx.id)} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-bold text-fn-text">
+                              {tx.type || "Transaction"}
+                            </div>
+                            <div className="fn-label">
+                              {tx.description || "Wallet activity logged"}
+                            </div>
+                          </div>
+                          <div className={`text-[10px] font-bold ${tone}`}>
+                            {formatTransactionAmount(amount)}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex justify-between border-t border-fn-gborder/50 pt-2">
+                          <span className="fn-label">POSTED</span>
+                          <span className="text-[9px] font-bold text-fn-green">
+                            {formatShortDate(tx.created_at)}
                           </span>
                         </div>
                       </div>

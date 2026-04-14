@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/checkAdmin';
 
 export async function PUT(request, { params }) {
-  const authErr = checkAdmin();
+  const authErr = await checkAdmin();
   if (authErr) return authErr;
 
   try {

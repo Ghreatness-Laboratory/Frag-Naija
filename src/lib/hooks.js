@@ -92,6 +92,10 @@ export function useMyWagers() {
   return useFetch('/api/wagers/me');
 }
 
+export function useWalletTransactions(limit = 10) {
+  return useFetch(`/api/wallet/transactions?limit=${limit}`, [limit]);
+}
+
 // ─── Highlights ──────────────────────────────────────────────────────────────
 
 export function useHighlights(filters = {}) {
