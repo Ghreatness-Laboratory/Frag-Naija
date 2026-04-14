@@ -1,0 +1,159 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Upload } from 'lucide-react';
+import AdminTable from '@/components/admin/AdminTable';
+import AdminModal from '@/components/admin/AdminModal';
+import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
+
+const EMPTY = { name: '', ign: '', team: '', role: '', rating: '', kills: '', assists: '', damage: '', winrate: '', status: 'Active', bio: '', photo_url: '' };
+
+export default function AdminAthletesPage() {
+  const [rows, setRows]       = useState<Record<string,unknown>[]>([]);
+  const [teams, setTeams]     = useState<Record<string,unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen]       = useState(false);
+  const [editing, setEditing] = useState<Record<string,unknown> | null>(null);
+  const [form, setForm]       = useState({ ...EMPTY });
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [ar, tr] = await Promise.all([fetch('/api/athletes'), fetch('/api/teams')]);
+    setRows(await ar.json());
+    const teamData = await tr.json();
+    setTeams(Array.isArray(teamData) ? teamData : []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  function openAdd() { setEditing(null); setForm({ ...EMPTY }); setPhotoFile(null); setError(''); setOpen(true); }
+  function openEdit(row: Record<string,unknown>) {
+    setEditing(row);
+    setForm({ name: String(row.name??''), ign: String(row.ign??''), team: String(row.team??''), role: String(row.role??''), rating: String(row.rating??''), kills: String(row.kills??''), assists: String(row.assists??''), damage: String(row.damage??''), winrate: String(row.winrate??''), status: String(row.status??'Active'), bio: String(row.bio??''), photo_url: String(row.photo_url??'') });
+    setPhotoFile(null); setError(''); setOpen(true);
+  }
+
+  async function uploadPhoto(): Promise<string | null> {
+    if (!photoFile) return null;
+    const fd = new FormData();
+    fd.append('file', photoFile);
+    fd.append('bucket', 'athletes');
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data.url;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true); setError('');
+    try {
+      const photoUrl = await uploadPhoto();
+      const body = {
+        ...form,
+        rating:  Number(form.rating)  || 0,
+        kills:   Number(form.kills)   || 0,
+        assists: Number(form.assists) || 0,
+        damage:  Number(form.damage)  || 0,
+        winrate: Number(form.winrate) || 0,
+        ...(photoUrl && { photo_url: photoUrl }),
+      };
+      const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
+      const res = await fetch(url, { method: editing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setOpen(false); load();
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Save failed'); }
+    finally { setSaving(false); }
+  }
+
+  async function handleDelete(row: Record<string,unknown>) {
+    if (!confirm(`Delete ${row.name}?`)) return;
+    await fetch(`/api/athletes/${row.id}`, { method: 'DELETE' });
+    load();
+  }
+
+  const f = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm(p => ({ ...p, [k]: e.target.value }));
+
+  return (
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-fn-text uppercase tracking-widest">Athletes</h1>
+          <p className="text-fn-muted text-xs mt-0.5">{rows.length} player{rows.length !== 1 ? 's' : ''}</p>
+        </div>
+        <button onClick={openAdd} className="flex items-center gap-2 bg-fn-green text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest hover:bg-fn-gdim transition-colors">
+          <Plus className="w-4 h-4" /> Add Athlete
+        </button>
+      </div>
+
+      <AdminTable
+        loading={loading}
+        rows={rows}
+        onEdit={openEdit}
+        onDelete={handleDelete}
+        emptyText="No athletes yet — click Add Athlete"
+        columns={[
+          { key: 'photo_url', label: 'Photo', render: r => r.photo_url ? <img src={String(r.photo_url)} alt="" className="w-8 h-8 rounded-full object-cover" /> : <div className="w-8 h-8 rounded-full bg-fn-card2 border border-fn-gborder" /> },
+          { key: 'name',    label: 'Name' },
+          { key: 'ign',     label: 'IGN' },
+          { key: 'team',    label: 'Team' },
+          { key: 'role',    label: 'Role' },
+          { key: 'rating',  label: 'Rating' },
+          { key: 'status',  label: 'Status', render: r => <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === 'Active' ? 'bg-fn-green/10 text-fn-green' : 'bg-fn-muted/10 text-fn-muted'}`}>{String(r.status)}</span> },
+        ]}
+      />
+
+      <AdminModal title={editing ? 'Edit Athlete' : 'Add Athlete'} open={open} onClose={() => setOpen(false)}>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Name" required><Input value={form.name} onChange={f('name')} placeholder="Firstname Lastname" required /></Field>
+            <Field label="IGN" required><Input value={form.ign} onChange={f('ign')} placeholder="In-game name" required /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Team">
+              <Select value={form.team} onChange={f('team')}>
+                <option value="">Free Agent</option>
+                {teams.map(t => <option key={String(t.id)} value={String(t.name)}>{String(t.name)}</option>)}
+              </Select>
+            </Field>
+            <Field label="Role"><Input value={form.role} onChange={f('role')} placeholder="IGL / Fragger / Support" /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Status">
+              <Select value={form.status} onChange={f('status')}>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Free Agent">Free Agent</option>
+              </Select>
+            </Field>
+            <Field label="Rating (0–10)"><Input type="number" step="0.1" min="0" max="10" value={form.rating} onChange={f('rating')} placeholder="8.5" /></Field>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Kills"><Input type="number" value={form.kills} onChange={f('kills')} placeholder="0" /></Field>
+            <Field label="Assists"><Input type="number" value={form.assists} onChange={f('assists')} placeholder="0" /></Field>
+            <Field label="Damage"><Input type="number" value={form.damage} onChange={f('damage')} placeholder="0" /></Field>
+          </div>
+          <Field label="Win Rate %"><Input type="number" step="0.01" value={form.winrate} onChange={f('winrate')} placeholder="62.5" /></Field>
+          <Field label="Bio"><Textarea value={form.bio} onChange={f('bio')} placeholder="Player description..." /></Field>
+          <Field label="Photo">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer border border-dashed border-fn-gborder rounded px-3 py-2 hover:border-fn-green/40 transition-colors">
+                <Upload className="w-4 h-4 text-fn-muted" />
+                <span className="text-fn-muted text-xs">{photoFile ? photoFile.name : 'Upload image'}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+              </label>
+              <Input value={form.photo_url} onChange={f('photo_url')} placeholder="Or paste image URL" />
+            </div>
+          </Field>
+          {error && <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">{error}</p>}
+          <SubmitBtn loading={saving} label={editing ? 'Update Athlete' : 'Add Athlete'} />
+        </form>
+      </AdminModal>
+    </div>
+  );
+}
