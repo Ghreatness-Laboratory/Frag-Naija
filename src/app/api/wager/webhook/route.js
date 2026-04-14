@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '@/lib/paystack';
-import { createWagerBet } from '@/lib/db';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createWagerBet, getUserIdByEmail } from '@/features/wagers/server';
 
 export async function POST(request) {
   try {
@@ -22,10 +21,7 @@ export async function POST(request) {
     const { wager_id, selection, potential } = metadata;
     const email = customer.email;
 
-    // Resolve user_id from email
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-    const user = users?.users?.find((u) => u.email === email);
-    const user_id = user?.id ?? null;
+    const user_id = await getUserIdByEmail(email);
 
     const amountNGN = amount / 100; // kobo → naira
 

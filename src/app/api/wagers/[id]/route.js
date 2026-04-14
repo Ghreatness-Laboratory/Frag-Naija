@@ -28,7 +28,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const authErr = checkAdmin();
+  const authErr = await checkAdmin();
   if (authErr) return authErr;
 
   try {

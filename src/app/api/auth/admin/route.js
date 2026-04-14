@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server';
+import {
+  createAdminSessionToken,
+  getAdminSessionCookieName,
+  getAdminSessionMaxAge,
+} from '@/features/shared/server/adminSession';
 
 export async function POST(request) {
   try {
@@ -17,12 +22,13 @@ export async function POST(request) {
     }
 
     const response = NextResponse.json({ authenticated: true });
+    const sessionToken = await createAdminSessionToken();
 
-    response.cookies.set('admin_auth', password, {
+    response.cookies.set(getAdminSessionCookieName(), sessionToken, {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge:   60 * 60 * 8, // 8 hours
+      maxAge:   getAdminSessionMaxAge(),
       path:     '/',
     });
 

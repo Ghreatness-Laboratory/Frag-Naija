@@ -14,7 +14,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const authErr = checkAdmin();
+  const authErr = await checkAdmin();
   if (authErr) return authErr;
 
   try {

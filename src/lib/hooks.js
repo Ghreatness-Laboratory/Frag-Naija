@@ -88,6 +88,10 @@ export function useWager(id) {
   return useFetch(id ? `/api/wagers/${id}` : null);
 }
 
+export function useMyWagers() {
+  return useFetch('/api/wagers/me');
+}
+
 // ─── Highlights ──────────────────────────────────────────────────────────────
 
 export function useHighlights(filters = {}) {
