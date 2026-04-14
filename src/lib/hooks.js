@@ -37,7 +37,7 @@ function useFetch(url, deps = []) {
   return { data, loading, error, refetch };
 }
 
-// ─── Athletes ────────────────────────────────────────────────────────────────
+// ─── Athletes ───────────────────────────────────────────────────────────────────────
 
 export function useAthletes(filters = {}) {
   const params = new URLSearchParams(
@@ -50,7 +50,7 @@ export function useAthlete(id) {
   return useFetch(id ? `/api/athletes/${id}` : null);
 }
 
-// ─── Teams ───────────────────────────────────────────────────────────────────
+// ─── Teams ──────────────────────────────────────────────────────────────────────────
 
 export function useTeams() {
   return useFetch('/api/teams');
@@ -60,7 +60,7 @@ export function useTeam(id) {
   return useFetch(id ? `/api/teams/${id}` : null);
 }
 
-// ─── Transfers ───────────────────────────────────────────────────────────────
+// ─── Transfers ────────────────────────────────────────────────────────────────────
 
 export function useTransfers(filters = {}) {
   const params = new URLSearchParams(
@@ -69,7 +69,7 @@ export function useTransfers(filters = {}) {
   return useFetch(`/api/transfers${params ? `?${params}` : ''}`);
 }
 
-// ─── Tournaments ─────────────────────────────────────────────────────────────
+// ─── Tournaments ─────────────────────────────────────────────────────────────────
 
 export function useTournaments(filters = {}) {
   const params = new URLSearchParams(
@@ -78,7 +78,7 @@ export function useTournaments(filters = {}) {
   return useFetch(`/api/tournaments${params ? `?${params}` : ''}`);
 }
 
-// ─── Wagers ──────────────────────────────────────────────────────────────────
+// ─── Wagers ────────────────────────────────────────────────────────────────────────
 
 export function useActiveWagers() {
   return useFetch('/api/wagers/active');
@@ -92,7 +92,11 @@ export function useMyWagers() {
   return useFetch('/api/wagers/me');
 }
 
-// ─── Highlights ──────────────────────────────────────────────────────────────
+export function useWalletTransactions(limit = 10) {
+  return useFetch(`/api/wallet/transactions?limit=${limit}`, [limit]);
+}
+
+// ─── Highlights ──────────────────────────────────────────────────────────────────
 
 export function useHighlights(filters = {}) {
   const params = new URLSearchParams(
@@ -101,13 +105,13 @@ export function useHighlights(filters = {}) {
   return useFetch(`/api/highlights${params ? `?${params}` : ''}`);
 }
 
-// ─── Auth ────────────────────────────────────────────────────────────────────
+// ─── Auth ──────────────────────────────────────────────────────────────────────────
 
 export function useMe() {
   return useFetch('/api/auth/me');
 }
 
-// ─── Wager actions ───────────────────────────────────────────────────────────
+// ─── Wager actions ───────────────────────────────────────────────────────────────
 
 /**
  * Returns a function to call the Paystack payment initializer.
