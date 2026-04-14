@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Menu, X, User, ChevronRight, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -45,14 +45,12 @@ function useMe() {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const path   = usePathname();
-  const router = useRouter();
-  const user   = useMe();
+  const path = usePathname();
+  const user = useMe();
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.refresh();
-    router.push("/");
+    window.location.href = "/";
   }
 
   const displayName = user?.username || user?.email?.split("@")[0];
