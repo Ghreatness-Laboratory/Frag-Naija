@@ -96,7 +96,6 @@ export function useWalletTransactions(limit = 10) {
   return useFetch(`/api/wallet/transactions?limit=${limit}`, [limit]);
 }
 
-// ─── Highlights ──────────────────────────────────────────────────────────────────
 
 export function useHighlights(filters = {}) {
   const params = new URLSearchParams(
