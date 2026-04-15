@@ -65,10 +65,26 @@ export async function getCurrentUser() {
     // Wallet may not exist yet.
   }
 
+  // Fetch enrolled MFA factors using user-scoped client
+  let factors = [];
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+    const { data } = await userClient.auth.mfa.listFactors();
+    factors = data?.totp ?? [];
+  } catch {}
+
   return {
-    id: user.id,
-    email: user.email,
-    username: user.user_metadata?.username,
+    id:           user.id,
+    email:        user.email,
+    username:     user.user_metadata?.username,
+    provider:     user.app_metadata?.provider ?? 'email',
+    totp_enabled: factors.some(f => f.status === 'verified'),
+    factors,
     wallet,
   };
 }

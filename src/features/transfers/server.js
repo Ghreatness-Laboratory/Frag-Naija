@@ -1,7 +1,10 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 export async function getTransfers({ status } = {}) {
-  let query = supabaseAdmin.from('transfers').select('*').order('date', { ascending: false });
+  let query = supabaseAdmin
+    .from('transfers')
+    .select('*, athletes(id, name, ign)')
+    .order('date', { ascending: false });
 
   if (status) query = query.eq('status', status);
 

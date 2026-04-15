@@ -21,9 +21,17 @@ export async function POST(request) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
+    // Check for enrolled 2FA factors
+    const { supabaseAdmin } = await import('@/features/shared/server/supabaseAdmin');
+    const { data: mfaData } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: data.user.id });
+    const factors = (mfaData?.totp ?? []).filter(f => f.status === 'verified');
+    const totp_enabled = factors.length > 0;
+
     const response = NextResponse.json({
       user:         data.user,
       access_token: data.session.access_token,
+      totp_enabled,
+      factors,
     });
 
     // Set session cookie for SSR (7-day expiry)
