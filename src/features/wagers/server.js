@@ -154,7 +154,7 @@ export async function getUserWagers(userId) {
   const wagerIds = [...new Set(bets.map((bet) => bet.wager_id).filter(Boolean))];
   const { data: wagers, error: wagersError } = await supabaseAdmin
     .from('wagers')
-    .select('id, question, title, subtitle, description, closes_at, yes_odds, no_odds, status')
+    .select('id, question, subtitle, closes_at, yes_odds, no_odds, status')
     .in('id', wagerIds);
   if (wagersError) throw wagersError;
 
@@ -171,8 +171,8 @@ export async function getUserWagers(userId) {
       wager: wager
         ? {
             id: wager.id,
-            question: wager.question || wager.title || 'Untitled wager market',
-            subtitle: wager.subtitle || wager.description || null,
+            question: wager.question || 'Untitled wager market',
+            subtitle: wager.subtitle || null,
             closes_at: wager.closes_at,
           }
         : null,
