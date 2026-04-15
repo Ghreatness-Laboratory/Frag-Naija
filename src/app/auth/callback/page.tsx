@@ -5,34 +5,34 @@ import { createClient } from '@supabase/supabase-js';
 
 export default function AuthCallbackPage() {
   useEffect(() => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
+    async function handleCallback() {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
 
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-        // Send the token to our API to set the httpOnly cookie
-        await fetch('/api/auth/session', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ access_token: session.access_token }),
-        });
-        window.location.href = '/';
-      }
-    });
+      // Exchange the code in the URL for a session
+      const { data, error } = await supabase.auth.exchangeCodeForSession(
+        window.location.href
+      );
 
-    // Also handle the code exchange for the current URL
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        await fetch('/api/auth/session', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ access_token: session.access_token }),
-        });
-        window.location.href = '/';
+      if (error || !data?.session) {
+        console.error('OAuth callback error:', error?.message);
+        window.location.href = '/login?error=oauth_failed';
+        return;
       }
-    });
+
+      // Set the httpOnly cookie via our API
+      await fetch('/api/auth/session', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ access_token: data.session.access_token }),
+      });
+
+      window.location.href = '/';
+    }
+
+    handleCallback();
   }, []);
 
   return (
