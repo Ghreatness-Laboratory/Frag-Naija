@@ -1,14 +1,57 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { athletes, wagerMarkets, recentTransfers } from "@/lib/data";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock } from "lucide-react";
 
+type Athlete = {
+  id: string;
+  name: string;
+  ign: string;
+  role: string | null;
+  rating: number;
+  kills: number;
+  assists: number;
+  winrate: number;
+  photo_url: string | null;
+  status: string;
+};
+
+type Wager = {
+  id: string;
+  question: string;
+  subtitle: string | null;
+  yes_odds: number;
+  no_odds: number;
+  yes_price: number;
+  no_price: number;
+  pool_total: number;
+  hot: boolean;
+  status: string;
+  closes_at: string;
+};
+
+type Transfer = {
+  id: string;
+  from_team: string | null;
+  to_team: string | null;
+  fee: number | null;
+  status: string;
+  date: string | null;
+  athletes: { id: string; name: string; ign: string } | null;
+};
+
 const stats = [
-  { value: "1,242+", label: "Sector Players",   icon: Users },
+  { value: "1,242+", label: "Sector Players",   icon: Users  },
   { value: "48",     label: "Tournaments",       icon: Trophy },
-  { value: "12",     label: "Championships",     icon: Award },
-  { value: "₦4.2M",  label: "Total Prize Pool",  icon: Zap },
+  { value: "12",     label: "Championships",     icon: Award  },
+  { value: "₦4.2M",  label: "Total Prize Pool",  icon: Zap   },
+];
+
+const TICKER_ITEMS = [
+  "PUBG NATIONAL CHAMPIONSHIP 2026 — REGISTRATION OPEN",
+  "TRANSFER WINDOW CLOSES IN 8 DAYS",
+  "NEW WAGER MARKETS ADDED — PLACE YOUR BET NOW",
+  "FRAG NAIJA — NIGERIA'S PREMIER ESPORTS PLATFORM",
 ];
 
 function StatCounter({ value, label, icon: Icon }: { value: string; label: string; icon: React.ElementType }) {
@@ -21,37 +64,38 @@ function StatCounter({ value, label, icon: Icon }: { value: string; label: strin
   );
 }
 
-function AthleteCard({ athlete, rank }: { athlete: typeof athletes[0]; rank: number }) {
+function AthleteCard({ athlete, rank }: { athlete: Athlete; rank: number }) {
   const colors = ["#00ff41", "#f0c040", "#ff6b8a", "#00aaff"];
   const col = colors[rank % colors.length];
   return (
     <Link href="/athletes" className="group relative bg-fn-card border border-fn-gborder hover:border-fn-green/50 transition-all rounded-sm overflow-hidden flex-shrink-0 w-40 sm:w-48">
-      {/* Avatar area */}
       <div className="relative h-32 sm:h-40 bg-gradient-to-b from-fn-card2 to-fn-dark flex items-center justify-center overflow-hidden">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-display font-black border-2 transition-all group-hover:scale-105"
-          style={{ borderColor: col, color: col, background: `${col}15` }}>
-          {athlete.tag[0]}
-        </div>
-        {/* Rank badge */}
+        {athlete.photo_url
+          ? <img src={athlete.photo_url} alt={athlete.ign} className="w-full h-full object-cover" />
+          : (
+            <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-display font-black border-2 transition-all group-hover:scale-105"
+              style={{ borderColor: col, color: col, background: `${col}15` }}>
+              {athlete.ign[0]}
+            </div>
+          )
+        }
         <div className="absolute top-2 left-2 px-1.5 py-0.5 text-[8px] font-bold tracking-widest uppercase"
           style={{ background: `${col}20`, border: `1px solid ${col}50`, color: col }}>
-          #{athlete.rankNum}
+          #{rank + 1}
         </div>
-        {/* Status */}
         <div className="absolute top-2 right-2 flex items-center gap-1">
           <span className="live-dot" style={{ background: col }} />
-          <span className="text-[7px] font-bold tracking-widest uppercase" style={{ color: col }}>ACTIVE</span>
+          <span className="text-[7px] font-bold tracking-widest uppercase" style={{ color: col }}>{athlete.status}</span>
         </div>
       </div>
-      {/* Info */}
       <div className="p-3">
-        <div className="text-[11px] font-bold text-fn-text tracking-wide mb-0.5">{athlete.tag}</div>
-        <div className="fn-label mb-2">{athlete.rank}</div>
+        <div className="text-[11px] font-bold text-fn-text tracking-wide mb-0.5">{athlete.ign}</div>
+        <div className="fn-label mb-2">{athlete.role || "Player"}</div>
         <div className="grid grid-cols-3 gap-1">
           {[
-            { v: athlete.kills, l: "K/D" },
-            { v: athlete.headshots, l: "HS" },
-            { v: athlete.matches, l: "MTH" },
+            { v: athlete.kills,   l: "KLS" },
+            { v: `${athlete.winrate}%`, l: "WR" },
+            { v: athlete.rating.toFixed(1), l: "RTG" },
           ].map(({ v, l }) => (
             <div key={l} className="text-center">
               <div className="text-[10px] font-bold text-fn-text">{v}</div>
@@ -65,53 +109,65 @@ function AthleteCard({ athlete, rank }: { athlete: typeof athletes[0]; rank: num
   );
 }
 
-function WagerPreviewCard({ market }: { market: typeof wagerMarkets[0] }) {
-  const opt = market.options[0];
+function WagerPreviewCard({ wager }: { wager: Wager }) {
+  const closesIn = () => {
+    const diff = new Date(wager.closes_at).getTime() - Date.now();
+    if (diff <= 0) return "Closed";
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    if (h > 48) return `${Math.floor(h / 24)}d`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
   return (
     <div className="bg-fn-card border border-fn-gborder rounded-sm p-4 flex-shrink-0 w-72 sm:w-80">
       <div className="flex items-center justify-between mb-2">
         <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-sm ${
-          market.tag === "CRITICAL MATCH" ? "bg-fn-red/20 text-fn-red border border-fn-red/30" :
-          market.tag === "STAT WAGER" ? "bg-fn-yellow/20 text-fn-yellow border border-fn-yellow/30" :
-          "bg-fn-green/20 text-fn-green border border-fn-gborder"
-        }`}>{market.tag}</span>
-        <span className="fn-label">{market.poolSize}</span>
+          wager.hot ? "bg-fn-red/20 text-fn-red border border-fn-red/30" : "bg-fn-green/20 text-fn-green border border-fn-gborder"
+        }`}>{wager.hot ? "🔥 HOT" : "ACTIVE"}</span>
+        <span className="fn-label">₦{Number(wager.pool_total).toLocaleString()}</span>
       </div>
-      <h3 className="text-xs font-bold text-fn-text leading-snug mb-3">{market.question}</h3>
+      <h3 className="text-xs font-bold text-fn-text leading-snug mb-3">{wager.question}</h3>
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <button className="pred-yes rounded-sm px-2 py-2.5 text-center">
-          <div className="text-[10px] font-bold">BUY YES</div>
-          <div className="text-base font-black">₦{opt.yesPrice}</div>
-          <div className="text-[8px] opacity-70">{opt.yesReturn}</div>
-        </button>
-        <button className="pred-no rounded-sm px-2 py-2.5 text-center">
-          <div className="text-[10px] font-bold">BUY NO</div>
-          <div className="text-base font-black">₦{opt.noPrice}</div>
-          <div className="text-[8px] opacity-70">{opt.noReturn}</div>
-        </button>
+        <div className="pred-yes rounded-sm px-2 py-2.5 text-center">
+          <div className="text-[10px] font-bold">YES</div>
+          <div className="text-base font-black">{wager.yes_odds}x</div>
+        </div>
+        <div className="pred-no rounded-sm px-2 py-2.5 text-center">
+          <div className="text-[10px] font-bold">NO</div>
+          <div className="text-base font-black">{wager.no_odds}x</div>
+        </div>
       </div>
       <div className="flex items-center justify-between text-[9px] text-fn-muted">
-        <span>{market.trades.toLocaleString()} trades</span>
-        <span className="flex items-center gap-1"><Clock size={9} /> {market.endsIn}</span>
+        <Link href="/wager" className="text-fn-green hover:underline">Bet now →</Link>
+        <span className="flex items-center gap-1"><Clock size={9} /> {closesIn()}</span>
       </div>
     </div>
   );
 }
 
-const TICKER_ITEMS = [
-  "ATHLEGAME 3-1 NAIJA FORCE • LIVE",
-  "PUBG NATIONAL CHAMPIONSHIP 2026 — REGISTRATION OPEN",
-  "PHANTOM_NG RANKED #1 IN NIGERIA PRO LEAGUE",
-  "TRANSFER WINDOW CLOSES IN 8 DAYS",
-  "NEW WAGER MARKETS ADDED — ₦482K POOL",
-];
-
 export default function HomePage() {
-  const [ticker, setTicker] = useState(0);
+  const [ticker, setTicker]     = useState(0);
+  const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [wagers, setWagers]     = useState<Wager[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
 
   useEffect(() => {
-    const t = setInterval(() => setTicker(p => (p + 1) % TICKER_ITEMS.length), 4000);
+    const t = setInterval(() => setTicker((p) => (p + 1) % TICKER_ITEMS.length), 4000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/athletes").then((r) => r.ok ? r.json() : []),
+      fetch("/api/wagers/active").then((r) => r.ok ? r.json() : []),
+      fetch("/api/transfers").then((r) => r.ok ? r.json() : []),
+    ]).then(([a, w, t]) => {
+      setAthletes(a.slice(0, 6));
+      setWagers(w.slice(0, 3));
+      setTransfers(t.slice(0, 4));
+    });
   }, []);
 
   return (
@@ -130,7 +186,6 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative min-h-[85vh] flex flex-col justify-center px-4 sm:px-8 lg:px-12 hero-gradient bg-grid-fn bg-grid overflow-hidden">
-        {/* Decorative corner lines */}
         <div className="absolute top-8 left-4 w-16 h-16 border-l-2 border-t-2 border-fn-green/30 pointer-events-none" />
         <div className="absolute bottom-8 right-4 w-16 h-16 border-r-2 border-b-2 border-fn-green/30 pointer-events-none" />
 
@@ -157,7 +212,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="flex flex-wrap gap-2 mt-10 max-w-2xl">
           {stats.map((s) => <StatCounter key={s.label} {...s} />)}
         </div>
@@ -174,9 +228,13 @@ export default function HomePage() {
             VIEW ALL <ChevronRight size={11} />
           </Link>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-thin">
-          {athletes.map((a, i) => <AthleteCard key={a.id} athlete={a} rank={i} />)}
-        </div>
+        {athletes.length === 0 ? (
+          <p className="text-fn-muted text-[10px] py-6">No athletes yet — add them from the admin panel.</p>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-thin">
+            {athletes.map((a, i) => <AthleteCard key={a.id} athlete={a} rank={i} />)}
+          </div>
+        )}
       </section>
 
       {/* Wager Preview */}
@@ -190,9 +248,13 @@ export default function HomePage() {
             ENTER ZONE <ChevronRight size={11} />
           </Link>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-3">
-          {wagerMarkets.slice(0, 3).map((m) => <WagerPreviewCard key={m.id} market={m} />)}
-        </div>
+        {wagers.length === 0 ? (
+          <p className="text-fn-muted text-[10px] py-6">No active wager markets — check back soon.</p>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-3">
+            {wagers.map((w) => <WagerPreviewCard key={w.id} wager={w} />)}
+          </div>
+        )}
       </section>
 
       {/* Pending Payables */}
@@ -206,34 +268,47 @@ export default function HomePage() {
             VIEW ALL <ChevronRight size={11} />
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[500px]">
-            <thead>
-              <tr className="border-b border-fn-gborder">
-                {["Player", "From", "To", "Value", "Status", "Date"].map((h) => (
-                  <th key={h} className="fn-label pb-3 text-left pr-4">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentTransfers.map((t, i) => (
-                <tr key={i} className="border-b border-fn-gborder/50 hover:bg-fn-card/50 transition-colors">
-                  <td className="py-3 pr-4 text-[11px] font-bold text-fn-text">{t.player}</td>
-                  <td className="py-3 pr-4 text-[10px] text-fn-muted">{t.from}</td>
-                  <td className="py-3 pr-4 text-[10px] text-fn-text">{t.to}</td>
-                  <td className="py-3 pr-4 text-[10px] text-fn-yellow font-bold">{t.value}</td>
-                  <td className="py-3 pr-4">
-                    <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-sm ${
-                      t.status === "SOLD" ? "bg-fn-red/20 text-fn-red border border-fn-red/30" :
-                      "bg-fn-yellow/20 text-fn-yellow border border-fn-yellow/30"
-                    }`}>{t.status}</span>
-                  </td>
-                  <td className="py-3 text-[10px] text-fn-muted">{t.date}</td>
+        {transfers.length === 0 ? (
+          <p className="text-fn-muted text-[10px] py-6">No transfers recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[500px]">
+              <thead>
+                <tr className="border-b border-fn-gborder">
+                  {["Player", "From", "To", "Fee", "Status", "Date"].map((h) => (
+                    <th key={h} className="fn-label pb-3 text-left pr-4">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {transfers.map((t) => {
+                  const player = t.athletes?.ign || t.athletes?.name || "—";
+                  const isConfirmed = t.status === "Confirmed";
+                  return (
+                    <tr key={t.id} className="border-b border-fn-gborder/50 hover:bg-fn-card/50 transition-colors">
+                      <td className="py-3 pr-4 text-[11px] font-bold text-fn-text">{player}</td>
+                      <td className="py-3 pr-4 text-[10px] text-fn-muted">{t.from_team || "—"}</td>
+                      <td className="py-3 pr-4 text-[10px] text-fn-text">{t.to_team || "—"}</td>
+                      <td className="py-3 pr-4 text-[10px] text-fn-yellow font-bold">
+                        {t.fee ? `₦${Number(t.fee).toLocaleString()}` : "—"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 border ${
+                          isConfirmed
+                            ? "bg-fn-green/20 text-fn-green border-fn-green/30"
+                            : "bg-fn-yellow/20 text-fn-yellow border-fn-yellow/30"
+                        }`}>{t.status}</span>
+                      </td>
+                      <td className="py-3 text-[10px] text-fn-muted">
+                        {t.date ? new Date(t.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "2-digit" }) : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Recruitment banner */}
         <div className="mt-6 p-4 sm:p-6 bg-fn-card border border-fn-gborder rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

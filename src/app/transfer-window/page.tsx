@@ -1,7 +1,30 @@
 "use client";
-import { useState, useEffect } from "react";
-import { recentTransfers, freeAgents, marketActivity } from "@/lib/data";
+import { useState, useEffect, useCallback } from "react";
 import { Clock, TrendingUp, Users, Filter } from "lucide-react";
+
+type Transfer = {
+  id: string;
+  from_team: string | null;
+  to_team: string | null;
+  fee: number | null;
+  status: string;
+  date: string | null;
+  notes: string | null;
+  athletes: { id: string; name: string; ign: string } | null;
+};
+
+type FreeAgent = {
+  id: string;
+  name: string;
+  ign: string;
+  role: string | null;
+  rating: number;
+  kills: number;
+  winrate: number;
+  photo_url: string | null;
+};
+
+type FilterTab = "ALL" | "CONFIRMED" | "RUMOUR" | "PENDING";
 
 function useCountdown(targetDays: number, targetHrs: number, targetMins: number) {
   const [time, setTime] = useState({ d: targetDays, h: targetHrs, m: targetMins, s: 0 });
@@ -21,20 +44,42 @@ function useCountdown(targetDays: number, targetHrs: number, targetMins: number)
   return time;
 }
 
-type FilterTab = "ALL" | "SOLD" | "ON LOAN" | "FREE AGENT";
+function statusColor(status: string) {
+  if (status === "Confirmed") return "bg-fn-green/20 text-fn-green border-fn-green/30";
+  if (status === "Rumour")    return "bg-fn-yellow/20 text-fn-yellow border-fn-yellow/30";
+  return "bg-fn-muted/20 text-fn-muted border-fn-gborder";
+}
 
 export default function TransferWindowPage() {
   const countdown = useCountdown(8, 14, 22);
+  const [transfers, setTransfers]   = useState<Transfer[]>([]);
+  const [freeAgents, setFreeAgents] = useState<FreeAgent[]>([]);
+  const [loading, setLoading]       = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
 
-  const filters: FilterTab[] = ["ALL", "SOLD", "ON LOAN", "FREE AGENT"];
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [tr, fa] = await Promise.all([
+      fetch("/api/transfers"),
+      fetch("/api/athletes?status=Free+Agent"),
+    ]);
+    if (tr.ok) setTransfers(await tr.json());
+    if (fa.ok) setFreeAgents(await fa.json());
+    setLoading(false);
+  }, []);
 
-  const filteredTransfers =
-    activeFilter === "ALL"
-      ? recentTransfers
-      : recentTransfers.filter((t) =>
-          activeFilter === "ON LOAN" ? t.status === "LOAN" : t.status === activeFilter
-        );
+  useEffect(() => { load(); }, [load]);
+
+  const filters: FilterTab[] = ["ALL", "CONFIRMED", "RUMOUR", "PENDING"];
+
+  const filtered = activeFilter === "ALL"
+    ? transfers
+    : transfers.filter((t) => t.status.toUpperCase() === activeFilter);
+
+  const fmtFee = (fee: number | null) =>
+    fee ? `₦${Number(fee).toLocaleString()}` : "—";
+
+  const totalValue = transfers.reduce((sum, t) => sum + (t.fee ?? 0), 0);
 
   return (
     <div className="min-h-screen">
@@ -63,7 +108,7 @@ export default function TransferWindowPage() {
               ].map(({ v, l }, i) => (
                 <div key={l} className="flex items-baseline gap-1">
                   {i > 0 && <span className="text-fn-muted text-2xl">·</span>}
-                  <span className="text-fn-yellow text-3xl sm:text-4xl tabular-nums animate-countdown"
+                  <span className="text-fn-yellow text-3xl sm:text-4xl tabular-nums"
                     style={{ minWidth: "2ch", display: "inline-block", textAlign: "center" }}>
                     {String(v).padStart(2, "0")}
                   </span>
@@ -98,146 +143,118 @@ export default function TransferWindowPage() {
                 ))}
               </div>
 
-              {/* Recent transfers table */}
               <div className="fn-label mb-3">RECENT TRANSFERS</div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[520px]">
-                  <thead>
-                    <tr className="border-b border-fn-gborder">
-                      {["Player", "From", "To", "Value", "Status", "Date"].map((h) => (
-                        <th key={h} className="fn-label pb-3 text-left pr-4">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTransfers.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-fn-muted text-[10px]">
-                          No transfers match this filter
-                        </td>
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-fn-card rounded animate-pulse" />)}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px]">
+                    <thead>
+                      <tr className="border-b border-fn-gborder">
+                        {["Player", "From", "To", "Fee", "Status", "Date"].map((h) => (
+                          <th key={h} className="fn-label pb-3 text-left pr-4">{h}</th>
+                        ))}
                       </tr>
-                    ) : (
-                      filteredTransfers.map((t, i) => (
-                        <tr key={i} className="border-b border-fn-gborder/50 hover:bg-fn-card/50 transition-colors">
-                          <td className="py-3.5 pr-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 bg-fn-green/15 border border-fn-gborder flex items-center justify-center text-[10px] font-bold text-fn-green">
-                                {t.player[0]}
-                              </div>
-                              <span className="text-[11px] font-bold text-fn-text">{t.player}</span>
-                            </div>
+                    </thead>
+                    <tbody>
+                      {filtered.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-fn-muted text-[10px]">
+                            No transfers match this filter
                           </td>
-                          <td className="py-3.5 pr-4 text-[10px] text-fn-muted">{t.from}</td>
-                          <td className="py-3.5 pr-4 text-[10px] text-fn-text font-bold">{t.to}</td>
-                          <td className="py-3.5 pr-4 text-[10px] text-fn-yellow font-bold">{t.value}</td>
-                          <td className="py-3.5 pr-4">
-                            <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 ${
-                              t.status === "SOLD"
-                                ? "bg-fn-red/20 text-fn-red border border-fn-red/30"
-                                : "bg-fn-yellow/20 text-fn-yellow border border-fn-yellow/30"
-                            }`}>{t.status}</span>
-                          </td>
-                          <td className="py-3.5 text-[10px] text-fn-muted">{t.date}</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ) : (
+                        filtered.map((t) => {
+                          const playerTag = t.athletes?.ign || t.athletes?.name || "—";
+                          return (
+                            <tr key={t.id} className="border-b border-fn-gborder/50 hover:bg-fn-card/50 transition-colors">
+                              <td className="py-3.5 pr-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 bg-fn-green/15 border border-fn-gborder flex items-center justify-center text-[10px] font-bold text-fn-green">
+                                    {playerTag[0]}
+                                  </div>
+                                  <span className="text-[11px] font-bold text-fn-text">{playerTag}</span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 pr-4 text-[10px] text-fn-muted">{t.from_team || "—"}</td>
+                              <td className="py-3.5 pr-4 text-[10px] text-fn-text font-bold">{t.to_team || "—"}</td>
+                              <td className="py-3.5 pr-4 text-[10px] text-fn-yellow font-bold">{fmtFee(t.fee)}</td>
+                              <td className="py-3.5 pr-4">
+                                <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 border ${statusColor(t.status)}`}>
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="py-3.5 text-[10px] text-fn-muted">
+                                {t.date ? new Date(t.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "2-digit" }) : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             {/* Free agents */}
             <div>
               <div className="fn-label mb-3 flex items-center justify-between">
                 UNRESTRICTED FREE AGENTS
-                <button className="fn-btn-ghost text-[9px]">VIEW ALL ROSTER →</button>
+                <span className="text-fn-muted text-[9px]">{freeAgents.length} AVAILABLE</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {freeAgents.map((agent) => (
-                  <div key={agent.tag} className="bg-fn-card border border-fn-gborder rounded-sm p-4 hover:border-fn-green/40 transition-all group">
-                    {/* Avatar */}
-                    <div className="w-14 h-14 rounded-sm bg-fn-green/10 border border-fn-gborder flex items-center justify-center mb-3 group-hover:border-fn-green/40 transition-colors">
-                      <span className="font-display text-2xl font-black text-fn-green">{agent.tag[0]}</span>
-                    </div>
-                    <div className="text-[8px] font-bold text-fn-yellow tracking-widest uppercase mb-1">{agent.badge}</div>
-                    <div className="text-xs font-bold text-fn-text mb-0.5">{agent.tag}</div>
-                    <div className="fn-label mb-3">{agent.rank}</div>
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => <div key={i} className="h-48 bg-fn-card rounded animate-pulse" />)}
+                </div>
+              ) : freeAgents.length === 0 ? (
+                <p className="text-fn-muted text-[10px] py-4">No free agents listed at the moment.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {freeAgents.map((agent) => (
+                    <div key={agent.id} className="bg-fn-card border border-fn-gborder rounded-sm p-4 hover:border-fn-green/40 transition-all group">
+                      <div className="w-14 h-14 rounded-sm bg-fn-green/10 border border-fn-gborder flex items-center justify-center mb-3 group-hover:border-fn-green/40 transition-colors overflow-hidden">
+                        {agent.photo_url
+                          ? <img src={agent.photo_url} alt={agent.ign} className="w-full h-full object-cover" />
+                          : <span className="font-display text-2xl font-black text-fn-green">{agent.ign[0]}</span>}
+                      </div>
+                      <div className="text-[8px] font-bold text-fn-yellow tracking-widest uppercase mb-1">FREE AGENT</div>
+                      <div className="text-xs font-bold text-fn-text mb-0.5">{agent.ign}</div>
+                      <div className="fn-label mb-3">{agent.role || "Player"}</div>
 
-                    <div className="grid grid-cols-3 gap-1 mb-3 text-center">
-                      {[
-                        { v: agent.age,      l: "AGE"   },
-                        { v: agent.matches,  l: "MTCH"  },
-                        { v: agent.winRate,  l: "W/R"   },
-                      ].map(({ v, l }) => (
-                        <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-1.5">
-                          <div className="text-[10px] font-bold text-fn-text">{v}</div>
-                          <div className="fn-label text-[7px]">{l}</div>
-                        </div>
-                      ))}
+                      <div className="grid grid-cols-3 gap-1 mb-3 text-center">
+                        {[
+                          { v: agent.kills,             l: "KILLS" },
+                          { v: `${agent.winrate}%`,     l: "W/R"   },
+                          { v: agent.rating.toFixed(1), l: "RTG"   },
+                        ].map(({ v, l }) => (
+                          <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-1.5">
+                            <div className="text-[10px] font-bold text-fn-text">{v}</div>
+                            <div className="fn-label text-[7px]">{l}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="fn-btn w-full text-[9px] py-2">PROPOSE CONTRACT</button>
                     </div>
-
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="fn-label">ASKING FEE</span>
-                      <span className="text-[11px] font-bold text-fn-green">{agent.asking}</span>
-                    </div>
-                    <button className="fn-btn w-full text-[9px] py-2">PROPOSE CONTRACT</button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Market Activity sidebar */}
+          {/* Sidebar */}
           <div className="xl:col-span-1 space-y-4">
-            <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={12} className="text-fn-green" />
-                <span className="fn-label text-fn-green">MARKET ACTIVITY</span>
-              </div>
-              <div className="space-y-3">
-                {marketActivity.map((item, i) => (
-                  <div key={i} className="flex gap-2.5 pb-3 border-b border-fn-gborder/50 last:border-0 last:pb-0">
-                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
-                      item.type === "alert" ? "bg-fn-red animate-pulse-g" :
-                      item.type === "news"  ? "bg-fn-green" : "bg-fn-yellow"
-                    }`} />
-                    <div>
-                      <p className="text-[9px] text-fn-text leading-relaxed">{item.text}</p>
-                      <span className="text-[8px] text-fn-muted">{item.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button className="mt-3 fn-btn-ghost text-[9px] w-full border border-fn-gborder py-2">
-                DOWNLOAD FULL LOG
-              </button>
-            </div>
-
-            {/* Join wager CTA */}
-            <div className="bg-fn-card border border-fn-green/30 rounded-sm p-4">
-              <div className="fn-label text-fn-green mb-2 flex items-center gap-1.5">
-                <Users size={9} /> JOIN WAGER
-              </div>
-              <p className="text-[9px] text-fn-muted leading-relaxed mb-3">
-                Predict transfer outcomes and player signings. Earn FRG coins for accurate calls.
-              </p>
-              <input
-                type="text"
-                placeholder="ENTER COMMAND CENTER"
-                className="w-full bg-fn-dark border border-fn-gborder text-fn-text text-[10px] px-3 py-2.5 mb-3 outline-none focus:border-fn-green/50 placeholder:text-fn-muted"
-              />
-              <button className="fn-btn w-full text-[10px]">JOIN WAGER NOW</button>
-            </div>
-
-            {/* Stats summary */}
+            {/* Window stats */}
             <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
               <div className="fn-label mb-3">WINDOW STATS</div>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { v: "₦12,250,000", l: "Total Value" },
-                  { v: "2.4x",        l: "Avg Multiplier" },
-                  { v: "14",          l: "Total Moves" },
-                  { v: "3",           l: "Free Agents" },
+                  { v: loading ? "…" : `₦${totalValue.toLocaleString()}`,                                           l: "Total Value"  },
+                  { v: loading ? "…" : String(transfers.length),                                                     l: "Total Moves"  },
+                  { v: loading ? "…" : String(transfers.filter((t) => t.status === "Confirmed").length),             l: "Confirmed"    },
+                  { v: loading ? "…" : String(freeAgents.length),                                                    l: "Free Agents"  },
                 ].map(({ v, l }) => (
                   <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-2.5 text-center">
                     <div className="text-xs font-bold text-fn-green">{v}</div>
@@ -245,6 +262,50 @@ export default function TransferWindowPage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Recent activity */}
+            <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={12} className="text-fn-green" />
+                <span className="fn-label text-fn-green">RECENT ACTIVITY</span>
+              </div>
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => <div key={i} className="h-8 bg-fn-dark rounded animate-pulse" />)}
+                </div>
+              ) : transfers.slice(0, 5).length === 0 ? (
+                <p className="text-fn-muted text-[9px]">No recent activity.</p>
+              ) : (
+                <div className="space-y-3">
+                  {transfers.slice(0, 5).map((t) => {
+                    const player = t.athletes?.ign || t.athletes?.name || "Unknown";
+                    const isConfirmed = t.status === "Confirmed";
+                    return (
+                      <div key={t.id} className="flex gap-2.5 pb-3 border-b border-fn-gborder/50 last:border-0 last:pb-0">
+                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${isConfirmed ? "bg-fn-green" : "bg-fn-yellow animate-pulse"}`} />
+                        <div>
+                          <p className="text-[9px] text-fn-text leading-relaxed">
+                            {player}{t.from_team ? ` from ${t.from_team}` : ""}{t.to_team ? ` → ${t.to_team}` : ""}
+                          </p>
+                          <span className="text-[8px] text-fn-muted">{t.status}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* CTA */}
+            <div className="bg-fn-card border border-fn-green/30 rounded-sm p-4">
+              <div className="fn-label text-fn-green mb-2 flex items-center gap-1.5">
+                <Users size={9} /> JOIN WAGER
+              </div>
+              <p className="text-[9px] text-fn-muted leading-relaxed mb-3">
+                Predict transfer outcomes and player signings. Earn rewards for accurate calls.
+              </p>
+              <button className="fn-btn w-full text-[10px]">JOIN WAGER NOW</button>
             </div>
           </div>
         </div>
