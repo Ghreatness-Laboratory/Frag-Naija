@@ -12,6 +12,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import { useActiveWagers, useBanks, useFeatured, useMe, useMyWagers, usePlaceWager, usePredictors, useWalletTransactions, useWithdraw } from "@/lib/hooks";
 
 type CurrentUser = {
   id?: string | null;
@@ -171,7 +172,7 @@ function WithdrawalModal({
               >
                 <option value="">Choose your bank...</option>
                 {Array.isArray(banks) &&
-                  banks.map((bank: Bank) => (
+                  (banks as Bank[]).map((bank) => (
                     <option key={bank.code} value={bank.code}>
                       {bank.name}
                     </option>
