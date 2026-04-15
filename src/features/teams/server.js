@@ -4,7 +4,7 @@ export async function getTeams() {
   const { data: teams, error } = await supabaseAdmin
     .from('teams')
     .select('*')
-    .order('wins', { ascending: false });
+    .order('rank', { ascending: true, nullsLast: true });
   if (error) throw error;
 
   const { data: athletes, error: athletesError } = await supabaseAdmin.from('athletes').select('*');

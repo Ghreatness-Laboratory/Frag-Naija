@@ -13,9 +13,6 @@ import {
   Zap,
 } from "lucide-react";
 
-import { elitePredictors } from "@/lib/data";
-import { useActiveWagers, useMe, useMyWagers, usePlaceWager, useWalletTransactions, useBanks, useWithdraw } from "@/lib/hooks";
-
 type CurrentUser = {
   id?: string | null;
   email?: string | null;
@@ -638,10 +635,14 @@ function WagerPageContent() {
     error: walletTxError,
     refetch: refetchWalletTx,
   } = useWalletTransactions(8);
+  const { data: predictorsData } = usePredictors();
+  const { data: featuredData } = useFeatured();
   const currentUser = me as CurrentUser;
   const liveWagers = (Array.isArray(wagers) ? wagers : []) as CurrentMarket[];
   const currentUserWagers = (Array.isArray(myWagers) ? myWagers : []) as CurrentUserWager[];
   const walletTxList = (Array.isArray(walletTransactions) ? walletTransactions : []) as WalletTransaction[];
+  const predictors = Array.isArray(predictorsData) ? predictorsData : [];
+  const featured = Array.isArray(featuredData) ? featuredData : [];
 
   const allMarkets = liveWagers;
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
@@ -712,6 +713,34 @@ function WagerPageContent() {
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className="space-y-4 xl:col-span-2">
+            {featured.length > 0 && (
+              <div>
+                <div className="fn-label mb-2 flex items-center gap-1.5">
+                  <Zap size={9} className="text-fn-red" /> WHAT&apos;S HOT NOW
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {featured.map((item) => (
+                    <div
+                      key={String((item as Record<string, unknown>).id)}
+                      className="flex-shrink-0 bg-fn-card border border-fn-gborder rounded-sm px-3 py-2.5 min-w-[160px] hover:border-fn-green/30 transition-colors"
+                    >
+                      <span className="inline-block text-[7px] font-bold bg-fn-red/20 text-fn-red border border-fn-red/30 px-1.5 py-0.5 rounded-sm mb-1.5">
+                        {String((item as Record<string, unknown>).badge || "HOT")}
+                      </span>
+                      <p className="text-[10px] font-bold text-fn-text leading-snug">
+                        {String((item as Record<string, unknown>).label)}
+                      </p>
+                      {Boolean((item as Record<string, unknown>).type) && (
+                        <p className="fn-label mt-0.5">
+                          {String((item as Record<string, unknown>).type).toUpperCase()}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 fn-label">
               <span className="live-dot" /> LIVE MARKETS - {allMarkets.length} OPEN
             </div>
@@ -769,28 +798,34 @@ function WagerPageContent() {
                 <span className="fn-label text-fn-text">ELITE PREDICTORS</span>
               </div>
               <div className="space-y-2">
-                {elitePredictors.map((predictor, index) => (
-                  <div
-                    key={predictor.tag}
-                    className="flex items-center gap-3 rounded-sm border border-fn-gborder bg-fn-dark p-2 transition-colors hover:border-fn-green/30"
-                  >
-                    <span
-                      className={`w-5 text-center text-[9px] font-bold ${
-                        index === 0 ? "text-fn-yellow" : index === 1 ? "text-fn-text" : "text-fn-muted"
-                      }`}
+                {predictors.length === 0 ? (
+                  <p className="text-[10px] text-fn-muted text-center py-3">No predictors ranked yet.</p>
+                ) : (
+                  (predictors as Record<string, unknown>[]).slice(0, 5).map((predictor, index) => (
+                    <div
+                      key={String(predictor.tag)}
+                      className="flex items-center gap-3 rounded-sm border border-fn-gborder bg-fn-dark p-2 transition-colors hover:border-fn-green/30"
                     >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm border border-fn-gborder bg-fn-green/10 text-[9px] font-bold text-fn-green">
-                      {predictor.tag[0]}
+                      <span
+                        className={`w-5 text-center text-[9px] font-bold ${
+                          index === 0 ? "text-fn-yellow" : index === 1 ? "text-fn-text" : "text-fn-muted"
+                        }`}
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm border border-fn-gborder bg-fn-green/10 text-[9px] font-bold text-fn-green">
+                        {String(predictor.tag)[0]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[10px] font-bold text-fn-text">{String(predictor.tag)}</div>
+                        <div className="fn-label">{String(predictor.accuracy || "")} accuracy</div>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] font-bold text-fn-green">
+                        {String(predictor.weekly_earnings || "")}
+                      </span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[10px] font-bold text-fn-text">{predictor.tag}</div>
-                      <div className="fn-label">{predictor.accuracy} accuracy</div>
-                    </div>
-                    <span className="flex-shrink-0 text-[9px] font-bold text-fn-green">{predictor.weekly}</span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               <button className="fn-btn-outline mt-3 w-full py-2 text-[9px]">VIEW ALL RANKINGS</button>
             </div>

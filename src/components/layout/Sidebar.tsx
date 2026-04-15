@@ -1,15 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Newspaper, Radio, Zap, ShoppingBag, HelpCircle } from "lucide-react";
+import { User, Newspaper, Radio, Zap, ShoppingBag, MessageCircle } from "lucide-react";
 
 const sideItems = [
-  { icon: User,        label: "ACTIVE",  href: "/athletes",        active: true  },
-  { icon: Newspaper,   label: "NEWS",    href: "/highlights",      active: false },
-  { icon: Radio,       label: "LIVE",    href: "/tournaments",     active: false },
-  { icon: Zap,         label: "WAGER",   href: "/wager",           active: false },
-  { icon: ShoppingBag, label: "SHOP",    href: "#",                active: false },
-  { icon: HelpCircle,  label: "HELP",    href: "#",                active: false },
+  { icon: User,          label: "ACTIVE",  href: "/athletes",  active: true  },
+  { icon: Newspaper,     label: "NEWS",    href: "/news",      active: false },
+  { icon: Radio,         label: "LIVE",    href: "/tournaments", active: false },
+  { icon: Zap,           label: "WAGER",   href: "/wager",     active: false },
+  { icon: ShoppingBag,   label: "SHOP",    href: "#",          active: false },
+  { icon: MessageCircle, label: "CONTACT", href: "/contact",   active: false },
 ];
 
 export default function Sidebar() {
