@@ -207,17 +207,20 @@ export async function toggleWagerHot(id) {
 }
 
 export async function settleWager(id, outcome) {
-  const status = outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
-
-  const { error: updateWagerError } = await supabaseAdmin.from('wagers').update({ status }).eq('id', id);
-  if (updateWagerError) throw updateWagerError;
-
   const { data: wager, error: wagerError } = await supabaseAdmin
     .from('wagers')
-    .select('yes_odds, no_odds')
+    .select('yes_odds, no_odds, type, options')
     .eq('id', id)
     .single();
   if (wagerError) throw wagerError;
+
+  const isPlayerPick = wager.type === 'player_pick';
+  const status = isPlayerPick
+    ? `Settled — ${outcome} Wins`
+    : outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
+
+  const { error: updateWagerError } = await supabaseAdmin.from('wagers').update({ status }).eq('id', id);
+  if (updateWagerError) throw updateWagerError;
 
   const { data: bets, error: betsError } = await supabaseAdmin
     .from('wager_bets')
@@ -260,7 +263,17 @@ export async function settleWager(id, outcome) {
       continue;
     }
 
-    const odds   = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
+    // Resolve correct odds — player_pick uses per-option odds, binary uses yes/no odds
+    let odds;
+    if (isPlayerPick) {
+      const option = Array.isArray(wager.options)
+        ? wager.options.find((o) => o.label === outcome)
+        : null;
+      odds = option?.odds ?? 1;
+    } else {
+      odds = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
+    }
+
     const payout = Math.min(Number(bet.amount) * Number(odds), maxPayoutNgn);
 
     const { data: wallet } = await supabaseAdmin
