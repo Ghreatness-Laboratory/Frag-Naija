@@ -27,8 +27,17 @@ export async function GET(request) {
     return NextResponse.redirect(`${siteUrl}/login?error=oauth_failed`);
   }
 
+  const user = data.session.user;
+
+  // Ensure username is set from Google profile if missing
+  if (!user.user_metadata?.username && user.user_metadata?.full_name) {
+    await supabase.auth.updateUser({
+      data: { username: user.user_metadata.full_name.split(' ')[0] },
+    });
+  }
+
   // Ensure wallet exists for new OAuth users
-  try { await createWallet(data.session.user.id); } catch {}
+  try { await createWallet(user.id); } catch {}
 
   const response = NextResponse.redirect(`${siteUrl}/`);
   response.cookies.set('sb-access-token', data.session.access_token, {
