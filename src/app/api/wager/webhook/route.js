@@ -5,6 +5,8 @@ import { processDeposit } from '@/features/deposits/server';
 import { updateWithdrawalTransferInfo, adminUpdateWithdrawal } from '@/features/withdrawals/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const rawBody   = await request.text();

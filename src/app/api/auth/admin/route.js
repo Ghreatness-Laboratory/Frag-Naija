@@ -5,6 +5,8 @@ import {
   getAdminSessionMaxAge,
 } from '@/features/shared/server/adminSession';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const { password } = await request.json();

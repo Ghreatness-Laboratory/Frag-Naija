@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/features/auth/server';
 import { getUserTransactions } from '@/features/deposits/server';
 import { getUserWagers, getWallet } from '@/features/wagers/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const user = await getCurrentUser();

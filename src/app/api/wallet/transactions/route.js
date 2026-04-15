@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/features/auth/server';
 import { getWalletTransactions } from '@/features/wagers/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     const user = await getCurrentUser();

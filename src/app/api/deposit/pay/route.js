@@ -3,6 +3,8 @@ import { initializeTransaction, generateReference } from '@/lib/paystack';
 import { getCurrentUser } from '@/features/auth/server';
 import { getSetting } from '@/features/settings/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const user = await getCurrentUser();

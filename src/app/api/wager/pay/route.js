@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { initializeTransaction, generateReference } from '@/lib/paystack';
 import { getWagerForPlacement } from '@/features/wagers/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const { wager_id, selection, amount, email } = await request.json();
