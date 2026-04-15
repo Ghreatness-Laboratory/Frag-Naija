@@ -23,10 +23,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'NEXT_PUBLIC_SITE_URL is not configured' }, { status: 500 });
     }
 
-    if (!['YES', 'NO'].includes(selection)) {
-      return NextResponse.json({ error: 'selection must be YES or NO' }, { status: 400 });
-    }
-
     if (amount < 100) {
       return NextResponse.json({ error: 'Minimum wager amount is ₦100' }, { status: 400 });
     }
@@ -47,7 +43,29 @@ export async function POST(request) {
       return NextResponse.json({ error: 'This wager has closed' }, { status: 400 });
     }
 
-    const odds = selection === 'YES' ? wager.yes_odds : wager.no_odds;
+    const isPlayerPick = wager.type === 'player_pick';
+
+    // Validate selection
+    if (isPlayerPick) {
+      const validOptions = Array.isArray(wager.options)
+        ? wager.options.map((o) => o.label)
+        : [];
+      if (!validOptions.includes(selection)) {
+        return NextResponse.json({ error: 'Invalid player selection' }, { status: 400 });
+      }
+    } else if (!['YES', 'NO'].includes(selection)) {
+      return NextResponse.json({ error: 'selection must be YES or NO' }, { status: 400 });
+    }
+
+    // Calculate odds
+    let odds;
+    if (isPlayerPick) {
+      const option = wager.options.find((o) => o.label === selection);
+      odds = option?.odds ?? 1;
+    } else {
+      odds = selection === 'YES' ? wager.yes_odds : wager.no_odds;
+    }
+
     const potential = Number(amount) * Number(odds);
     const reference = generateReference('FN');
 

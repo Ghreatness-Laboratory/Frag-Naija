@@ -131,7 +131,7 @@ export async function getWagerById(id) {
 export async function getWagerForPlacement(wagerId) {
   const { data, error } = await supabaseAdmin
     .from('wagers')
-    .select('id, status, closes_at, yes_odds, no_odds')
+    .select('id, status, closes_at, yes_odds, no_odds, type, options')
     .eq('id', wagerId)
     .single();
   if (error) throw error;
