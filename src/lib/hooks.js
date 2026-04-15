@@ -114,6 +114,33 @@ export function useBanks() {
   return useFetch('/api/wallet/banks');
 }
 
+export function useWithdraw() {
+  const [loading, setLoading] = useState(false);
+  const [error,   setError  ] = useState(null);
+
+  async function withdraw(body) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/wallet/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
+      return data;
+    } catch (e) {
+      setError(e.message);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { withdraw, loading, error };
+}
+
 // ─── Wager actions ───────────────────────────────────────────────────────────
 
 /**
@@ -147,4 +174,18 @@ export function usePlaceWager() {
   }
 
   return { placeWager, loading, error };
+}
+
+// ─── News / Predictors / Featured ────────────────────────────────────────────
+
+export function useNews() {
+  return useFetch('/api/news');
+}
+
+export function usePredictors() {
+  return useFetch('/api/predictors');
+}
+
+export function useFeatured() {
+  return useFetch('/api/featured');
 }
