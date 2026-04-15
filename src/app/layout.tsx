@@ -15,8 +15,8 @@ export const metadata: Metadata = {
     title: "Frag Naija",
   },
   icons: {
-    icon: "/logo-icon-192.png",
-    apple: "/logo-icon-192.png",
+    icon: "/logo-icon.jpeg",
+    apple: "/logo-icon.jpeg",
   },
 };
 

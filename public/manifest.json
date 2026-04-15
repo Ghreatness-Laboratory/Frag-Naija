@@ -3,21 +3,22 @@
   "short_name": "FragNaija",
   "description": "Nigeria's premier esports platform. Compete, wager, and dominate.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#00ff41",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/logo-icon-192.png",
+      "src": "/logo-icon.jpeg",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/jpeg",
+      "purpose": "any"
     },
     {
-      "src": "/logo-icon-512.png",
+      "src": "/logo-icon.jpeg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]
