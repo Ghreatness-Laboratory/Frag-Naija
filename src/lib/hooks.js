@@ -110,7 +110,11 @@ export function useMe() {
   return useFetch('/api/auth/me');
 }
 
-// ─── Wager actions ───────────────────────────────────────────────────────────────
+export function useBanks() {
+  return useFetch('/api/wallet/banks');
+}
+
+// ─── Wager actions ───────────────────────────────────────────────────────────
 
 /**
  * Returns a function to call the Paystack payment initializer.
@@ -143,4 +147,34 @@ export function usePlaceWager() {
   }
 
   return { placeWager, loading, error };
+}
+
+/**
+ * Returns a function to initiate a withdrawal to a Nigerian bank.
+ */
+export function useWithdraw() {
+  const [loading, setLoading] = useState(false);
+  const [error,   setError  ] = useState(null);
+
+  async function withdraw(body) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/wallet/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
+      return data;
+    } catch (e) {
+      setError(e.message);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { withdraw, loading, error };
 }

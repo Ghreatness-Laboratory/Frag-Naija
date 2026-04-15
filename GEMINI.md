@@ -9,6 +9,7 @@
 - Watch match replays and clutch moments (Highlights).
 - Monitor player movements and market activity (Transfer Window).
 - Participate in prediction-style markets (Wager Zone).
+- Withdraw winnings to Nigerian bank accounts (Automated Withdrawals).
 
 The application is in a hybrid state: the backend (Supabase + REST APIs) is live, but some frontend pages still use seeded data from `src/lib/data.ts`.
 
