@@ -144,3 +144,17 @@ export function usePlaceWager() {
 
   return { placeWager, loading, error };
 }
+
+// ─── Content ──────────────────────────────────────────────────────────────────
+
+export function useNews() {
+  return useFetch('/api/news');
+}
+
+export function usePredictors() {
+  return useFetch('/api/predictors');
+}
+
+export function useFeatured() {
+  return useFetch('/api/featured');
+}

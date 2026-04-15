@@ -1,7 +1,14 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+function computeOverallRating(athlete) {
+  const attrs = ['attack', 'defense', 'clutch', 'survival', 'iq', 'aggression'];
+  const values = attrs.map((k) => Number(athlete[k] ?? 0)).filter((v) => v > 0);
+  if (!values.length) return Number(athlete.rating ?? 0);
+  return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+}
+
 export async function getAthletes({ team, status } = {}) {
-  let query = supabaseAdmin.from('athletes').select('*').order('rating', { ascending: false });
+  let query = supabaseAdmin.from('athletes').select('*').order('overall_rating', { ascending: false });
 
   if (team) query = query.eq('team', team);
   if (status) query = query.eq('status', status);
@@ -9,7 +16,11 @@ export async function getAthletes({ team, status } = {}) {
   const { data, error } = await query;
   if (error) throw error;
 
-  return data;
+  // Back-fill overall_rating if missing
+  return (data || []).map((a) => ({
+    ...a,
+    overall_rating: a.overall_rating ?? computeOverallRating(a),
+  }));
 }
 
 export async function getAthleteById(id) {
