@@ -55,3 +55,59 @@ export function verifyWebhookSignature(rawBody, signature) {
 export function generateReference(prefix = 'FN') {
   return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 }
+
+/**
+ * Fetch the list of Nigerian banks from Paystack.
+ */
+export async function getBanks() {
+  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+  const res = await fetch(`${PAYSTACK_BASE}/bank?country=nigeria&currency=NGN&perPage=200`, {
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
+  });
+  return res.json();
+}
+
+/**
+ * Verify a bank account number via Paystack.
+ */
+export async function resolveAccountNumber(account_number, bank_code) {
+  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+  const res = await fetch(
+    `${PAYSTACK_BASE}/bank/resolve?account_number=${encodeURIComponent(account_number)}&bank_code=${encodeURIComponent(bank_code)}`,
+    { headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` } }
+  );
+  return res.json();
+}
+
+/**
+ * Create a Paystack transfer recipient (NUBAN bank account).
+ */
+export async function createTransferRecipient({ name, account_number, bank_code }) {
+  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+  const res = await fetch(`${PAYSTACK_BASE}/transferrecipient`, {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'nuban', name, account_number, bank_code, currency: 'NGN' }),
+  });
+  return res.json();
+}
+
+/**
+ * Initiate a Paystack transfer to a recipient.
+ * Amount is in NGN — converted to kobo here.
+ */
+export async function initiateTransfer({ amount, recipient_code, reference, reason }) {
+  const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+  const res = await fetch(`${PAYSTACK_BASE}/transfer`, {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source:    'balance',
+      amount:    Math.round(amount * 100), // NGN → kobo
+      recipient: recipient_code,
+      reference,
+      reason,
+    }),
+  });
+  return res.json();
+}

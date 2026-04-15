@@ -4,18 +4,19 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Shield, ArrowLeftRight,
-  Trophy, Swords, Film, LogOut, ChevronRight, Banknote,
+  Trophy, Swords, Film, LogOut, ChevronRight, Banknote, ArrowUpCircle,
 } from 'lucide-react';
 
 const NAV = [
-  { href: '/admin',             label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/admin/athletes',    label: 'Athletes',    icon: Users },
-  { href: '/admin/teams',       label: 'Teams',       icon: Shield },
-  { href: '/admin/transfers',   label: 'Transfers',   icon: ArrowLeftRight },
-  { href: '/admin/tournaments', label: 'Tournaments', icon: Trophy },
-  { href: '/admin/wagers',      label: 'Wagers',      icon: Swords },
-  { href: '/admin/highlights',  label: 'Highlights',  icon: Film },
-  { href: '/admin/finance',     label: 'Finance',     icon: Banknote },
+  { href: '/admin',                label: 'Dashboard',   icon: LayoutDashboard },
+  { href: '/admin/athletes',       label: 'Athletes',    icon: Users },
+  { href: '/admin/teams',          label: 'Teams',       icon: Shield },
+  { href: '/admin/transfers',      label: 'Transfers',   icon: ArrowLeftRight },
+  { href: '/admin/tournaments',    label: 'Tournaments', icon: Trophy },
+  { href: '/admin/wagers',         label: 'Wagers',      icon: Swords },
+  { href: '/admin/highlights',     label: 'Highlights',  icon: Film },
+  { href: '/admin/finance',        label: 'Finance',     icon: Banknote },
+  { href: '/admin/withdrawals',    label: 'Withdrawals', icon: ArrowUpCircle },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

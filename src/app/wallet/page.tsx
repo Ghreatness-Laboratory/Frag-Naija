@@ -3,9 +3,15 @@
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Wallet, ArrowDownCircle, Clock, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  Wallet, ArrowDownCircle, ArrowUpCircle, Clock, TrendingUp,
+  AlertCircle, CheckCircle, Building2, Pencil, X, Loader2,
+} from 'lucide-react';
 
-const FEE_PERCENT = 10;
+const DEPOSIT_FEE_PERCENT  = 10;
+const WITHDRAW_FEE_PERCENT = 5;
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 type TxEntry = {
   id: string;
@@ -23,12 +29,38 @@ type WalletData = {
   total_lost: number;
 };
 
+type BankAccount = {
+  id: string;
+  bank_name: string;
+  bank_code: string;
+  account_number: string;
+  account_name: string;
+  paystack_recipient_code: string | null;
+};
+
+type Withdrawal = {
+  id: string;
+  amount: number;
+  fee: number;
+  amount_sent: number;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  status: string;
+  admin_note: string | null;
+  created_at: string;
+};
+
+type Bank = { id: number; name: string; code: string };
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 function fmt(n: number) {
   return '₦' + Number(n).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function typeColor(type: string) {
-  if (type === 'deposit' || type === 'credit' || type === 'winnings' || type === 'refund') return 'text-fn-green';
+  if (['deposit', 'credit', 'winnings', 'refund'].includes(type)) return 'text-fn-green';
   return 'text-fn-red';
 }
 
@@ -57,23 +89,23 @@ function statusBadge(status: string) {
     </span>
   );
 }
-
 function WalletContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const [wallet,  setWallet]  = useState<WalletData | null>(null);
-  const [history, setHistory] = useState<TxEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [authErr, setAuthErr] = useState(false);
+  const [wallet,      setWallet]      = useState<WalletData | null>(null);
+  const [history,     setHistory]     = useState<TxEntry[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
+  const [loading,     setLoading]     = useState(true);
+  const [authErr,     setAuthErr]     = useState(false);
+  const [tab,         setTab]         = useState<Tab>('deposit');
 
-  const [amount,    setAmount]    = useState('');
-  const [paying,    setPaying]    = useState(false);
-  const [payErr,    setPayErr]    = useState('');
-  const [showSuccess, setShowSuccess] = useState(searchParams.get('status') === 'success');
-
-  const fee      = amount ? Math.round(Number(amount) * FEE_PERCENT) / 100 : 0;
-  const credited = amount ? Number(amount) - fee : 0;
+  // Deposit state
+  const [depAmount,    setDepAmount]    = useState('');
+  const [paying,       setPaying]       = useState(false);
+  const [payErr,       setPayErr]       = useState('');
+  const [showSuccess,  setShowSuccess]  = useState(searchParams.get('status') === 'success');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,8 +116,9 @@ function WalletContent() {
       setWallet(data.wallet);
       setHistory(data.history || []);
     }
+    await Promise.all([loadWithdrawals(), loadBankAccount()]);
     setLoading(false);
-  }, []);
+  }, [loadWithdrawals, loadBankAccount]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -102,13 +135,13 @@ function WalletContent() {
   async function handleDeposit(e: React.FormEvent) {
     e.preventDefault();
     setPayErr('');
-    if (!amount || Number(amount) < 500) { setPayErr('Minimum deposit is ₦500'); return; }
+    if (!depAmount || Number(depAmount) < 500) { setPayErr('Minimum deposit is ₦500'); return; }
     setPaying(true);
     try {
       const res  = await fetch('/api/deposit/pay', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ amount: Number(amount) }),
+        body:    JSON.stringify({ amount: Number(depAmount) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to initialise payment');
@@ -116,6 +149,44 @@ function WalletContent() {
     } catch (err: unknown) {
       setPayErr(err instanceof Error ? err.message : 'Payment error');
       setPaying(false);
+    }
+  }
+
+  async function handleWithdraw(e: React.FormEvent) {
+    e.preventDefault();
+    setWdErr('');
+    setWdSuccess('');
+    if (!wdAmount || Number(wdAmount) < 1000) { setWdErr('Minimum withdrawal is ₦1,000'); return; }
+    setWdBusy(true);
+    try {
+      const res  = await fetch('/api/withdraw', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ amount: Number(wdAmount) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
+      setWdSuccess('Withdrawal request submitted! Admin will review within 24 hours.');
+      setWdAmount('');
+      load();
+    } catch (err: unknown) {
+      setWdErr(err instanceof Error ? err.message : 'Withdrawal failed');
+    } finally {
+      setWdBusy(false);
+    }
+  }
+
+  async function handleCancel(id: string) {
+    setCancelling(id);
+    try {
+      const res = await fetch(`/api/withdraw/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Cancel failed');
+      load();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Could not cancel');
+    } finally {
+      setCancelling(null);
     }
   }
 
@@ -153,6 +224,7 @@ function WalletContent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
             <p className="text-fn-muted text-xs uppercase tracking-widest mb-1">Available Balance</p>
@@ -176,122 +248,272 @@ function WalletContent() {
 
           <div className="bg-fn-dark border border-fn-gborder rounded-lg p-4 space-y-2">
             <p className="text-fn-muted text-[11px] leading-relaxed">
-              <span className="text-fn-yellow font-bold">Fee notice:</span> A 10% platform fee applies to all deposits. Minimum deposit is ₦500.
+              <span className="text-fn-yellow font-bold">Deposit fee:</span> 10% platform fee on all deposits. Min ₦500.
             </p>
             <p className="text-fn-muted text-[11px] leading-relaxed">
-              <span className="text-fn-yellow font-bold">Payout cap:</span> Maximum payout per bet is $2,000 USD.
+              <span className="text-fn-yellow font-bold">Withdrawal fee:</span> 5% fee deducted from withdrawal amount. Min ₦1,000.
             </p>
           </div>
         </div>
 
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <ArrowDownCircle className="w-5 h-5 text-fn-green" />
-              <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Deposit Funds</h2>
-            </div>
-
-            <form onSubmit={handleDeposit} className="space-y-4">
-              <div>
-                <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Amount (NGN)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fn-muted font-bold text-sm">₦</span>
-                  <input
-                    type="number"
-                    min="500"
-                    step="100"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-fn-dark border border-fn-gborder rounded pl-8 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
-                    placeholder="1,000"
-                  />
-                </div>
-                <div className="flex gap-2 mt-2">
-                  {[500, 1000, 5000, 10000].map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setAmount(String(v))}
-                      className="flex-1 text-[10px] font-bold tracking-wider bg-fn-dark border border-fn-gborder text-fn-muted hover:text-fn-green hover:border-fn-green/50 py-1.5 rounded-sm transition-all"
-                    >
-                      ₦{v.toLocaleString()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {amount && Number(amount) > 0 && (
-                <div className="bg-fn-dark border border-fn-gborder rounded p-4 space-y-2 text-sm font-mono">
-                  <div className="flex justify-between text-fn-muted">
-                    <span>Amount entered</span>
-                    <span className="text-fn-text">{fmt(Number(amount))}</span>
-                  </div>
-                  <div className="flex justify-between text-fn-muted">
-                    <span>Platform fee (10%)</span>
-                    <span className="text-fn-red">− {fmt(fee)}</span>
-                  </div>
-                  <div className="border-t border-fn-gborder pt-2 flex justify-between font-bold">
-                    <span className="text-fn-muted uppercase tracking-wider text-xs">You will receive</span>
-                    <span className="text-fn-green">{fmt(credited)}</span>
-                  </div>
-                </div>
-              )}
-
-              {payErr && (
-                <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">{payErr}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={paying || !amount}
-                className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
-              >
-                {paying ? 'Redirecting to Paystack...' : 'Proceed to Pay'}
-              </button>
-            </form>
+          {/* Tab switcher */}
+          <div className="flex border-b border-fn-gborder">
+            <button
+              onClick={() => setTab('deposit')}
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest border-b-2 -mb-px transition-all ${
+                tab === 'deposit' ? 'border-fn-green text-fn-green' : 'border-transparent text-fn-muted hover:text-fn-text'
+              }`}
+            >
+              <ArrowDownCircle size={14} /> Deposit
+            </button>
+            <button
+              onClick={() => setTab('withdraw')}
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest border-b-2 -mb-px transition-all ${
+                tab === 'withdraw' ? 'border-fn-green text-fn-green' : 'border-transparent text-fn-muted hover:text-fn-text'
+              }`}
+            >
+              <ArrowUpCircle size={14} /> Withdraw
+            </button>
           </div>
+                </div>
 
-          <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <Clock className="w-5 h-5 text-fn-muted" />
-              <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Transaction History</h2>
-            </div>
-
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-12 bg-fn-dark rounded animate-pulse" />
-                ))}
-              </div>
-            ) : history.length === 0 ? (
-              <div className="text-center py-10">
-                <TrendingUp className="w-8 h-8 text-fn-muted mx-auto mb-3" />
-                <p className="text-fn-muted text-sm">No transactions yet</p>
-                <p className="text-fn-muted text-xs mt-1">Make your first deposit to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {history.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="flex items-center justify-between py-3 border-b border-fn-gborder last:border-0"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-fn-muted text-[10px] uppercase tracking-wider">{typeLabel(tx.type)}</span>
-                        {statusBadge(tx.status)}
-                      </div>
-                      <p className="text-fn-text text-xs truncate max-w-[220px]">{tx.description}</p>
-                      <p className="text-fn-muted text-[10px] mt-0.5">{new Date(tx.date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                <form onSubmit={handleDeposit} className="space-y-4">
+                  <div>
+                    <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Amount (NGN)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fn-muted font-bold text-sm">₦</span>
+                      <input
+                        type="number"
+                        min="500"
+                        step="100"
+                        value={depAmount}
+                        onChange={(e) => setDepAmount(e.target.value)}
+                        className="w-full bg-fn-dark border border-fn-gborder rounded pl-8 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
+                        placeholder="1,000"
+                      />
                     </div>
-                    <span className={`font-bold font-mono text-sm shrink-0 ml-4 ${typeColor(tx.type)}`}>
-                      {tx.amount >= 0 ? '+' : ''}{fmt(tx.amount)}
-                    </span>
+                    <div className="flex gap-2 mt-2">
+                      {[500, 1000, 5000, 10000].map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setDepAmount(String(v))}
+                          className="flex-1 text-[10px] font-bold tracking-wider bg-fn-dark border border-fn-gborder text-fn-muted hover:text-fn-green hover:border-fn-green/50 py-1.5 rounded-sm transition-all"
+                        >
+                          ₦{v.toLocaleString()}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                ))}
+
+                  {depAmount && Number(depAmount) > 0 && (
+                    <div className="bg-fn-dark border border-fn-gborder rounded p-4 space-y-2 text-sm font-mono">
+                      <div className="flex justify-between text-fn-muted">
+                        <span>Amount entered</span>
+                        <span className="text-fn-text">{fmt(Number(depAmount))}</span>
+                      </div>
+                      <div className="flex justify-between text-fn-muted">
+                        <span>Platform fee (10%)</span>
+                        <span className="text-fn-red">− {fmt(depFee)}</span>
+                      </div>
+                      <div className="border-t border-fn-gborder pt-2 flex justify-between font-bold">
+                        <span className="text-fn-muted uppercase tracking-wider text-xs">You will receive</span>
+                        <span className="text-fn-green">{fmt(depCredited)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {payErr && (
+                    <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">{payErr}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={paying || !depAmount}
+                    className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
+                  >
+                    {paying ? 'Redirecting to Paystack...' : 'Proceed to Pay'}
+                  </button>
+                </form>
               </div>
-            )}
-          </div>
+
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="text-center py-10">
+                    <TrendingUp className="w-8 h-8 text-fn-muted mx-auto mb-3" />
+                    <p className="text-fn-muted text-sm">No transactions yet</p>
+                    <p className="text-fn-muted text-xs mt-1">Make your first deposit to get started</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {history.map((tx) => (
+                      <div
+                        key={tx.id}
+                        className="flex items-center justify-between py-3 border-b border-fn-gborder last:border-0"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-fn-muted text-[10px] uppercase tracking-wider">{typeLabel(tx.type)}</span>
+                            {statusBadge(tx.status)}
+                          </div>
+                          <p className="text-fn-text text-xs truncate max-w-[220px]">{tx.description}</p>
+                          <p className="text-fn-muted text-[10px] mt-0.5">{new Date(tx.date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        </div>
+                        <span className={`font-bold font-mono text-sm shrink-0 ml-4 ${typeColor(tx.type)}`}>
+                          {tx.amount >= 0 ? '+' : ''}{fmt(tx.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── WITHDRAW TAB ── */}
+          {tab === 'withdraw' && (
+            <>
+              {/* Bank account */}
+              <BankAccountSection bankAccount={bankAccount} onSaved={(acct) => setBankAccount(acct)} />
+
+              {/* Withdrawal form */}
+              <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <ArrowUpCircle className="w-5 h-5 text-fn-green" />
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Withdraw Funds</h2>
+                </div>
+
+
+                <form onSubmit={handleWithdraw} className="space-y-4">
+                  <div>
+                    <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Amount (NGN)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fn-muted font-bold text-sm">₦</span>
+                      <input
+                        type="number"
+                        min="1000"
+                        step="100"
+                        value={wdAmount}
+                        onChange={(e) => setWdAmount(e.target.value)}
+                        disabled={hasPending || !bankAccount}
+                        className="w-full bg-fn-dark border border-fn-gborder rounded pl-8 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors disabled:opacity-50"
+                        placeholder="1,000"
+                      />
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      {[1000, 5000, 10000, 50000].map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          disabled={hasPending || !bankAccount}
+                          onClick={() => setWdAmount(String(v))}
+                          className="flex-1 text-[10px] font-bold tracking-wider bg-fn-dark border border-fn-gborder text-fn-muted hover:text-fn-green hover:border-fn-green/50 py-1.5 rounded-sm transition-all disabled:opacity-40"
+                        >
+                          ₦{v.toLocaleString()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {wdAmount && Number(wdAmount) > 0 && (
+                    <div className="bg-fn-dark border border-fn-gborder rounded p-4 space-y-2 text-sm font-mono">
+                      <div className="flex justify-between text-fn-muted">
+                        <span>Withdrawal amount</span>
+                        <span className="text-fn-text">{fmt(Number(wdAmount))}</span>
+                      </div>
+                      <div className="flex justify-between text-fn-muted">
+                        <span>Fee (5%)</span>
+                        <span className="text-fn-red">− {fmt(wdFee)}</span>
+                      </div>
+                      <div className="border-t border-fn-gborder pt-2 flex justify-between font-bold">
+                        <span className="text-fn-muted uppercase tracking-wider text-xs">You will receive</span>
+                        <span className="text-fn-green">{fmt(wdNet)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {wdErr && (
+                    <div className="flex items-start gap-2 text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">
+                      <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                      {wdErr}
+                    </div>
+                  )}
+
+                  {wdSuccess && (
+                    <div className="flex items-start gap-2 text-fn-green text-xs bg-fn-green/10 border border-fn-green/20 rounded px-3 py-2">
+                      <CheckCircle size={12} className="mt-0.5 shrink-0" />
+                      {wdSuccess}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={wdBusy || hasPending || !bankAccount || !wdAmount}
+                    className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
+                  >
+                    {wdBusy ? 'Submitting...' : 'Request Withdrawal'}
+                  </button>
+
+                  {!bankAccount && (
+                    <p className="text-fn-muted text-[11px] text-center">Set up your payout account above before withdrawing.</p>
+                  )}
+                </form>
+              </div>
+
+              {/* Withdrawal history */}
+              <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <Clock className="w-5 h-5 text-fn-muted" />
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Withdrawal History</h2>
+                </div>
+
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => <div key={i} className="h-14 bg-fn-dark rounded animate-pulse" />)}
+                  </div>
+                ) : withdrawals.length === 0 ? (
+                  <div className="text-center py-10">
+                    <ArrowUpCircle className="w-8 h-8 text-fn-muted mx-auto mb-3" />
+                    <p className="text-fn-muted text-sm">No withdrawals yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {withdrawals.map((w) => (
+                      <div key={w.id} className="flex items-center justify-between p-3 bg-fn-dark border border-fn-gborder rounded">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {wdStatusBadge(w.status)}
+                            <span className="text-fn-muted text-[10px]">
+                              {new Date(w.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-fn-text text-xs font-mono">
+                            {fmt(w.amount)} → {fmt(w.amount_sent)} after fee
+                          </p>
+                          <p className="text-fn-muted text-[10px] mt-0.5">
+                            {w.bank_name} · ****{w.account_number.slice(-4)} · {w.account_name}
+                          </p>
+                          {w.admin_note && (
+                            <p className="text-fn-yellow text-[10px] mt-0.5">Note: {w.admin_note}</p>
+                          )}
+                        </div>
+                        {w.status === 'Pending' && (
+                          <button
+                            onClick={() => handleCancel(w.id)}
+                            disabled={cancelling === w.id}
+                            className="ml-4 shrink-0 text-fn-red hover:text-fn-red/80 text-[10px] font-bold uppercase tracking-wider border border-fn-red/30 hover:border-fn-red/60 px-3 py-1.5 rounded transition-all disabled:opacity-50"
+                          >
+                            {cancelling === w.id ? <Loader2 size={11} className="animate-spin" /> : 'Cancel'}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
