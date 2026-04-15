@@ -96,7 +96,7 @@ export async function createTransferRecipient({ name, account_number, bank_code 
  * Initiate a Paystack transfer to a recipient.
  * Amount is in NGN — converted to kobo here.
  */
-export async function initiateTransfer({ amount, recipient_code, reference, reason }) {
+export async function initiateTransfer({ amount, recipient, reference, reason }) {
   const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
   const res = await fetch(`${PAYSTACK_BASE}/transfer`, {
     method:  'POST',
@@ -104,7 +104,7 @@ export async function initiateTransfer({ amount, recipient_code, reference, reas
     body: JSON.stringify({
       source:    'balance',
       amount:    Math.round(amount * 100), // NGN → kobo
-      recipient: recipient_code,
+      recipient,
       reference,
       reason,
     }),

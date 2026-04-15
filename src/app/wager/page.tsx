@@ -13,9 +13,8 @@ import {
   Zap,
 } from "lucide-react";
 
-import { useActiveWagers, useFeatured, useMe, useMyWagers, usePlaceWager, usePredictors, useWalletTransactions } from "@/lib/hooks";
-
 type CurrentUser = {
+  id?: string | null;
   email?: string | null;
   wallet?: {
     balance?: number | string | null;
@@ -49,6 +48,184 @@ type WalletTransaction = {
   description?: string | null;
   created_at?: string | null;
 };
+
+type Bank = {
+  name: string;
+  code: string;
+};
+
+function WithdrawalModal({
+  open,
+  onClose,
+  balance,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  balance: number;
+  onSuccess: () => void;
+}) {
+  const [amount, setAmount] = useState("1000");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankCode, setBankCode] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const { data: banks } = useBanks();
+  const { withdraw, loading: withdrawLoading } = useWithdraw();
+
+  if (!open) return null;
+
+  async function handleWithdraw() {
+    if (!amount || !accountNumber || !bankCode || !accountName) {
+      setMessage("All fields are required.");
+      return;
+    }
+
+    const numericAmount = Number(amount);
+    if (numericAmount < 1000) {
+      setMessage("Minimum withdrawal is ₦1,000.");
+      return;
+    }
+
+    if (numericAmount > balance) {
+      setMessage("Insufficient funds.");
+      return;
+    }
+
+    setMessage(null);
+
+    try {
+      await withdraw({
+        amount: numericAmount,
+        account_number: accountNumber,
+        bank_code: bankCode,
+        name: accountName,
+      });
+      setIsSuccess(true);
+      onSuccess();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Withdrawal failed.");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-6 shadow-2xl">
+        <h2 className="mb-4 font-display text-xl font-black uppercase tracking-tight text-fn-text">
+          WITHDRAW FUNDS
+        </h2>
+
+        {isSuccess ? (
+          <div className="space-y-4 py-4 text-center">
+            <div className="rounded-sm border border-fn-green/30 bg-fn-green/10 p-4">
+              <Zap size={24} className="mx-auto mb-2 text-fn-green" />
+              <p className="text-sm font-bold text-fn-text uppercase tracking-widest">Withdrawal Initiated</p>
+              <p className="mt-1 text-[10px] text-fn-muted">
+                Your transfer of {formatCurrency(Number(amount))} is being processed.
+              </p>
+            </div>
+            <button onClick={onClose} className="fn-btn w-full py-3">
+              CLOSE
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold text-fn-muted uppercase tracking-widest">AMOUNT (MIN ₦1,000)</label>
+              <div className="flex items-center rounded-sm border border-fn-gborder bg-fn-dark px-3">
+                <span className="mr-2 text-[10px] text-fn-muted">₦</span>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
+                  placeholder="1000"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setAmount(String(Math.floor(balance)))}
+                className="rounded-sm border border-fn-gborder bg-fn-dark py-1.5 text-[9px] font-bold text-fn-muted hover:border-fn-green/30 hover:text-fn-text transition-all"
+              >
+                USE MAX
+              </button>
+              <button
+                onClick={() => setAmount("1000")}
+                className="rounded-sm border border-fn-gborder bg-fn-dark py-1.5 text-[9px] font-bold text-fn-muted hover:border-fn-green/30 hover:text-fn-text transition-all"
+              >
+                MINIMUM (₦1K)
+              </button>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold text-fn-muted uppercase tracking-widest">SELECT BANK</label>
+              <select
+                value={bankCode}
+                onChange={(e) => setBankCode(e.target.value)}
+                className="w-full rounded-sm border border-fn-gborder bg-fn-dark px-3 py-2.5 text-[11px] font-bold text-fn-text outline-none appearance-none"
+              >
+                <option value="">Choose your bank...</option>
+                {Array.isArray(banks) &&
+                  banks.map((bank: Bank) => (
+                    <option key={bank.code} value={bank.code}>
+                      {bank.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold text-fn-muted uppercase tracking-widest">ACCOUNT NUMBER</label>
+              <input
+                type="text"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                className="w-full rounded-sm border border-fn-gborder bg-fn-dark px-3 py-2.5 text-[11px] font-bold text-fn-text outline-none"
+                placeholder="10-digit number"
+                maxLength={10}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[10px] font-bold text-fn-muted uppercase tracking-widest">ACCOUNT NAME</label>
+              <input
+                type="text"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                className="w-full rounded-sm border border-fn-gborder bg-fn-dark px-3 py-2.5 text-[11px] font-bold text-fn-text outline-none"
+                placeholder="Full Legal Name"
+              />
+            </div>
+
+            {message && <p className="text-[10px] font-bold text-fn-red uppercase">{message}</p>}
+
+            <div className="flex gap-2 pt-2">
+              <button onClick={onClose} className="fn-btn-outline flex-1 py-3 text-[10px] uppercase">
+                CANCEL
+              </button>
+              <button
+                onClick={handleWithdraw}
+                disabled={withdrawLoading || !bankCode || !accountNumber || !accountName}
+                className={`fn-btn flex-1 py-3 text-[10px] uppercase ${
+                  withdrawLoading || !bankCode || !accountNumber || !accountName
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                {withdrawLoading ? "PROCESSING..." : "CONFIRM WITHDRAW"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-NG", {
@@ -441,10 +618,11 @@ function WagerCard({
 
 function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
   const { data: wagers, loading: wagersLoading, error: wagersError, refetch } = useActiveWagers();
-  const { data: me, loading: meLoading } = useMe();
+  const { data: me, loading: meLoading, refetch: refetchMe } = useMe();
   const {
     data: myWagers,
     loading: myWagersLoading,
@@ -484,21 +662,43 @@ function WagerPageContent() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-3 rounded-sm border border-fn-yellow/30 bg-fn-card px-4 py-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-fn-yellow/40 bg-fn-yellow/20 text-sm">
-              <Wallet size={14} className="text-fn-yellow" />
-            </div>
-            <div>
-              <div className="fn-label">CURRENT BALANCE</div>
-              <div className="font-display text-xl font-black text-fn-yellow">
-                {meLoading ? "Loading..." : formatCurrency(walletBalance)}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 rounded-sm border border-fn-yellow/30 bg-fn-card px-4 py-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-fn-yellow/40 bg-fn-yellow/20 text-sm">
+                <Wallet size={14} className="text-fn-yellow" />
+              </div>
+              <div>
+                <div className="fn-label">CURRENT BALANCE</div>
+                <div className="font-display text-xl font-black text-fn-yellow">
+                  {meLoading ? "Loading..." : formatCurrency(walletBalance)}
+                </div>
               </div>
             </div>
+            
+            {currentUser?.email && (
+              <button
+                onClick={() => setIsWithdrawOpen(true)}
+                className="fn-btn-outline h-full px-6 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-fn-yellow/10 hover:border-fn-yellow/50"
+              >
+                WITHDRAW
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       <div className="px-4 py-6 sm:px-8 lg:px-12">
+        {isWithdrawOpen && (
+          <WithdrawalModal
+            open={isWithdrawOpen}
+            onClose={() => setIsWithdrawOpen(false)}
+            balance={walletBalance}
+            onSuccess={() => {
+              refetchMe();
+              refetchWalletTx();
+            }}
+          />
+        )}
         {status === "success" && (
           <div className="mb-4 rounded-sm border border-fn-green/30 bg-fn-green/10 px-4 py-3 text-[11px] text-fn-text">
             Payment completed. Your wager is being confirmed and will show up after Paystack webhook processing.

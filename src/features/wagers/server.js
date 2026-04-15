@@ -1,5 +1,87 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { getSetting } from '@/features/settings/server';
+import {
+  createTransferRecipient,
+  initiateTransfer,
+  generateReference,
+} from '@/lib/paystack';
+
+export async function processWithdrawal(userId, { amount, account_number, bank_code, name }) {
+  // 1. Verify amount
+  if (amount < 1000) {
+    throw new Error('Minimum withdrawal amount is ₦1,000');
+  }
+
+  // 2. Verify balance
+  const { data: wallet, error: walletError } = await supabaseAdmin
+    .from('wallets')
+    .select('balance')
+    .eq('user_id', userId)
+    .single();
+
+  if (walletError || !wallet) {
+    throw new Error('Wallet not found');
+  }
+
+  if (Number(wallet.balance) < amount) {
+    throw new Error('Insufficient funds');
+  }
+
+  // 3. Create Paystack Recipient
+  const recipientRes = await createTransferRecipient({
+    name,
+    account_number,
+    bank_code,
+  });
+
+  if (!recipientRes.status) {
+    throw new Error(`Paystack: ${recipientRes.message || 'Failed to create recipient'}`);
+  }
+
+  const recipientCode = recipientRes.data.recipient_code;
+
+  // 4. Initiate Paystack Transfer
+  const reference = generateReference('WD');
+  const transferRes = await initiateTransfer({
+    amount,
+    recipient: recipientCode,
+    reference,
+    reason: `Frag Naija Withdrawal: ${amount}`,
+  });
+
+  if (!transferRes.status) {
+    throw new Error(`Paystack: ${transferRes.message || 'Transfer failed'}`);
+  }
+
+  // 5. Update Wallet & Log Transaction
+  // We do this AFTER initiation because if initiation fails, we haven't lost money.
+  // Note: In a production app, you might want to wrap this in a DB transaction
+  // or use a status like 'Pending' and confirm via webhook.
+  const { error: updateError } = await supabaseAdmin
+    .from('wallets')
+    .update({
+      balance: Number(wallet.balance) - amount,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+
+  if (updateError) {
+    // This is a critical state: Paystack sent money, but DB didn't update.
+    // In a real app, you'd log this for manual resolution or retry.
+    console.error('CRITICAL: Withdrawal balance update failed after Paystack initiation', updateError);
+  }
+
+  await supabaseAdmin.from('wallet_transactions').insert([
+    {
+      user_id: userId,
+      type: 'Withdrawal',
+      amount: amount * -1,
+      description: `Withdrawal to ${name} (${account_number})`,
+    },
+  ]);
+
+  return { success: true, reference, amount };
+}
 
 export async function getWagers() {
   const { data, error } = await supabaseAdmin

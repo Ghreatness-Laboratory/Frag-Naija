@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS wallet_transactions (
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   wager_id    UUID REFERENCES wagers(id) ON DELETE SET NULL,
   bet_id      UUID REFERENCES wager_bets(id) ON DELETE SET NULL,
-  type        TEXT NOT NULL CHECK (type IN ('Stake', 'Payout', 'Refund', 'Adjustment')),
+  type        TEXT NOT NULL CHECK (type IN ('Stake', 'Payout', 'Refund', 'Adjustment', 'Withdrawal')),
   amount      NUMERIC(12,2) NOT NULL, -- negative for stake, positive for payout/refund
   currency    TEXT DEFAULT 'NGN',
   description TEXT,

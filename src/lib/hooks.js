@@ -110,7 +110,11 @@ export function useMe() {
   return useFetch('/api/auth/me');
 }
 
-// ─── Wager actions ───────────────────────────────────────────────────────────────
+export function useBanks() {
+  return useFetch('/api/wallet/banks');
+}
+
+// ─── Wager actions ───────────────────────────────────────────────────────────
 
 /**
  * Returns a function to call the Paystack payment initializer.
@@ -143,18 +147,4 @@ export function usePlaceWager() {
   }
 
   return { placeWager, loading, error };
-}
-
-// ─── Content ──────────────────────────────────────────────────────────────────
-
-export function useNews() {
-  return useFetch('/api/news');
-}
-
-export function usePredictors() {
-  return useFetch('/api/predictors');
-}
-
-export function useFeatured() {
-  return useFetch('/api/featured');
 }
