@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getTournamentById, deleteTournament } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   try {
     const data = await getTournamentById(params.id);

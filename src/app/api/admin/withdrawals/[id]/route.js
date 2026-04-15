@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { checkAdmin } from '@/lib/checkAdmin';
 import { adminUpdateWithdrawal } from '@/features/withdrawals/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(request, { params }) {
   const authErr = await checkAdmin();
   if (authErr) return authErr;

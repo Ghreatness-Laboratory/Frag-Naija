@@ -3,6 +3,8 @@ import { deleteHighlight } from '@/lib/db';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/checkAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(request, { params }) {
   const authErr = await checkAdmin();
   if (authErr) return authErr;

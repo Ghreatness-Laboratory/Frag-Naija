@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/features/auth/server';
 import { getUserWithdrawals, submitWithdrawal } from '@/features/withdrawals/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const user = await getCurrentUser();

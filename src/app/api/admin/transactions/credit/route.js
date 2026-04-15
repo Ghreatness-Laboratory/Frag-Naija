@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { checkAdmin } from '@/lib/checkAdmin';
 import { manualWalletAdjustment } from '@/features/deposits/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   const authErr = await checkAdmin();
   if (authErr) return authErr;

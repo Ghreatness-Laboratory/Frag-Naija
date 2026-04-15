@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/features/auth/server';
 import { cancelWithdrawal } from '@/features/withdrawals/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(request, { params }) {
   try {
     const user = await getCurrentUser();

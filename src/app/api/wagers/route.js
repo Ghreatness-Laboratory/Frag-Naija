@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getWagers, createWager } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const data = await getWagers();

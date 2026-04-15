@@ -3,6 +3,8 @@ import { getWagerById, deleteWager } from '@/lib/db';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/checkAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   try {
     const data = await getWagerById(params.id);

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { checkAdmin } from '@/lib/checkAdmin';
 import { getSettings, updateSetting } from '@/features/settings/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const authErr = await checkAdmin();
   if (authErr) return authErr;

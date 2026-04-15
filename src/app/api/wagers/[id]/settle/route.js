@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { settleWager } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(request, { params }) {
   const authErr = await checkAdmin();
   if (authErr) return authErr;
