@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initializeTransaction, generateReference } from '@/lib/paystack';
-import { getWagerForPlacement } from '@/features/wagers/server';
+import { getWagerForPlacement, getUserIdByEmail, createWagerBet } from '@/features/wagers/server';
+import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,14 +14,6 @@ export async function POST(request) {
         { error: 'wager_id, selection, amount, and email are required' },
         { status: 400 }
       );
-    }
-
-    if (!process.env.PAYSTACK_SECRET_KEY) {
-      return NextResponse.json({ error: 'PAYSTACK_SECRET_KEY is not configured' }, { status: 500 });
-    }
-
-    if (!process.env.NEXT_PUBLIC_SITE_URL) {
-      return NextResponse.json({ error: 'NEXT_PUBLIC_SITE_URL is not configured' }, { status: 500 });
     }
 
     if (amount < 100) {
@@ -67,6 +60,42 @@ export async function POST(request) {
     }
 
     const potential = Number(amount) * Number(odds);
+
+    // ── Try wallet-balance payment first ────────────────────────────────────
+    const user_id = await getUserIdByEmail(email);
+    if (user_id) {
+      const { data: wallet } = await supabaseAdmin
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user_id)
+        .single();
+
+      if (wallet && Number(wallet.balance) >= Number(amount)) {
+        // Deduct from wallet
+        await supabaseAdmin
+          .from('wallets')
+          .update({
+            balance:    Number(wallet.balance) - Number(amount),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user_id);
+
+        const reference = generateReference('FNW');
+        await createWagerBet({ wager_id, user_id, email, selection, amount: Number(amount), potential, reference });
+
+        return NextResponse.json({ paid_from_wallet: true, potential });
+      }
+    }
+
+    // ── Fall back to Paystack checkout ──────────────────────────────────────
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return NextResponse.json({ error: 'PAYSTACK_SECRET_KEY is not configured' }, { status: 500 });
+    }
+
+    if (!process.env.NEXT_PUBLIC_SITE_URL) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_SITE_URL is not configured' }, { status: 500 });
+    }
+
     const reference = generateReference('FN');
 
     const result = await initializeTransaction({

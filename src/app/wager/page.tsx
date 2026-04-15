@@ -444,8 +444,14 @@ function WagerCard({
         amount: numericAmount,
         email: activeEmail,
       });
-      onPlaced?.();
-      window.location.href = result.authorization_url;
+      if (result.paid_from_wallet) {
+        setMessage("Wager placed! Stake deducted from your wallet.");
+        setPicked(null);
+        onPlaced?.();
+      } else {
+        onPlaced?.();
+        window.location.href = result.authorization_url;
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to start checkout.");
     }
@@ -602,7 +608,11 @@ function WagerCard({
         </div>
 
         {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
-        {message && <p className="mt-2 text-[9px] text-fn-red">{message}</p>}
+        {message && (
+          <p className={`mt-2 text-[9px] ${
+            message.startsWith("Wager placed") ? "text-fn-green" : "text-fn-red"
+          }`}>{message}</p>
+        )}
       </div>
 
       <div className="flex items-center justify-between border-t border-fn-gborder bg-fn-dark/50 px-4 py-2.5">
