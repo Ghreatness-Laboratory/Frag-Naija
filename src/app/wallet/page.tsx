@@ -89,6 +89,200 @@ function statusBadge(status: string) {
     </span>
   );
 }
+
+function wdStatusBadge(status: string) {
+  const map: Record<string, string> = {
+    Pending:   'bg-fn-yellow/10 text-fn-yellow border-fn-yellow/30',
+    Approved:  'bg-fn-green/10 text-fn-green border-fn-green/30',
+    Completed: 'bg-fn-green/20 text-fn-green border-fn-green/40',
+    Failed:    'bg-fn-red/10 text-fn-red border-fn-red/30',
+    Cancelled: 'bg-fn-muted/10 text-fn-muted border-fn-gborder',
+  };
+  return (
+    <span className={`text-[9px] font-bold px-2 py-0.5 border uppercase tracking-widest rounded-sm ${map[status] ?? 'bg-fn-muted/10 text-fn-muted border-fn-gborder'}`}>
+      {status}
+    </span>
+  );
+}
+
+// ── BankAccountSection ───────────────────────────────────────────────────────
+
+function BankAccountSection({
+  bankAccount,
+  onSaved,
+}: {
+  bankAccount: BankAccount | null;
+  onSaved: (acct: BankAccount) => void;
+}) {
+  const [editing,   setEditing]   = useState(!bankAccount);
+  const [banks,     setBanks]     = useState<Bank[]>([]);
+  const [bankCode,  setBankCode]  = useState('');
+  const [accNum,    setAccNum]    = useState('');
+  const [accName,   setAccName]   = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [saving,    setSaving]    = useState(false);
+  const [err,       setErr]       = useState('');
+
+  useEffect(() => {
+    if (!editing) return;
+    fetch('/api/banks')
+      .then((r) => r.json())
+      .then((d) => d.data && setBanks(d.data))
+      .catch(() => {});
+  }, [editing]);
+
+  async function handleVerify() {
+    setErr('');
+    setAccName('');
+    if (!bankCode || accNum.length !== 10) {
+      setErr('Enter a valid 10-digit account number and select a bank.');
+      return;
+    }
+    setVerifying(true);
+    try {
+      const res  = await fetch(`/api/bank-account/verify?account_number=${accNum}&bank_code=${bankCode}`);
+      const data = await res.json();
+      if (!res.ok || !data.data?.account_name) throw new Error(data.message || 'Could not verify account');
+      setAccName(data.data.account_name);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Verification failed');
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!accName) { setErr('Verify your account number first.'); return; }
+    const bank = banks.find((b) => b.code === bankCode);
+    if (!bank) { setErr('Select a bank.'); return; }
+    setSaving(true);
+    setErr('');
+    try {
+      const res  = await fetch('/api/bank-account', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ bank_name: bank.name, bank_code: bankCode, account_number: accNum, account_name: accName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      onSaved(data);
+      setEditing(false);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing && bankAccount) {
+    return (
+      <div className="bg-fn-card border border-fn-gborder rounded-lg p-5 mb-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-fn-green" />
+            <span className="text-fn-text font-bold text-xs uppercase tracking-widest">Payout Account</span>
+          </div>
+          <button
+            onClick={() => { setEditing(true); setBankCode(''); setAccNum(''); setAccName(''); setErr(''); }}
+            className="text-fn-muted hover:text-fn-green text-[10px] flex items-center gap-1 uppercase tracking-wider transition-colors"
+          >
+            <Pencil size={10} /> Change
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-fn-text font-bold text-sm">{bankAccount.account_name}</p>
+            <p className="text-fn-muted text-[11px] mt-0.5">
+              {bankAccount.bank_name} · ****{bankAccount.account_number.slice(-4)}
+            </p>
+          </div>
+          <CheckCircle className="w-5 h-5 text-fn-green" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-fn-card border border-fn-gborder rounded-lg p-5 mb-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-fn-green" />
+          <span className="text-fn-text font-bold text-xs uppercase tracking-widest">Set Payout Account</span>
+        </div>
+        {bankAccount && (
+          <button onClick={() => setEditing(false)} className="text-fn-muted hover:text-fn-text">
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Bank</label>
+          <select
+            value={bankCode}
+            onChange={(e) => { setBankCode(e.target.value); setAccName(''); }}
+            className="w-full bg-fn-dark border border-fn-gborder rounded px-3 py-2 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
+          >
+            <option value="">Select bank...</option>
+            {banks.map((b) => (
+              <option key={b.code} value={b.code}>{b.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Account Number</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              value={accNum}
+              onChange={(e) => { setAccNum(e.target.value.replace(/\D/g, '')); setAccName(''); }}
+              placeholder="0000000000"
+              className="flex-1 bg-fn-dark border border-fn-gborder rounded px-3 py-2 text-fn-text text-sm font-mono focus:outline-none focus:border-fn-green transition-colors"
+            />
+            <button
+              onClick={handleVerify}
+              disabled={verifying || accNum.length !== 10 || !bankCode}
+              className="px-4 py-2 bg-fn-dark border border-fn-gborder text-fn-muted hover:text-fn-green hover:border-fn-green/50 rounded text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            >
+              {verifying ? <Loader2 size={14} className="animate-spin" /> : 'Verify'}
+            </button>
+          </div>
+        </div>
+
+        {accName && (
+          <div className="flex items-center gap-2 bg-fn-green/10 border border-fn-green/20 rounded px-3 py-2">
+            <CheckCircle size={13} className="text-fn-green shrink-0" />
+            <span className="text-fn-green text-xs font-bold">{accName}</span>
+          </div>
+        )}
+
+        {err && (
+          <div className="flex items-start gap-2 text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">
+            <AlertCircle size={12} className="mt-0.5 shrink-0" />
+            {err}
+          </div>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={saving || !accName}
+          className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save Account'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main wallet content ───────────────────────────────────────────────────────
+
+type Tab = 'deposit' | 'withdraw';
+
 function WalletContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
@@ -102,10 +296,37 @@ function WalletContent() {
   const [tab,         setTab]         = useState<Tab>('deposit');
 
   // Deposit state
-  const [depAmount,    setDepAmount]    = useState('');
-  const [paying,       setPaying]       = useState(false);
-  const [payErr,       setPayErr]       = useState('');
-  const [showSuccess,  setShowSuccess]  = useState(searchParams.get('status') === 'success');
+  const [depAmount,   setDepAmount]   = useState('');
+  const [paying,      setPaying]      = useState(false);
+  const [payErr,      setPayErr]      = useState('');
+  const [showSuccess, setShowSuccess] = useState(searchParams.get('status') === 'success');
+
+  const depFee      = depAmount ? Math.round(Number(depAmount) * DEPOSIT_FEE_PERCENT) / 100 : 0;
+  const depCredited = depAmount ? Number(depAmount) - depFee : 0;
+
+  // Withdraw state
+  const [wdAmount,   setWdAmount]   = useState('');
+  const [wdBusy,     setWdBusy]     = useState(false);
+  const [wdErr,      setWdErr]      = useState('');
+  const [wdSuccess,  setWdSuccess]  = useState('');
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  const wdFee      = wdAmount ? Math.ceil(Number(wdAmount) * WITHDRAW_FEE_PERCENT) / 100 : 0;
+  const wdNet      = wdAmount ? Number(wdAmount) - wdFee : 0;
+  const hasPending = withdrawals.some((w) => w.status === 'Pending');
+
+  const loadWithdrawals = useCallback(async () => {
+    const res = await fetch('/api/withdraw');
+    if (res.ok) setWithdrawals(await res.json());
+  }, []);
+
+  const loadBankAccount = useCallback(async () => {
+    const res = await fetch('/api/bank-account');
+    if (res.ok) {
+      const data = await res.json();
+      setBankAccount(data || null);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -179,7 +400,7 @@ function WalletContent() {
   async function handleCancel(id: string) {
     setCancelling(id);
     try {
-      const res = await fetch(`/api/withdraw/${id}`, { method: 'DELETE' });
+      const res  = await fetch(`/api/withdraw/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Cancel failed');
       load();
@@ -215,6 +436,7 @@ function WalletContent() {
         </div>
       )}
 
+      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Wallet className="w-6 h-6 text-fn-green" />
@@ -224,7 +446,7 @@ function WalletContent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
+        {/* Left column */}
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
             <p className="text-fn-muted text-xs uppercase tracking-widest mb-1">Available Balance</p>
@@ -256,6 +478,7 @@ function WalletContent() {
           </div>
         </div>
 
+        {/* Right column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Tab switcher */}
           <div className="flex border-b border-fn-gborder">
@@ -276,6 +499,14 @@ function WalletContent() {
               <ArrowUpCircle size={14} /> Withdraw
             </button>
           </div>
+
+          {/* ── DEPOSIT TAB ── */}
+          {tab === 'deposit' && (
+            <>
+              <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <ArrowDownCircle className="w-5 h-5 text-fn-green" />
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Deposit Funds</h2>
                 </div>
 
                 <form onSubmit={handleDeposit} className="space-y-4">
@@ -338,6 +569,18 @@ function WalletContent() {
                 </form>
               </div>
 
+              {/* Transaction history */}
+              <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <Clock className="w-5 h-5 text-fn-muted" />
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Transaction History</h2>
+                </div>
+
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-12 bg-fn-dark rounded animate-pulse" />
+                    ))}
                   </div>
                 ) : history.length === 0 ? (
                   <div className="text-center py-10">
@@ -358,7 +601,9 @@ function WalletContent() {
                             {statusBadge(tx.status)}
                           </div>
                           <p className="text-fn-text text-xs truncate max-w-[220px]">{tx.description}</p>
-                          <p className="text-fn-muted text-[10px] mt-0.5">{new Date(tx.date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          <p className="text-fn-muted text-[10px] mt-0.5">
+                            {new Date(tx.date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
                         </div>
                         <span className={`font-bold font-mono text-sm shrink-0 ml-4 ${typeColor(tx.type)}`}>
                           {tx.amount >= 0 ? '+' : ''}{fmt(tx.amount)}
@@ -384,6 +629,12 @@ function WalletContent() {
                   <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Withdraw Funds</h2>
                 </div>
 
+                {hasPending && (
+                  <div className="flex items-start gap-2 text-fn-yellow text-xs bg-fn-yellow/10 border border-fn-yellow/20 rounded px-3 py-2 mb-4">
+                    <AlertCircle size={13} className="mt-0.5 shrink-0" />
+                    You have a pending withdrawal request. Cancel it below to submit a new one.
+                  </div>
+                )}
 
                 <form onSubmit={handleWithdraw} className="space-y-4">
                   <div>
@@ -456,7 +707,9 @@ function WalletContent() {
                   </button>
 
                   {!bankAccount && (
-                    <p className="text-fn-muted text-[11px] text-center">Set up your payout account above before withdrawing.</p>
+                    <p className="text-fn-muted text-[11px] text-center">
+                      Set up your payout account above before withdrawing.
+                    </p>
                   )}
                 </form>
               </div>
