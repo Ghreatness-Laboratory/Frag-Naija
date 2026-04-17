@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect width="80" height="80" rx="6" fill="#000d1a"/>
+  <rect x="1" y="1" width="78" height="78" rx="5.5" stroke="#0080FF" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- Stylised e letter with ball -->
+  <circle cx="40" cy="32" r="14" stroke="#0080FF" stroke-opacity="0.5" stroke-width="1.5" fill="#0080FF" fill-opacity="0.07"/>
+  <path d="M28 32 Q28 20 40 20 Q52 20 52 32 L28 32 Z" fill="#0080FF" opacity="0.35"/>
+  <path d="M28 34 Q30 44 40 44 Q50 44 52 38" stroke="#00CC66" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <rect x="28" y="31" width="24" height="3" fill="#0080FF" opacity="0.6"/>
+  <!-- Text -->
+  <text x="40" y="64" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="9" fill="#0080FF" letter-spacing="1" font-weight="900">eFOOTBALL</text>
+  <line x1="22" y1="68" x2="58" y2="68" stroke="#00CC66" stroke-opacity="0.4" stroke-width="1"/>
+</svg>
