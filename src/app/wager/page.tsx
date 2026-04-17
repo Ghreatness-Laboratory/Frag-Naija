@@ -393,7 +393,16 @@ function ProbBar({ yes, no }: { yes: number; no: number }) {
   );
 }
 
-type PlayerOption = { label: string; odds: number };
+type PickOption = { label: string; odds: number };
+
+const PICK_CONFIGS: Record<string, { prompt: string; badge: string; badgeStyle: string }> = {
+  player_pick:  { prompt: "Pick a player to back",   badge: "PLAYER PICK", badgeStyle: "border-fn-yellow/30 bg-fn-yellow/10 text-fn-yellow"     },
+  team_pick:    { prompt: "Pick a team to back",     badge: "TEAM PICK",   badgeStyle: "border-blue-400/30 bg-blue-400/10 text-blue-400"         },
+  mvp_pick:     { prompt: "Pick the MVP",            badge: "MVP PICK",    badgeStyle: "border-orange-400/30 bg-orange-400/10 text-orange-400"   },
+  map_pick:     { prompt: "Pick the winning map",    badge: "MAP PICK",    badgeStyle: "border-purple-400/30 bg-purple-400/10 text-purple-400"   },
+  outcome_pick: { prompt: "Pick the match outcome",  badge: "OUTCOME",     badgeStyle: "border-cyan-400/30 bg-cyan-400/10 text-cyan-400"         },
+  first_blood:  { prompt: "Pick first blood scorer", badge: "FIRST BLOOD", badgeStyle: "border-fn-red/30 bg-fn-red/10 text-fn-red"               },
+};
 
 function WagerCard({
   market,
@@ -410,10 +419,9 @@ function WagerCard({
   const [message, setMessage] = useState<string | null>(null);
   const { placeWager, loading } = usePlaceWager();
 
-  const isPlayerPick = market.type === "player_pick";
-  const playerOptions: PlayerOption[] = isPlayerPick
-    ? ((Array.isArray(market.options) ? market.options : []) as PlayerOption[])
-    : [];
+  const pickOptions: PickOption[] = (Array.isArray(market.options) ? market.options : []) as PickOption[];
+  const isOptionPick = pickOptions.length > 0;
+  const pickConfig = PICK_CONFIGS[String(market.type ?? "")] ?? { prompt: "Pick an option", badge: "PICK", badgeStyle: "border-fn-green/30 bg-fn-green/10 text-fn-green" };
 
   const { yes, no } = getImpliedSplit(market.yes_odds, market.no_odds);
   const yesOdds = Number(market.yes_odds ?? 0);
@@ -422,8 +430,8 @@ function WagerCard({
   const activeEmail = email ?? null;
   const canSubmit = Boolean(activeEmail && picked && numericAmount >= 100 && !loading);
 
-  const pickedOption = isPlayerPick ? playerOptions.find((o) => o.label === picked) : null;
-  const potentialReturn = isPlayerPick
+  const pickedOption = isOptionPick ? pickOptions.find((o) => o.label === picked) : null;
+  const potentialReturn = isOptionPick
     ? pickedOption ? numericAmount * pickedOption.odds : 0
     : picked === "YES"
       ? numericAmount * yesOdds
@@ -435,7 +443,7 @@ function WagerCard({
 
   async function handlePlaceWager() {
     if (!activeEmail) { setMessage("Sign in first to place a wager."); return; }
-    if (!picked) { setMessage(isPlayerPick ? "Pick a player before placing a wager." : "Choose YES or NO before placing a wager."); return; }
+    if (!picked) { setMessage(isOptionPick ? `Choose a ${pickConfig.badge.toLowerCase()} option before placing a wager.` : "Choose YES or NO before placing a wager."); return; }
     if (numericAmount < 100) { setMessage("Minimum wager amount is NGN 100."); return; }
     setMessage(null);
     try {
@@ -466,9 +474,9 @@ function WagerCard({
             <span className={`rounded-sm border px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest ${tag.className}`}>
               {tag.label}
             </span>
-            {isPlayerPick && (
-              <span className="rounded-sm border border-fn-yellow/30 bg-fn-yellow/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-fn-yellow">
-                Player Pick
+            {isOptionPick && (
+              <span className={`rounded-sm border px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest ${pickConfig.badgeStyle}`}>
+                {pickConfig.badge}
               </span>
             )}
           </div>
@@ -487,12 +495,12 @@ function WagerCard({
       </div>
 
       <div className="space-y-3 px-4 pb-3">
-        {isPlayerPick ? (
-          /* ── Player Pick UI ── */
+        {isOptionPick ? (
+          /* ── Option Pick UI (player / team / mvp / map / outcome / first_blood) ── */
           <div>
-            <p className="fn-label mb-2">Pick a player to back</p>
+            <p className="fn-label mb-2">{pickConfig.prompt}</p>
             <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
-              {playerOptions.map((opt) => {
+              {pickOptions.map((opt) => {
                 const isSelected = picked === opt.label;
                 return (
                   <button
