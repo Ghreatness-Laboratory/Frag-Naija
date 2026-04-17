@@ -445,8 +445,14 @@ function WagerCard({
         amount: numericAmount,
         email: activeEmail,
       });
-      onPlaced?.();
-      window.location.href = result.authorization_url;
+      if (result.paid_from_wallet) {
+        setMessage("Wager placed! Stake deducted from your wallet.");
+        setPicked(null);
+        onPlaced?.();
+      } else {
+        onPlaced?.();
+        window.location.href = result.authorization_url;
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to start checkout.");
     }
@@ -567,22 +573,22 @@ function WagerCard({
 
       <div className="px-4 pb-4">
         <div className="flex gap-2">
-          <div className="flex flex-1 items-center rounded-sm border border-fn-gborder bg-fn-dark px-3">
-            <span className="mr-2 fn-label">AMOUNT</span>
+          <div className="flex flex-1 items-center rounded-sm border border-fn-gborder bg-fn-dark px-3 min-w-0">
+            <span className="mr-2 fn-label shrink-0">AMOUNT</span>
             <input
               type="number"
               min="100"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="flex-1 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
           <button
             onClick={handlePlaceWager}
-            className={`fn-btn whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
+            className={`fn-btn shrink-0 whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
             disabled={!canSubmit}
           >
-            {loading ? "PROCESSING..." : "PLACE WAGER"}
+            {loading ? "..." : "PLACE WAGER"}
           </button>
         </div>
 
@@ -603,7 +609,11 @@ function WagerCard({
         </div>
 
         {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
-        {message && <p className="mt-2 text-[9px] text-fn-red">{message}</p>}
+        {message && (
+          <p className={`mt-2 text-[9px] ${
+            message.startsWith("Wager placed") ? "text-fn-green" : "text-fn-red"
+          }`}>{message}</p>
+        )}
       </div>
 
       <div className="flex items-center justify-between border-t border-fn-gborder bg-fn-dark/50 px-4 py-2.5">

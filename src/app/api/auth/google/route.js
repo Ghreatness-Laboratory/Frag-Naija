@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -12,13 +14,14 @@ export async function GET() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback`,
+      redirectTo: `${siteUrl}/api/auth/callback`,
       queryParams: { access_type: 'offline', prompt: 'consent' },
+      skipBrowserRedirect: true,
     },
   });
 
   if (error || !data?.url) {
-    return NextResponse.json({ error: error?.message || 'OAuth init failed' }, { status: 500 });
+    return NextResponse.redirect(`${siteUrl}/login?error=oauth_init_failed`);
   }
 
   return NextResponse.redirect(data.url);
