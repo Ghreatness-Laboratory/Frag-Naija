@@ -10,6 +10,7 @@ import {
   Clock,
   Trophy,
   Wallet,
+  X,
   Zap,
 } from "lucide-react";
 import { useActiveWagers, useBanks, useFeatured, useMe, useMyWagers, usePlaceWager, usePredictors, useWalletTransactions, useWithdraw } from "@/lib/hooks";
@@ -617,9 +618,90 @@ function WagerCard({
   );
 }
 
+function BetDetailModal({
+  bet,
+  onClose,
+}: {
+  bet: CurrentUserWager | null;
+  onClose: () => void;
+}) {
+  if (!bet) return null;
+
+  const selection = String(bet.selection ?? "N/A");
+  const statusLabel = String(bet.status ?? "Pending");
+  const statusTone =
+    statusLabel === "Won"
+      ? { bg: "#00ff4120", color: "#00ff41", border: "#00ff4140" }
+      : statusLabel === "Lost"
+        ? { bg: "#ff4d4f20", color: "#ff4d4f", border: "#ff4d4f40" }
+        : { bg: "#f0c04020", color: "#f0c040", border: "#f0c04040" };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-fn-gborder bg-fn-dark px-4 py-3">
+          <span className="fn-label text-fn-text">BET DETAILS</span>
+          <button onClick={onClose} className="text-fn-muted hover:text-fn-text transition-colors">
+            <X size={14} />
+          </button>
+        </div>
+        <div className="space-y-3 p-4">
+          <div>
+            <p className="fn-label mb-1">MARKET</p>
+            <p className="text-[11px] font-bold leading-snug text-fn-text">
+              {bet.wager?.question || "Untitled wager market"}
+            </p>
+            {bet.wager?.subtitle && (
+              <p className="fn-label mt-0.5">{bet.wager.subtitle}</p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="fn-label">STATUS</span>
+            <span
+              className="rounded-sm px-2 py-0.5 text-[8px] font-bold tracking-widest"
+              style={{ background: statusTone.bg, color: statusTone.color, border: `1px solid ${statusTone.border}` }}
+            >
+              {statusLabel}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: "SELECTION", value: selection },
+              { label: "ODDS",      value: `${Number(bet.odds ?? 0).toFixed(2)}×` },
+              { label: "STAKE",     value: formatCurrency(Number(bet.amount ?? 0)) },
+              { label: "POTENTIAL", value: formatCurrency(Number(bet.potential ?? 0)) },
+            ].map(({ label, value }) => (
+              <div key={label} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                <p className="fn-label mb-1 text-[7px]">{label}</p>
+                <p className="text-[11px] font-bold text-fn-green">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {bet.wager?.closes_at && (
+            <div className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-3 py-2">
+              <span className="fn-label">CLOSES</span>
+              <span className="text-[10px] font-bold text-fn-text">{formatShortDate(bet.wager.closes_at)}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-3 py-2">
+            <span className="fn-label">SUBMITTED</span>
+            <span className="text-[10px] font-bold text-fn-text">{formatShortDate(bet.created_at)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [selectedBet, setSelectedBet] = useState<CurrentUserWager | null>(null);
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
   const { data: wagers, loading: wagersLoading, error: wagersError, refetch } = useActiveWagers();
@@ -700,6 +782,7 @@ function WagerPageContent() {
             }}
           />
         )}
+        <BetDetailModal bet={selectedBet} onClose={() => setSelectedBet(null)} />
         {status === "success" && (
           <div className="mb-4 rounded-sm border border-fn-green/30 bg-fn-green/10 px-4 py-3 text-[11px] text-fn-text">
             Payment completed. Your wager is being confirmed and will show up after Paystack webhook processing.
@@ -868,8 +951,8 @@ function WagerPageContent() {
                   You have not placed any wagers yet.
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {currentUserWagers.slice(0, 5).map((prediction) => {
+                <div className="max-h-[400px] overflow-y-auto space-y-2 pr-0.5">
+                  {currentUserWagers.map((prediction) => {
                     const selection = String(prediction.selection ?? "N/A");
                     const statusLabel = String(prediction.status ?? "Pending");
                     const statusTone =
@@ -880,18 +963,23 @@ function WagerPageContent() {
                           : { bg: "#f0c04020", color: "#f0c040", border: "#f0c04040" };
 
                     return (
-                      <div key={String(prediction.id)} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                      <button
+                        key={String(prediction.id)}
+                        onClick={() => setSelectedBet(prediction)}
+                        className="w-full rounded-sm border border-fn-gborder bg-fn-dark p-3 text-left transition-colors hover:border-fn-green/30 hover:bg-fn-green/5"
+                      >
                         <div className="mb-1 flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="text-[10px] font-bold leading-tight text-fn-text">
                               {prediction.wager?.question || "Untitled wager market"}
                             </div>
-                            <div className="fn-label">
-                              {prediction.wager?.subtitle || `Closes ${formatShortDate(prediction.wager?.closes_at)}`}
+                            <div className="fn-label mt-0.5 flex items-center gap-1">
+                              <Clock size={8} />
+                              {formatShortDate(prediction.created_at)}
                             </div>
                           </div>
                           <span
-                            className="flex-shrink-0 px-1.5 py-0.5 text-[7px] font-bold tracking-widest"
+                            className="flex-shrink-0 rounded-sm px-1.5 py-0.5 text-[7px] font-bold tracking-widest"
                             style={{
                               background: statusTone.bg,
                               color: statusTone.color,
@@ -904,7 +992,7 @@ function WagerPageContent() {
                         <div className="mt-2 grid grid-cols-3 gap-1">
                           {[
                             { value: selection, label: "PICK" },
-                            { value: `${Number(prediction.odds ?? 0).toFixed(2)}x`, label: "ODDS" },
+                            { value: `${Number(prediction.odds ?? 0).toFixed(2)}×`, label: "ODDS" },
                             { value: formatCurrency(Number(prediction.amount ?? 0)), label: "STAKE" },
                           ].map(({ value, label }) => (
                             <div key={label} className="text-center">
@@ -919,7 +1007,7 @@ function WagerPageContent() {
                             {formatCurrency(Number(prediction.potential ?? 0))}
                           </span>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
