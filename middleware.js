@@ -26,7 +26,11 @@ export async function middleware(request) {
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/logos/') ||
+    pathname.startsWith('/icons/') ||
     pathname.startsWith('/select-game') ||
+    pathname.startsWith('/offline') ||
+    pathname === '/sw.js' ||
+    pathname === '/manifest.webmanifest' ||
     pathname === '/favicon.ico';
 
   if (!isInternal) {
@@ -49,7 +53,11 @@ export async function middleware(request) {
 export const config = {
   matcher: [
     '/admin/:path*',
-    // Match all pages except Next.js internals and static files
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    /*
+     * Match all paths EXCEPT:
+     *  - Next.js internals (_next/static, _next/image, _next/webpack-hmr)
+     *  - Static public assets (icons, logos, sw.js, manifest, favicon)
+     */
+    '/((?!_next/static|_next/image|_next/webpack-hmr|icons|logos|sw\\.js|manifest\\.webmanifest|favicon\\.ico).*)',
   ],
 };
