@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import DisclaimerModal from "@/components/DisclaimerModal";
 
 const navLinks = [
   { label: "Home",            href: "/" },
@@ -61,6 +62,7 @@ export default function Navbar() {
 
   return (
     <>
+      <DisclaimerModal />
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-fn-dark border-b border-fn-gborder flex items-center px-3 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-1.5 mr-6 shrink-0">
