@@ -17,9 +17,7 @@ export default function PWAInstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Detect iOS (Safari doesn't fire beforeinstallprompt)
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    // Detect if already installed
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       ('standalone' in navigator && (navigator as { standalone?: boolean }).standalone === true);
@@ -30,7 +28,6 @@ export default function PWAInstallPrompt() {
     if (standalone || localStorage.getItem(DISMISSED_KEY)) return;
 
     if (ios) {
-      // Show iOS-specific install hint after a short delay
       const t = setTimeout(() => setVisible(true), 3000);
       return () => clearTimeout(t);
     }
@@ -86,9 +83,8 @@ export default function PWAInstallPrompt() {
 
         <div className="p-4">
           <div className="flex items-center gap-3 mb-3">
-            {/* App icon */}
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-sm border border-fn-green/30 bg-fn-green/10">
-              <span className="font-display text-base font-black text-fn-green glow-text">FN</span>
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-sm overflow-hidden bg-black border border-[#333]">
+              <img src="/logo-icon.jpeg" alt="Frag Naija" className="w-full h-full object-contain" />
             </div>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-fn-text">Frag Naija</p>
@@ -101,11 +97,10 @@ export default function PWAInstallPrompt() {
           </div>
 
           {isIOS ? (
-            /* iOS manual install instruction */
             <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[9px] text-fn-muted leading-relaxed">
               Tap <strong className="text-fn-text">Share</strong> (
-              <span className="font-bold text-fn-green">⬆</span>) then{' '}
-              <strong className="text-fn-text">"Add to Home Screen"</strong>
+              <span className="font-bold text-fn-green">&#x2B06;</span>) then{' '}
+              <strong className="text-fn-text">&quot;Add to Home Screen&quot;</strong>
             </div>
           ) : (
             <button

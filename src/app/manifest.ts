@@ -8,28 +8,18 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     id: '/',
     display: 'standalone',
-    background_color: '#040904',
+    background_color: '#000000',
     theme_color: '#00ff41',
     orientation: 'portrait-primary',
     categories: ['games', 'sports', 'entertainment'],
     lang: 'en-NG',
     dir: 'ltr',
     icons: [
-      {
-        src: '/icons/icon.svg',
-        sizes: 'any',
-        type: 'image/svg+xml',
-        purpose: 'any',
-      },
-      {
-        src: '/icons/icon-maskable.svg',
-        sizes: 'any',
-        type: 'image/svg+xml',
-        purpose: 'maskable',
-      },
-      // PNG fallbacks — generate with: npx svgexport public/icons/icon.svg public/icons/icon-192.png 192:192
-      // { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-      // { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/logo-icon.jpeg', sizes: '192x192', type: 'image/jpeg', purpose: 'any' },
+      { src: '/logo-icon.jpeg', sizes: '512x512', type: 'image/jpeg', purpose: 'any' },
+      { src: '/logo-icon.jpeg', sizes: '512x512', type: 'image/jpeg', purpose: 'maskable' },
+      { src: '/icons/icon.svg',          sizes: 'any', type: 'image/svg+xml', purpose: 'any'      },
+      { src: '/icons/icon-maskable.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
     ],
     shortcuts: [
       {

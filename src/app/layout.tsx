@@ -11,18 +11,41 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 export const metadata: Metadata = {
   title: "Frag Naija — Tactical Command Interface",
   description: "Nigeria's premier esports platform. Compete, wager, and dominate.",
+  applicationName: "Frag Naija",
+  keywords: ["esports", "Nigeria", "PUBG", "gaming", "wager", "tournaments"],
+  authors: [{ name: "Frag Naija" }],
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Frag Naija",
+  },
+  formatDetection: { telephone: false },
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/logo-icon.jpeg", type: "image/jpeg",    sizes: "512x512" },
+      { url: "/icons/icon.svg", type: "image/svg+xml"                   },
+    ],
+    shortcut: "/logo-icon.jpeg",
+    apple:    "/logo-icon.jpeg",
+  },
+};
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)",  color: "#00ff41" },
+    { media: "(prefers-color-scheme: light)", color: "#007a1a" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#00ff41" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-fn-black text-fn-text font-mono antialiased">
@@ -36,7 +59,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </main>
             </div>
             <Footer />
-            {/* PWA: register service worker + show install banner */}
             <PWARegister />
             <PWAInstallPrompt />
           </GameProvider>
