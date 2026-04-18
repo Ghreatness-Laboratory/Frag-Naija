@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Lock, Shield, Zap } from 'lucide-react';
+import { ChevronRight, Shield, Zap } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
 import { useGame } from '@/context/GameContext';
 
@@ -100,12 +100,6 @@ function GameCard({
         </span>
       )}
 
-      {/* Coming Soon overlay */}
-      {!game.available && (
-        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-sm border border-[#1a3a1a] bg-[#040904]/80 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-widest text-[#3d5c3d]">
-          <Lock size={7} /> Soon
-        </span>
-      )}
 
       {/* Logo */}
       <GameLogo game={game} isSelected={isSelected} />
@@ -295,10 +289,6 @@ export default function SelectGamePage() {
             You can switch games at any time from your profile settings
           </p>
 
-          {/* Available games note */}
-          <p className="mt-2 text-[8px] font-mono text-[#2a3d2a]">
-            More games unlocking soon — PUBG Mobile is live now
-          </p>
         </main>
 
         {/* ── Footer strip ── */}
