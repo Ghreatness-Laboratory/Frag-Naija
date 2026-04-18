@@ -36,6 +36,7 @@ export default withPWA({
       // API routes — never cache live data
       urlPattern: /^\/api\/.*/i,
       handler: 'NetworkOnly',
+      options: {},
     },
     {
       // Next.js immutable static bundles
