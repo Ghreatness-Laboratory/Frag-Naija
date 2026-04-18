@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useGame } from "@/context/GameContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
 
 const navLinks = [
@@ -48,12 +49,40 @@ function useAuthState() {
   return { user, isAdmin };
 }
 
+function GameSwitcher({ onClick }: { onClick: () => void }) {
+  const { selectedGame, isHydrated } = useGame();
+  if (!isHydrated) return null;
+  return (
+    <button
+      onClick={onClick}
+      title="Switch game"
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-fn-gborder bg-fn-card hover:border-fn-green/40 transition-all group"
+    >
+      <span
+        className="h-1.5 w-1.5 rounded-full flex-shrink-0"
+        style={{ background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }}
+      />
+      <span className="text-[9px] font-bold uppercase tracking-widest text-fn-text group-hover:text-fn-green transition-colors truncate max-w-[80px]">
+        {selectedGame.shortName}
+      </span>
+      <Gamepad2 size={10} className="text-fn-muted group-hover:text-fn-green transition-colors flex-shrink-0" />
+    </button>
+  );
+}
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const path            = usePathname();
+  const router          = useRouter();
   const { user, isAdmin } = useAuthState();
+  const { selectedGame, isHydrated } = useGame();
 
   const displayName = user?.username || user?.email?.split("@")[0];
+
+  function goToGameSelect() {
+    setOpen(false);
+    router.push('/select-game');
+  }
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -69,6 +98,11 @@ export default function Navbar() {
           <span className="font-display text-lg sm:text-xl font-black text-fn-green tracking-widest glow-text">FRAG</span>
           <span className="font-display text-lg sm:text-xl font-black text-fn-text tracking-widest">NAIJA</span>
         </Link>
+
+        {/* Game switcher — desktop */}
+        <div className="hidden lg:block mr-3">
+          <GameSwitcher onClick={goToGameSelect} />
+        </div>
 
         {/* Desktop nav */}
         <div className="hidden lg:flex items-center gap-0.5 flex-1">
@@ -196,6 +230,27 @@ export default function Navbar() {
                 </div>
                 <ThemeToggle />
               </div>
+              {/* Game switcher — mobile */}
+              {isHydrated && (
+                <button
+                  onClick={goToGameSelect}
+                  className="mt-3 w-full flex items-center justify-between gap-2 px-3 py-2 rounded-sm border border-fn-gborder bg-fn-dark hover:border-fn-green/40 transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2 w-2 rounded-full flex-shrink-0"
+                      style={{ background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }}
+                    />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-fn-text">
+                      {selectedGame.shortName}
+                    </span>
+                    <span className="text-[8px] text-fn-muted uppercase tracking-wider">— Active Game</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[8px] text-fn-muted">
+                    <Gamepad2 size={10} /> Switch
+                  </div>
+                </button>
+              )}
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
               {[...navLinks, { label: "⚡ Wager Zone", href: "/wager" }].map((l) => (
