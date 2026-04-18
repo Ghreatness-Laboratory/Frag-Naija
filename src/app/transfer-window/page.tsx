@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Clock, TrendingUp, Users, Filter } from "lucide-react";
+import { Clock, TrendingUp, Users, Filter, Flame } from "lucide-react";
+import { useGame } from "@/context/GameContext";
+import { getGameContent, type DummyTransfer } from "@/lib/game-content";
 
 type Transfer = {
   id: string;
@@ -11,17 +13,6 @@ type Transfer = {
   date: string | null;
   notes: string | null;
   athletes: { id: string; name: string; ign: string } | null;
-};
-
-type FreeAgent = {
-  id: string;
-  name: string;
-  ign: string;
-  role: string | null;
-  rating: number;
-  kills: number;
-  winrate: number;
-  photo_url: string | null;
 };
 
 type FilterTab = "ALL" | "CONFIRMED" | "RUMOUR" | "PENDING";
@@ -44,34 +35,32 @@ function useCountdown(targetDays: number, targetHrs: number, targetMins: number)
   return time;
 }
 
-function statusColor(status: string) {
-  if (status === "Confirmed") return "bg-fn-green/20 text-fn-green border-fn-green/30";
-  if (status === "Rumour")    return "bg-fn-yellow/20 text-fn-yellow border-fn-yellow/30";
-  return "bg-fn-muted/20 text-fn-muted border-fn-gborder";
-}
-
 export default function TransferWindowPage() {
+  const { selectedGame, isHydrated } = useGame();
   const countdown = useCountdown(8, 14, 22);
-  const [transfers, setTransfers]   = useState<Transfer[]>([]);
-  const [freeAgents, setFreeAgents] = useState<FreeAgent[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
+  const [loading, setLoading]           = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
+
+  const primary   = selectedGame.colors.primary;
+  const secondary = selectedGame.colors.secondary;
+  const isFF      = selectedGame.slug === 'free-fire';
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [tr, fa] = await Promise.all([
-      fetch("/api/transfers"),
-      fetch("/api/athletes?status=Free+Agent"),
-    ]);
-    if (tr.ok) setTransfers(await tr.json());
-    if (fa.ok) setFreeAgents(await fa.json());
+    const res = await fetch("/api/transfers");
+    if (res.ok) setApiTransfers(await res.json());
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const filters: FilterTab[] = ["ALL", "CONFIRMED", "RUMOUR", "PENDING"];
+  const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
+  const transfers: Transfer[] = apiTransfers.length > 0
+    ? apiTransfers
+    : (gameContent?.transfers as Transfer[] | undefined) ?? [];
 
+  const filters: FilterTab[] = ["ALL", "CONFIRMED", "RUMOUR", "PENDING"];
   const filtered = activeFilter === "ALL"
     ? transfers
     : transfers.filter((t) => t.status.toUpperCase() === activeFilter);
@@ -81,15 +70,32 @@ export default function TransferWindowPage() {
 
   const totalValue = transfers.reduce((sum, t) => sum + (t.fee ?? 0), 0);
 
+  function statusStyle(status: string) {
+    if (status === "Confirmed") return { background: `${primary}20`, color: primary, borderColor: `${primary}40` };
+    if (status === "Rumour")    return { background: '#f0c04020', color: '#f0c040', borderColor: '#f0c04040' };
+    return { background: '#ffffff10', color: '#888', borderColor: '#333' };
+  }
+
   return (
     <div className="min-h-screen">
-      {/* Header with countdown */}
-      <div className="px-4 sm:px-8 lg:px-12 py-8 border-b border-fn-gborder bg-fn-card/20 relative overflow-hidden">
+      {/* Header */}
+      <div
+        className="px-4 sm:px-8 lg:px-12 py-8 border-b border-fn-gborder relative overflow-hidden"
+        style={{ background: `linear-gradient(135deg, ${primary}06 0%, #000 60%)` }}
+      >
         <div className="absolute inset-0 bg-grid-fn bg-grid opacity-20 pointer-events-none" />
         <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div>
-            <div className="fn-label mb-1">CONTRACT ANALYSIS</div>
-            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-fn-text tracking-tight">
+            <div className="flex items-center gap-2 mb-1">
+              {isFF && <Flame size={10} style={{ color: primary }} />}
+              <span
+                className="text-[8px] font-bold tracking-widest uppercase px-2 py-1 border"
+                style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
+              >
+                {selectedGame.shortName.toUpperCase()} — CONTRACT ANALYSIS
+              </span>
+            </div>
+            <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-fn-text tracking-tight mt-2">
               TRANSFER<br />WINDOW
             </h1>
           </div>
@@ -108,8 +114,10 @@ export default function TransferWindowPage() {
               ].map(({ v, l }, i) => (
                 <div key={l} className="flex items-baseline gap-1">
                   {i > 0 && <span className="text-fn-muted text-2xl">·</span>}
-                  <span className="text-fn-yellow text-3xl sm:text-4xl tabular-nums"
-                    style={{ minWidth: "2ch", display: "inline-block", textAlign: "center" }}>
+                  <span
+                    className="text-3xl sm:text-4xl tabular-nums"
+                    style={{ minWidth: "2ch", display: "inline-block", textAlign: "center", color: secondary }}
+                  >
                     {String(v).padStart(2, "0")}
                   </span>
                   <span className="text-fn-muted text-[9px] tracking-widest">{l}</span>
@@ -132,18 +140,17 @@ export default function TransferWindowPage() {
                   <button
                     key={f}
                     onClick={() => setActiveFilter(f)}
-                    className={`px-3 py-1.5 text-[9px] font-bold tracking-widest uppercase rounded-sm transition-all ${
-                      activeFilter === f
-                        ? "bg-fn-green text-fn-black"
-                        : "border border-fn-gborder text-fn-muted hover:text-fn-text hover:border-fn-green/40"
-                    }`}
+                    className="px-3 py-1.5 text-[9px] font-bold tracking-widest uppercase rounded-sm transition-all border"
+                    style={activeFilter === f
+                      ? { background: primary, color: '#000', borderColor: primary }
+                      : { background: 'transparent', color: '#666', borderColor: '#222' }}
                   >
                     {f}
                   </button>
                 ))}
               </div>
 
-              <div className="fn-label mb-3">RECENT TRANSFERS</div>
+              <div className="fn-label mb-3">RECENT TRANSFERS — {selectedGame.shortName.toUpperCase()}</div>
               {loading ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-fn-card rounded animate-pulse" />)}
@@ -166,28 +173,34 @@ export default function TransferWindowPage() {
                           </td>
                         </tr>
                       ) : (
-                        filtered.map((t) => {
-                          const playerTag = t.athletes?.ign || t.athletes?.name || "—";
+                        filtered.map((tr) => {
+                          const playerTag = tr.athletes?.ign || tr.athletes?.name || "—";
                           return (
-                            <tr key={t.id} className="border-b border-fn-gborder/50 hover:bg-fn-card/50 transition-colors">
+                            <tr key={tr.id} className="border-b border-fn-gborder/50 hover:bg-fn-card/50 transition-colors">
                               <td className="py-3.5 pr-4">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-7 h-7 bg-fn-green/15 border border-fn-gborder flex items-center justify-center text-[10px] font-bold text-fn-green">
+                                  <div
+                                    className="w-7 h-7 border flex items-center justify-center text-[10px] font-bold"
+                                    style={{ background: `${primary}15`, borderColor: `${primary}30`, color: primary }}
+                                  >
                                     {playerTag[0]}
                                   </div>
                                   <span className="text-[11px] font-bold text-fn-text">{playerTag}</span>
                                 </div>
                               </td>
-                              <td className="py-3.5 pr-4 text-[10px] text-fn-muted">{t.from_team || "—"}</td>
-                              <td className="py-3.5 pr-4 text-[10px] text-fn-text font-bold">{t.to_team || "—"}</td>
-                              <td className="py-3.5 pr-4 text-[10px] text-fn-yellow font-bold">{fmtFee(t.fee)}</td>
+                              <td className="py-3.5 pr-4 text-[10px] text-fn-muted">{tr.from_team || "—"}</td>
+                              <td className="py-3.5 pr-4 text-[10px] text-fn-text font-bold">{tr.to_team || "—"}</td>
+                              <td className="py-3.5 pr-4 text-[10px] font-bold" style={{ color: secondary }}>{fmtFee(tr.fee)}</td>
                               <td className="py-3.5 pr-4">
-                                <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 border ${statusColor(t.status)}`}>
-                                  {t.status}
+                                <span
+                                  className="text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 border"
+                                  style={statusStyle(tr.status)}
+                                >
+                                  {tr.status}
                                 </span>
                               </td>
                               <td className="py-3.5 text-[10px] text-fn-muted">
-                                {t.date ? new Date(t.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "2-digit" }) : "—"}
+                                {tr.date ? new Date(tr.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "2-digit" }) : "—"}
                               </td>
                             </tr>
                           );
@@ -199,49 +212,30 @@ export default function TransferWindowPage() {
               )}
             </div>
 
-            {/* Free agents */}
-            <div>
-              <div className="fn-label mb-3 flex items-center justify-between">
-                UNRESTRICTED FREE AGENTS
-                <span className="text-fn-muted text-[9px]">{freeAgents.length} AVAILABLE</span>
-              </div>
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {[1, 2, 3].map((i) => <div key={i} className="h-48 bg-fn-card rounded animate-pulse" />)}
-                </div>
-              ) : freeAgents.length === 0 ? (
-                <p className="text-fn-muted text-[10px] py-4">No free agents listed at the moment.</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {freeAgents.map((agent) => (
-                    <div key={agent.id} className="bg-fn-card border border-fn-gborder rounded-sm p-4 hover:border-fn-green/40 transition-all group">
-                      <div className="w-14 h-14 rounded-sm bg-fn-green/10 border border-fn-gborder flex items-center justify-center mb-3 group-hover:border-fn-green/40 transition-colors overflow-hidden">
-                        {agent.photo_url
-                          ? <img src={agent.photo_url} alt={agent.ign} className="w-full h-full object-cover" />
-                          : <span className="font-display text-2xl font-black text-fn-green">{agent.ign[0]}</span>}
+            {/* Transfer notes */}
+            {!loading && filtered.some(t => t.notes) && (
+              <div>
+                <div className="fn-label mb-3">TRANSFER NOTES</div>
+                <div className="space-y-3">
+                  {filtered.filter(t => t.notes).map((tr) => (
+                    <div key={tr.id} className="bg-fn-card border border-fn-gborder rounded-sm p-4"
+                      style={{ borderColor: tr.status === 'Confirmed' ? `${primary}20` : '#222' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[9px] font-bold" style={{ color: primary }}>{tr.athletes?.ign || "—"}</span>
+                        <span className="text-fn-muted text-[8px]">·</span>
+                        <span
+                          className="text-[8px] font-bold px-1.5 py-0.5 border"
+                          style={statusStyle(tr.status)}
+                        >
+                          {tr.status}
+                        </span>
                       </div>
-                      <div className="text-[8px] font-bold text-fn-yellow tracking-widest uppercase mb-1">FREE AGENT</div>
-                      <div className="text-xs font-bold text-fn-text mb-0.5">{agent.ign}</div>
-                      <div className="fn-label mb-3">{agent.role || "Player"}</div>
-
-                      <div className="grid grid-cols-3 gap-1 mb-3 text-center">
-                        {[
-                          { v: agent.kills,             l: "KILLS" },
-                          { v: `${agent.winrate}%`,     l: "W/R"   },
-                          { v: agent.rating.toFixed(1), l: "RTG"   },
-                        ].map(({ v, l }) => (
-                          <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-1.5">
-                            <div className="text-[10px] font-bold text-fn-text">{v}</div>
-                            <div className="fn-label text-[7px]">{l}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <button className="fn-btn w-full text-[9px] py-2">PROPOSE CONTRACT</button>
+                      <p className="text-fn-muted text-[10px] leading-relaxed">{tr.notes}</p>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -251,13 +245,13 @@ export default function TransferWindowPage() {
               <div className="fn-label mb-3">WINDOW STATS</div>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { v: loading ? "…" : `₦${totalValue.toLocaleString()}`,                                           l: "Total Value"  },
-                  { v: loading ? "…" : String(transfers.length),                                                     l: "Total Moves"  },
-                  { v: loading ? "…" : String(transfers.filter((t) => t.status === "Confirmed").length),             l: "Confirmed"    },
-                  { v: loading ? "…" : String(freeAgents.length),                                                    l: "Free Agents"  },
+                  { v: loading ? "…" : `₦${totalValue.toLocaleString()}`,                                              l: "Total Value"  },
+                  { v: loading ? "…" : String(transfers.length),                                                        l: "Total Moves"  },
+                  { v: loading ? "…" : String(transfers.filter((t) => t.status === "Confirmed").length),                l: "Confirmed"    },
+                  { v: loading ? "…" : String(transfers.filter((t) => t.status === "Rumour").length),                   l: "Rumours"      },
                 ].map(({ v, l }) => (
                   <div key={l} className="bg-fn-dark border border-fn-gborder rounded-sm p-2.5 text-center">
-                    <div className="text-xs font-bold text-fn-green">{v}</div>
+                    <div className="text-xs font-bold" style={{ color: primary }}>{v}</div>
                     <div className="fn-label">{l}</div>
                   </div>
                 ))}
@@ -267,8 +261,8 @@ export default function TransferWindowPage() {
             {/* Recent activity */}
             <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={12} className="text-fn-green" />
-                <span className="fn-label text-fn-green">RECENT ACTIVITY</span>
+                <TrendingUp size={12} style={{ color: primary }} />
+                <span className="fn-label" style={{ color: primary }}>RECENT ACTIVITY</span>
               </div>
               {loading ? (
                 <div className="space-y-2">
@@ -278,17 +272,20 @@ export default function TransferWindowPage() {
                 <p className="text-fn-muted text-[9px]">No recent activity.</p>
               ) : (
                 <div className="space-y-3">
-                  {transfers.slice(0, 5).map((t) => {
-                    const player = t.athletes?.ign || t.athletes?.name || "Unknown";
-                    const isConfirmed = t.status === "Confirmed";
+                  {transfers.slice(0, 5).map((tr) => {
+                    const player = tr.athletes?.ign || tr.athletes?.name || "Unknown";
+                    const isConfirmed = tr.status === "Confirmed";
                     return (
-                      <div key={t.id} className="flex gap-2.5 pb-3 border-b border-fn-gborder/50 last:border-0 last:pb-0">
-                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${isConfirmed ? "bg-fn-green" : "bg-fn-yellow animate-pulse"}`} />
+                      <div key={tr.id} className="flex gap-2.5 pb-3 border-b border-fn-gborder/50 last:border-0 last:pb-0">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${!isConfirmed ? "animate-pulse" : ""}`}
+                          style={{ background: isConfirmed ? primary : '#f0c040' }}
+                        />
                         <div>
                           <p className="text-[9px] text-fn-text leading-relaxed">
-                            {player}{t.from_team ? ` from ${t.from_team}` : ""}{t.to_team ? ` → ${t.to_team}` : ""}
+                            {player}{tr.from_team ? ` from ${tr.from_team}` : ""}{tr.to_team ? ` → ${tr.to_team}` : ""}
                           </p>
-                          <span className="text-[8px] text-fn-muted">{t.status}</span>
+                          <span className="text-[8px] text-fn-muted">{tr.status}</span>
                         </div>
                       </div>
                     );
@@ -298,14 +295,22 @@ export default function TransferWindowPage() {
             </div>
 
             {/* CTA */}
-            <div className="bg-fn-card border border-fn-green/30 rounded-sm p-4">
-              <div className="fn-label text-fn-green mb-2 flex items-center gap-1.5">
+            <div
+              className="bg-fn-card border rounded-sm p-4"
+              style={{ borderColor: `${primary}30` }}
+            >
+              <div className="fn-label mb-2 flex items-center gap-1.5" style={{ color: primary }}>
                 <Users size={9} /> JOIN WAGER
               </div>
               <p className="text-[9px] text-fn-muted leading-relaxed mb-3">
                 Predict transfer outcomes and player signings. Earn rewards for accurate calls.
               </p>
-              <button className="fn-btn w-full text-[10px]">JOIN WAGER NOW</button>
+              <button
+                className="w-full text-[10px] py-2 font-bold tracking-widest uppercase border rounded-sm transition-all"
+                style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
+              >
+                JOIN WAGER NOW
+              </button>
             </div>
           </div>
         </div>
