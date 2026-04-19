@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
@@ -619,6 +618,13 @@ function WagerCard({
         </div>
 
         {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
+        <p className="mt-2 text-[9px] text-fn-muted">
+          By placing a wager, you agree to the{" "}
+          <Link href="/wager/terms" className="font-bold text-fn-green hover:text-fn-yellow transition-colors">
+            Wager Terms
+          </Link>
+          .
+        </p>
         {message && (
           <p className={`mt-2 text-[9px] ${
             message.startsWith("Wager placed") ? "text-fn-green" : "text-fn-red"
@@ -848,25 +854,25 @@ function WagerPageContent() {
       {!termsAccepted && <WagerTermsModal onAccept={acceptTerms} />}
       <div className="relative overflow-hidden border-b border-fn-gborder bg-fn-card/20 px-4 py-6 sm:px-8 lg:px-12">
         <div className="pointer-events-none absolute inset-0 bg-grid-fn bg-grid opacity-20" />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="mb-1 flex items-center gap-1.5 fn-label">
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 fn-label">
               <Zap size={9} className="text-fn-green" /> TACTICAL HUB 06
             </div>
-            <h1 className="font-display text-4xl font-black uppercase tracking-tight text-fn-text sm:text-5xl">
+            <h1 className="font-display text-3xl font-black uppercase tracking-tight text-fn-text xs:text-4xl sm:text-5xl">
               WAGER ZONE
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 rounded-sm border border-fn-yellow/30 bg-fn-card px-4 py-3">
+          <div className="flex flex-col gap-3 xs:flex-row xs:items-center">
+            <div className="flex flex-1 items-center gap-3 rounded-sm border border-fn-yellow/30 bg-fn-card px-4 py-3 min-w-[180px]">
               <div className="flex h-8 w-8 items-center justify-center rounded-full border border-fn-yellow/40 bg-fn-yellow/20 text-sm">
                 <Wallet size={14} className="text-fn-yellow" />
               </div>
-              <div>
-                <div className="fn-label">CURRENT BALANCE</div>
-                <div className="font-display text-xl font-black text-fn-yellow">
-                  {meLoading ? "Loading..." : formatCurrency(walletBalance)}
+              <div className="min-w-0">
+                <div className="fn-label truncate">CURRENT BALANCE</div>
+                <div className="font-display text-lg font-black text-fn-yellow sm:text-xl truncate">
+                  {meLoading ? "..." : formatCurrency(walletBalance)}
                 </div>
               </div>
             </div>
@@ -874,7 +880,7 @@ function WagerPageContent() {
             {currentUser?.email && (
               <button
                 onClick={() => setIsWithdrawOpen(true)}
-                className="fn-btn-outline h-full px-6 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-fn-yellow/10 hover:border-fn-yellow/50"
+                className="fn-btn-outline px-6 py-3.5 text-[10px] font-black uppercase tracking-widest hover:bg-fn-yellow/10 hover:border-fn-yellow/50 xs:h-full"
               >
                 WITHDRAW
               </button>
