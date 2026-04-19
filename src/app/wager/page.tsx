@@ -1,13 +1,15 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  AlertTriangle,
   BarChart2,
   Bookmark,
   ChevronDown,
   ChevronUp,
   Clock,
+  Shield,
   Trophy,
   Wallet,
   X,
@@ -716,9 +718,101 @@ function BetDetailModal({
   );
 }
 
+const WAGER_TERMS_KEY = "fn-wager-terms-v1";
+
+const WAGER_RULES = [
+  "You must be 18 years of age or older to place wagers on this platform.",
+  "All wagers must be placed before a fixture begins — no late entries are accepted.",
+  "Match fixing or placing bets with inside knowledge is considered fraud and may result in account termination and legal action.",
+  "Frag Naija wagers are skill-based predictions. This is not a lottery or casino product.",
+  "Winnings are subject to a 10% platform fee deducted automatically at settlement.",
+  "Frag Naija reserves the right to void any market it deems compromised or fraudulent.",
+  "Wager responsibly. Set limits and only stake what you can afford to lose.",
+];
+
+function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
+  const [checked, setChecked] = useState(false);
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg overflow-hidden rounded-sm border border-fn-yellow/30 bg-fn-card shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center gap-2.5 border-b border-fn-gborder bg-fn-dark px-5 py-4">
+          <AlertTriangle size={14} className="flex-shrink-0 text-fn-yellow animate-pulse" />
+          <h2 className="font-display text-sm font-black uppercase tracking-[0.2em] text-fn-text">
+            Wager Zone — Terms & Conditions
+          </h2>
+          <span className="ml-auto text-[8px] font-bold border border-fn-yellow/30 bg-fn-yellow/10 text-fn-yellow px-2 py-0.5 tracking-widest">
+            REQUIRED
+          </span>
+        </div>
+
+        {/* Rules */}
+        <div className="max-h-64 overflow-y-auto px-5 py-4 space-y-3">
+          {WAGER_RULES.map((rule, i) => (
+            <div key={i} className="flex gap-3">
+              <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm border border-fn-yellow/30 bg-fn-yellow/10 text-[8px] font-black text-fn-yellow">
+                {i + 1}
+              </span>
+              <p className="text-[11px] leading-snug text-fn-muted">{rule}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Checkbox */}
+        <div className="px-5 pb-2">
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div
+              onClick={() => setChecked(!checked)}
+              className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm border transition-all"
+              style={checked
+                ? { background: '#f0c040', borderColor: '#f0c040' }
+                : { background: 'transparent', borderColor: '#444' }}
+            >
+              {checked && <span className="text-[9px] font-black text-black">✓</span>}
+            </div>
+            <span className="text-[11px] text-fn-muted leading-snug group-hover:text-fn-text transition-colors">
+              I confirm I am 18+ years old, I have read and agree to the Wager Zone Terms & Conditions, and I understand the risks involved.
+            </span>
+          </label>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 pb-5 pt-3 flex items-center gap-3">
+          <Shield size={10} className="text-fn-muted flex-shrink-0" />
+          <p className="text-[9px] text-fn-muted flex-1">Predict responsibly. Never wager more than you can afford to lose.</p>
+        </div>
+
+        <div className="px-5 pb-5">
+          <button
+            onClick={() => { if (checked) onAccept(); }}
+            disabled={!checked}
+            className="w-full rounded-sm py-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all"
+            style={checked
+              ? { background: '#f0c040', color: '#000' }
+              : { background: '#1a1a1a', color: '#555', cursor: 'not-allowed' }}
+          >
+            {checked ? "I Accept — Enter Wager Zone" : "Check the box above to continue"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem(WAGER_TERMS_KEY)) setTermsAccepted(true);
+  }, []);
+
+  function acceptTerms() {
+    localStorage.setItem(WAGER_TERMS_KEY, "1");
+    setTermsAccepted(true);
+  }
   const [selectedBet, setSelectedBet] = useState<CurrentUserWager | null>(null);
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
@@ -751,6 +845,7 @@ function WagerPageContent() {
 
   return (
     <div className="min-h-screen">
+      {!termsAccepted && <WagerTermsModal onAccept={acceptTerms} />}
       <div className="relative overflow-hidden border-b border-fn-gborder bg-fn-card/20 px-4 py-6 sm:px-8 lg:px-12">
         <div className="pointer-events-none absolute inset-0 bg-grid-fn bg-grid opacity-20" />
         <div className="relative flex flex-wrap items-center justify-between gap-4">
