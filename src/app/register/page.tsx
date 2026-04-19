@@ -3,15 +3,64 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, User, UserPlus } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, UserPlus, Gamepad2 } from 'lucide-react';
+import { GAMES, type Game } from '@/lib/games';
+
+function GamePickCard({ game, selected, onSelect }: { game: Game; selected: boolean; onSelect: () => void }) {
+  const [imgErr, setImgErr] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="relative flex flex-col items-center gap-1.5 rounded-sm border p-2.5 transition-all duration-200"
+      style={selected
+        ? { borderColor: game.colors.border, background: game.colors.cardBg, boxShadow: `0 0 12px ${game.colors.glow}` }
+        : { borderColor: '#1a2a1a', background: '#0a100a' }}
+    >
+      {/* Logo */}
+      {imgErr ? (
+        <div
+          className="h-8 w-8 flex items-center justify-center rounded-sm text-[9px] font-black"
+          style={{ background: game.colors.cardBg, color: game.colors.primary }}
+        >
+          {game.shortName.slice(0, 3)}
+        </div>
+      ) : (
+        <img
+          src={game.logo}
+          alt={game.name}
+          width={32} height={32}
+          className="h-8 w-8 object-contain"
+          style={selected ? { filter: `drop-shadow(0 0 6px ${game.colors.primary})` } : {}}
+          onError={() => setImgErr(true)}
+        />
+      )}
+      <span
+        className="text-[8px] font-bold uppercase tracking-wider leading-tight text-center"
+        style={{ color: selected ? game.colors.primary : '#4a5a4a' }}
+      >
+        {game.shortName}
+      </span>
+      {selected && (
+        <span
+          className="absolute -top-px -right-px flex h-3.5 w-3.5 items-center justify-center rounded-bl-sm text-[7px] font-black"
+          style={{ background: game.colors.primary, color: '#000' }}
+        >
+          ✓
+        </span>
+      )}
+    </button>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm]     = useState({ email: '', username: '', password: '', confirm: '' });
-  const [show, setShow]     = useState(false);
-  const [error, setError]   = useState('');
+  const [form, setForm]       = useState({ email: '', username: '', password: '', confirm: '' });
+  const [show, setShow]       = useState(false);
+  const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pickedGame, setPickedGame] = useState<Game | null>(null);
 
   function set(field: string) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -22,14 +71,8 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    if (form.password !== form.confirm) {
-      setError('Passwords do not match');
-      return;
-    }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+    if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
+    if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
 
     setLoading(true);
     try {
@@ -44,6 +87,13 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+      // Persist game selection so it's ready on first load
+      if (pickedGame) {
+        localStorage.setItem('fn-selected-game', pickedGame.slug);
+        document.cookie = `fn-game=${pickedGame.slug}; path=/; max-age=${60 * 60 * 24 * 365}`;
+      }
+
       setSuccess(true);
       setTimeout(() => router.push('/login'), 2000);
     } catch (e: unknown) {
@@ -69,11 +119,16 @@ export default function RegisterPage() {
           <p className="text-fn-muted text-sm mt-1">Create your Frag Naija account</p>
         </div>
 
-        {/* Success state */}
+        {/* Success */}
         {success ? (
           <div className="bg-fn-card border border-fn-green/40 rounded-lg p-6 text-center space-y-3">
             <div className="text-fn-green text-2xl">✓</div>
             <p className="text-fn-green font-bold text-sm uppercase tracking-widest">Account created!</p>
+            {pickedGame && (
+              <p className="text-fn-muted text-xs">
+                Game set to <span style={{ color: pickedGame.colors.primary }}>{pickedGame.name}</span>
+              </p>
+            )}
             <p className="text-fn-muted text-xs">Redirecting to login...</p>
           </div>
         ) : (
@@ -92,7 +147,6 @@ export default function RegisterPage() {
               Continue with Google
             </a>
 
-            {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-fn-gborder" />
@@ -108,13 +162,9 @@ export default function RegisterPage() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
                 <input
-                  type="email"
-                  value={form.email}
-                  onChange={set('email')}
+                  type="email" value={form.email} onChange={set('email')}
                   className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
-                  placeholder="your@email.com"
-                  required
-                  autoComplete="email"
+                  placeholder="your@email.com" required autoComplete="email"
                 />
               </div>
             </div>
@@ -127,14 +177,34 @@ export default function RegisterPage() {
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
                 <input
-                  type="text"
-                  value={form.username}
-                  onChange={set('username')}
+                  type="text" value={form.username} onChange={set('username')}
                   className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
-                  placeholder="FragKing99"
-                  autoComplete="username"
+                  placeholder="FragKing99" autoComplete="username"
                 />
               </div>
+            </div>
+
+            {/* Game selection */}
+            <div>
+              <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <Gamepad2 size={10} /> Your Game{' '}
+                <span className="text-fn-muted/50 normal-case tracking-normal">(optional)</span>
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {GAMES.map((game) => (
+                  <GamePickCard
+                    key={game.id}
+                    game={game}
+                    selected={pickedGame?.id === game.id}
+                    onSelect={() => setPickedGame(pickedGame?.id === game.id ? null : game)}
+                  />
+                ))}
+              </div>
+              {pickedGame && (
+                <p className="text-[9px] mt-1.5 tracking-wider" style={{ color: pickedGame.colors.primary }}>
+                  ● {pickedGame.name} selected
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -143,20 +213,12 @@ export default function RegisterPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
                 <input
-                  type={show ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={set('password')}
+                  type={show ? 'text' : 'password'} value={form.password} onChange={set('password')}
                   className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-10 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
-                  placeholder="Min. 6 characters"
-                  required
-                  autoComplete="new-password"
+                  placeholder="Min. 6 characters" required autoComplete="new-password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShow(!show)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fn-muted hover:text-fn-text"
-                  tabIndex={-1}
-                >
+                <button type="button" onClick={() => setShow(!show)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fn-muted hover:text-fn-text" tabIndex={-1}>
                   {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -168,13 +230,9 @@ export default function RegisterPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
                 <input
-                  type={show ? 'text' : 'password'}
-                  value={form.confirm}
-                  onChange={set('confirm')}
+                  type={show ? 'text' : 'password'} value={form.confirm} onChange={set('confirm')}
                   className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
-                  placeholder="Repeat password"
-                  required
-                  autoComplete="new-password"
+                  placeholder="Repeat password" required autoComplete="new-password"
                 />
               </div>
             </div>
@@ -186,14 +244,12 @@ export default function RegisterPage() {
 
             {/* Submit */}
             <button
-              type="submit"
-              disabled={loading}
+              type="submit" disabled={loading}
               className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
 
-            {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-fn-gborder" />
@@ -203,7 +259,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Login link */}
             <p className="text-center text-fn-muted text-xs">
               Already have an account?{' '}
               <Link href="/login" className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">

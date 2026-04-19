@@ -1,21 +1,46 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
+import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
+import { GAMES } from '@/lib/games';
+
+const GAME_KEYWORDS: Record<string, string[]> = {
+  'pubg-mobile':    ['pubg', 'battleground'],
+  'cod-mobile':     ['cod', 'duty'],
+  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
+  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
+  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
+  'efootball':      ['efootball', 'pes', 'konami'],
+  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
+};
+
+function matchesGame(row: Record<string, unknown>, slug: string, athletes: Record<string, unknown>[]): boolean {
+  const keywords = GAME_KEYWORDS[slug] ?? [];
+  const athlete = athletes.find(a => a.id === row.athlete_id);
+  const haystack = [row.from_team, row.to_team, row.notes, athlete?.name, athlete?.ign, athlete?.team]
+    .map(v => String(v ?? '').toLowerCase()).join(' ');
+  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
+}
 
 const EMPTY = { from_team: '', to_team: '', fee: '', status: 'Rumour', date: '', notes: '', athlete_id: '' };
 
-export default function AdminTransfersPage() {
-  const [rows, setRows]           = useState<Record<string,unknown>[]>([]);
-  const [athletes, setAthletes]   = useState<Record<string,unknown>[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [open, setOpen]           = useState(false);
-  const [form, setForm]           = useState({ ...EMPTY });
-  const [saving, setSaving]       = useState(false);
-  const [error, setError]         = useState('');
+function TransfersContent() {
+  const searchParams = useSearchParams();
+  const gameSlug     = searchParams.get('game') ?? 'all';
+  const activeGame   = GAMES.find(g => g.slug === gameSlug);
+
+  const [rows, setRows]         = useState<Record<string, unknown>[]>([]);
+  const [athletes, setAthletes] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [open, setOpen]         = useState(false);
+  const [form, setForm]         = useState({ ...EMPTY });
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,7 +67,7 @@ export default function AdminTransfersPage() {
     finally { setSaving(false); }
   }
 
-  async function handleDelete(row: Record<string,unknown>) {
+  async function handleDelete(row: Record<string, unknown>) {
     if (!confirm('Delete this transfer?')) return;
     await fetch(`/api/transfers/${row.id}`, { method: 'DELETE' });
     load();
@@ -55,20 +80,31 @@ export default function AdminTransfersPage() {
     return a ? String(a.name) : String(id ?? '—');
   };
 
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug, athletes));
+
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold text-fn-text uppercase tracking-widest">Transfers</h1>
-          <p className="text-fn-muted text-xs mt-0.5">{rows.length} transfer{rows.length !== 1 ? 's' : ''}</p>
+          <p className="text-fn-muted text-xs mt-0.5">
+            {filtered.length} transfer{filtered.length !== 1 ? 's' : ''}
+            {activeGame ? ` — ${activeGame.name}` : ''}
+          </p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-fn-green text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest hover:bg-fn-gdim transition-colors">
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-2 text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest transition-colors"
+          style={{ background: activeGame?.colors.primary ?? '#00ff41' }}
+        >
           <Plus className="w-4 h-4" /> Add Transfer
         </button>
       </div>
 
+      <AdminGameFilter currentSlug={gameSlug} />
+
       <AdminTable
-        loading={loading} rows={rows} onDelete={handleDelete}
+        loading={loading} rows={filtered} onDelete={handleDelete}
         emptyText="No transfers yet"
         columns={[
           { key: 'athlete_id', label: 'Player', render: r => getAthleteName(r.athlete_id) },
@@ -79,7 +115,7 @@ export default function AdminTransfersPage() {
             const c = r.status === 'Confirmed' ? 'bg-fn-green/10 text-fn-green' : r.status === 'Rumour' ? 'bg-fn-yellow/10 text-fn-yellow' : 'bg-fn-muted/10 text-fn-muted';
             return <span className={`text-xs px-2 py-0.5 rounded-full ${c}`}>{String(r.status)}</span>;
           }},
-          { key: 'date',       label: 'Date' },
+          { key: 'date', label: 'Date' },
         ]}
       />
 
@@ -113,4 +149,8 @@ export default function AdminTransfersPage() {
       </AdminModal>
     </div>
   );
+}
+
+export default function AdminTransfersPage() {
+  return <Suspense><TransfersContent /></Suspense>;
 }
