@@ -15,7 +15,17 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useActiveWagers, useBanks, useFeatured, useMe, useMyWagers, usePlaceWager, usePredictors, useWalletTransactions, useWithdraw } from "@/lib/hooks";
+import {
+  useActiveWagers,
+  useBanks,
+  useFeatured,
+  useMe,
+  useMyWagers,
+  usePlaceWager,
+  usePredictors,
+  useWalletTransactions,
+  useWithdraw,
+} from "@/lib/hooks";
 
 type CurrentUser = {
   id?: string | null;
