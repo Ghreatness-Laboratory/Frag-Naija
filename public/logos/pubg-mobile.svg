@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect width="80" height="80" rx="6" fill="#040904"/>
+  <rect x="1" y="1" width="78" height="78" rx="5.5" stroke="#00ff41" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- Helmet silhouette -->
+  <ellipse cx="40" cy="34" rx="16" ry="14" fill="#00ff41" opacity="0.15"/>
+  <path d="M24 36 Q24 20 40 20 Q56 20 56 36 L56 40 Q56 44 52 44 L28 44 Q24 44 24 40 Z" fill="#00ff41" opacity="0.7"/>
+  <rect x="28" y="44" width="24" height="4" rx="2" fill="#00ff41" opacity="0.5"/>
+  <!-- Visor -->
+  <rect x="30" y="30" width="20" height="8" rx="2" fill="#040904" opacity="0.8"/>
+  <rect x="32" y="32" width="16" height="4" rx="1" fill="#00ff41" opacity="0.3"/>
+  <!-- Text -->
+  <text x="40" y="62" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="11" fill="#00ff41" letter-spacing="3" font-weight="900">PUBG</text>
+  <text x="40" y="73" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" opacity="0.5" letter-spacing="2">MOBILE</text>
+</svg>

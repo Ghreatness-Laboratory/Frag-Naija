@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect width="80" height="80" rx="6" fill="#0d0520"/>
+  <rect x="1" y="1" width="78" height="78" rx="5.5" stroke="#C084FC" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- Crown shape -->
+  <path d="M22 44 L28 28 L34 38 L40 22 L46 38 L52 28 L58 44 Z" stroke="#C084FC" stroke-opacity="0.7" stroke-width="1.5" fill="#C084FC" fill-opacity="0.12" stroke-linejoin="round"/>
+  <rect x="22" y="44" width="36" height="4" rx="2" fill="#C084FC" opacity="0.5"/>
+  <!-- Gem accents -->
+  <circle cx="28" cy="28" r="2.5" fill="#FFD700" opacity="0.8"/>
+  <circle cx="40" cy="22" r="3" fill="#FFD700" opacity="0.9"/>
+  <circle cx="52" cy="28" r="2.5" fill="#FFD700" opacity="0.8"/>
+  <!-- Text -->
+  <text x="40" y="63" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="7.5" fill="#C084FC" letter-spacing="1" font-weight="900">MOBILE</text>
+  <text x="40" y="74" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="7.5" fill="#FFD700" opacity="0.8" letter-spacing="1" font-weight="900">LEGENDS</text>
+</svg>

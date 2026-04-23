@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Pure black background matching the logo -->
+  <rect width="512" height="512" fill="#000000"/>
+
+  <defs>
+    <!-- Drop-shadow / subtle glow on white elements -->
+    <filter id="wglow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- F letter -->
+  <g fill="white">
+    <!-- Vertical stem of F -->
+    <polygon points="108,102  145,102  138,278  101,278"/>
+    <!-- Top bar of F -->
+    <polygon points="108,102  222,102  218,134  104,134"/>
+    <!-- Middle bar of F -->
+    <polygon points="108,170  190,170  186,200  104,200"/>
+    <!-- Diagonal slash cut through F -->
+    <polygon points="145,148  162,148  130,234  113,234" fill="black"/>
+  </g>
+
+  <!-- N letter -->
+  <g fill="white">
+    <!-- Left stem of N -->
+    <polygon points="248,102  285,102  278,278  241,278"/>
+    <!-- Right stem of N -->
+    <polygon points="368,102  405,102  398,278  361,278"/>
+    <!-- Diagonal crossbar of N -->
+    <polygon points="248,102  295,102  405,278  358,278"/>
+    <!-- Diagonal slash cut through N -->
+    <polygon points="313,102  335,102  315,165  293,165" fill="black"/>
+  </g>
+
+  <!-- Horizontal rule -->
+  <rect x="68" y="300" width="376" height="2" fill="white" opacity="0.9"/>
+
+  <!-- FRAG NAIJA wordmark -->
+  <text
+    x="256" y="348"
+    text-anchor="middle"
+    font-family="Impact, 'Arial Black', 'Helvetica Neue', sans-serif"
+    font-size="48"
+    font-weight="900"
+    fill="white"
+    letter-spacing="6"
+  >FRAG NAIJA</text>
+
+  <!-- Shield chevron -->
+  <rect x="68"  y="368" width="138" height="2" fill="white" opacity="0.85"/>
+  <rect x="306" y="368" width="138" height="2" fill="white" opacity="0.85"/>
+  <polygon points="188,368  256,408  324,368  316,368  256,400  196,368" fill="white"/>
+  <polygon points="248,406  264,406  256,424" fill="white"/>
+</svg>

@@ -1,19 +1,43 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Upload, Star } from 'lucide-react';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
+import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, SubmitBtn } from '@/components/admin/Field';
+import { GAMES } from '@/lib/games';
+
+const GAME_KEYWORDS: Record<string, string[]> = {
+  'pubg-mobile':    ['pubg', 'battleground'],
+  'cod-mobile':     ['cod', 'duty'],
+  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
+  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
+  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
+  'efootball':      ['efootball', 'pes', 'konami'],
+  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
+};
+
+function matchesGame(row: Record<string, unknown>, slug: string): boolean {
+  const keywords = GAME_KEYWORDS[slug] ?? [];
+  const haystack = [row.title, row.player, row.team, row.category]
+    .map(v => String(v ?? '').toLowerCase()).join(' ');
+  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
+}
 
 const EMPTY = { title: '', player: '', team: '', category: 'Clutch', video_url: '', thumbnail: '', date: '', featured: 'false' };
 
-export default function AdminHighlightsPage() {
-  const [rows, setRows]       = useState<Record<string,unknown>[]>([]);
+function HighlightsContent() {
+  const searchParams = useSearchParams();
+  const gameSlug     = searchParams.get('game') ?? 'all';
+  const activeGame   = GAMES.find(g => g.slug === gameSlug);
+
+  const [rows, setRows]       = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen]       = useState(false);
-  const [editing, setEditing] = useState<Record<string,unknown> | null>(null);
+  const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const [form, setForm]       = useState({ ...EMPTY });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -34,7 +58,7 @@ export default function AdminHighlightsPage() {
     setThumbFile(null); setError(''); setOpen(true);
   }
 
-  function openEdit(row: Record<string,unknown>) {
+  function openEdit(row: Record<string, unknown>) {
     setEditing(row);
     setForm({
       title:     String(row.title     ?? ''),
@@ -76,7 +100,7 @@ export default function AdminHighlightsPage() {
     finally { setSaving(false); }
   }
 
-  async function handleDelete(row: Record<string,unknown>) {
+  async function handleDelete(row: Record<string, unknown>) {
     if (!confirm(`Delete "${row.title}"?`)) return;
     await fetch(`/api/highlights/${row.id}`, { method: 'DELETE' });
     load();
@@ -84,20 +108,31 @@ export default function AdminHighlightsPage() {
 
   const f = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm(p => ({ ...p, [k]: e.target.value }));
 
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug));
+
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold text-fn-text uppercase tracking-widest">Highlights</h1>
-          <p className="text-fn-muted text-xs mt-0.5">{rows.length} clip{rows.length !== 1 ? 's' : ''}</p>
+          <p className="text-fn-muted text-xs mt-0.5">
+            {filtered.length} clip{filtered.length !== 1 ? 's' : ''}
+            {activeGame ? ` — ${activeGame.name}` : ''}
+          </p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-fn-green text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest hover:bg-fn-gdim transition-colors">
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-2 text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest transition-colors"
+          style={{ background: activeGame?.colors.primary ?? '#00ff41' }}
+        >
           <Plus className="w-4 h-4" /> Add Highlight
         </button>
       </div>
 
+      <AdminGameFilter currentSlug={gameSlug} />
+
       <AdminTable
-        loading={loading} rows={rows} onEdit={openEdit} onDelete={handleDelete}
+        loading={loading} rows={filtered} onEdit={openEdit} onDelete={handleDelete}
         emptyText="No highlights yet"
         columns={[
           { key: 'thumbnail', label: 'Thumb', render: r => r.thumbnail ? <img src={String(r.thumbnail)} alt="" className="w-14 h-8 rounded object-cover" /> : <div className="w-14 h-8 rounded bg-fn-card2 border border-fn-gborder" /> },
@@ -106,7 +141,7 @@ export default function AdminHighlightsPage() {
           { key: 'category', label: 'Category', render: r => <span className="text-xs px-2 py-0.5 rounded-full bg-fn-green/10 text-fn-green">{String(r.category)}</span> },
           { key: 'featured', label: 'Featured', render: r => r.featured ? <Star className="w-4 h-4 text-fn-yellow fill-fn-yellow" /> : <span className="text-fn-muted text-xs">—</span> },
           { key: 'date',     label: 'Date' },
-          { key: 'views',    label: 'Views', render: r => Number(r.views||0).toLocaleString() },
+          { key: 'views',    label: 'Views', render: r => Number(r.views || 0).toLocaleString() },
         ]}
       />
 
@@ -159,4 +194,8 @@ export default function AdminHighlightsPage() {
       </AdminModal>
     </div>
   );
+}
+
+export default function AdminHighlightsPage() {
+  return <Suspense><HighlightsContent /></Suspense>;
 }

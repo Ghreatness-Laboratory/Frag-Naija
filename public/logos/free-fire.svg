@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect width="80" height="80" rx="6" fill="#100503"/>
+  <rect x="1" y="1" width="78" height="78" rx="5.5" stroke="#FF4500" stroke-opacity="0.35" stroke-width="1"/>
+  <!-- Flame shape -->
+  <path d="M40 16 C40 16 50 26 50 36 C50 42 46 46 40 48 C34 46 30 42 30 36 C30 26 40 16 40 16Z" fill="#FF8C00" opacity="0.5"/>
+  <path d="M40 22 C40 22 47 30 47 38 C47 42 44 45 40 46 C36 45 33 42 33 38 C33 30 40 22 40 22Z" fill="#FF4500" opacity="0.8"/>
+  <path d="M40 30 C40 30 44 35 44 39 C44 42 42 44 40 45 C38 44 36 42 36 39 C36 35 40 30 40 30Z" fill="#FFD700" opacity="0.9"/>
+  <!-- Text -->
+  <text x="40" y="63" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="9" fill="#FF4500" letter-spacing="1" font-weight="900">FREE</text>
+  <text x="40" y="74" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="9" fill="#FF8C00" letter-spacing="1" font-weight="900">FIRE</text>
+</svg>

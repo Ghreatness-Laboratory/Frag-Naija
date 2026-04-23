@@ -1,11 +1,31 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Upload } from 'lucide-react';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
+import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Textarea, SubmitBtn } from '@/components/admin/Field';
+import { GAMES } from '@/lib/games';
+
+const GAME_KEYWORDS: Record<string, string[]> = {
+  'pubg-mobile':    ['pubg', 'battleground'],
+  'cod-mobile':     ['cod', 'duty'],
+  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
+  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
+  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
+  'efootball':      ['efootball', 'pes', 'konami'],
+  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
+};
+
+function matchesGame(row: Record<string, unknown>, slug: string): boolean {
+  const keywords = GAME_KEYWORDS[slug] ?? [];
+  const haystack = [row.name, row.region, row.bio, row.achievements]
+    .map(v => String(v ?? '').toLowerCase()).join(' ');
+  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
+}
 
 const EMPTY = {
   name: '', region: '', wins: '', losses: '', bio: '', logo_url: '',
@@ -21,7 +41,11 @@ function splitArr(str: string): string[] {
   return str.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
-export default function AdminTeamsPage() {
+function TeamsContent() {
+  const searchParams = useSearchParams();
+  const gameSlug     = searchParams.get('game') ?? 'all';
+  const activeGame   = GAMES.find(g => g.slug === gameSlug);
+
   const [rows, setRows]         = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading]   = useState(true);
   const [open, setOpen]         = useState(false);
@@ -122,26 +146,32 @@ export default function AdminTeamsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug));
+
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold text-fn-text uppercase tracking-widest">Teams</h1>
           <p className="text-fn-muted text-xs mt-0.5">
-            {rows.length} team{rows.length !== 1 ? 's' : ''}
+            {filtered.length} team{filtered.length !== 1 ? 's' : ''}
+            {activeGame ? ` — ${activeGame.name}` : ''}
           </p>
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-fn-green text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest hover:bg-fn-gdim transition-colors"
+          className="flex items-center gap-2 text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest transition-colors"
+          style={{ background: activeGame?.colors.primary ?? '#00ff41' }}
         >
           <Plus className="w-4 h-4" /> Add Team
         </button>
       </div>
 
+      <AdminGameFilter currentSlug={gameSlug} />
+
       <AdminTable
         loading={loading}
-        rows={rows}
+        rows={filtered}
         onEdit={openEdit}
         onDelete={handleDelete}
         emptyText="No teams yet — click Add Team"
@@ -258,4 +288,8 @@ export default function AdminTeamsPage() {
       </AdminModal>
     </div>
   );
+}
+
+export default function AdminTeamsPage() {
+  return <Suspense><TeamsContent /></Suspense>;
 }
