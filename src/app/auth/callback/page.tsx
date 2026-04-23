@@ -6,45 +6,54 @@ import { createClient } from '@supabase/supabase-js';
 export default function AuthCallbackPage() {
   useEffect(() => {
     async function handleCallback() {
-      const hash   = window.location.hash;
-      const params = new URLSearchParams(window.location.search);
-      const code   = params.get('code');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
 
-      // PKCE flow — forward to server route
-      if (code) {
-        window.location.replace(`/api/auth/callback?code=${code}`);
-        return;
-      }
-
-      // Implicit flow — token is in the hash
+      // Supabase implicit flow puts tokens in the URL hash fragment
+      const hash = window.location.hash;
       if (hash && hash.includes('access_token')) {
-        const hashParams = new URLSearchParams(hash.slice(1));
-        const access_token = hashParams.get('access_token');
+        // Parse the hash fragment
+        const params = new URLSearchParams(hash.substring(1));
+        const access_token  = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
 
-        if (!access_token) {
-          window.location.replace('/login?error=missing_token');
+        if (access_token) {
+          // Set the session in Supabase client
+          await supabase.auth.setSession({ access_token, refresh_token: refresh_token ?? '' });
+
+          // Set the httpOnly cookie via our API
+          await fetch('/api/auth/session', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ access_token }),
+          });
+
+          window.location.href = '/';
           return;
         }
+      }
 
-        // Verify token and set httpOnly cookie via session API
-        const res = await fetch('/api/auth/session', {
+      // PKCE flow — code in query params
+      const code = new URLSearchParams(window.location.search).get('code');
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (error || !data?.session) {
+          window.location.href = '/login?error=oauth_failed';
+          return;
+        }
+        await fetch('/api/auth/session', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ access_token }),
+          body:    JSON.stringify({ access_token: data.session.access_token }),
         });
-
-        if (!res.ok) {
-          window.location.replace('/login?error=session_failed');
-          return;
-        }
-
-        window.location.replace('/');
+        window.location.href = '/';
         return;
       }
 
-      // No token or code — something went wrong
-      const error = params.get('error') || 'unknown';
-      window.location.replace(`/login?error=${error}`);
+      // Neither — something went wrong
+      window.location.href = '/login?error=oauth_failed';
     }
 
     handleCallback();
