@@ -1,38 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 
 export default function AuthCallbackPage() {
   useEffect(() => {
-    async function handleCallback() {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      // Exchange the code in the URL for a session
-      const { data, error } = await supabase.auth.exchangeCodeForSession(
-        window.location.href
-      );
-
-      if (error || !data?.session) {
-        console.error('OAuth callback error:', error?.message);
-        window.location.href = '/login?error=oauth_failed';
-        return;
-      }
-
-      // Set the httpOnly cookie via our API
-      await fetch('/api/auth/session', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ access_token: data.session.access_token }),
-      });
-
-      window.location.href = '/';
-    }
-
-    handleCallback();
+    // Forward to the server-side callback handler with the full query string
+    const params = window.location.search;
+    window.location.replace(`/api/auth/callback${params}`);
   }, []);
 
   return (

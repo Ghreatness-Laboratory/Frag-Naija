@@ -17,7 +17,15 @@ export async function GET(request) {
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    }
   );
 
   const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
@@ -29,20 +37,18 @@ export async function GET(request) {
 
   const user = data.session.user;
 
-  // Ensure username is set from Google profile if missing
   if (!user.user_metadata?.username && user.user_metadata?.full_name) {
     await supabase.auth.updateUser({
       data: { username: user.user_metadata.full_name.split(' ')[0] },
     });
   }
 
-  // Ensure wallet exists for new OAuth users
   try { await createWallet(user.id); } catch {}
 
   const response = NextResponse.redirect(`${siteUrl}/`);
   response.cookies.set('sb-access-token', data.session.access_token, {
     httpOnly: true,
-    secure:   true,
+    secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge:   60 * 60 * 24 * 7,
     path:     '/',
