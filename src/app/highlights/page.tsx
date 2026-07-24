@@ -53,19 +53,19 @@ export default function HighlightsPage() {
 
   // FF-themed fire gradient for featured thumbnail
   const featuredGradient = isFF
-    ? `linear-gradient(135deg, #1a0800 0%, #4a1200 40%, #2d0a00 100%)`
-    : `linear-gradient(135deg, #001a00 0%, #003300 40%, #001a00 100%)`;
+    ? `linear-gradient(135deg, ${primary}1f 0%, ${secondary}18 45%, rgb(var(--fn-card2)) 100%)`
+    : `linear-gradient(135deg, ${primary}18 0%, ${secondary}12 45%, rgb(var(--fn-card2)) 100%)`;
 
   const thumbColors = isFF
-    ? ['#3d0d00', '#4a1500', '#2a0800', '#5a1a00', '#3a1000', '#2d0c00']
-    : ['#001a20', '#001a10', '#001520', '#001810', '#001220', '#001a18'];
+    ? ['rgb(var(--fn-card2))', 'rgb(var(--fn-card))', 'rgb(var(--fn-dark))', 'rgb(var(--fn-card2))', 'rgb(var(--fn-card))', 'rgb(var(--fn-dark))']
+    : ['rgb(var(--fn-card2))', 'rgb(var(--fn-card))', 'rgb(var(--fn-dark))', 'rgb(var(--fn-card2))', 'rgb(var(--fn-card))', 'rgb(var(--fn-dark))'];
 
   return (
     <div className="min-h-screen">
       {/* Page header */}
       <div
         className="px-4 sm:px-8 lg:px-12 pt-8 pb-4 border-b border-fn-gborder"
-        style={{ background: `linear-gradient(135deg, ${primary}06 0%, #000 60%)` }}
+        style={{ background: `linear-gradient(135deg, ${primary}06 0%, rgb(var(--fn-black)) 60%)` }}
       >
         <div className="flex items-center gap-2 mb-1">
           {isFF && <Flame size={10} style={{ color: primary }} />}
@@ -87,7 +87,7 @@ export default function HighlightsPage() {
               className="px-3 sm:px-4 py-2.5 text-[9px] font-bold tracking-widest uppercase transition-all rounded-t-sm border-b-2 -mb-px"
               style={activeTab === t.id
                 ? { color: primary, borderColor: primary, background: `${primary}08` }
-                : { color: '#555', borderColor: 'transparent' }}
+                : { color: 'rgb(var(--fn-muted))', borderColor: 'transparent' }}
             >
               {t.label}
             </button>
@@ -143,7 +143,7 @@ export default function HighlightsPage() {
 
               <div
                 className="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 border"
-                style={{ background: '#000000cc', color: primary, borderColor: `${primary}40` }}
+                style={{ background: 'rgb(var(--fn-black) / 0.88)', color: primary, borderColor: `${primary}40` }}
               >
                 {featured?.duration ?? "14:32"}
               </div>
@@ -165,7 +165,7 @@ export default function HighlightsPage() {
                 >
                   <div
                     className="relative w-20 h-14 border flex-shrink-0 overflow-hidden rounded-sm flex items-center justify-center"
-                    style={{ background: thumbColors[i % thumbColors.length], borderColor: '#222' }}
+                    style={{ background: thumbColors[i % thumbColors.length], borderColor: 'rgb(var(--fn-gborder))' }}
                   >
                     <Play size={14} style={{ color: primary }} fill={primary} className="group-hover:scale-110 transition-transform" />
                     <span className="absolute bottom-1 right-1 text-[7px] font-bold text-fn-text bg-black/70 px-1">{v.duration}</span>
@@ -200,9 +200,9 @@ export default function HighlightsPage() {
                 onClick={() => setArchiveOffset(Math.max(0, archiveOffset - 1))}
                 disabled={archiveOffset === 0}
                 className="w-7 h-7 border flex items-center justify-center text-fn-muted transition-all disabled:opacity-30"
-                style={{ borderColor: '#333' }}
+                style={{ borderColor: 'rgb(var(--fn-gborder))' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = primary; (e.currentTarget as HTMLElement).style.color = primary; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#333'; (e.currentTarget as HTMLElement).style.color = ''; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgb(var(--fn-gborder))'; (e.currentTarget as HTMLElement).style.color = ''; }}
               >
                 <ChevronLeft size={13} />
               </button>
@@ -210,9 +210,9 @@ export default function HighlightsPage() {
                 onClick={() => setArchiveOffset(Math.min(totalPages - 1, archiveOffset + 1))}
                 disabled={archiveOffset >= totalPages - 1}
                 className="w-7 h-7 border flex items-center justify-center text-fn-muted transition-all disabled:opacity-30"
-                style={{ borderColor: '#333' }}
+                style={{ borderColor: 'rgb(var(--fn-gborder))' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = primary; (e.currentTarget as HTMLElement).style.color = primary; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#333'; (e.currentTarget as HTMLElement).style.color = ''; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgb(var(--fn-gborder))'; (e.currentTarget as HTMLElement).style.color = ''; }}
               >
                 <ChevronRight size={13} />
               </button>
@@ -254,7 +254,7 @@ export default function HighlightsPage() {
                       </div>
                       <div
                         className="absolute top-2 right-2 text-[8px] font-bold px-1.5 py-0.5 border"
-                        style={{ background: '#000000cc', color: primary, borderColor: `${primary}30` }}
+                        style={{ background: 'rgb(var(--fn-black) / 0.88)', color: primary, borderColor: `${primary}30` }}
                       >
                         {v.duration}
                       </div>
@@ -299,17 +299,17 @@ export default function HighlightsPage() {
                   className="relative rounded-sm overflow-hidden border transition-all"
                   style={{
                     paddingBottom: "133%",
-                    borderColor: cam.live ? `${primary}40` : '#222',
+                    borderColor: cam.live ? `${primary}40` : 'rgb(var(--fn-gborder))',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = cam.live ? primary : `${primary}30`)}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = cam.live ? `${primary}40` : '#222')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = cam.live ? `${primary}40` : 'rgb(var(--fn-gborder))')}
                 >
-                  <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, ${thumbColors[0]} 0%, #000 100%)` }}>
+                  <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, ${thumbColors[0]} 0%, rgb(var(--fn-black)) 100%)` }}>
                     <div className="absolute inset-0 bg-grid-fn bg-grid opacity-10" />
                     <div className="absolute inset-0 flex items-center justify-center pt-4">
                       <div
                         className="w-12 h-12 rounded-full border flex items-center justify-center"
-                        style={{ background: `${primary}10`, borderColor: '#333' }}
+                        style={{ background: `${primary}10`, borderColor: 'rgb(var(--fn-gborder))' }}
                       >
                         <span className="font-display text-xl font-black" style={{ color: primary }}>{cam.tag[0]}</span>
                       </div>

@@ -81,7 +81,7 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
 }
 
 function RatingRing({ value, primary }: { value: number; primary: string }) {
-  const color = value >= 90 ? primary : value >= 80 ? "#f0c040" : "#ff4141";
+  const color = value >= 90 ? primary : value >= 80 ? "rgb(var(--fn-yellow))" : "rgb(var(--fn-red))";
   return (
     <div
       className="w-20 h-20 rounded-full border-4 flex items-center justify-center"
@@ -165,8 +165,8 @@ export default function AthletesPage() {
   const attrs = [
     { label: "ATTACK",     value: a.attack ?? 0,     color: primary },
     { label: "DEFENSE",    value: a.defense ?? 0,    color: "#00aaff" },
-    { label: "CLUTCH",     value: a.clutch ?? 0,     color: "#f0c040" },
-    { label: "SURVIVAL",   value: a.survival ?? 0,   color: "#00ff41" },
+    { label: "CLUTCH",     value: a.clutch ?? 0,     color: "rgb(var(--fn-yellow))" },
+    { label: "SURVIVAL",   value: a.survival ?? 0,   color: "rgb(var(--fn-green))" },
     { label: "IQ",         value: a.iq ?? 0,         color: secondary },
     { label: "AGGRESSION", value: a.aggression ?? 0, color: isFF ? "#FFD700" : "#ff8c42" },
   ];
@@ -211,7 +211,7 @@ export default function AthletesPage() {
                   className="w-9 h-9 rounded-sm flex items-center justify-center text-sm font-display font-black flex-shrink-0 overflow-hidden border"
                   style={isActive
                     ? { background: `${primary}20`, color: primary, borderColor: `${primary}40` }
-                    : { background: '#111', color: '#666', borderColor: '#222' }}
+                    : { background: 'rgb(var(--fn-card))', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
                 >
                   {athlete.photo_url
                     ? <img src={athlete.photo_url} alt={athlete.ign} className="w-full h-full object-cover" />
@@ -250,7 +250,7 @@ export default function AthletesPage() {
           {/* Profile header */}
           <div
             className="bg-fn-card border border-fn-gborder rounded-sm p-4 sm:p-6 mb-4"
-            style={{ background: `linear-gradient(135deg, ${primary}06 0%, #0a0a0a 60%)` }}
+            style={{ background: `linear-gradient(135deg, ${primary}06 0%, rgb(var(--fn-black)) 60%)` }}
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
               <div className="relative flex-shrink-0">
@@ -275,7 +275,7 @@ export default function AthletesPage() {
                     className="text-[9px] font-bold px-2 py-0.5 tracking-widest uppercase border"
                     style={a.status === "Active"
                       ? { background: `${primary}20`, color: primary, borderColor: `${primary}40` }
-                      : { background: '#ffffff10', color: '#888', borderColor: '#333' }}
+                      : { background: 'rgb(var(--fn-card2) / 0.75)', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
                   >
                     ● {a.status}
                   </span>
@@ -366,12 +366,12 @@ export default function AthletesPage() {
               {perks.length > 0 && (
                 <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
                   <div className="fn-label mb-3 flex items-center gap-1.5">
-                    <Zap size={9} style={{ color: isFF ? '#FFD700' : '#f0c040' }} /> PERKS
+                    <Zap size={9} style={{ color: isFF ? '#FFD700' : 'rgb(var(--fn-yellow))' }} /> PERKS
                   </div>
                   <div className="space-y-1.5">
                     {perks.map((p) => (
                       <div key={p} className="flex items-center gap-2 text-[10px] text-fn-text">
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: isFF ? '#FFD700' : '#f0c040' }} />{p}
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: isFF ? '#FFD700' : 'rgb(var(--fn-yellow))' }} />{p}
                       </div>
                     ))}
                   </div>
