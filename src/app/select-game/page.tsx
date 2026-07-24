@@ -178,7 +178,7 @@ export default function SelectGamePage() {
   return (
     /*
      * Fixed full-screen overlay — sits above Navbar (z-50) and DisclaimerModal (z-[100]).
-     * The root layout Navbar/Sidebar are intentionally hidden beneath this overlay
+     * The root layout Navbar is intentionally hidden beneath this overlay
      * until the user selects a game and continues.
      */
     <div className="fixed inset-0 z-[200] overflow-y-auto bg-[#040904]">
