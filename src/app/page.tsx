@@ -337,7 +337,7 @@ export default function HomePage() {
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/tournaments"
-              className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgb(var(--fn-green)/0.22)]"
+              className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
               style={{ background: primary, color: 'rgb(var(--fn-black))' }}
             >
               <Trophy size={13} /> JOIN TOURNAMENTS
@@ -528,7 +528,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/athletes"
-            className="whitespace-nowrap text-[10px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all hover:-translate-y-0.5"
+            className="whitespace-nowrap text-[10px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
             style={{ background: primary, color: 'rgb(var(--fn-black))' }}
           >
             JOIN THE RANKS
