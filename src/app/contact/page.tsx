@@ -68,7 +68,7 @@ export default function ContactPage() {
 
             <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
               <div className="fn-label mb-3 flex items-center gap-1.5">
-                <MapPin size={9} className="text-fn-yellow" /> SECTOR
+                <MapPin size={9} className="text-fn-yellow" /> REGION
               </div>
               <p className="text-fn-muted text-[11px]">
                 Nigeria Esports Federation
