@@ -59,8 +59,8 @@ function StatCounter({ value, label, icon: Icon, color }: { value: string; label
 }
 
 function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
-  const rankColors = [primary, "#f0c040", "#C0C0C0", "#00aaff"];
-  const col = rankColors[rank] ?? "#666";
+  const rankColors = [primary, "rgb(var(--fn-yellow))", "#C0C0C0", "#00aaff"];
+  const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
   return (
     <Link href="/athletes" className="group relative bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden flex-shrink-0 w-40 sm:w-48"
       onMouseEnter={e => (e.currentTarget.style.borderColor = `${primary}50`)}
@@ -230,7 +230,7 @@ export default function HomePage() {
       {/* Hero */}
       <section
         className="relative min-h-[85vh] flex flex-col justify-center px-4 sm:px-8 lg:px-12 bg-grid-fn bg-grid overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${primary}06 0%, #000 55%)` }}
+        style={{ background: `linear-gradient(135deg, ${primary}06 0%, rgb(var(--fn-black)) 55%)` }}
       >
         {/* Corner accents */}
         <div className="absolute top-8 left-4 w-16 h-16 border-l-2 border-t-2 pointer-events-none"
@@ -269,7 +269,7 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-3">
             <Link href="/tournaments"
               className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
-              style={{ background: primary, color: '#000' }}
+              style={{ background: primary, color: 'rgb(var(--fn-black))' }}
             >
               <Trophy size={13} /> JOIN TOURNAMENTS
             </Link>
@@ -331,7 +331,7 @@ export default function HomePage() {
           </div>
           <Link href="/wager"
             className="inline-flex items-center gap-1 text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-sm transition-all"
-            style={{ background: primary, color: '#000' }}
+            style={{ background: primary, color: 'rgb(var(--fn-black))' }}
           >
             ENTER ZONE <ChevronRight size={11} />
           </Link>
@@ -356,9 +356,9 @@ export default function HomePage() {
           </div>
           <Link href="/transfer-window"
             className="flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
-            style={{ borderColor: '#333', color: '#666' }}
+            style={{ borderColor: 'rgb(var(--fn-gborder))', color: 'rgb(var(--fn-muted))' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${primary}40`; (e.currentTarget as HTMLElement).style.color = primary; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#333'; (e.currentTarget as HTMLElement).style.color = '#666'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgb(var(--fn-gborder))'; (e.currentTarget as HTMLElement).style.color = 'rgb(var(--fn-muted))'; }}
           >
             VIEW ALL <ChevronRight size={11} />
           </Link>
@@ -392,7 +392,7 @@ export default function HomePage() {
                           className="text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 border"
                           style={isConfirmed
                             ? { background: `${primary}20`, color: primary, borderColor: `${primary}40` }
-                            : { background: '#f0c04015', color: '#f0c040', borderColor: '#f0c04040' }}
+                            : { background: 'rgb(var(--fn-yellow) / 0.10)', color: 'rgb(var(--fn-yellow))', borderColor: 'rgb(var(--fn-yellow) / 0.28)' }}
                         >
                           {t.status}
                         </span>
@@ -427,7 +427,7 @@ export default function HomePage() {
           <Link
             href="/athletes"
             className="whitespace-nowrap text-[10px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
-            style={{ background: primary, color: '#000' }}
+            style={{ background: primary, color: 'rgb(var(--fn-black))' }}
           >
             JOIN THE RANKS
           </Link>

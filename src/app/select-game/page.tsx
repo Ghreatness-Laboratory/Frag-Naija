@@ -72,9 +72,9 @@ function GameCard({
         game.available ? 'cursor-pointer' : 'cursor-not-allowed',
         // Base state: subtle green-tinted border for PUBG, standard for others
         !isSelected && isPubg
-          ? 'border-[rgba(0,255,65,0.20)] bg-[rgba(0,255,65,0.03)]'
+          ? 'border-fn-green/20 bg-fn-green/5'
           : !isSelected
-          ? 'border-[#1a3a1a] bg-[#0a100a]'
+          ? 'border-fn-gborder bg-fn-card'
           : '',
         !game.available ? 'opacity-45' : '',
       ].join(' ')}
@@ -94,7 +94,7 @@ function GameCard({
       {game.badge && (
         <span
           className="absolute -top-px left-3 px-2 py-0.5 text-[7px] font-black uppercase tracking-widest"
-          style={{ background: game.colors.primary, color: '#040904' }}
+          style={{ background: game.colors.primary, color: 'rgb(var(--fn-black))' }}
         >
           {game.badge}
         </span>
@@ -108,11 +108,11 @@ function GameCard({
       <div className="w-full text-center">
         <p
           className="font-display text-sm font-black uppercase tracking-wider transition-colors"
-          style={{ color: isSelected ? game.colors.primary : '#b8ccb8' }}
+          style={{ color: isSelected ? game.colors.primary : 'rgb(var(--fn-text))' }}
         >
           {game.shortName}
         </p>
-        <p className="mt-0.5 text-[8px] font-mono leading-snug text-[#3d5c3d]">
+        <p className="mt-0.5 text-[8px] font-mono leading-snug text-fn-muted">
           {game.description}
         </p>
       </div>
@@ -121,7 +121,7 @@ function GameCard({
       {isSelected && (
         <span
           className="absolute bottom-2 right-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black"
-          style={{ background: game.colors.primary, color: '#040904' }}
+          style={{ background: game.colors.primary, color: 'rgb(var(--fn-black))' }}
         >
           ✓
         </span>
@@ -142,7 +142,7 @@ function GameCard({
 
 export default function SelectGamePage() {
   const router = useRouter();
-  const { selectedGame, setSelectedGame, isHydrated } = useGame();
+  const { setSelectedGame, isHydrated } = useGame();
   const [picked, setPicked] = useState<Game | null>(null);
 
   // Pre-select the stored game when returning to this page (e.g. to change)
@@ -165,13 +165,13 @@ export default function SelectGamePage() {
   const btnStyle = picked
     ? {
         background: picked.colors.primary,
-        color: '#040904',
+        color: 'rgb(var(--fn-black))',
         boxShadow: `0 0 20px ${picked.colors.glow}`,
       }
     : {
         background: 'transparent',
-        border: '1px solid #1a3a1a',
-        color: '#3d5c3d',
+        border: '1px solid rgb(var(--fn-gborder))',
+        color: 'rgb(var(--fn-muted))',
         cursor: 'not-allowed',
       };
 
@@ -181,13 +181,13 @@ export default function SelectGamePage() {
      * The root layout Navbar is intentionally hidden beneath this overlay
      * until the user selects a game and continues.
      */
-    <div className="fixed inset-0 z-[200] overflow-y-auto bg-[#040904]">
+    <div className="fixed inset-0 z-[200] overflow-y-auto bg-fn-black">
       {/* Background grid */}
       <div
         className="pointer-events-none absolute inset-0 opacity-20"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(0,255,65,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,65,0.04) 1px, transparent 1px)',
+            'linear-gradient(rgb(var(--fn-green) / 0.045) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--fn-green) / 0.045) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }}
       />
@@ -196,26 +196,26 @@ export default function SelectGamePage() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse 70% 35% at 50% 0%, rgba(0,255,65,0.09) 0%, transparent 70%)',
+            'radial-gradient(ellipse 70% 35% at 50% 0%, rgb(var(--fn-green) / 0.10) 0%, transparent 70%)',
         }}
       />
 
       <div className="relative flex min-h-screen flex-col">
         {/* ── Header ── */}
-        <header className="flex items-center justify-between border-b border-[#1a3a1a] px-6 py-4">
+        <header className="flex items-center justify-between border-b border-fn-gborder px-6 py-4">
           <div className="flex items-center gap-2">
             <span
-              className="font-display text-xl font-black tracking-widest text-[#00ff41]"
-              style={{ textShadow: '0 0 20px rgba(0,255,65,0.5)' }}
+              className="font-display text-xl font-black tracking-widest text-[rgb(var(--fn-green))]"
+              style={{ textShadow: '0 0 20px rgb(var(--fn-green) / 0.35)' }}
             >
               FRAG
             </span>
-            <span className="font-display text-xl font-black tracking-widest text-[#b8ccb8]">
+            <span className="font-display text-xl font-black tracking-widest text-fn-text">
               NAIJA
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.15em] text-[#3d5c3d]">
-            <Zap size={9} className="text-[#00ff41]" />
+          <div className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.15em] text-fn-muted">
+            <Zap size={9} className="text-[rgb(var(--fn-green))]" />
             Nigeria&apos;s Premier Esports Platform
           </div>
         </header>
@@ -223,24 +223,24 @@ export default function SelectGamePage() {
         {/* ── Main ── */}
         <main className="flex flex-1 flex-col items-center px-4 py-10 sm:py-14">
           {/* Step tag */}
-          <div className="mb-6 flex items-center gap-2 rounded-sm border border-[#1a3a1a] bg-[#0c1a0c] px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.2em] text-[#3d5c3d]">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#00ff41]" />
+          <div className="mb-6 flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-card px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.2em] text-fn-muted">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[rgb(var(--fn-green))]" />
             Step 01 — Game Select
           </div>
 
           {/* Heading */}
           <div className="mb-3 text-center">
-            <h1 className="font-display text-5xl font-black uppercase leading-none tracking-tight text-[#b8ccb8] sm:text-6xl">
+            <h1 className="font-display text-5xl font-black uppercase leading-none tracking-tight text-fn-text sm:text-6xl">
               SELECT YOUR{' '}
               <span
-                className="text-[#00ff41]"
-                style={{ textShadow: '0 0 28px rgba(0,255,65,0.55)' }}
+                className="text-[rgb(var(--fn-green))]"
+                style={{ textShadow: '0 0 28px rgb(var(--fn-green) / 0.35)' }}
               >
                 GAME
               </span>
             </h1>
           </div>
-          <p className="mb-10 max-w-md text-center text-[11px] font-mono leading-relaxed text-[#3d5c3d]">
+          <p className="mb-10 max-w-md text-center text-[11px] font-mono leading-relaxed text-fn-muted">
             Choose your primary title to unlock tournaments, athlete profiles,
             wager markets, and live analytics tailored to your game.
           </p>
@@ -284,7 +284,7 @@ export default function SelectGamePage() {
           </button>
 
           {/* Fine print */}
-          <p className="mt-4 flex items-center gap-1.5 text-[9px] font-mono text-[#3d5c3d]">
+          <p className="mt-4 flex items-center gap-1.5 text-[9px] font-mono text-fn-muted">
             <Shield size={8} />
             You can switch games at any time from your profile settings
           </p>
@@ -292,7 +292,7 @@ export default function SelectGamePage() {
         </main>
 
         {/* ── Footer strip ── */}
-        <footer className="border-t border-[#1a3a1a] px-6 py-3 text-center text-[8px] font-mono text-[#2a3d2a]">
+        <footer className="border-t border-fn-gborder px-6 py-3 text-center text-[8px] font-mono text-fn-muted/80">
           © {new Date().getFullYear()} Frag Naija — Nigeria&apos;s Premier Esports Platform
         </footer>
       </div>

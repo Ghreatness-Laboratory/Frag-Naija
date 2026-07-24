@@ -135,7 +135,7 @@ export default function TeamsPage() {
             const rank = team.rank ?? idx + 1;
             const isActive = (selected?.id ?? teams[0].id) === team.id;
             const wr = winRate(team.wins, team.losses);
-            const rankColor = rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : rank === 3 ? secondary : '#666';
+            const rankColor = rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : rank === 3 ? secondary : 'rgb(var(--fn-muted))';
             return (
               <button
                 key={team.id}
@@ -156,7 +156,7 @@ export default function TeamsPage() {
                   className="w-9 h-9 rounded-sm flex items-center justify-center flex-shrink-0 overflow-hidden border"
                   style={isActive
                     ? { borderColor: `${primary}40`, background: `${primary}15` }
-                    : { borderColor: '#222', background: '#111' }}
+                    : { borderColor: 'rgb(var(--fn-gborder))', background: 'rgb(var(--fn-card))' }}
                 >
                   {team.logo_url
                     ? <img src={team.logo_url} alt={team.name} className="w-full h-full object-cover" />
@@ -184,7 +184,7 @@ export default function TeamsPage() {
           {/* Team header */}
           <div
             className="bg-fn-card border border-fn-gborder rounded-sm p-4 sm:p-6 mb-4"
-            style={{ background: `linear-gradient(135deg, ${primary}06 0%, #0a0a0a 60%)` }}
+            style={{ background: `linear-gradient(135deg, ${primary}06 0%, rgb(var(--fn-black)) 60%)` }}
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
               <div
@@ -202,9 +202,9 @@ export default function TeamsPage() {
                     <span
                       className="inline-flex items-center justify-center w-7 h-7 rounded-sm border text-[11px] font-black font-display"
                       style={{
-                        color: t.rank === 1 ? '#FFD700' : t.rank === 2 ? '#C0C0C0' : t.rank === 3 ? secondary : '#666',
-                        borderColor: t.rank === 1 ? '#FFD70050' : '#ffffff20',
-                        background: t.rank === 1 ? '#FFD70015' : '#ffffff08',
+                        color: t.rank === 1 ? '#FFD700' : t.rank === 2 ? '#C0C0C0' : t.rank === 3 ? secondary : 'rgb(var(--fn-muted))',
+                        borderColor: t.rank === 1 ? '#FFD70050' : 'rgb(var(--fn-gborder) / 0.7)',
+                        background: t.rank === 1 ? '#FFD70015' : 'rgb(var(--fn-card2) / 0.55)',
                       }}
                     >
                       {t.rank}
@@ -321,7 +321,7 @@ export default function TeamsPage() {
                       <div className="text-[8px] font-bold px-1.5 py-0.5 rounded-sm"
                         style={p.status === "Active"
                           ? { background: `${primary}20`, color: primary }
-                          : { background: '#ffffff10', color: '#888' }}>
+                          : { background: 'rgb(var(--fn-card2) / 0.75)', color: 'rgb(var(--fn-muted))' }}>
                         {p.status}
                       </div>
                       {p.overall_rating > 0 && (
