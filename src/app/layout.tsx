@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
-import Sidebar from "@/components/layout/Sidebar";
 import Footer from "@/components/layout/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/context/GameContext";
@@ -53,8 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <GameProvider>
             <Navbar />
             <div className="flex min-h-screen pt-14">
-              <Sidebar />
-              <main className="flex-1 ml-12 lg:ml-14 overflow-hidden">
+              <main className="flex-1 overflow-hidden">
                 {children}
               </main>
             </div>

@@ -201,7 +201,7 @@ export default function HomePage() {
       }));
 
   const stats = [
-    { value: "1,242+", label: "Sector Players",  icon: Users  },
+    { value: "1,242+", label: "Players",  icon: Users  },
     { value: "48",     label: "Tournaments",      icon: Trophy },
     { value: "12",     label: "Championships",    icon: Award  },
     { value: "₦4.2M",  label: "Total Prize Pool", icon: Zap    },
@@ -244,7 +244,7 @@ export default function HomePage() {
         <div className="max-w-4xl animate-slide-u relative">
           <p className="fn-label mb-3 flex items-center gap-2">
             <span className="w-6 h-px inline-block" style={{ background: primary }} />
-            {isFF ? "FREE FIRE NIGERIA — SECTOR COMMAND" : "SECTOR 11: TACTICAL COMMAND INTERFACE"}
+            NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
           </p>
           <h1 className="font-display font-black uppercase leading-none mb-6">
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">FRAG</span>
@@ -295,7 +295,7 @@ export default function HomePage() {
           <div>
             <p className="fn-label mb-1 flex items-center gap-1.5">
               {isFF && <Flame size={9} style={{ color: primary }} />}
-              {selectedGame.shortName.toUpperCase()} SECTOR LEADERS
+              ROSTER
             </p>
             <h2 className="font-display text-2xl font-black uppercase text-fn-text">TOP ATHLETES</h2>
           </div>
@@ -420,8 +420,8 @@ export default function HomePage() {
             </div>
             <p className="text-xs text-fn-text tracking-wide">
               {isFF
-                ? "FRAG QUALIFIED FREE FIRE PLAYERS — SECTOR TRIALS NOW LIVE"
-                : "FRAG QUALIFIED ATHLETES IN THE SECTOR TRIALS."}
+                ? "FRAG QUALIFIED FREE FIRE PLAYERS — OPEN TRIALS NOW LIVE"
+                : "FRAG QUALIFIED ATHLETES IN THE OPEN TRIALS."}
             </p>
           </div>
           <Link

@@ -30,9 +30,18 @@ function matchesGame(row: Record<string, unknown>, slug: string): boolean {
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
+  known_name: '',
   attack: '0', defense: '0', clutch: '0', survival: '0', iq: '0', aggression: '0',
   overall_rating: '0', perks: '', strengths: '', weaknesses: '',
+  previous_aliases: [''],
+  previous_teams: [{ team: '', years: '' }],
+  achievements: [{ title: '', date: '' }],
+  performance_history: [{ label: '', value: '', date: '' }],
 };
+type AthleteForm = typeof EMPTY;
+type TextFormKey = {
+  [K in keyof AthleteForm]: AthleteForm[K] extends string ? K : never;
+}[keyof AthleteForm];
 
 function toArr(val: unknown): string {
   if (Array.isArray(val)) return val.join(', ');
@@ -40,6 +49,119 @@ function toArr(val: unknown): string {
 }
 function splitArr(str: string): string[] {
   return str.split(',').map((s) => s.trim()).filter(Boolean);
+}
+function stringList(val: unknown): string[] {
+  if (Array.isArray(val)) return val.map((v) => String(v)).filter(Boolean);
+  return splitArr(String(val ?? ''));
+}
+function objectList<T extends Record<string, string>>(val: unknown, fallback: T): T[] {
+  const arr = Array.isArray(val) ? val : [];
+  const normalized = arr
+    .map((item) => ({ ...fallback, ...(typeof item === 'object' && item ? item : {}) }))
+    .map((item) => Object.fromEntries(Object.entries(item).map(([k, v]) => [k, String(v ?? '')])) as T)
+    .filter((item) => Object.values(item).some(Boolean));
+  return normalized.length ? normalized : [{ ...fallback }];
+}
+function cleanStringList(items: string[]) {
+  return items.map((item) => item.trim()).filter(Boolean);
+}
+function cleanObjectList<T extends Record<string, string>>(items: T[]) {
+  return items
+    .map((item) => Object.fromEntries(Object.entries(item).map(([k, v]) => [k, v.trim()])) as T)
+    .filter((item) => Object.values(item).some(Boolean));
+}
+
+function ListEditor({
+  label,
+  values,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  values: string[];
+  placeholder: string;
+  onChange: (values: string[]) => void;
+}) {
+  return (
+    <Field label={label}>
+      <div className="space-y-2">
+        {values.map((value, index) => (
+          <div key={index} className="flex gap-2">
+            <Input
+              value={value}
+              onChange={(event) => onChange(values.map((item, i) => i === index ? event.target.value : item))}
+              placeholder={placeholder}
+            />
+            <button
+              type="button"
+              onClick={() => onChange(values.filter((_, i) => i !== index).length ? values.filter((_, i) => i !== index) : [''])}
+              className="rounded border border-fn-gborder px-3 text-xs font-bold text-fn-muted hover:border-fn-red/40 hover:text-fn-red"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => onChange([...values, ''])}
+          className="text-xs font-bold uppercase tracking-widest text-fn-green hover:text-fn-gdim"
+        >
+          + Add entry
+        </button>
+      </div>
+    </Field>
+  );
+}
+
+function ObjectListEditor<T extends Record<string, string>>({
+  label,
+  values,
+  emptyItem,
+  fields,
+  onChange,
+}: {
+  label: string;
+  values: T[];
+  emptyItem: T;
+  fields: { key: keyof T; label: string; placeholder: string }[];
+  onChange: (values: T[]) => void;
+}) {
+  return (
+    <Field label={label}>
+      <div className="space-y-2">
+        {values.map((value, index) => (
+          <div key={index} className="rounded border border-fn-gborder bg-fn-dark/40 p-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {fields.map((field) => (
+                <Input
+                  key={String(field.key)}
+                  value={value[field.key]}
+                  onChange={(event) => onChange(values.map((item, i) => (
+                    i === index ? { ...item, [field.key]: event.target.value } : item
+                  )))}
+                  placeholder={field.placeholder || field.label}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange(values.filter((_, i) => i !== index).length ? values.filter((_, i) => i !== index) : [{ ...emptyItem }])}
+              className="mt-2 text-xs font-bold uppercase tracking-widest text-fn-muted hover:text-fn-red"
+            >
+              Remove entry
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => onChange([...values, { ...emptyItem }])}
+          className="text-xs font-bold uppercase tracking-widest text-fn-green hover:text-fn-gdim"
+        >
+          + Add entry
+        </button>
+      </div>
+    </Field>
+  );
 }
 
 function AthletesContent() {
@@ -81,6 +203,7 @@ function AthletesContent() {
     setForm({
       name:           String(row.name   ?? ''),
       ign:            String(row.ign    ?? ''),
+      known_name:     String(row.known_name ?? row.ign ?? ''),
       team:           String(row.team   ?? ''),
       role:           String(row.role   ?? ''),
       status:         String(row.status ?? 'Active'),
@@ -96,6 +219,10 @@ function AthletesContent() {
       perks:      toArr(row.perks),
       strengths:  toArr(row.strengths),
       weaknesses: toArr(row.weaknesses),
+      previous_aliases: stringList(row.previous_aliases).length ? stringList(row.previous_aliases) : [''],
+      previous_teams: objectList(row.previous_teams, { team: '', years: '' }),
+      achievements: objectList(row.achievements, { title: '', date: '' }),
+      performance_history: objectList(row.performance_history, { label: '', value: '', date: '' }),
     });
     setPhotoFile(null);
     setError('');
@@ -122,6 +249,7 @@ function AthletesContent() {
       const body = {
         name:           form.name,
         ign:            form.ign,
+        known_name:     form.known_name || form.ign,
         team:           form.team,
         role:           form.role,
         status:         form.status,
@@ -137,6 +265,10 @@ function AthletesContent() {
         perks:      splitArr(form.perks),
         strengths:  splitArr(form.strengths),
         weaknesses: splitArr(form.weaknesses),
+        previous_aliases: cleanStringList(form.previous_aliases),
+        previous_teams: cleanObjectList(form.previous_teams),
+        achievements: cleanObjectList(form.achievements),
+        performance_history: cleanObjectList(form.performance_history),
       };
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
@@ -162,7 +294,7 @@ function AthletesContent() {
   }
 
   const f =
-    (k: keyof typeof EMPTY) =>
+    (k: TextFormKey) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
@@ -244,6 +376,10 @@ function AthletesContent() {
               <Input value={form.ign} onChange={f('ign')} placeholder="In-game name" required />
             </Field>
           </div>
+
+          <Field label="Known Name / Alias">
+            <Input value={form.known_name} onChange={f('known_name')} placeholder="Primary public gamertag" />
+          </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Team">
@@ -337,6 +473,47 @@ function AthletesContent() {
           <Field label="Bio">
             <Textarea value={form.bio} onChange={f('bio')} placeholder="Player description..." />
           </Field>
+
+          <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
+            Career History
+          </p>
+          <ListEditor
+            label="Previous Aliases"
+            values={form.previous_aliases}
+            placeholder="Former gamertag"
+            onChange={(values) => setForm((p) => ({ ...p, previous_aliases: values }))}
+          />
+          <ObjectListEditor
+            label="Previous Teams"
+            values={form.previous_teams}
+            emptyItem={{ team: '', years: '' }}
+            fields={[
+              { key: 'team', label: 'Team', placeholder: 'Former team name' },
+              { key: 'years', label: 'Years', placeholder: '2023–2024' },
+            ]}
+            onChange={(values) => setForm((p) => ({ ...p, previous_teams: values }))}
+          />
+          <ObjectListEditor
+            label="Titles & Championships"
+            values={form.achievements}
+            emptyItem={{ title: '', date: '' }}
+            fields={[
+              { key: 'title', label: 'Title', placeholder: 'Championship title' },
+              { key: 'date', label: 'Date', placeholder: '2026' },
+            ]}
+            onChange={(values) => setForm((p) => ({ ...p, achievements: values }))}
+          />
+          <ObjectListEditor
+            label="Performance History"
+            values={form.performance_history}
+            emptyItem={{ label: '', value: '', date: '' }}
+            fields={[
+              { key: 'label', label: 'Metric/Event', placeholder: 'Spring Invitational' },
+              { key: 'value', label: 'Result/Stat', placeholder: '2nd place · 31 kills' },
+              { key: 'date', label: 'Date', placeholder: 'May 2026' },
+            ]}
+            onChange={(values) => setForm((p) => ({ ...p, performance_history: values }))}
+          />
 
           <Field label="Photo">
             <div className="space-y-2">

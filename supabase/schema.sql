@@ -40,6 +40,11 @@ CREATE TABLE IF NOT EXISTS athletes (
   photo_url   TEXT,
   status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Free Agent')),
   bio         TEXT,
+  known_name  TEXT,
+  previous_aliases JSONB DEFAULT '[]'::jsonb,
+  previous_teams   JSONB DEFAULT '[]'::jsonb,
+  achievements     JSONB DEFAULT '[]'::jsonb,
+  performance_history JSONB DEFAULT '[]'::jsonb,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
-import { getGameContent, type DummyAthlete } from "@/lib/game-content";
+import { getGameContent } from "@/lib/game-content";
 
 type Athlete = {
   id: string;
@@ -24,6 +24,11 @@ type Athlete = {
   photo_url: string | null;
   status: string;
   bio: string | null;
+  known_name?: string | null;
+  previous_aliases?: string[] | string | null;
+  previous_teams?: { team: string; years: string }[] | string | null;
+  achievements?: { title: string; date: string }[] | string | null;
+  performance_history?: { label: string; value: string; date: string }[] | string | null;
   perks: string[] | string | null;
   strengths: string[] | string | null;
   weaknesses: string[] | string | null;
@@ -42,6 +47,19 @@ function parseArray(val: string[] | string | null | undefined): string[] {
   if (Array.isArray(val)) return val.filter(Boolean);
   try { const p = JSON.parse(String(val)); return Array.isArray(p) ? p.filter(Boolean) : []; }
   catch { return String(val).split(",").map((s) => s.trim()).filter(Boolean); }
+}
+
+function parseObjectArray<T extends Record<string, string>>(val: T[] | string | null | undefined): T[] {
+  if (!val) return [];
+  const raw = Array.isArray(val) ? val : (() => {
+    try { return JSON.parse(String(val)); } catch { return []; }
+  })();
+
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item) => item && typeof item === "object")
+    .map((item) => Object.fromEntries(Object.entries(item).map(([key, value]) => [key, String(value ?? "")])) as T)
+    .filter((item) => Object.values(item).some(Boolean));
 }
 
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
@@ -138,6 +156,11 @@ export default function AthletesPage() {
   const perks = parseArray(a.perks);
   const strengths = parseArray(a.strengths);
   const weaknesses = parseArray(a.weaknesses);
+  const previousAliases = parseArray(a.previous_aliases);
+  const previousTeams = parseObjectArray<{ team: string; years: string }>(a.previous_teams);
+  const achievements = parseObjectArray<{ title: string; date: string }>(a.achievements);
+  const performanceHistory = parseObjectArray<{ label: string; value: string; date: string }>(a.performance_history);
+  const displayName = a.known_name || a.ign;
 
   const attrs = [
     { label: "ATTACK",     value: a.attack ?? 0,     color: primary },
@@ -158,7 +181,7 @@ export default function AthletesPage() {
         >
           <div className="flex items-center gap-2 mb-0.5">
             {isFF && <Flame size={10} style={{ color: primary }} />}
-            <div className="fn-label">SECTOR ROSTER</div>
+            <div className="fn-label">ROSTER</div>
           </div>
           <h1 className="font-display text-xl font-black uppercase text-fn-text">ATHLETES</h1>
           <div className="mt-2">
@@ -210,7 +233,7 @@ export default function AthletesPage() {
         <div className="p-4 border-t border-fn-gborder" style={{ background: `${primary}05` }}>
           <div className="fn-label mb-1" style={{ color: primary }}>RECRUITMENT OPEN</div>
           <p className="text-[9px] text-fn-muted leading-relaxed mb-3">
-            JOIN FRAG NAIJA AND GET RANKED IN THE SECTOR TRIALS.
+            JOIN FRAG NAIJA AND GET RANKED IN THE OPEN TRIALS.
           </p>
           <button
             className="w-full text-[10px] py-2 font-bold tracking-widest uppercase border rounded-sm transition-all"
@@ -258,8 +281,13 @@ export default function AthletesPage() {
                   </span>
                   {a.team && <span className="text-[9px] text-fn-muted font-bold tracking-widest">{a.team}</span>}
                 </div>
-                <h2 className="font-display text-3xl sm:text-4xl font-black uppercase text-fn-text tracking-wide">{a.ign}</h2>
+                <h2 className="font-display text-3xl sm:text-4xl font-black uppercase text-fn-text tracking-wide">{displayName}</h2>
                 <p className="text-fn-muted text-[10px] tracking-wider">{a.name}{a.role ? ` · ${a.role}` : ""}</p>
+                {previousAliases.length > 0 && (
+                  <p className="mt-1 text-[9px] uppercase tracking-widest text-fn-muted">
+                    Also known as: <span className="text-fn-text">{previousAliases.join(" · ")}</span>
+                  </p>
+                )}
               </div>
               <div className="flex-shrink-0"><RatingRing value={rating} primary={primary} /></div>
             </div>
@@ -377,6 +405,63 @@ export default function AthletesPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Career history */}
+          {(previousTeams.length > 0 || achievements.length > 0 || performanceHistory.length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+              <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
+                <div className="fn-label mb-3" style={{ color: primary }}>CAREER</div>
+                <div className="space-y-2">
+                  <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                    <div className="fn-label mb-1">CURRENT TEAM</div>
+                    <div className="text-[11px] font-bold text-fn-text">{a.team || "Free Agent"}</div>
+                  </div>
+                  {previousTeams.length > 0 ? previousTeams.map((team, index) => (
+                    <div key={`${team.team}-${index}`} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                      <div className="fn-label mb-1">PREVIOUS TEAM</div>
+                      <div className="text-[11px] font-bold text-fn-text">{team.team}</div>
+                      {team.years && <div className="fn-label mt-0.5">{team.years}</div>}
+                    </div>
+                  )) : (
+                    <div className="text-[10px] text-fn-muted">No previous teams recorded.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
+                <div className="fn-label mb-3" style={{ color: primary }}>ACHIEVEMENTS</div>
+                {achievements.length > 0 ? (
+                  <div className="space-y-2">
+                    {achievements.map((item, index) => (
+                      <div key={`${item.title}-${index}`} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                        <div className="text-[11px] font-bold text-fn-text">{item.title}</div>
+                        {item.date && <div className="fn-label mt-0.5">{item.date}</div>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-fn-muted">No titles recorded yet.</div>
+                )}
+              </div>
+
+              <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
+                <div className="fn-label mb-3" style={{ color: primary }}>PERFORMANCE HISTORY</div>
+                {performanceHistory.length > 0 ? (
+                  <div className="space-y-2">
+                    {performanceHistory.map((item, index) => (
+                      <div key={`${item.label}-${index}`} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                        <div className="text-[11px] font-bold text-fn-text">{item.label}</div>
+                        {item.value && <div className="mt-1 text-[10px] text-fn-green">{item.value}</div>}
+                        {item.date && <div className="fn-label mt-0.5">{item.date}</div>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-fn-muted">No performance history recorded.</div>
+                )}
+              </div>
             </div>
           )}
 

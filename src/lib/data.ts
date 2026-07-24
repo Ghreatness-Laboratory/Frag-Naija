@@ -530,7 +530,7 @@ export const archiveVideos = [
 export const commanderCams = [
   { tag: "PHANTOM_NG",   quote: '"Target acquired..."',    live: true  },
   { tag: "ZEROX_LAG",    quote: '"Wait for the drop."',    live: true  },
-  { tag: "VAL_PRO",      quote: '"Pushing Sector 4"',      live: true  },
+  { tag: "VAL_PRO",      quote: '"Pushing Lane 4"',      live: true  },
   { tag: "STRIKER_NGR",  quote: '"Need ammo now."',        live: true  },
   { tag: "COMMANDER_D",  quote: '"0062. Tactical win."',   live: true  },
   { tag: "LAGOS_KING",   quote: '"Watching the flank."',   live: false },
