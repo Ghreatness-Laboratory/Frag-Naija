@@ -835,10 +835,10 @@ function BetDetailModal({
   const statusLabel = String(bet.status ?? "Pending");
   const statusTone =
     statusLabel === "Won"
-      ? { bg: "#00ff4120", color: "#00ff41", border: "#00ff4140" }
+      ? { bg: "rgb(var(--fn-green) / 0.14)", color: "rgb(var(--fn-green))", border: "rgb(var(--fn-green) / 0.28)" }
       : statusLabel === "Lost"
         ? { bg: "#ff4d4f20", color: "#ff4d4f", border: "#ff4d4f40" }
-        : { bg: "#f0c04020", color: "#f0c040", border: "#f0c04040" };
+        : { bg: "rgb(var(--fn-yellow) / 0.14)", color: "rgb(var(--fn-yellow))", border: "rgb(var(--fn-yellow) / 0.28)" };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -950,8 +950,8 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
               onClick={() => setChecked(!checked)}
               className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm border transition-all"
               style={checked
-                ? { background: '#f0c040', borderColor: '#f0c040' }
-                : { background: 'transparent', borderColor: '#444' }}
+                ? { background: 'rgb(var(--fn-yellow))', borderColor: 'rgb(var(--fn-yellow))' }
+                : { background: 'transparent', borderColor: 'rgb(var(--fn-gborder))' }}
             >
               {checked && <span className="text-[9px] font-black text-black">✓</span>}
             </div>
@@ -973,8 +973,8 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
             disabled={!checked}
             className="w-full rounded-sm py-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all"
             style={checked
-              ? { background: '#f0c040', color: '#000' }
-              : { background: '#1a1a1a', color: '#555', cursor: 'not-allowed' }}
+              ? { background: 'rgb(var(--fn-yellow))', color: 'rgb(var(--fn-black))' }
+              : { background: 'rgb(var(--fn-card2))', color: 'rgb(var(--fn-muted))', cursor: 'not-allowed' }}
           >
             {checked ? "I Accept — Enter Wager Zone" : "Check the box above to continue"}
           </button>
@@ -1467,10 +1467,10 @@ function WagerPageContent() {
                     const statusLabel = String(prediction.status ?? "Pending");
                     const statusTone =
                       statusLabel === "Won"
-                        ? { bg: "#00ff4120", color: "#00ff41", border: "#00ff4140" }
+                        ? { bg: "rgb(var(--fn-green) / 0.14)", color: "rgb(var(--fn-green))", border: "rgb(var(--fn-green) / 0.28)" }
                         : statusLabel === "Lost"
                           ? { bg: "#ff4d4f20", color: "#ff4d4f", border: "#ff4d4f40" }
-                          : { bg: "#f0c04020", color: "#f0c040", border: "#f0c04040" };
+                          : { bg: "rgb(var(--fn-yellow) / 0.14)", color: "rgb(var(--fn-yellow))", border: "rgb(var(--fn-yellow) / 0.28)" };
 
                     return (
                       <button
