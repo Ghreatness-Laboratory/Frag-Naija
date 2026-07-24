@@ -1,16 +1,23 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   BarChart2,
   Bookmark,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
   Clock,
+  Download,
+  Plus,
+  Printer,
+  Share2,
   Shield,
   Trophy,
+  Trash2,
   Wallet,
   X,
   Zap,
@@ -67,6 +74,119 @@ type Bank = {
   name: string;
   code: string;
 };
+
+type SlipSelection = {
+  key: string;
+  wagerId: string | number;
+  marketTitle: string;
+  marketSubtitle: string;
+  selection: string;
+  odds: number;
+};
+
+type PlacedTicket = {
+  id: string;
+  username: string;
+  selections: SlipSelection[];
+  stake: number;
+  combinedOdds: number;
+  potential: number;
+  placedAt: string;
+  status: string;
+};
+
+function getUsername(user: CurrentUser) {
+  const email = user?.email ?? "";
+  return email ? email.split("@")[0] : "Guest";
+}
+
+function buildTicketId(reference?: string | null) {
+  return reference || `FNW-${Date.now().toString(36).toUpperCase()}`;
+}
+
+function calculateCombinedOdds(selections: SlipSelection[]) {
+  return selections.reduce((total, item) => total * Number(item.odds || 1), 1);
+}
+
+async function downloadTicketImage(ticket: PlacedTicket, mode: "print" | "share") {
+  const width = mode === "share" ? 1080 : 900;
+  const height = Math.max(mode === "share" ? 1350 : 1200, 760 + ticket.selections.length * 120);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ctx.fillStyle = "#040904";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "#007a1a";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(28, 28, width - 56, height - 56);
+
+  ctx.fillStyle = "#007a1a";
+  ctx.font = "900 54px monospace";
+  ctx.fillText("FRAG", 64, 105);
+  ctx.fillStyle = "#d7f7d7";
+  ctx.fillText("NAIJA", 225, 105);
+  ctx.font = "700 22px monospace";
+  ctx.fillStyle = "#74a874";
+  ctx.fillText("TACTICAL WAGER SLIP", 64, 145);
+
+  ctx.font = "700 24px monospace";
+  ctx.fillStyle = "#d7f7d7";
+  ctx.fillText(`USER: ${ticket.username}`, 64, 210);
+  ctx.fillText(`REF: ${ticket.id}`, 64, 248);
+  ctx.fillText(`STATUS: ${ticket.status}`, 64, 286);
+  ctx.fillText(`PLACED: ${new Date(ticket.placedAt).toLocaleString("en-NG")}`, 64, 324);
+
+  let y = 390;
+  ctx.font = "900 26px monospace";
+  ctx.fillStyle = "#007a1a";
+  ctx.fillText("SELECTIONS", 64, y);
+  y += 42;
+
+  ticket.selections.forEach((item, index) => {
+    ctx.fillStyle = "#081208";
+    ctx.fillRect(64, y - 28, width - 128, 92);
+    ctx.strokeStyle = "#123d12";
+    ctx.strokeRect(64, y - 28, width - 128, 92);
+    ctx.fillStyle = "#d7f7d7";
+    ctx.font = "800 22px monospace";
+    ctx.fillText(`${index + 1}. ${item.marketTitle}`.slice(0, 58), 84, y);
+    ctx.fillStyle = "#74a874";
+    ctx.font = "700 18px monospace";
+    ctx.fillText(`${item.selection} @ ${item.odds.toFixed(2)}x`.slice(0, 70), 84, y + 32);
+    ctx.fillText(item.marketSubtitle.slice(0, 72), 84, y + 58);
+    y += 118;
+  });
+
+  y += 20;
+  ctx.fillStyle = "#071407";
+  ctx.fillRect(64, y, width - 128, 190);
+  ctx.strokeStyle = "#007a1a";
+  ctx.strokeRect(64, y, width - 128, 190);
+  ctx.fillStyle = "#d7f7d7";
+  ctx.font = "900 28px monospace";
+  ctx.fillText(`STAKE: ${formatCurrency(ticket.stake)}`, 90, y + 55);
+  ctx.fillText(`COMBINED ODDS: ${ticket.combinedOdds.toFixed(2)}x`, 90, y + 105);
+  ctx.fillStyle = "#007a1a";
+  ctx.fillText(`POTENTIAL PAYOUT: ${formatCurrency(ticket.potential)}`, 90, y + 155);
+
+  const link = document.createElement("a");
+  link.download = `${ticket.id}-${mode}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+
+  if (mode === "share" && navigator.share && navigator.canShare) {
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (blob) {
+      const file = new File([blob], `${ticket.id}.png`, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: "FragNaija Wager Slip", files: [file] });
+      }
+    }
+  }
+}
 
 function WithdrawalModal({
   open,
@@ -419,11 +539,15 @@ const PICK_CONFIGS: Record<string, { prompt: string; badge: string; badgeStyle: 
 function WagerCard({
   market,
   email,
+  username,
+  onAddToSlip,
   onPlaced,
 }: {
   market: Record<string, unknown>;
   email?: string | null;
-  onPlaced?: () => void;
+  username: string;
+  onAddToSlip: (selection: SlipSelection) => string | null;
+  onPlaced?: (ticket?: PlacedTicket) => void;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [amount, setAmount] = useState("500");
@@ -443,6 +567,13 @@ function WagerCard({
   const canSubmit = Boolean(activeEmail && picked && numericAmount >= 100 && !loading);
 
   const pickedOption = isOptionPick ? pickOptions.find((o) => o.label === picked) : null;
+  const pickedOdds = isOptionPick
+    ? Number(pickedOption?.odds ?? 0)
+    : picked === "YES"
+      ? yesOdds
+      : picked === "NO"
+        ? noOdds
+        : 0;
   const potentialReturn = isOptionPick
     ? pickedOption ? numericAmount * pickedOption.odds : 0
     : picked === "YES"
@@ -452,6 +583,24 @@ function WagerCard({
         : 0;
 
   const tag = getMarketTag(market);
+  const currentSelection: SlipSelection | null = picked && pickedOdds > 0 ? {
+    key: `${String(market.id)}:${picked}`,
+    wagerId: market.id as string | number,
+    marketTitle: String(getMarketQuestion(market)),
+    marketSubtitle: getMarketSubtitle(market),
+    selection: picked,
+    odds: pickedOdds,
+  } : null;
+
+  function handleAddToSlip() {
+    if (!currentSelection) {
+      setMessage(isOptionPick ? `Choose a ${pickConfig.badge.toLowerCase()} option first.` : "Choose YES or NO first.");
+      return;
+    }
+    const error = onAddToSlip(currentSelection);
+    setMessage(error || "Selection added to bet slip.");
+    if (!error) setPicked(null);
+  }
 
   async function handlePlaceWager() {
     if (!activeEmail) { setMessage("Sign in first to place a wager."); return; }
@@ -465,12 +614,22 @@ function WagerCard({
         amount: numericAmount,
         email: activeEmail,
       });
+      const placedTicket: PlacedTicket = {
+        id: buildTicketId(result.reference),
+        username,
+        selections: currentSelection ? [currentSelection] : [],
+        stake: numericAmount,
+        combinedOdds: pickedOdds,
+        potential: numericAmount * pickedOdds,
+        placedAt: new Date().toISOString(),
+        status: "PENDING",
+      };
       if (result.paid_from_wallet) {
         setMessage("Wager placed! Stake deducted from your wallet.");
         setPicked(null);
-        onPlaced?.();
+        onPlaced?.(placedTicket);
       } else {
-        onPlaced?.();
+        onPlaced?.(placedTicket);
         window.location.href = result.authorization_url;
       }
     } catch (error) {
@@ -603,6 +762,14 @@ function WagerCard({
               className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
+          <button
+            type="button"
+            onClick={handleAddToSlip}
+            className={`fn-btn-outline shrink-0 whitespace-nowrap px-3 text-[10px] ${!picked ? "cursor-not-allowed opacity-50" : ""}`}
+            disabled={!picked}
+          >
+            <Plus size={11} className="inline-block mr-1" /> SLIP
+          </button>
           <button
             onClick={handlePlaceWager}
             className={`fn-btn shrink-0 whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
@@ -817,10 +984,187 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
   );
 }
 
+function BetSlip({
+  selections,
+  stake,
+  setStake,
+  email,
+  username,
+  onRemove,
+  onClear,
+  onSubmit,
+}: {
+  selections: SlipSelection[];
+  stake: string;
+  setStake: (value: string) => void;
+  email?: string | null;
+  username: string;
+  onRemove: (key: string) => void;
+  onClear: () => void;
+  onSubmit: (ticket: PlacedTicket) => void;
+}) {
+  const { placeWager, loading: placing } = usePlaceWager();
+  const [message, setMessage] = useState<string | null>(null);
+  const numericStake = Number(stake || 0);
+  const combinedOdds = calculateCombinedOdds(selections);
+  const potential = numericStake * combinedOdds;
+  const canSubmit = Boolean(email && selections.length > 0 && numericStake >= 100 && !placing);
+
+  async function submitSlip() {
+    if (!email) { setMessage("Sign in first to place this slip."); return; }
+    if (!selections.length) { setMessage("Add at least one selection to your slip."); return; }
+    if (numericStake < 100) { setMessage("Minimum total stake is NGN 100."); return; }
+
+    const marketIds = selections.map((item) => String(item.wagerId));
+    if (new Set(marketIds).size !== marketIds.length) {
+      setMessage("Conflicting slip: only one selection is allowed from each market.");
+      return;
+    }
+
+    setMessage(null);
+    try {
+      const result = await placeWager({
+        selections: selections.map((item) => ({
+          wager_id: item.wagerId,
+          selection: item.selection,
+        })),
+        amount: numericStake,
+        email,
+      });
+      onSubmit({
+        id: buildTicketId(result.reference),
+        username,
+        selections,
+        stake: numericStake,
+        combinedOdds,
+        potential,
+        placedAt: new Date().toISOString(),
+        status: "PENDING",
+      });
+      onClear();
+      if (!result.paid_from_wallet && result.authorization_url) {
+        window.location.href = result.authorization_url;
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to place slip.");
+    }
+  }
+
+  return (
+    <div className="sticky top-20 rounded-sm border border-fn-gborder bg-fn-card p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="fn-label text-fn-text">BET SLIP</span>
+        <span className="rounded-sm border border-fn-green/30 bg-fn-green/10 px-2 py-0.5 text-[8px] font-bold text-fn-green">
+          {selections.length} PICK{selections.length === 1 ? "" : "S"}
+        </span>
+      </div>
+
+      {selections.length === 0 ? (
+        <div className="rounded-sm border border-dashed border-fn-gborder bg-fn-dark p-4 text-center text-[10px] text-fn-muted">
+          Add picks from live markets to build an optional accumulator. Single-pick slips work too.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {selections.map((item) => (
+            <div key={item.key} className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+              <div className="flex items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[10px] font-bold text-fn-text">{item.marketTitle}</p>
+                  <p className="fn-label mt-0.5 truncate">{item.marketSubtitle}</p>
+                  <p className="mt-2 text-[10px] font-bold text-fn-green">
+                    {item.selection} @ {item.odds.toFixed(2)}×
+                  </p>
+                </div>
+                <button onClick={() => onRemove(item.key)} className="text-fn-muted hover:text-fn-red">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 space-y-3">
+        <div className="flex items-center rounded-sm border border-fn-gborder bg-fn-dark px-3">
+          <span className="mr-2 fn-label shrink-0">TOTAL STAKE</span>
+          <input
+            type="number"
+            min="100"
+            value={stake}
+            onChange={(event) => setStake(event.target.value)}
+            className="min-w-0 flex-1 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+            <p className="fn-label mb-1">COMBINED ODDS</p>
+            <p className="font-display text-xl font-black text-fn-green">{combinedOdds.toFixed(2)}×</p>
+          </div>
+          <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+            <p className="fn-label mb-1">PAYOUT</p>
+            <p className="font-display text-xl font-black text-fn-yellow">{formatCompactCurrency(potential)}</p>
+          </div>
+        </div>
+        <button
+          onClick={submitSlip}
+          disabled={!canSubmit}
+          className={`fn-btn w-full py-3 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
+        >
+          {placing ? "PLACING..." : selections.length > 1 ? "PLACE ACCUMULATOR" : "PLACE SLIP"}
+        </button>
+        {!email && <p className="text-[9px] text-fn-yellow">Sign in to place your slip.</p>}
+        {message && <p className="text-[9px] text-fn-red">{message}</p>}
+      </div>
+    </div>
+  );
+}
+
+function TicketActions({ ticket, onClose }: { ticket: PlacedTicket | null; onClose: () => void }) {
+  if (!ticket) return null;
+
+  return (
+    <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-sm border border-fn-green/40 bg-fn-card p-5 shadow-2xl">
+        <button onClick={onClose} className="absolute right-4 top-4 text-fn-muted hover:text-fn-text">
+          <X size={15} />
+        </button>
+        <CheckCircle size={24} className="mb-3 text-fn-green" />
+        <h2 className="font-display text-xl font-black uppercase text-fn-text">Wager Placed</h2>
+        <p className="mt-1 text-[10px] leading-relaxed text-fn-muted">
+          Confirmation is complete. Generate a ticket only if you want a printable or shareable slip.
+        </p>
+
+        <div className="my-4 rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px]">
+          <div className="flex justify-between"><span className="fn-label">REF</span><span className="font-bold text-fn-green">{ticket.id}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label">PICKS</span><span>{ticket.selections.length}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label">STAKE</span><span>{formatCurrency(ticket.stake)}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label">PAYOUT</span><span>{formatCurrency(ticket.potential)}</span></div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 xs:grid-cols-2">
+          <button onClick={() => downloadTicketImage(ticket, "print")} className="fn-btn-outline py-3 text-[10px]">
+            <Printer size={12} className="mr-1 inline-block" /> PRINT SLIP
+          </button>
+          <button onClick={() => downloadTicketImage(ticket, "share")} className="fn-btn py-3 text-[10px]">
+            <Share2 size={12} className="mr-1 inline-block" /> SHARE SLIP
+          </button>
+        </div>
+        <p className="mt-3 flex items-center gap-1 text-[8px] text-fn-muted">
+          <Download size={10} /> PNG generation happens only when you click Print or Share.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [slipSelections, setSlipSelections] = useState<SlipSelection[]>([]);
+  const [slipStake, setSlipStake] = useState("500");
+  const [latestTicket, setLatestTicket] = useState<PlacedTicket | null>(null);
 
   useEffect(() => {
     if (localStorage.getItem(WAGER_TERMS_KEY)) setTermsAccepted(true);
@@ -859,6 +1203,32 @@ function WagerPageContent() {
   const allMarkets = liveWagers;
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
+  const username = getUsername(currentUser);
+
+  function addToSlip(selection: SlipSelection) {
+    if (slipSelections.some((item) => item.key === selection.key)) {
+      return "Duplicate selection: this pick is already in your slip.";
+    }
+
+    if (slipSelections.some((item) => String(item.wagerId) === String(selection.wagerId))) {
+      return "Conflicting selection: remove the existing pick for this market first.";
+    }
+
+    setSlipSelections((current) => [...current, selection]);
+    return null;
+  }
+
+  function removeFromSlip(key: string) {
+    setSlipSelections((current) => current.filter((item) => item.key !== key));
+  }
+
+  function refreshAfterPlacement(ticket?: PlacedTicket) {
+    if (ticket) setLatestTicket(ticket);
+    refetch();
+    refetchMyWagers();
+    refetchWalletTx();
+    refetchMe();
+  }
 
   return (
     <div className="min-h-screen">
@@ -913,6 +1283,7 @@ function WagerPageContent() {
           />
         )}
         <BetDetailModal bet={selectedBet} onClose={() => setSelectedBet(null)} />
+        <TicketActions ticket={latestTicket} onClose={() => setLatestTicket(null)} />
         {status === "success" && (
           <div className="mb-4 rounded-sm border border-fn-green/30 bg-fn-green/10 px-4 py-3 text-[11px] text-fn-text">
             Payment completed. Your wager is being confirmed and will show up after Paystack webhook processing.
@@ -979,11 +1350,9 @@ function WagerPageContent() {
                 key={String(market.id)}
                 market={market}
                 email={currentUser?.email}
-                onPlaced={() => {
-                  refetch();
-                  refetchMyWagers();
-                  refetchWalletTx();
-                }}
+                username={username}
+                onAddToSlip={addToSlip}
+                onPlaced={refreshAfterPlacement}
               />
             ))}
 
@@ -1006,6 +1375,17 @@ function WagerPageContent() {
           </div>
 
           <div className="space-y-4 xl:col-span-1">
+            <BetSlip
+              selections={slipSelections}
+              stake={slipStake}
+              setStake={setSlipStake}
+              email={currentUser?.email}
+              username={username}
+              onRemove={removeFromSlip}
+              onClear={() => setSlipSelections([])}
+              onSubmit={refreshAfterPlacement}
+            />
+
             <div className="rounded-sm border border-fn-gborder bg-fn-card p-4">
               <div className="mb-4 flex items-center gap-2">
                 <Trophy size={12} className="text-fn-yellow" />

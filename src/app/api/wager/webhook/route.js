@@ -65,20 +65,26 @@ export async function POST(request) {
       return NextResponse.json({ received: true });
     }
 
-    // Wager bet (legacy flow)
+    // Wager bet / accumulator flow
     const { wager_id, selection, potential } = metadata;
     const email   = customer.email;
     const user_id = await getUserIdByEmail(email);
+    const selections = Array.isArray(metadata?.selections)
+      ? metadata.selections
+      : [{ wager_id, selection }];
 
-    await createWagerBet({
-      wager_id,
-      user_id,
-      email,
-      selection,
-      amount:    amountNGN,
-      potential: Number(potential),
-      reference,
-    });
+    for (let index = 0; index < selections.length; index += 1) {
+      const item = selections[index];
+      await createWagerBet({
+        wager_id: item.wager_id,
+        user_id,
+        email,
+        selection: item.selection,
+        amount:    index === 0 ? amountNGN : 0,
+        potential: index === 0 ? Number(potential) : 0,
+        reference: index === 0 ? reference : `${reference}-${index + 1}`,
+      });
+    }
 
     return NextResponse.json({ received: true });
   } catch (e) {
