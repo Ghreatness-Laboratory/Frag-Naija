@@ -32,26 +32,39 @@
 
 /* ─── LIGHT MODE ─────────────────────────────────────────────────────────────*/
 html.light {
-  --fn-black:   242 247 242;
-  --fn-dark:    228 238 228;
+  --fn-black:   247 250 247;
+  --fn-dark:    235 243 235;
   --fn-card:    255 255 255;
-  --fn-card2:   245 250 245;
-  --fn-green:   0 120 26;
-  --fn-gdim:    0 90 18;
-  --fn-gborder: 172 208 172;
-  --fn-yellow:  180 120 0;
-  --fn-amber:   150 95 0;
-  --fn-red:     200 20 20;
-  --fn-pink:    190 50 80;
-  --fn-muted:   110 148 110;
-  --fn-text:    26 42 26;
-  --background: #f2f7f2;
-  --foreground: #1a2a1a;
-  --hero-from: #d0ecd0;
-  --hero-to:   #f2f7f2;
-  --scroll-thumb: #b0d0b0;
+  --fn-card2:   241 247 241;
+  --fn-green:   0 122 26;
+  --fn-gdim:    0 96 20;
+  --fn-gborder: 189 213 189;
+  --fn-yellow:  142 94 0;
+  --fn-amber:   128 82 0;
+  --fn-red:     184 28 28;
+  --fn-pink:    174 39 74;
+  --fn-muted:   81 112 81;
+  --fn-text:    21 36 21;
+  --background: #f7faf7;
+  --foreground: #152415;
+  --hero-from: #dff1df;
+  --hero-to:   #f7faf7;
+  --scroll-thumb: #b7d4b7;
   color-scheme: light;
 }
+
+
+/* Light-mode compatibility for legacy arbitrary dark utility classes.
+   Keeps dark mode untouched while routing missed surfaces back to the token system. */
+html.light .bg-black { background-color: rgb(var(--fn-black)) !important; }
+html.light .bg-black\/60 { background-color: rgb(21 36 21 / 0.28) !important; }
+html.light .bg-black\/70 { background-color: rgb(21 36 21 / 0.72) !important; }
+html.light .bg-black\/80,
+html.light .bg-black\/85,
+html.light .bg-black\/90,
+html.light .bg-black\/95 { background-color: rgb(21 36 21 / 0.35) !important; }
+html.light .border-\[\#333\] { border-color: rgb(var(--fn-gborder)) !important; }
+html.light .text-black { color: rgb(var(--fn-black)) !important; }
 
 /* ─── BASE ───────────────────────────────────────────────────────────────────*/
 * { box-sizing: border-box; margin: 0; padding: 0; }

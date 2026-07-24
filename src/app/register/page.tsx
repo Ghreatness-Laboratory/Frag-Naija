@@ -15,7 +15,7 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
       className="relative flex flex-col items-center gap-1.5 rounded-sm border p-2.5 transition-all duration-200"
       style={selected
         ? { borderColor: game.colors.border, background: game.colors.cardBg, boxShadow: `0 0 12px ${game.colors.glow}` }
-        : { borderColor: '#1a2a1a', background: '#0a100a' }}
+        : { borderColor: 'rgb(var(--fn-gborder))', background: 'rgb(var(--fn-card))' }}
     >
       {/* Logo */}
       {imgErr ? (
@@ -44,7 +44,7 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
       {selected && (
         <span
           className="absolute -top-px -right-px flex h-3.5 w-3.5 items-center justify-center rounded-bl-sm text-[7px] font-black"
-          style={{ background: game.colors.primary, color: '#000' }}
+          style={{ background: game.colors.primary, color: 'rgb(var(--fn-black))' }}
         >
           ✓
         </span>
