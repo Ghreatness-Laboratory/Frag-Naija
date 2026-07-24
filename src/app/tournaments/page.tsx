@@ -17,8 +17,8 @@ function fmtPrize(amount: number | null, _currency: string) {
 
 function statusBadge(status: string, primary: string) {
   if (status === "Live")      return { cls: "animate-pulse", style: { background: `${primary}22`, color: primary, border: `1px solid ${primary}55` } };
-  if (status === "Completed") return { cls: "", style: { background: "#ffffff11", color: "#888", border: "1px solid #333" } };
-  return { cls: "", style: { background: "#00ff4115", color: "#00ff41", border: "1px solid #00ff4130" } };
+  if (status === "Completed") return { cls: "", style: { background: "rgb(var(--fn-card2) / 0.75)", color: "rgb(var(--fn-muted))", border: "1px solid rgb(var(--fn-gborder))" } };
+  return { cls: "", style: { background: "rgb(var(--fn-green) / 0.10)", color: "rgb(var(--fn-green))", border: "1px solid rgb(var(--fn-green) / 0.25)" } };
 }
 
 export default function TournamentsPage() {
@@ -65,7 +65,7 @@ export default function TournamentsPage() {
       {/* Hero */}
       <div
         className="relative border-b px-4 sm:px-8 lg:px-12 py-8 sm:py-12 overflow-hidden"
-        style={{ borderColor: `${primary}30`, background: `linear-gradient(135deg, ${primary}08 0%, #000 60%)` }}
+        style={{ borderColor: `${primary}30`, background: `linear-gradient(135deg, ${primary}08 0%, rgb(var(--fn-black)) 60%)` }}
       >
         <div className="absolute inset-0 bg-grid-fn bg-grid opacity-30 pointer-events-none" />
         <div className="absolute top-4 right-4 w-24 h-24 rounded-full pointer-events-none" style={{ border: `1px solid ${primary}18` }} />
@@ -99,7 +99,7 @@ export default function TournamentsPage() {
               { v: completed.length, l: "Completed" },
             ].map(({ v, l }) => (
               <div key={l} className="bg-fn-card border border-fn-gborder rounded-sm px-4 py-2 text-center min-w-[70px]">
-                <div className="font-display text-xl font-black" style={{ color: loading ? '#555' : primary }}>
+                <div className="font-display text-xl font-black" style={{ color: loading ? 'rgb(var(--fn-muted))' : primary }}>
                   {loading ? "…" : v}
                 </div>
                 <div className="fn-label">{l}</div>
@@ -119,7 +119,7 @@ export default function TournamentsPage() {
               className="px-4 py-2.5 text-[10px] font-bold tracking-widest uppercase transition-all border-b-2 -mb-px"
               style={activeTab === tab
                 ? { borderColor: primary, color: primary }
-                : { borderColor: 'transparent', color: '#666' }}
+                : { borderColor: 'transparent', color: 'rgb(var(--fn-muted))' }}
             >
               {tab.toUpperCase()}
             </button>

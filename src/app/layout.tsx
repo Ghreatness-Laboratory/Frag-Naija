@@ -45,6 +45,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('fn-theme')||'dark';var e=document.documentElement;e.classList.remove('dark','light');e.classList.add(t);}catch(_){}})();`,
+          }}
+        />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-fn-black text-fn-text font-mono antialiased">
