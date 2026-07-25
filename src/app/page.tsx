@@ -26,16 +26,16 @@ type Transfer = {
 
 const TICKER_ITEMS: Record<string, string[]> = {
   'free-fire': [
-    "FREE FIRE NIGERIA OPEN 2025 — SQUAD REGISTRATION LIVE",
-    "TRANSFER WINDOW CLOSES IN 8 DAYS — FF PLAYERS MOVING",
-    "LAGOS LIONS FF VS WARRI WOLVES — WATCH THE REPLAY",
-    "FRAG NAIJA — NIGERIA'S PREMIER ESPORTS PLATFORM",
+    "FREE FIRE NIGERIA OPEN 2025 SQUAD REGISTRATION LIVE",
+    "TRANSFER WINDOW CLOSES IN 8 DAYS FF PLAYERS MOVING",
+    "FAROUK  VS KILLERFREAK - WATCH THE REPLAY",
+    "FRAG NAIJA NIGERIA'S PREMIERE ESPORTS PLATFORM",
   ],
   default: [
-    "PUBG NATIONAL CHAMPIONSHIP 2026 — REGISTRATION OPEN",
+    "PUBG NATIONAL CHAMPIONSHIP 2026 - REGISTRATION OPEN",
     "TRANSFER WINDOW CLOSES IN 8 DAYS",
-    "NEW WAGER MARKETS ADDED — PLACE YOUR BET NOW",
-    "FRAG NAIJA — NIGERIA'S PREMIER ESPORTS PLATFORM",
+    "NEW WAGER MARKETS ADDED - PLACE YOUR BET NOW",
+    "FRAG NAIJA - NIGERIA'S PREMIERE ESPORTS PLATFORM",
   ],
 };
 
@@ -151,8 +151,8 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
         <div className="fn-label mb-2">{athlete.role || "Player"}</div>
         <div className="grid grid-cols-3 gap-1">
           {[
-            { v: String(athlete.kills),   l: "KLS" },
-            { v: `${athlete.winrate}%`,   l: "WR"  },
+            { v: String(athlete.kills),   l: "ATT" },
+            { v: `${athlete.winrate}%`,   l: "DEF"  },
             { v: String(Number(athlete.rating).toFixed(1)), l: "RTG" },
           ].map(({ v, l }) => (
             <div key={l} className="text-center">
@@ -269,7 +269,7 @@ export default function HomePage() {
     { value: "1,242+", label: "Players",  icon: Users  },
     { value: "48",     label: "Tournaments",      icon: Trophy },
     { value: "12",     label: "Championships",    icon: Award  },
-    { value: "₦4.2M",  label: "Total Prize Pool", icon: Zap    },
+    { value: "₦17.2M",  label: "Total Prize Pool", icon: Zap    },
   ];
 
   return (
