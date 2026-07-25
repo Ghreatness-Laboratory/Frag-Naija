@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Trophy, Users, Shield, Star, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent, type DummyTeam } from "@/lib/game-content";
@@ -42,6 +43,7 @@ function winRate(wins: number, losses: number) {
 }
 
 export default function TeamsPage() {
+  const router = useRouter();
   const { selectedGame, isHydrated } = useGame();
   const [apiTeams, setApiTeams] = useState<Team[]>([]);
   const [selected, setSelected] = useState<Team | null>(null);
@@ -139,7 +141,7 @@ export default function TeamsPage() {
             return (
               <button
                 key={team.id}
-                onClick={() => setSelected(team)}
+                onClick={() => router.push(`/teams/${team.id}`)}
                 className="w-full flex items-center gap-3 px-4 py-3 border-b border-fn-gborder/50 transition-all text-left"
                 style={isActive
                   ? { background: `${primary}10`, borderLeft: `2px solid ${primary}` }
