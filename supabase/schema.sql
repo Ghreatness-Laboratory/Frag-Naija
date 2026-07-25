@@ -250,3 +250,21 @@ ON CONFLICT (key) DO NOTHING;
 -- Bucket: athletes  (public)
 -- Bucket: teams     (public)
 -- Bucket: highlights (public)
+
+-- ─── SHOP ITEMS ──────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS shop_items (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name        TEXT NOT NULL,
+  description TEXT,
+  price       NUMERIC(12,2) DEFAULT 0,
+  currency    TEXT DEFAULT 'NGN',
+  image_url   TEXT,
+  category    TEXT,
+  status      TEXT DEFAULT 'Published' CHECK (status IN ('Draft', 'Published', 'Archived')),
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE shop_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "shop_items_public_read" ON shop_items FOR SELECT USING (status = 'Published');
+CREATE POLICY "shop_items_admin_write" ON shop_items FOR ALL USING (false);

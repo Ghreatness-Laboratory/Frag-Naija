@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity } from "lucide-react";
+import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 
@@ -22,6 +22,18 @@ type Transfer = {
   id: string; from_team: string | null; to_team: string | null;
   fee: number | null; status: string; date: string | null;
   athletes: { id: string; name: string; ign: string } | null;
+};
+
+type ShopItem = {
+  id: string; name: string; price: number; currency: string | null; image_url: string | null; category: string | null; status: string | null;
+};
+
+type Tournament = {
+  id: string; name: string; start_date: string | null; end_date: string | null; status: string; game: string | null; prize_pool: number | null; currency: string | null;
+};
+
+type Team = {
+  id: string; name: string; logo_url: string | null; region: string | null; rank: number | null; wins: number; losses: number; kills: number; strength: number | null; players?: Athlete[];
 };
 
 const TICKER_ITEMS: Record<string, string[]> = {
@@ -124,7 +136,7 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
   const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
   return (
     <motion.div variants={reveal} whileHover={{ y: -6, rotateX: 2 }} className="flex-shrink-0">
-    <Link href="/athletes" className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
+    <Link href={`/athletes/${athlete.id}`} className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
       onMouseEnter={e => (e.currentTarget.style.borderColor = `${primary}50`)}
       onMouseLeave={e => (e.currentTarget.style.borderColor = '')}
     >
@@ -168,7 +180,7 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
   );
 }
 
-function WagerPreviewCard({ wager, primary, reduceMotion }: { wager: Wager; primary: string; reduceMotion: boolean }) {
+function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string }) {
   const closesIn = () => {
     const diff = new Date(wager.closes_at).getTime() - Date.now();
     if (diff <= 0) return "Closed";
@@ -214,6 +226,9 @@ export default function HomePage() {
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
+  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
 
   const primary   = selectedGame.colors.primary;
   const secondary = selectedGame.colors.secondary;
@@ -232,10 +247,16 @@ export default function HomePage() {
       fetch("/api/athletes").then((r) => r.ok ? r.json() : []),
       fetch("/api/wagers/active").then((r) => r.ok ? r.json() : []),
       fetch("/api/transfers").then((r) => r.ok ? r.json() : []),
-    ]).then(([a, w, t]) => {
+      fetch("/api/shop-items").then((r) => r.ok ? r.json() : []),
+      fetch("/api/tournaments").then((r) => r.ok ? r.json() : []),
+      fetch("/api/teams").then((r) => r.ok ? r.json() : []),
+    ]).then(([a, w, t, s, tourneys, teamRows]) => {
       setApiAthletes(a.slice(0, 6));
       setWagers(w.slice(0, 3));
       setApiTransfers(t.slice(0, 4));
+      setShopItems(s.slice(0, 4));
+      setTournaments(tourneys.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
+      setTeams(teamRows.slice(0, 4));
     });
   }, []);
 
@@ -456,9 +477,35 @@ export default function HomePage() {
           <p className="text-fn-muted text-[10px] py-6">No active wager markets — check back soon.</p>
         ) : (
           <motion.div variants={cardStagger} className="flex gap-4 overflow-x-auto pb-3">
-            {wagers.map((w) => <WagerPreviewCard key={w.id} wager={w} primary={primary} reduceMotion={!!reduceMotion} />)}
+            {wagers.map((w) => <WagerPreviewCard key={w.id} wager={w} primary={primary} />)}
           </motion.div>
         )}
+      </motion.section>
+
+
+
+      {/* Shop Preview */}
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+        <div className="flex items-center justify-between mb-6">
+          <div><p className="fn-label mb-1 flex items-center gap-1.5"><ShoppingBag size={9} style={{ color: primary }} /> MERCH DROP</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">SHOP</h2></div>
+          <Link href="/shop" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW SHOP <ChevronRight size={11} /></Link>
+        </div>
+        {shopItems.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No shop items are published yet.</p> : (
+          <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {shopItems.map((item) => <Link key={item.id} href="/shop" className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
+          </motion.div>)}
+      </motion.section>
+
+      {/* Events Preview */}
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder" style={{ background: `${primary}04` }}>
+        <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><CalendarDays size={9} style={{ color: primary }} /> EVENTS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TOURNAMENTS</h2></div><Link href="/tournaments" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL EVENTS <ChevronRight size={11} /></Link></div>
+        {tournaments.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No live or upcoming tournaments yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{tournaments.map((event) => <Link key={event.id} href="/tournaments" className="rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="fn-label mb-2">{event.game || selectedGame.name}</div><h3 className="text-sm font-black uppercase text-fn-text">{event.name}</h3><div className="mt-3 flex items-center justify-between"><span className="text-[9px] font-bold uppercase" style={{ color: primary }}>{event.status}</span><span className="text-[9px] text-fn-muted">{event.start_date ? new Date(event.start_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }) : 'TBA'}</span></div></Link>)}</motion.div>}
+      </motion.section>
+
+      {/* Teams Preview */}
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+        <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> POWER RANKINGS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TEAMS</h2></div><Link href="/teams" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL TEAMS <ChevronRight size={11} /></Link></div>
+        {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No teams have been ranked yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{teams.map((team, index) => <Link key={team.id} href={`/teams/${team.id}`} className="rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="flex items-center gap-3"><div className="h-12 w-12 overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark flex items-center justify-center">{team.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <span className="font-display text-xl font-black" style={{ color: primary }}>{team.name[0]}</span>}</div><div><div className="fn-label">#{team.rank ?? index + 1}</div><h3 className="text-sm font-black uppercase text-fn-text">{team.name}</h3></div></div><div className="mt-3 grid grid-cols-3 gap-2 text-center"><div><div className="text-xs font-bold text-fn-text">{team.wins}</div><div className="fn-label">W</div></div><div><div className="text-xs font-bold text-fn-text">{team.losses}</div><div className="fn-label">L</div></div><div><div className="text-xs font-bold text-fn-text">{team.kills}</div><div className="fn-label">KLS</div></div></div></Link>)}</motion.div>}
       </motion.section>
 
       {/* Transfer Activity */}
