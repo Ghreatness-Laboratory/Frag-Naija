@@ -269,7 +269,7 @@ export default function HomePage() {
     <div className="min-h-screen overflow-hidden">
       {/* Live ticker */}
       <div className="border-b border-fn-gborder px-4 py-1.5 flex items-center gap-3 overflow-hidden"
-        style={{ background: `${primary}08` }}>
+        style={{ background: `${primary}08` }}
         <span className="text-[8px] font-bold tracking-widest uppercase flex-shrink-0 flex items-center gap-1.5"
           style={{ color: primary }}>
           <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: primary }} />
