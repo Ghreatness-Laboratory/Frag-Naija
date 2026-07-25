@@ -46,6 +46,13 @@ const reveal = {
   visible: { opacity: 1, y: 0 },
 };
 
+const cardStagger = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
 function parseStat(value: string) {
   const numeric = Number(value.replace(/[^0-9.]/g, ""));
   return Number.isFinite(numeric) ? numeric : 0;
@@ -270,6 +277,7 @@ export default function HomePage() {
       {/* Live ticker */}
       <div className="border-b border-fn-gborder px-4 py-1.5 flex items-center gap-3 overflow-hidden"
         style={{ background: `${primary}08` }}
+      >
         <span className="text-[8px] font-bold tracking-widest uppercase flex-shrink-0 flex items-center gap-1.5"
           style={{ color: primary }}>
           <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: primary }} />
@@ -320,7 +328,7 @@ export default function HomePage() {
             <Gamepad2 size={12} style={{ color: primary }} />
             <span className="w-6 h-px inline-block" style={{ background: primary }} />
             NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
-          </motion.p>
+          </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">FRAG</span>
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl tracking-tight"
@@ -356,7 +364,7 @@ export default function HomePage() {
             >
               <Crosshair size={13} /> SCOUT ATHLETES <ChevronRight size={13} />
             </Link>
-          </div>
+          </motion.div>
         </motion.div>
 
         <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }} className="flex flex-wrap gap-2 mt-10 max-w-2xl relative">
@@ -421,7 +429,7 @@ export default function HomePage() {
         ) : (
           <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
             {gameAthletes.map((a, i) => (
-              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} reduceMotion={!!reduceMotion} />
+              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
             ))}
           </motion.div>
         )}
