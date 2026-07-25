@@ -193,121 +193,135 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
   }, [allAthletes, athlete]);
   const cardData = athlete ? getPlayerCardData(athlete, achievements, team, rank, primary) : null;
 
+  async function drawPlayerCardCanvas(card: PlayerCardData, includeImages: boolean) {
+    const canvas = document.createElement('canvas');
+    const scale = 2;
+    const width = 420;
+    const height = 640;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = '#050806';
+    ctx.fillRect(0, 0, width, height);
+    const glow = ctx.createRadialGradient(width / 2, 80, 10, width / 2, 80, 360);
+    glow.addColorStop(0, `${card.primary}66`);
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = card.primary;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(14, 14, width - 28, height - 28);
+    ctx.strokeStyle = `${card.primary}66`;
+    ctx.lineWidth = 1;
+    for (let y = 44; y < height; y += 28) {
+      ctx.beginPath();
+      ctx.moveTo(24, y);
+      ctx.lineTo(width - 24, y);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = card.primary;
+    ctx.font = '700 13px Arial';
+    const brandLogo = includeImages ? await loadImage('/logo-icon-alt.jpeg') : null;
+    if (brandLogo) ctx.drawImage(brandLogo, 32, 30, 22, 22);
+    ctx.fillText('FRAG NAIJA PLAYER CARD', brandLogo ? 62 : 32, 48);
+    ctx.fillStyle = '#f5fff7';
+    ctx.font = '900 34px Arial';
+    ctx.fillText(card.displayName.toUpperCase().slice(0, 18), 32, 96);
+    ctx.fillStyle = '#8aa093';
+    ctx.font = '700 13px Arial';
+    ctx.fillText(`${card.realName} · ${card.role}`, 32, 120);
+
+    const photo = includeImages && card.photoUrl ? await loadImage(card.photoUrl) : null;
+    ctx.fillStyle = '#101812';
+    ctx.fillRect(32, 146, 220, 260);
+    ctx.strokeStyle = card.primary;
+    ctx.strokeRect(32, 146, 220, 260);
+    if (photo) ctx.drawImage(photo, 32, 146, 220, 260);
+    else {
+      ctx.fillStyle = `${card.primary}33`;
+      ctx.fillRect(32, 146, 220, 260);
+      ctx.fillStyle = card.primary;
+      ctx.font = '900 92px Arial';
+      ctx.fillText(card.ign[0].toUpperCase(), 104, 300);
+    }
+
+    const logo = includeImages && card.teamLogoUrl ? await loadImage(card.teamLogoUrl) : null;
+    ctx.fillStyle = '#0c120e';
+    ctx.fillRect(272, 146, 116, 86);
+    ctx.strokeStyle = `${card.primary}88`;
+    ctx.strokeRect(272, 146, 116, 86);
+    if (logo) ctx.drawImage(logo, 294, 154, 72, 72);
+    else {
+      ctx.fillStyle = card.primary;
+      ctx.font = '900 40px Arial';
+      ctx.fillText((card.teamName || 'F')[0].toUpperCase(), 310, 200);
+    }
+    ctx.fillStyle = '#8aa093';
+    ctx.font = '700 10px Arial';
+    ctx.fillText('CURRENT TEAM', 272, 256);
+    ctx.fillStyle = '#f5fff7';
+    ctx.font = '900 16px Arial';
+    ctx.fillText(card.teamName.slice(0, 13), 272, 280);
+
+    ctx.fillStyle = card.primary;
+    ctx.font = '900 48px Arial';
+    ctx.fillText(card.rankLabel, 282, 354);
+    ctx.fillStyle = '#8aa093';
+    ctx.font = '700 10px Arial';
+    ctx.fillText('RANK BADGE', 284, 374);
+
+    const statRows = [['KLS', card.kills], ['WR', card.winrate], ['RTG', card.rating]];
+    statRows.forEach(([label, value], index) => {
+      const x = 32 + index * 122;
+      ctx.fillStyle = '#0c120e';
+      ctx.fillRect(x, 430, 104, 74);
+      ctx.strokeStyle = `${card.primary}77`;
+      ctx.strokeRect(x, 430, 104, 74);
+      ctx.fillStyle = '#f5fff7';
+      ctx.font = '900 24px Arial';
+      ctx.fillText(String(value), x + 16, 468);
+      ctx.fillStyle = '#8aa093';
+      ctx.font = '700 11px Arial';
+      ctx.fillText(String(label), x + 16, 488);
+    });
+
+    ctx.fillStyle = card.primary;
+    ctx.font = '800 12px Arial';
+    ctx.fillText('ACHIEVEMENTS', 32, 536);
+    ctx.fillStyle = '#f5fff7';
+    ctx.font = '700 12px Arial';
+    (card.achievements.length ? card.achievements : [`${achievements.length} title(s) recorded`]).forEach((title, index) => {
+      ctx.fillText(`• ${title}`.slice(0, 46), 32, 562 + index * 22);
+    });
+    ctx.fillStyle = card.primary;
+    ctx.font = '900 15px Arial';
+    ctx.fillText('FRAGNAIJA', 292, 610);
+
+    return canvas;
+  }
+
   async function downloadPlayerCard() {
     if (!athlete || !cardData) return;
     setGenerating(true);
     try {
-      const canvas = document.createElement('canvas');
-      const scale = 2;
-      const width = 420;
-      const height = 640;
-      canvas.width = width * scale;
-      canvas.height = height * scale;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.scale(scale, scale);
-
-      ctx.fillStyle = '#050806';
-      ctx.fillRect(0, 0, width, height);
-      const glow = ctx.createRadialGradient(width / 2, 80, 10, width / 2, 80, 360);
-      glow.addColorStop(0, `${primary}66`);
-      glow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, width, height);
-      ctx.strokeStyle = primary;
-      ctx.lineWidth = 4;
-      ctx.strokeRect(14, 14, width - 28, height - 28);
-      ctx.strokeStyle = `${primary}66`;
-      ctx.lineWidth = 1;
-      for (let y = 44; y < height; y += 28) {
-        ctx.beginPath();
-        ctx.moveTo(24, y);
-        ctx.lineTo(width - 24, y);
-        ctx.stroke();
+      let canvas = await drawPlayerCardCanvas(cardData, true);
+      if (!canvas) return;
+      let href = '';
+      try {
+        href = canvas.toDataURL('image/png');
+      } catch {
+        canvas = await drawPlayerCardCanvas(cardData, false);
+        if (!canvas) return;
+        href = canvas.toDataURL('image/png');
       }
-
-      ctx.fillStyle = primary;
-      ctx.font = '700 13px Arial';
-      const brandLogo = await loadImage('/logo-icon-alt.jpeg');
-      if (brandLogo) ctx.drawImage(brandLogo, 32, 30, 22, 22);
-      ctx.fillText('FRAG NAIJA PLAYER CARD', brandLogo ? 62 : 32, 48);
-      ctx.fillStyle = '#f5fff7';
-      ctx.font = '900 34px Arial';
-      ctx.fillText(cardData.displayName.toUpperCase().slice(0, 18), 32, 96);
-      ctx.fillStyle = '#8aa093';
-      ctx.font = '700 13px Arial';
-      ctx.fillText(`${cardData.realName} · ${cardData.role}`, 32, 120);
-
-      const photo = cardData.photoUrl ? await loadImage(cardData.photoUrl) : null;
-      ctx.fillStyle = '#101812';
-      ctx.fillRect(32, 146, 220, 260);
-      ctx.strokeStyle = primary;
-      ctx.strokeRect(32, 146, 220, 260);
-      if (photo) ctx.drawImage(photo, 32, 146, 220, 260);
-      else {
-        ctx.fillStyle = `${primary}33`;
-        ctx.fillRect(32, 146, 220, 260);
-        ctx.fillStyle = primary;
-        ctx.font = '900 92px Arial';
-        ctx.fillText(athlete.ign[0].toUpperCase(), 104, 300);
-      }
-
-      const logo = cardData.teamLogoUrl ? await loadImage(cardData.teamLogoUrl) : null;
-      ctx.fillStyle = '#0c120e';
-      ctx.fillRect(272, 146, 116, 86);
-      ctx.strokeStyle = `${primary}88`;
-      ctx.strokeRect(272, 146, 116, 86);
-      if (logo) ctx.drawImage(logo, 294, 154, 72, 72);
-      else {
-        ctx.fillStyle = primary;
-        ctx.font = '900 40px Arial';
-        ctx.fillText((cardData.teamName || 'F')[0].toUpperCase(), 310, 200);
-      }
-      ctx.fillStyle = '#8aa093';
-      ctx.font = '700 10px Arial';
-      ctx.fillText('CURRENT TEAM', 272, 256);
-      ctx.fillStyle = '#f5fff7';
-      ctx.font = '900 16px Arial';
-      ctx.fillText(cardData.teamName.slice(0, 13), 272, 280);
-
-      ctx.fillStyle = primary;
-      ctx.font = '900 48px Arial';
-      ctx.fillText(cardData.rankLabel, 282, 354);
-      ctx.fillStyle = '#8aa093';
-      ctx.font = '700 10px Arial';
-      ctx.fillText('RANK BADGE', 284, 374);
-
-      const statRows = [['KLS', cardData.kills], ['WR', cardData.winrate], ['RTG', cardData.rating]];
-      statRows.forEach(([label, value], index) => {
-        const x = 32 + index * 122;
-        ctx.fillStyle = '#0c120e';
-        ctx.fillRect(x, 430, 104, 74);
-        ctx.strokeStyle = `${primary}77`;
-        ctx.strokeRect(x, 430, 104, 74);
-        ctx.fillStyle = '#f5fff7';
-        ctx.font = '900 24px Arial';
-        ctx.fillText(String(value), x + 16, 468);
-        ctx.fillStyle = '#8aa093';
-        ctx.font = '700 11px Arial';
-        ctx.fillText(String(label), x + 16, 488);
-      });
-
-      ctx.fillStyle = primary;
-      ctx.font = '800 12px Arial';
-      ctx.fillText('ACHIEVEMENTS', 32, 536);
-      ctx.fillStyle = '#f5fff7';
-      ctx.font = '700 12px Arial';
-      const titles = cardData.achievements;
-      (titles.length ? titles : [`${achievements.length} title(s) recorded`]).forEach((title, index) => {
-        ctx.fillText(`• ${title}`.slice(0, 46), 32, 562 + index * 22);
-      });
-      ctx.fillStyle = primary;
-      ctx.font = '900 15px Arial';
-      ctx.fillText('FRAGNAIJA', 292, 610);
 
       const link = document.createElement('a');
       link.download = `${cardData.ign.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-player-card.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = href;
       link.click();
     } finally {
       setGenerating(false);
