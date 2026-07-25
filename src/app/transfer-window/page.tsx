@@ -72,8 +72,8 @@ export default function TransferWindowPage() {
 
   function statusStyle(status: string) {
     if (status === "Confirmed") return { background: `${primary}20`, color: primary, borderColor: `${primary}40` };
-    if (status === "Rumour")    return { background: '#f0c04020', color: '#f0c040', borderColor: '#f0c04040' };
-    return { background: '#ffffff10', color: '#888', borderColor: '#333' };
+    if (status === "Rumour")    return { background: 'rgb(var(--fn-yellow) / 0.14)', color: 'rgb(var(--fn-yellow))', borderColor: 'rgb(var(--fn-yellow) / 0.28)' };
+    return { background: 'rgb(var(--fn-card2) / 0.75)', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' };
   }
 
   return (
@@ -81,7 +81,7 @@ export default function TransferWindowPage() {
       {/* Header */}
       <div
         className="px-4 sm:px-8 lg:px-12 py-8 border-b border-fn-gborder relative overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${primary}06 0%, #000 60%)` }}
+        style={{ background: `linear-gradient(135deg, ${primary}06 0%, rgb(var(--fn-black)) 60%)` }}
       >
         <div className="absolute inset-0 bg-grid-fn bg-grid opacity-20 pointer-events-none" />
         <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -142,8 +142,8 @@ export default function TransferWindowPage() {
                     onClick={() => setActiveFilter(f)}
                     className="px-3 py-1.5 text-[9px] font-bold tracking-widest uppercase rounded-sm transition-all border"
                     style={activeFilter === f
-                      ? { background: primary, color: '#000', borderColor: primary }
-                      : { background: 'transparent', color: '#666', borderColor: '#222' }}
+                      ? { background: primary, color: 'rgb(var(--fn-black))', borderColor: primary }
+                      : { background: 'transparent', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
                   >
                     {f}
                   </button>
@@ -219,7 +219,7 @@ export default function TransferWindowPage() {
                 <div className="space-y-3">
                   {filtered.filter(t => t.notes).map((tr) => (
                     <div key={tr.id} className="bg-fn-card border border-fn-gborder rounded-sm p-4"
-                      style={{ borderColor: tr.status === 'Confirmed' ? `${primary}20` : '#222' }}>
+                      style={{ borderColor: tr.status === 'Confirmed' ? `${primary}20` : 'rgb(var(--fn-gborder))' }}>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-[9px] font-bold" style={{ color: primary }}>{tr.athletes?.ign || "—"}</span>
                         <span className="text-fn-muted text-[8px]">·</span>
@@ -279,7 +279,7 @@ export default function TransferWindowPage() {
                       <div key={tr.id} className="flex gap-2.5 pb-3 border-b border-fn-gborder/50 last:border-0 last:pb-0">
                         <div
                           className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${!isConfirmed ? "animate-pulse" : ""}`}
-                          style={{ background: isConfirmed ? primary : '#f0c040' }}
+                          style={{ background: isConfirmed ? primary : 'rgb(var(--fn-yellow))' }}
                         />
                         <div>
                           <p className="text-[9px] text-fn-text leading-relaxed">
