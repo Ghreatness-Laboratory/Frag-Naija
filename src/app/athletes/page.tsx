@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
@@ -96,6 +97,7 @@ function RatingRing({ value, primary }: { value: number; primary: string }) {
 }
 
 export default function AthletesPage() {
+  const router = useRouter();
   const { selectedGame, isHydrated } = useGame();
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [selected, setSelected] = useState<Athlete | null>(null);
@@ -201,7 +203,7 @@ export default function AthletesPage() {
             return (
               <button
                 key={athlete.id}
-                onClick={() => setSelected(athlete)}
+                onClick={() => router.push(`/athletes/${athlete.id}`)}
                 className="w-full flex items-center gap-3 px-4 py-3 border-b border-fn-gborder/50 transition-all text-left"
                 style={isActive
                   ? { background: `${primary}10`, borderLeft: `2px solid ${primary}` }
