@@ -46,6 +46,13 @@ const reveal = {
   visible: { opacity: 1, y: 0 },
 };
 
+const cardStagger = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
 function parseStat(value: string) {
   const numeric = Number(value.replace(/[^0-9.]/g, ""));
   return Number.isFinite(numeric) ? numeric : 0;
@@ -422,7 +429,7 @@ export default function HomePage() {
         ) : (
           <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
             {gameAthletes.map((a, i) => (
-              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} reduceMotion={!!reduceMotion} />
+              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
             ))}
           </motion.div>
         )}
