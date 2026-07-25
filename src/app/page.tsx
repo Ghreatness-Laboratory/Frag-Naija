@@ -161,7 +161,7 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
   );
 }
 
-function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string }) {
+function WagerPreviewCard({ wager, primary, reduceMotion }: { wager: Wager; primary: string; reduceMotion: boolean }) {
   const closesIn = () => {
     const diff = new Date(wager.closes_at).getTime() - Date.now();
     if (diff <= 0) return "Closed";
@@ -174,10 +174,10 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
   return (
     <motion.div variants={reveal} whileHover={{ y: -5 }} className="group relative flex-shrink-0 overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-4 w-72 sm:w-80">
       <div className="flex items-center justify-between mb-2">
-        <span className={`text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-sm ${
+        <span className={`inline-flex items-center gap-1.5 text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-sm ${
           wager.hot ? "bg-fn-red/20 text-fn-red border border-fn-red/30" : "border border-fn-gborder"
         }`} style={!wager.hot ? { background: `${primary}15`, color: primary, borderColor: `${primary}30` } : {}}>
-          {wager.hot ? "🔥 HOT" : "ACTIVE"}
+          <span className="live-dot !h-1.5 !w-1.5" /> {wager.hot ? "HOT" : "ACTIVE"}
         </span>
         <span className="fn-label">₦{Number(wager.pool_total).toLocaleString()}</span>
       </div>
@@ -276,9 +276,15 @@ export default function HomePage() {
           <Radio size={9} /> LIVE FEED
         </span>
         <div className="overflow-hidden flex-1">
-          <span className="text-[9px] text-fn-text tracking-wider" key={ticker}>
+          <motion.span
+            className="inline-block text-[9px] text-fn-text tracking-wider"
+            key={ticker}
+            initial={reduceMotion ? false : { opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25 }}
+          >
             {tickerItems[ticker]}
-          </span>
+          </motion.span>
         </div>
         {isFF && (
           <Flame size={11} style={{ color: primary }} className="flex-shrink-0" />
@@ -314,28 +320,28 @@ export default function HomePage() {
             <Gamepad2 size={12} style={{ color: primary }} />
             <span className="w-6 h-px inline-block" style={{ background: primary }} />
             NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
-          </p>
-          <h1 className="font-display font-black uppercase leading-none mb-6">
+          </motion.p>
+          <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">FRAG</span>
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl tracking-tight"
               style={{ color: primary, textShadow: `0 0 40px ${primary}40` }}>
               NAIJA
             </span>
-          </h1>
+          </motion.h1>
           {/* Active game badge */}
-          <div className="flex items-center gap-2 mb-4">
+          <motion.div variants={reveal} className="flex items-center gap-2 mb-4">
             {isFF && <Flame size={12} style={{ color: primary }} />}
             <span
-              className="text-[9px] font-bold px-3 py-1 tracking-widest uppercase border rounded-sm"
+              className="electric-live inline-flex items-center gap-1.5 text-[9px] font-bold px-3 py-1 tracking-widest uppercase border rounded-sm"
               style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
             >
-              ● {selectedGame.name.toUpperCase()} MODE ACTIVE
+              <span className="live-dot !h-1.5 !w-1.5" /> {selectedGame.name.toUpperCase()} MODE ACTIVE
             </span>
-          </div>
-          <p className="text-fn-text text-xs sm:text-sm tracking-wider max-w-lg mb-8 leading-relaxed">
+          </motion.div>
+          <motion.p variants={reveal} className="text-fn-text text-xs sm:text-sm tracking-wider max-w-lg mb-8 leading-relaxed">
             {tagline}
-          </p>
-          <div className="flex flex-wrap gap-3">
+          </motion.p>
+          <motion.div variants={reveal} className="flex flex-wrap gap-3">
             <Link href="/tournaments"
               className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
               style={{ background: primary, color: 'rgb(var(--fn-black))' }}
@@ -343,7 +349,7 @@ export default function HomePage() {
               <Trophy size={13} /> JOIN TOURNAMENTS
             </Link>
             <Link href="/athletes"
-              className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase border transition-all"
+              className="electric-button group inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase border transition-all"
               style={{ borderColor: `${primary}40`, color: primary }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = `${primary}15`)}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
@@ -402,7 +408,7 @@ export default function HomePage() {
             <h2 className="font-display text-2xl font-black uppercase text-fn-text">TOP ATHLETES</h2>
           </div>
           <Link href="/athletes"
-            className="flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
+            className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
             style={{ borderColor: `${primary}30`, color: primary }}
             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = `${primary}10`)}
             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
@@ -413,11 +419,11 @@ export default function HomePage() {
         {gameAthletes.length === 0 ? (
           <p className="text-fn-muted text-[10px] py-6">No athletes yet — add them from the admin panel.</p>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-3">
+          <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
             {gameAthletes.map((a, i) => (
-              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
+              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} reduceMotion={!!reduceMotion} />
             ))}
-          </div>
+          </motion.div>
         )}
       </motion.section>
 
@@ -441,9 +447,9 @@ export default function HomePage() {
         {wagers.length === 0 ? (
           <p className="text-fn-muted text-[10px] py-6">No active wager markets — check back soon.</p>
         ) : (
-          <div className="flex gap-4 overflow-x-auto pb-3">
-            {wagers.map((w) => <WagerPreviewCard key={w.id} wager={w} primary={primary} />)}
-          </div>
+          <motion.div variants={cardStagger} className="flex gap-4 overflow-x-auto pb-3">
+            {wagers.map((w) => <WagerPreviewCard key={w.id} wager={w} primary={primary} reduceMotion={!!reduceMotion} />)}
+          </motion.div>
         )}
       </motion.section>
 
