@@ -2,22 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import {
-  Activity,
-  Award,
-  ChevronRight,
-  Clock,
-  Crosshair,
-  Flame,
-  Gamepad2,
-  Medal,
-  Radio,
-  ShieldCheck,
-  TrendingUp,
-  Trophy,
-  Users,
-  Zap,
-} from "lucide-react";
+import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 
@@ -55,26 +40,11 @@ const TICKER_ITEMS: Record<string, string[]> = {
 };
 
 
+
 const reveal = {
   hidden: { opacity: 0, y: 22 },
   visible: { opacity: 1, y: 0 },
 };
-
-const heroSequence = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.08 } },
-};
-
-const cardStagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.07 } },
-};
-
-const electricHover = (color: string) => ({
-  y: -5,
-  scale: 1.025,
-  boxShadow: `0 0 24px ${color}30, inset 0 0 0 1px ${color}45`,
-});
 
 function parseStat(value: string) {
   const numeric = Number(value.replace(/[^0-9.]/g, ""));
@@ -129,8 +99,8 @@ function StatCounter({ value, label, icon: Icon, color }: { value: string; label
   return (
     <motion.div
       variants={reveal}
-      whileHover={reduceMotion ? undefined : electricHover(color)}
-      className="electric-card group relative flex flex-1 flex-col items-center gap-1 overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-3 min-w-[110px] sm:items-start"
+      whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+      className="group relative flex flex-1 flex-col items-center gap-1 overflow-hidden rounded-sm border border-fn-gborder bg-fn-card/70 p-3 min-w-[110px] sm:items-start"
     >
       <div className="absolute inset-x-0 top-0 h-px opacity-70" style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
       <div className="flex h-7 w-7 items-center justify-center rounded-sm border bg-fn-card2 transition-transform group-hover:rotate-3" style={{ borderColor: `${color}35` }}>
@@ -142,12 +112,12 @@ function StatCounter({ value, label, icon: Icon, color }: { value: string; label
   );
 }
 
-function AthleteCard({ athlete, rank, primary, reduceMotion }: { athlete: Athlete; rank: number; primary: string; reduceMotion: boolean }) {
+function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
   const rankColors = [primary, "rgb(var(--fn-yellow))", "#C0C0C0", "#00aaff"];
   const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
   return (
-    <motion.div variants={reveal} whileHover={reduceMotion ? undefined : electricHover(primary)} className="flex-shrink-0">
-      <Link href="/athletes" className="electric-card group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
+    <motion.div variants={reveal} whileHover={{ y: -6, rotateX: 2 }} className="flex-shrink-0">
+    <Link href="/athletes" className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
       onMouseEnter={e => (e.currentTarget.style.borderColor = `${primary}50`)}
       onMouseLeave={e => (e.currentTarget.style.borderColor = '')}
     >
@@ -186,7 +156,7 @@ function AthleteCard({ athlete, rank, primary, reduceMotion }: { athlete: Athlet
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-all" style={{ background: primary }} />
-      </Link>
+    </Link>
     </motion.div>
   );
 }
@@ -202,7 +172,7 @@ function WagerPreviewCard({ wager, primary, reduceMotion }: { wager: Wager; prim
     return `${m}m`;
   };
   return (
-    <motion.div variants={reveal} whileHover={reduceMotion ? undefined : electricHover(primary)} className="electric-card group relative flex-shrink-0 overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-4 w-72 sm:w-80">
+    <motion.div variants={reveal} whileHover={{ y: -5 }} className="group relative flex-shrink-0 overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-4 w-72 sm:w-80">
       <div className="flex items-center justify-between mb-2">
         <span className={`inline-flex items-center gap-1.5 text-[8px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-sm ${
           wager.hot ? "bg-fn-red/20 text-fn-red border border-fn-red/30" : "border border-fn-gborder"
@@ -302,7 +272,7 @@ export default function HomePage() {
         style={{ background: `${primary}08` }}>
         <span className="text-[8px] font-bold tracking-widest uppercase flex-shrink-0 flex items-center gap-1.5"
           style={{ color: primary }}>
-          <span className="live-dot !h-1.5 !w-1.5" />
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: primary }} />
           <Radio size={9} /> LIVE FEED
         </span>
         <div className="overflow-hidden flex-1">
@@ -335,16 +305,6 @@ export default function HomePage() {
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
           style={{ background: `radial-gradient(circle, ${primary}08 0%, transparent 70%)` }} />
         <div className="fn-scanlines absolute inset-0 pointer-events-none opacity-30" />
-        {[0, 1, 2].map((i) => (
-          <motion.span
-            key={i}
-            aria-hidden
-            className="absolute hidden h-1.5 w-1.5 rounded-full lg:block"
-            style={{ background: primary, boxShadow: `0 0 18px ${primary}`, left: `${58 + i * 11}%`, top: `${24 + i * 15}%` }}
-            animate={reduceMotion ? undefined : { y: [0, -18, 0], opacity: [0.25, 0.8, 0.25] }}
-            transition={{ duration: 4 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
-          />
-        ))}
         <motion.div
           aria-hidden
           className="absolute right-6 top-24 hidden h-48 w-48 rounded-full border lg:block"
@@ -355,8 +315,8 @@ export default function HomePage() {
           <Crosshair className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" size={72} style={{ color: `${primary}55` }} />
         </motion.div>
 
-        <motion.div initial="hidden" animate="visible" variants={heroSequence} className="max-w-4xl relative">
-          <motion.p variants={reveal} className="fn-label mb-3 flex items-center gap-2">
+        <motion.div initial="hidden" animate="visible" variants={reveal} transition={{ duration: 0.55 }} className="max-w-4xl relative">
+          <p className="fn-label mb-3 flex items-center gap-2">
             <Gamepad2 size={12} style={{ color: primary }} />
             <span className="w-6 h-px inline-block" style={{ background: primary }} />
             NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
@@ -383,7 +343,7 @@ export default function HomePage() {
           </motion.p>
           <motion.div variants={reveal} className="flex flex-wrap gap-3">
             <Link href="/tournaments"
-              className="electric-button group inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
+              className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
               style={{ background: primary, color: 'rgb(var(--fn-black))' }}
             >
               <Trophy size={13} /> JOIN TOURNAMENTS
@@ -396,15 +356,10 @@ export default function HomePage() {
             >
               <Crosshair size={13} /> SCOUT ATHLETES <ChevronRight size={13} />
             </Link>
-          </motion.div>
+          </div>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }}
-          className="flex flex-wrap gap-2 mt-10 max-w-2xl relative"
-        >
+        <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }} className="flex flex-wrap gap-2 mt-10 max-w-2xl relative">
           {stats.map((s) => <StatCounter key={s.label} {...s} color={primary} />)}
         </motion.div>
 
@@ -443,7 +398,7 @@ export default function HomePage() {
       </section>
 
       {/* Top Athletes */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="bg-fn-black px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="fn-label mb-1 flex items-center gap-1.5">
@@ -473,7 +428,8 @@ export default function HomePage() {
       </motion.section>
 
       {/* Wager Preview */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="bg-fn-black px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder"
+        style={{ background: `${primary}04` }}>
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="fn-label mb-1 flex items-center gap-1.5">
@@ -482,7 +438,7 @@ export default function HomePage() {
             <h2 className="font-display text-2xl font-black uppercase text-fn-text">WAGER ZONE</h2>
           </div>
           <Link href="/wager"
-            className="electric-button inline-flex items-center gap-1 text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-sm transition-all"
+            className="inline-flex items-center gap-1 text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-sm transition-all"
             style={{ background: primary, color: 'rgb(var(--fn-black))' }}
           >
             ENTER ZONE <ChevronRight size={11} />
@@ -498,7 +454,7 @@ export default function HomePage() {
       </motion.section>
 
       {/* Transfer Activity */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="bg-fn-black px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="fn-label mb-1 flex items-center gap-1.5">
@@ -507,7 +463,7 @@ export default function HomePage() {
             <h2 className="font-display text-2xl font-black uppercase text-fn-text">PENDING PAYABLES</h2>
           </div>
           <Link href="/transfer-window"
-            className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
+            className="flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
             style={{ borderColor: 'rgb(var(--fn-gborder))', color: 'rgb(var(--fn-muted))' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${primary}40`; (e.currentTarget as HTMLElement).style.color = primary; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgb(var(--fn-gborder))'; (e.currentTarget as HTMLElement).style.color = 'rgb(var(--fn-muted))'; }}
@@ -578,7 +534,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/athletes"
-            className="electric-button whitespace-nowrap text-[10px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
+            className="whitespace-nowrap text-[10px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
             style={{ background: primary, color: 'rgb(var(--fn-black))' }}
           >
             JOIN THE RANKS

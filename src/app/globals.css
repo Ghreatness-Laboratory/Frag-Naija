@@ -144,51 +144,6 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
 
 
 /* ─── ESPORTS MOTION TEXTURES ───────────────────────────────────────────────*/
-.electric-card {
-  background-image:
-    linear-gradient(135deg, rgb(var(--fn-green) / 0.045), transparent 34%),
-    linear-gradient(rgb(var(--fn-card) / 1), rgb(var(--fn-card) / 1));
-  box-shadow: inset 0 1px 0 rgb(var(--fn-green) / 0.05);
-}
-
-.electric-card::before,
-.electric-button::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(110deg, transparent 0%, rgb(var(--fn-green) / 0.18) 45%, transparent 58%);
-  transform: translateX(-125%);
-  transition: transform 0.55s ease;
-}
-
-.electric-card:hover::before,
-.electric-button:hover::before {
-  transform: translateX(125%);
-}
-
-.electric-button {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  box-shadow: 0 0 0 rgb(var(--fn-green) / 0);
-}
-
-.electric-button:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 0 22px rgb(var(--fn-green) / 0.22);
-}
-
-.electric-button > *,
-.electric-button svg {
-  position: relative;
-  z-index: 1;
-}
-
-.electric-live {
-  box-shadow: 0 0 18px rgb(var(--fn-green) / 0.16);
-}
-
 .fn-scanlines {
   background: repeating-linear-gradient(
     0deg,
@@ -207,9 +162,6 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
 
 @media (prefers-reduced-motion: reduce) {
   .fn-scanlines { animation: none; }
-  .electric-card::before,
-  .electric-button::before { display: none; }
-  .electric-button:hover { transform: none; }
 }
 
 /* ─── UTILITY LAYER ──────────────────────────────────────────────────────────*/
