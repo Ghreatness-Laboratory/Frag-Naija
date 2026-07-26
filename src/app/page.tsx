@@ -243,13 +243,14 @@ export default function HomePage() {
   }, [tickerItems.length]);
 
   useEffect(() => {
+    const gameParam = `game_slug=${encodeURIComponent(selectedGame.slug)}`;
     Promise.all([
-      fetch("/api/athletes").then((r) => r.ok ? r.json() : []),
-      fetch("/api/wagers/active").then((r) => r.ok ? r.json() : []),
-      fetch("/api/transfers").then((r) => r.ok ? r.json() : []),
-      fetch("/api/shop-items").then((r) => r.ok ? r.json() : []),
-      fetch("/api/tournaments").then((r) => r.ok ? r.json() : []),
-      fetch("/api/teams").then((r) => r.ok ? r.json() : []),
+      fetch(`/api/athletes?${gameParam}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/wagers/active?${gameParam}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/transfers?${gameParam}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/shop-items?${gameParam}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/tournaments?${gameParam}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/teams?${gameParam}`).then((r) => r.ok ? r.json() : []),
     ]).then(([a, w, t, s, tourneys, teamRows]) => {
       setApiAthletes(a.slice(0, 6));
       setWagers(w.slice(0, 3));
@@ -258,7 +259,7 @@ export default function HomePage() {
       setTournaments(tourneys.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
       setTeams(teamRows.slice(0, 4));
     });
-  }, []);
+  }, [selectedGame.slug]);
 
   const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
 

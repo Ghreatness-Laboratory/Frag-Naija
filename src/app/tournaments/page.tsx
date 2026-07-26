@@ -32,22 +32,19 @@ export default function TournamentsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/tournaments");
+    const res = await fetch(`/api/tournaments?game_slug=${encodeURIComponent(selectedGame.slug)}`);
     if (res.ok) {
       const data: Tournament[] = await res.json();
       setTournaments(data);
     }
     setLoading(false);
-  }, []);
+  }, [selectedGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 
   const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
-  const apiForGame  = tournaments.filter(
-    (t) => t.game?.toLowerCase().includes(selectedGame.name.toLowerCase().split(' ')[0])
-  );
-  const displayed: Tournament[] = apiForGame.length > 0
-    ? apiForGame
+  const displayed: Tournament[] = tournaments.length > 0
+    ? tournaments
     : (gameContent?.tournaments as Tournament[] | undefined) ?? [];
 
   const all       = displayed;

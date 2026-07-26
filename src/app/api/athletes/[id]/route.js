@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAthleteById, updateAthlete, deleteAthlete } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
+import { requireGameSlug } from '@/lib/game-scope';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request, { params }) {
   try {
-    const data = await getAthleteById(params.id);
+    const { searchParams } = new URL(request.url);
+    const data = await getAthleteById(params.id, { gameSlug: requireGameSlug(searchParams) });
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 404 });

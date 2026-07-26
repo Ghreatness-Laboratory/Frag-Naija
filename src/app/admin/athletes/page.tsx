@@ -10,24 +10,6 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 
-// Keywords used to match rows to a game when no game column exists
-const GAME_KEYWORDS: Record<string, string[]> = {
-  'pubg-mobile':    ['pubg', 'battleground'],
-  'cod-mobile':     ['cod', 'duty'],
-  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
-  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
-  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
-  'efootball':      ['efootball', 'pes', 'konami'],
-  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
-};
-
-function matchesGame(row: Record<string, unknown>, slug: string): boolean {
-  const keywords = GAME_KEYWORDS[slug] ?? [];
-  const haystack = [row.team, row.ign, row.name, row.role, row.bio]
-    .map(v => String(v ?? '').toLowerCase()).join(' ');
-  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
-}
-
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
   known_name: '',
@@ -37,6 +19,7 @@ const EMPTY = {
   previous_teams: [{ team: '', years: '' }],
   achievements: [{ title: '', date: '' }],
   performance_history: [{ label: '', value: '', date: '' }],
+  game_slug: 'pubg-mobile',
 };
 type AthleteForm = typeof EMPTY;
 type TextFormKey = {
@@ -181,18 +164,22 @@ function AthletesContent() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [ar, tr] = await Promise.all([fetch('/api/athletes'), fetch('/api/teams')]);
-    if (ar.ok) setRows(await ar.json());
-    const teamData = await tr.json();
+    const gameSlugs = gameSlug === 'all' ? GAMES.map((g) => g.slug) : [gameSlug];
+    const [athleteGroups, teamGroups] = await Promise.all([
+      Promise.all(gameSlugs.map((slug) => fetch(`/api/athletes?game_slug=${encodeURIComponent(slug)}`).then((r) => r.ok ? r.json() : []))),
+      Promise.all(gameSlugs.map((slug) => fetch(`/api/teams?game_slug=${encodeURIComponent(slug)}`).then((r) => r.ok ? r.json() : []))),
+    ]);
+    setRows(athleteGroups.flat());
+    const teamData = teamGroups.flat();
     setTeams(Array.isArray(teamData) ? teamData : []);
     setLoading(false);
-  }, []);
+  }, [gameSlug]);
 
   useEffect(() => { load(); }, [load]);
 
   function openAdd() {
     setEditing(null);
-    setForm({ ...EMPTY });
+    setForm({ ...EMPTY, game_slug: activeGame?.slug ?? 'pubg-mobile' });
     setPhotoFile(null);
     setError('');
     setOpen(true);
@@ -202,6 +189,7 @@ function AthletesContent() {
     setEditing(row);
     setForm({
       name:           String(row.name   ?? ''),
+      game_slug:      String(row.game_slug ?? activeGame?.slug ?? 'pubg-mobile'),
       ign:            String(row.ign    ?? ''),
       known_name:     String(row.known_name ?? row.ign ?? ''),
       team:           String(row.team   ?? ''),
@@ -248,6 +236,7 @@ function AthletesContent() {
       const photoUrl = await uploadPhoto();
       const body = {
         name:           form.name,
+        game_slug:      form.game_slug,
         ign:            form.ign,
         known_name:     form.known_name || form.ign,
         team:           form.team,
@@ -298,7 +287,7 @@ function AthletesContent() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug));
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug) === gameSlug);
 
   return (
     <div className="p-8">
@@ -340,6 +329,7 @@ function AthletesContent() {
               ),
           },
           { key: 'name',           label: 'Name' },
+          { key: 'game_slug',      label: 'Game' },
           { key: 'ign',            label: 'IGN' },
           { key: 'team',           label: 'Team' },
           { key: 'role',           label: 'Role' },
@@ -368,6 +358,12 @@ function AthletesContent() {
         onClose={() => setOpen(false)}
       >
         <form onSubmit={handleSubmit} className="space-y-3">
+          <Field label="Game" required>
+            <Select value={form.game_slug} onChange={f('game_slug')} required>
+              {GAMES.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
+            </Select>
+          </Field>
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="Name" required>
               <Input value={form.name} onChange={f('name')} placeholder="Firstname Lastname" required />

@@ -5,6 +5,7 @@ import {
   initiateTransfer,
   generateReference,
 } from '@/lib/paystack';
+import { assertValidGameSlug } from '@/lib/game-scope';
 
 export async function processWithdrawal(userId, { amount, account_number, bank_code, name }) {
   // 1. Verify amount
@@ -93,10 +94,12 @@ export async function getWagers() {
   return data;
 }
 
-export async function getActiveWagers() {
+export async function getActiveWagers({ gameSlug } = {}) {
+  assertValidGameSlug(gameSlug);
   const { data, error } = await supabaseAdmin
     .from('wagers')
     .select('*')
+    .eq('game_slug', gameSlug)
     .eq('status', 'Active')
     .gt('closes_at', new Date().toISOString())
     .order('hot', { ascending: false })
@@ -181,6 +184,7 @@ export async function getUserWagers(userId) {
 }
 
 export async function createWager(body) {
+  assertValidGameSlug(body.game_slug);
   const { data, error } = await supabaseAdmin.from('wagers').insert([body]).select().single();
   if (error) throw error;
 

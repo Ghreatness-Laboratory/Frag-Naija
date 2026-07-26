@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAthletes, createAthlete } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
+import { requireGameSlug } from '@/lib/game-scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,7 @@ export async function GET(request) {
     const filters = {
       team:   searchParams.get('team')   || '',
       status: searchParams.get('status') || '',
+      gameSlug: requireGameSlug(searchParams),
     };
     const data = await getAthletes(filters);
     return NextResponse.json(data);

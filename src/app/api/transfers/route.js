@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getTransfers, createTransfer } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
+import { requireGameSlug } from '@/lib/game-scope';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const filters = { status: searchParams.get('status') || '' };
+    const filters = { status: searchParams.get('status') || '', gameSlug: requireGameSlug(searchParams) };
     const data = await getTransfers(filters);
     return NextResponse.json(data);
   } catch (e) {

@@ -6,11 +6,15 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Valid game slugs for game-scoped content. Keep in sync with src/lib/games.ts.
+-- pubg-mobile, free-fire, cod-mobile, ea-fc-26, mortal-kombat, efootball, mobile-legends
+
 -- ─── TEAMS ───────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS teams (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        TEXT NOT NULL UNIQUE,
+  game_slug   TEXT CHECK (game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends')),
   logo_url    TEXT,
   region      TEXT,
   wins        INT  DEFAULT 0,
@@ -20,6 +24,7 @@ CREATE TABLE IF NOT EXISTS teams (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS teams_game_slug_idx ON teams(game_slug);
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "teams_public_read"  ON teams FOR SELECT USING (true);
 CREATE POLICY "teams_admin_write"  ON teams FOR ALL   USING (false); -- enforced at app layer
@@ -29,6 +34,7 @@ CREATE POLICY "teams_admin_write"  ON teams FOR ALL   USING (false); -- enforced
 CREATE TABLE IF NOT EXISTS athletes (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        TEXT NOT NULL,
+  game_slug   TEXT CHECK (game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends')),
   ign         TEXT NOT NULL,        -- In-game name
   team        TEXT REFERENCES teams(name) ON UPDATE CASCADE ON DELETE SET NULL,
   role        TEXT,                 -- e.g. IGL, Fragger, Support
@@ -48,6 +54,7 @@ CREATE TABLE IF NOT EXISTS athletes (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS athletes_game_slug_idx ON athletes(game_slug);
 ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "athletes_public_read"  ON athletes FOR SELECT USING (true);
 CREATE POLICY "athletes_admin_write"  ON athletes FOR ALL   USING (false);
@@ -57,6 +64,7 @@ CREATE POLICY "athletes_admin_write"  ON athletes FOR ALL   USING (false);
 CREATE TABLE IF NOT EXISTS transfers (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   athlete_id  UUID REFERENCES athletes(id) ON DELETE CASCADE,
+  game_slug   TEXT CHECK (game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends')),
   from_team   TEXT,
   to_team     TEXT,
   fee         NUMERIC(12,2),
@@ -66,6 +74,7 @@ CREATE TABLE IF NOT EXISTS transfers (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS transfers_game_slug_idx ON transfers(game_slug);
 ALTER TABLE transfers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "transfers_public_read"  ON transfers FOR SELECT USING (true);
 CREATE POLICY "transfers_admin_write"  ON transfers FOR ALL   USING (false);
@@ -75,6 +84,7 @@ CREATE POLICY "transfers_admin_write"  ON transfers FOR ALL   USING (false);
 CREATE TABLE IF NOT EXISTS tournaments (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        TEXT NOT NULL,
+  game_slug   TEXT CHECK (game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends')),
   game        TEXT DEFAULT 'PUBG Mobile',
   prize_pool  NUMERIC(12,2),
   currency    TEXT DEFAULT 'NGN',
@@ -87,6 +97,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS tournaments_game_slug_idx ON tournaments(game_slug);
 ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tournaments_public_read"  ON tournaments FOR SELECT USING (true);
 CREATE POLICY "tournaments_admin_write"  ON tournaments FOR ALL   USING (false);
@@ -96,6 +107,7 @@ CREATE POLICY "tournaments_admin_write"  ON tournaments FOR ALL   USING (false);
 CREATE TABLE IF NOT EXISTS wagers (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   question    TEXT NOT NULL,
+  game_slug   TEXT CHECK (game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends')),
   subtitle    TEXT,
   yes_odds    NUMERIC(6,2) DEFAULT 1.60,
   no_odds     NUMERIC(6,2) DEFAULT 2.63,
@@ -109,6 +121,7 @@ CREATE TABLE IF NOT EXISTS wagers (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS wagers_game_slug_idx ON wagers(game_slug);
 ALTER TABLE wagers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wagers_public_read"  ON wagers FOR SELECT USING (true);
 CREATE POLICY "wagers_admin_write"  ON wagers FOR ALL   USING (false);
@@ -256,6 +269,7 @@ ON CONFLICT (key) DO NOTHING;
 CREATE TABLE IF NOT EXISTS shop_items (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        TEXT NOT NULL,
+  game_slug   TEXT CHECK (game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends')),
   description TEXT,
   price       NUMERIC(12,2) DEFAULT 0,
   currency    TEXT DEFAULT 'NGN',
@@ -265,6 +279,7 @@ CREATE TABLE IF NOT EXISTS shop_items (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS shop_items_game_slug_idx ON shop_items(game_slug);
 ALTER TABLE shop_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "shop_items_public_read" ON shop_items FOR SELECT USING (status = 'Published');
 CREATE POLICY "shop_items_admin_write" ON shop_items FOR ALL USING (false);

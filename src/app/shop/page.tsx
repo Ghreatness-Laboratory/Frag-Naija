@@ -13,8 +13,8 @@ export default function ShopPage() {
   const primary = selectedGame.colors.primary;
 
   useEffect(() => {
-    fetch('/api/shop-items', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).then(setItems).finally(() => setLoading(false));
-  }, []);
+    fetch(`/api/shop-items?game_slug=${encodeURIComponent(selectedGame.slug)}`, { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).then(setItems).finally(() => setLoading(false));
+  }, [selectedGame.slug]);
 
   return (
     <div className="min-h-screen px-4 py-10 sm:px-8 lg:px-12">

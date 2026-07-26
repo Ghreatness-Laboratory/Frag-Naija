@@ -22,6 +22,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { useGame } from "@/context/GameContext";
 import {
   useActiveWagers,
   useBanks,
@@ -1177,7 +1178,8 @@ function WagerPageContent() {
   const [selectedBet, setSelectedBet] = useState<CurrentUserWager | null>(null);
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
-  const { data: wagers, loading: wagersLoading, error: wagersError, refetch } = useActiveWagers();
+  const { selectedGame } = useGame();
+  const { data: wagers, loading: wagersLoading, error: wagersError, refetch } = useActiveWagers(selectedGame.slug);
   const { data: me, loading: meLoading, refetch: refetchMe } = useMe();
   const {
     data: myWagers,

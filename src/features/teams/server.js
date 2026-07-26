@@ -1,13 +1,19 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { assertValidGameSlug } from '@/lib/game-scope';
 
-export async function getTeams() {
+export async function getTeams({ gameSlug } = {}) {
+  assertValidGameSlug(gameSlug);
   const { data: teams, error } = await supabaseAdmin
     .from('teams')
     .select('*')
+    .eq('game_slug', gameSlug)
     .order('rank', { ascending: true, nullsLast: true });
   if (error) throw error;
 
-  const { data: athletes, error: athletesError } = await supabaseAdmin.from('athletes').select('*');
+  const { data: athletes, error: athletesError } = await supabaseAdmin
+    .from('athletes')
+    .select('*')
+    .eq('game_slug', gameSlug);
   if (athletesError) throw athletesError;
 
   return teams.map((team) => ({
@@ -16,20 +22,27 @@ export async function getTeams() {
   }));
 }
 
-export async function getTeamById(id) {
-  const { data: team, error } = await supabaseAdmin.from('teams').select('*').eq('id', id).single();
+export async function getTeamById(id, { gameSlug } = {}) {
+  let teamQuery = supabaseAdmin.from('teams').select('*').eq('id', id);
+  if (gameSlug) {
+    assertValidGameSlug(gameSlug);
+    teamQuery = teamQuery.eq('game_slug', gameSlug);
+  }
+  const { data: team, error } = await teamQuery.single();
   if (error) throw error;
 
   const { data: players, error: playersError } = await supabaseAdmin
     .from('athletes')
     .select('*')
-    .eq('team', team.name);
+    .eq('team', team.name)
+    .eq('game_slug', team.game_slug);
   if (playersError) throw playersError;
 
   return { ...team, players };
 }
 
 export async function createTeam(body) {
+  assertValidGameSlug(body.game_slug);
   const { data, error } = await supabaseAdmin.from('teams').insert([body]).select().single();
   if (error) throw error;
 
@@ -37,6 +50,7 @@ export async function createTeam(body) {
 }
 
 export async function updateTeam(id, body) {
+  if ('game_slug' in body) assertValidGameSlug(body.game_slug);
   const { data, error } = await supabaseAdmin.from('teams').update(body).eq('id', id).select().single();
   if (error) throw error;
 
