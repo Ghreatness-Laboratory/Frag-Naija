@@ -129,10 +129,10 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/athletes/${params.id}?game_slug=${encodeURIComponent(selectedGame.slug)}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/teams?game_slug=${encodeURIComponent(selectedGame.slug)}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/athletes/${params.id}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/teams', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])),
     ]).then(([athlete, teamData]) => { setA(athlete); setTeams(teamData); }).finally(() => setLoading(false));
-  }, [params.id, selectedGame.slug]);
+  }, [params.id]);
 
   const team = useMemo(() => teams.find((t) => t.name === a?.team) ?? null, [a?.team, teams]);
 
