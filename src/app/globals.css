@@ -173,3 +173,30 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
   .fn-btn-ghost   { @apply text-fn-muted text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:text-fn-green transition-all; }
   .section-title  { @apply font-display text-2xl sm:text-3xl font-bold uppercase tracking-wider text-fn-text; }
 }
+
+/* ─── PLAYER CARD PRINT EXPORT ──────────────────────────────────────────────*/
+.print-card-only { display: none; }
+
+@media print {
+  @page { size: 4.5in 7.2in portrait; margin: 0.15in; }
+  body { background: #fff !important; }
+  body * { visibility: hidden !important; }
+  .print-card-only, .print-card-only * { visibility: visible !important; }
+  .print-card-only {
+    display: flex !important;
+    position: fixed !important;
+    inset: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .player-card {
+    width: 4.2in !important;
+    height: 6.72in !important;
+    max-width: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    box-shadow: none !important;
+  }
+}
