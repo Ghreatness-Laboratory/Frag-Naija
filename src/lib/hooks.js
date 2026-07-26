@@ -52,8 +52,8 @@ export function useAthlete(id) {
 
 // ─── Teams ──────────────────────────────────────────────────────────────────────────
 
-export function useTeams() {
-  return useFetch('/api/teams');
+export function useTeams(gameSlug) {
+  return useFetch(gameSlug ? `/api/teams?game_slug=${encodeURIComponent(gameSlug)}` : null, [gameSlug]);
 }
 
 export function useTeam(id) {
@@ -80,8 +80,8 @@ export function useTournaments(filters = {}) {
 
 // ─── Wagers ────────────────────────────────────────────────────────────────────────
 
-export function useActiveWagers() {
-  return useFetch('/api/wagers/active');
+export function useActiveWagers(gameSlug) {
+  return useFetch(gameSlug ? `/api/wagers/active?game_slug=${encodeURIComponent(gameSlug)}` : null, [gameSlug]);
 }
 
 export function useWager(id) {

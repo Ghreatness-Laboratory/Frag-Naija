@@ -48,10 +48,10 @@ export default function TransferWindowPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/transfers");
+    const res = await fetch(`/api/transfers?game_slug=${encodeURIComponent(selectedGame.slug)}`);
     if (res.ok) setApiTransfers(await res.json());
     setLoading(false);
-  }, []);
+  }, [selectedGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 

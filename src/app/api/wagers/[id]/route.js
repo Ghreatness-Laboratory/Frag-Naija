@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getWagerById, deleteWager } from '@/lib/db';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkAdmin } from '@/lib/checkAdmin';
+import { assertValidGameSlug } from '@/lib/game-scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ export async function PUT(request, { params }) {
 
   try {
     const body = await request.json();
+    if ('game_slug' in body) assertValidGameSlug(body.game_slug);
     const { data, error } = await supabaseAdmin
       .from('wagers').update(body).eq('id', params.id).select().single();
     if (error) throw error;

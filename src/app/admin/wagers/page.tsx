@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Flame, CheckCircle, Trash2 } from 'lucide-react';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
-import { Field, Input, Textarea, SubmitBtn } from '@/components/admin/Field';
+import { GAMES } from '@/lib/games';
+import { Field, Input, Textarea, SubmitBtn, Select } from '@/components/admin/Field';
 
 type WagerOption = { label: string; odds: string };
 
@@ -14,6 +15,7 @@ const BINARY_EMPTY = {
   yes_price: '62', no_price: '38',
   closes_at: '',
   type: 'binary',
+  game_slug: 'pubg-mobile',
 };
 
 export default function AdminWagersPage() {
@@ -50,6 +52,7 @@ export default function AdminWagersPage() {
     const closesAt = row.closes_at ? String(row.closes_at).slice(0, 16) : '';
     setForm({
       question:  String(row.question  ?? ''),
+      game_slug: String(row.game_slug ?? 'pubg-mobile'),
       subtitle:  String(row.subtitle  ?? ''),
       yes_odds:  String(row.yes_odds  ?? '1.60'),
       no_odds:   String(row.no_odds   ?? '2.63'),
@@ -94,6 +97,7 @@ export default function AdminWagersPage() {
     try {
       const body: Record<string, unknown> = {
         question:  form.question,
+        game_slug: form.game_slug,
         subtitle:  form.subtitle,
         closes_at: form.closes_at,
         type:      form.type,
@@ -158,7 +162,7 @@ export default function AdminWagersPage() {
   }
 
   const f = (k: keyof typeof BINARY_EMPTY) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm(p => ({ ...p, [k]: e.target.value }));
 
   const isActive     = (r: Record<string, unknown>) => r.status === 'Active';
@@ -204,6 +208,7 @@ export default function AdminWagersPage() {
           </>
         )}
         columns={[
+          { key: 'game_slug', label: 'Game' },
           { key: 'question', label: 'Question', render: r => (
             <div className="max-w-xs">
               <span className="truncate block">{String(r.question)}</span>
@@ -230,6 +235,12 @@ export default function AdminWagersPage() {
       {/* Add / Edit Wager Modal */}
       <AdminModal title={editing ? 'Edit Wager' : 'Add Wager'} open={open} onClose={() => setOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-3">
+          <Field label="Game" required>
+            <Select value={form.game_slug} onChange={f('game_slug')} required>
+              {GAMES.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
+            </Select>
+          </Field>
+
           <Field label="Question" required>
             <Textarea value={form.question} onChange={f('question')} placeholder="Will X win the tournament?" required />
           </Field>

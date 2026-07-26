@@ -109,23 +109,19 @@ export default function AthletesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/athletes", { cache: "no-store" });
+    const res = await fetch(`/api/athletes?game_slug=${encodeURIComponent(selectedGame.slug)}`, { cache: "no-store" });
     if (res.ok) {
       const data: Athlete[] = await res.json();
       setApiAthletes(data);
     }
     setLoading(false);
-  }, []);
+  }, [selectedGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 
   const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
-  const apiForGame  = apiAthletes.filter(
-    (a) => a.team?.toLowerCase().includes(selectedGame.name.toLowerCase().split(' ')[0])
-      || selectedGame.slug === 'pubg-mobile'
-  );
-  const athletes: Athlete[] = apiForGame.length > 0
-    ? apiForGame
+  const athletes: Athlete[] = apiAthletes.length > 0
+    ? apiAthletes
     : (gameContent?.athletes as Athlete[] | undefined) ?? [];
 
   // Auto-select first athlete when list loads

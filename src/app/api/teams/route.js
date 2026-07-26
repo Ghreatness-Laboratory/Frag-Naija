@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getTeams, createTeam } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
+import { requireGameSlug } from '@/lib/game-scope';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const data = await getTeams();
+    const { searchParams } = new URL(request.url);
+    const gameSlug = requireGameSlug(searchParams);
+    const data = await getTeams({ gameSlug });
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

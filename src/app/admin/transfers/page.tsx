@@ -9,25 +9,7 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 
-const GAME_KEYWORDS: Record<string, string[]> = {
-  'pubg-mobile':    ['pubg', 'battleground'],
-  'cod-mobile':     ['cod', 'duty'],
-  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
-  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
-  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
-  'efootball':      ['efootball', 'pes', 'konami'],
-  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
-};
-
-function matchesGame(row: Record<string, unknown>, slug: string, athletes: Record<string, unknown>[]): boolean {
-  const keywords = GAME_KEYWORDS[slug] ?? [];
-  const athlete = athletes.find(a => a.id === row.athlete_id);
-  const haystack = [row.from_team, row.to_team, row.notes, athlete?.name, athlete?.ign, athlete?.team]
-    .map(v => String(v ?? '').toLowerCase()).join(' ');
-  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
-}
-
-const EMPTY = { from_team: '', to_team: '', fee: '', status: 'Rumour', date: '', notes: '', athlete_id: '' };
+const EMPTY = { from_team: '', to_team: '', fee: '', status: 'Rumour', date: '', notes: '', athlete_id: '', game_slug: 'pubg-mobile' };
 
 function TransfersContent() {
   const searchParams = useSearchParams();
@@ -44,15 +26,19 @@ function TransfersContent() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [tr, ar] = await Promise.all([fetch('/api/transfers'), fetch('/api/athletes')]);
-    setRows(await tr.json());
-    setAthletes(await ar.json());
+    const gameSlugs = gameSlug === 'all' ? GAMES.map((g) => g.slug) : [gameSlug];
+    const [transferGroups, athleteGroups] = await Promise.all([
+      Promise.all(gameSlugs.map((slug) => fetch(`/api/transfers?game_slug=${encodeURIComponent(slug)}`).then((r) => r.ok ? r.json() : []))),
+      Promise.all(gameSlugs.map((slug) => fetch(`/api/athletes?game_slug=${encodeURIComponent(slug)}`).then((r) => r.ok ? r.json() : []))),
+    ]);
+    setRows(transferGroups.flat());
+    setAthletes(athleteGroups.flat());
     setLoading(false);
-  }, []);
+  }, [gameSlug]);
 
   useEffect(() => { load(); }, [load]);
 
-  function openAdd() { setForm({ ...EMPTY, date: new Date().toISOString().split('T')[0] }); setError(''); setOpen(true); }
+  function openAdd() { setForm({ ...EMPTY, game_slug: activeGame?.slug ?? 'pubg-mobile', date: new Date().toISOString().split('T')[0] }); setError(''); setOpen(true); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,7 +66,7 @@ function TransfersContent() {
     return a ? String(a.name) : String(id ?? '—');
   };
 
-  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug, athletes));
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug) === gameSlug);
 
   return (
     <div className="p-8">
@@ -108,6 +94,7 @@ function TransfersContent() {
         emptyText="No transfers yet"
         columns={[
           { key: 'athlete_id', label: 'Player', render: r => getAthleteName(r.athlete_id) },
+          { key: 'game_slug',  label: 'Game' },
           { key: 'from_team',  label: 'From' },
           { key: 'to_team',    label: 'To' },
           { key: 'fee',        label: 'Fee (₦)', render: r => r.fee ? `₦${Number(r.fee).toLocaleString()}` : '—' },
@@ -121,6 +108,11 @@ function TransfersContent() {
 
       <AdminModal title="Add Transfer" open={open} onClose={() => setOpen(false)}>
         <form onSubmit={handleSubmit} className="space-y-3">
+          <Field label="Game" required>
+            <Select value={form.game_slug} onChange={f('game_slug')} required>
+              {GAMES.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
+            </Select>
+          </Field>
           <Field label="Player">
             <Select value={form.athlete_id} onChange={f('athlete_id')}>
               <option value="">Select player</option>

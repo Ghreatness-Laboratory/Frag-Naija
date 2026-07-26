@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { assertValidGameSlug } from '@/lib/game-scope';
 
 function computeOverallRating(athlete) {
   const attrs = ['attack', 'defense', 'clutch', 'survival', 'iq', 'aggression'];
@@ -7,9 +8,11 @@ function computeOverallRating(athlete) {
   return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
 }
 
-export async function getAthletes({ team, status } = {}) {
+export async function getAthletes({ team, status, gameSlug } = {}) {
+  assertValidGameSlug(gameSlug);
   let query = supabaseAdmin.from('athletes').select('*').order('overall_rating', { ascending: false });
 
+  query = query.eq('game_slug', gameSlug);
   if (team) query = query.eq('team', team);
   if (status) query = query.eq('status', status);
 
@@ -23,14 +26,20 @@ export async function getAthletes({ team, status } = {}) {
   }));
 }
 
-export async function getAthleteById(id) {
-  const { data, error } = await supabaseAdmin.from('athletes').select('*').eq('id', id).single();
+export async function getAthleteById(id, { gameSlug } = {}) {
+  let query = supabaseAdmin.from('athletes').select('*').eq('id', id);
+  if (gameSlug) {
+    assertValidGameSlug(gameSlug);
+    query = query.eq('game_slug', gameSlug);
+  }
+  const { data, error } = await query.single();
   if (error) throw error;
 
   return data;
 }
 
 export async function createAthlete(body) {
+  assertValidGameSlug(body.game_slug);
   const { data, error } = await supabaseAdmin.from('athletes').insert([body]).select().single();
   if (error) throw error;
 
@@ -38,6 +47,7 @@ export async function createAthlete(body) {
 }
 
 export async function updateAthlete(id, body) {
+  if ('game_slug' in body) assertValidGameSlug(body.game_slug);
   const { data, error } = await supabaseAdmin
     .from('athletes')
     .update(body)

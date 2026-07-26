@@ -55,7 +55,7 @@ export default function TeamsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/teams", { cache: "no-store" });
+    const res = await fetch(`/api/teams?game_slug=${encodeURIComponent(selectedGame.slug)}`, { cache: "no-store" });
     if (res.ok) {
       const data: Team[] = await res.json();
       const sorted = [...data].sort((a, b) => {
@@ -67,16 +67,13 @@ export default function TeamsPage() {
       setApiTeams(sorted);
     }
     setLoading(false);
-  }, []);
+  }, [selectedGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 
   const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
-  const apiForGame  = apiTeams.filter(
-    (t) => t.region?.toLowerCase().includes('nigeria') || selectedGame.slug === 'pubg-mobile'
-  );
-  const teams: Team[] = apiForGame.length > 0
-    ? apiForGame
+  const teams: Team[] = apiTeams.length > 0
+    ? apiTeams
     : (gameContent?.teams as Team[] | undefined) ?? [];
 
   useEffect(() => {

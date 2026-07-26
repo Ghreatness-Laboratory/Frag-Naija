@@ -7,29 +7,12 @@ import { Plus, Upload } from 'lucide-react';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
-import { Field, Input, Textarea, SubmitBtn } from '@/components/admin/Field';
+import { Field, Input, Textarea, SubmitBtn, Select } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
-
-const GAME_KEYWORDS: Record<string, string[]> = {
-  'pubg-mobile':    ['pubg', 'battleground'],
-  'cod-mobile':     ['cod', 'duty'],
-  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
-  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
-  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
-  'efootball':      ['efootball', 'pes', 'konami'],
-  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
-};
-
-function matchesGame(row: Record<string, unknown>, slug: string): boolean {
-  const keywords = GAME_KEYWORDS[slug] ?? [];
-  const haystack = [row.name, row.region, row.bio, row.achievements]
-    .map(v => String(v ?? '').toLowerCase()).join(' ');
-  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
-}
 
 const EMPTY = {
   name: '', region: '', wins: '', losses: '', bio: '', logo_url: '',
-  rank: '', strength: '0', achievements: '',
+  rank: '', strength: '0', achievements: '', game_slug: 'pubg-mobile',
 };
 
 function toArr(val: unknown): string {
@@ -57,16 +40,17 @@ function TeamsContent() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/teams');
-    if (res.ok) setRows(await res.json());
+    const gameSlugs = gameSlug === 'all' ? GAMES.map((g) => g.slug) : [gameSlug];
+    const groups = await Promise.all(gameSlugs.map((slug) => fetch(`/api/teams?game_slug=${encodeURIComponent(slug)}`).then((r) => r.ok ? r.json() : [])));
+    setRows(groups.flat());
     setLoading(false);
-  }, []);
+  }, [gameSlug]);
 
   useEffect(() => { load(); }, [load]);
 
   function openAdd() {
     setEditing(null);
-    setForm({ ...EMPTY });
+    setForm({ ...EMPTY, game_slug: activeGame?.slug ?? 'pubg-mobile' });
     setLogoFile(null);
     setError('');
     setOpen(true);
@@ -76,6 +60,7 @@ function TeamsContent() {
     setEditing(row);
     setForm({
       name:         String(row.name     ?? ''),
+      game_slug:    String(row.game_slug ?? activeGame?.slug ?? 'pubg-mobile'),
       region:       String(row.region   ?? ''),
       wins:         String(row.wins     ?? ''),
       losses:       String(row.losses   ?? ''),
@@ -109,6 +94,7 @@ function TeamsContent() {
       const logoUrl = await uploadLogo();
       const body = {
         name:     form.name,
+        game_slug: form.game_slug,
         region:   form.region,
         bio:      form.bio,
         logo_url: logoUrl ?? form.logo_url,
@@ -143,10 +129,10 @@ function TeamsContent() {
 
   const f =
     (k: keyof typeof EMPTY) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug));
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug) === gameSlug);
 
   return (
     <div className="p-8">
@@ -187,6 +173,7 @@ function TeamsContent() {
               ),
           },
           { key: 'name',     label: 'Name' },
+          { key: 'game_slug', label: 'Game' },
           { key: 'region',   label: 'Region' },
           { key: 'rank',     label: 'Rank' },
           { key: 'wins',     label: 'W' },
@@ -201,6 +188,12 @@ function TeamsContent() {
         onClose={() => setOpen(false)}
       >
         <form onSubmit={handleSubmit} className="space-y-3">
+          <Field label="Game" required>
+            <Select value={form.game_slug} onChange={f('game_slug')} required>
+              {GAMES.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
+            </Select>
+          </Field>
+
           <Field label="Team Name" required>
             <Input
               value={form.name}

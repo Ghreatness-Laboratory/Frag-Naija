@@ -13,7 +13,7 @@ function winRate(w:number,l:number){const t=Number(w)+Number(l); return t?Math.r
 export default function TeamDetail({ params }: { params: { id: string } }) {
   const { selectedGame } = useGame(); const primary=selectedGame.colors.primary; const secondary=selectedGame.colors.secondary;
   const [team,setTeam]=useState<Team|null>(null); const [loading,setLoading]=useState(true);
-  useEffect(()=>{fetch(`/api/teams/${params.id}`,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(setTeam).finally(()=>setLoading(false))},[params.id]);
+  useEffect(()=>{fetch(`/api/teams/${params.id}?game_slug=${encodeURIComponent(selectedGame.slug)}`,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(setTeam).finally(()=>setLoading(false))},[params.id, selectedGame.slug]);
   if(loading) return <div className="min-h-screen p-8 text-fn-muted">Loading team…</div>;
   if(!team) return <div className="min-h-screen p-8"><p className="text-fn-muted">Team not found.</p><Link href="/teams" className="text-fn-green">Back to teams</Link></div>;
   const form=parseArray(team.form); const history=parseObjects(team.performance_history); const results=parseObjects(team.tournament_results); const achievements=parseArray(team.achievements);
