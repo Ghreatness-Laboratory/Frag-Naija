@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Download, Printer, Shield, Trophy } from 'lucide-react';
+import { Download, Eye, Printer, Shield, Trophy, X } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 
 type Achievement = { title?: string; date?: string };
@@ -126,6 +126,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -179,5 +180,73 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
 
   function handlePrint() { window.print(); }
 
-  return <div className="min-h-screen p-4 sm:p-8 lg:p-12"><div className="screen-profile"><Link href="/athletes" className="fn-label">← ALL ATHLETES</Link><section className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-6"><div className="flex flex-col gap-5 sm:flex-row sm:items-center"><div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border" style={{ borderColor: primary, background: `${primary}15` }}>{a.photo_url ? <img src={a.photo_url} alt={a.ign} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}</div><div className="flex-1"><p className="fn-label">{a.status} · {a.role || 'Player'}{team?.rank ? ` · rank #${team.rank}` : ''}</p><h1 className="font-display text-4xl font-black uppercase text-fn-text">{displayName}</h1><p className="text-xs text-fn-muted">{a.name}{aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p></div><div className="text-center"><div className="font-display text-5xl font-black" style={{ color: primary }}>{rating}</div><div className="fn-label">RTG</div></div></div>{a.bio && <p className="mt-5 text-sm leading-relaxed text-fn-muted">{a.bio}</p>}<div className="mt-5 flex flex-wrap gap-3"><button onClick={handleDownload} disabled={downloading} className="fn-btn inline-flex items-center gap-2"><Download size={14} />{downloading ? 'Generating…' : 'Download Player Card'}</button><button onClick={handlePrint} className="fn-btn-outline inline-flex items-center gap-2"><Printer size={14} />Print Player Card</button></div></section><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{[["KLS", a.kills], ["AST", a.assists], ["DMG", a.damage], ["WR", `${a.winrate}%`]].map(([l, v]) => <div key={l} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center"><div className="font-display text-2xl font-black text-fn-text">{v}</div><div className="fn-label">{l}</div></div>)}</div><div className="mt-4 grid gap-4 lg:grid-cols-3"><article className="rounded-sm border border-fn-gborder bg-fn-card p-4"><h2 className="fn-label mb-3" style={{ color: primary }}>TEAMS</h2><p className="text-xs font-bold text-fn-text">Current: {a.team || 'Free Agent'}</p>{previousTeams.map((t, i) => <p key={i} className="mt-2 text-xs text-fn-muted">Previous: {t.team} {t.years}</p>)}</article><article className="rounded-sm border border-fn-gborder bg-fn-card p-4 lg:col-span-2"><h2 className="fn-label mb-3 flex items-center gap-2"><Trophy size={12} style={{ color: primary }} /> ACHIEVEMENTS / TITLES</h2>{achievements.length ? achievements.map((x, i) => <p key={i} className="mb-2 text-xs text-fn-text">{x.title} <span className="text-fn-muted">{x.date}</span></p>) : <p className="text-xs text-fn-muted">No titles recorded yet.</p>}</article></div><div className="mt-6"><PlayerCard athlete={a} team={team} rating={rating} achievements={achievements} primary={primary} /></div></div><div className="print-card-only"><PlayerCard athlete={a} team={team} rating={rating} achievements={achievements} primary={primary} /></div></div>;
+  return (
+    <div className="min-h-screen p-4 sm:p-8 lg:p-12">
+      <div className="screen-profile">
+        <Link href="/athletes" className="fn-label">← ALL ATHLETES</Link>
+
+        <section className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border" style={{ borderColor: primary, background: `${primary}15` }}>
+              {a.photo_url ? <img src={a.photo_url} alt={a.ign} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}
+            </div>
+            <div className="flex-1">
+              <p className="fn-label">{a.status} · {a.role || 'Player'}{team?.rank ? ` · rank #${team.rank}` : ''}</p>
+              <h1 className="font-display text-4xl font-black uppercase text-fn-text">{displayName}</h1>
+              <p className="text-xs text-fn-muted">{a.name}{aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p>
+            </div>
+            <div className="text-center">
+              <div className="font-display text-5xl font-black" style={{ color: primary }}>{rating}</div>
+              <div className="fn-label">RTG</div>
+            </div>
+          </div>
+
+          {a.bio && <p className="mt-5 text-sm leading-relaxed text-fn-muted">{a.bio}</p>}
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button onClick={() => setCardOpen(true)} className="fn-btn inline-flex items-center gap-2"><Eye size={14} />View Player Card</button>
+            <button onClick={handleDownload} disabled={downloading} className="fn-btn-outline inline-flex items-center gap-2"><Download size={14} />{downloading ? 'Generating…' : 'Download Player Card'}</button>
+            <button onClick={handlePrint} className="fn-btn-outline inline-flex items-center gap-2"><Printer size={14} />Print Player Card</button>
+          </div>
+        </section>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[["KLS", a.kills], ["AST", a.assists], ["DMG", a.damage], ["WR", `${a.winrate}%`]].map(([l, v]) => <div key={l} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center"><div className="font-display text-2xl font-black text-fn-text">{v}</div><div className="fn-label">{l}</div></div>)}
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <article className="rounded-sm border border-fn-gborder bg-fn-card p-4">
+            <h2 className="fn-label mb-3" style={{ color: primary }}>TEAMS</h2>
+            <p className="text-xs font-bold text-fn-text">Current: {a.team || 'Free Agent'}</p>
+            {previousTeams.map((t, i) => <p key={i} className="mt-2 text-xs text-fn-muted">Previous: {t.team} {t.years}</p>)}
+          </article>
+          <article className="rounded-sm border border-fn-gborder bg-fn-card p-4 lg:col-span-2">
+            <h2 className="fn-label mb-3 flex items-center gap-2"><Trophy size={12} style={{ color: primary }} /> ACHIEVEMENTS / TITLES</h2>
+            {achievements.length ? achievements.map((x, i) => <p key={i} className="mb-2 text-xs text-fn-text">{x.title} <span className="text-fn-muted">{x.date}</span></p>) : <p className="text-xs text-fn-muted">No titles recorded yet.</p>}
+          </article>
+        </div>
+
+        {cardOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`${displayName} player card`}>
+            <div className="max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-sm border border-fn-gborder bg-fn-card p-4 shadow-2xl">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="fn-label" style={{ color: primary }}>PUBLIC PLAYER CARD</p>
+                  <h2 className="font-display text-xl font-black uppercase text-fn-text">{displayName}</h2>
+                </div>
+                <button type="button" onClick={() => setCardOpen(false)} className="fn-btn-ghost inline-flex items-center gap-2" aria-label="Close player card"><X size={16} />Close</button>
+              </div>
+              <PlayerCard athlete={a} team={team} rating={rating} achievements={achievements} primary={primary} />
+              <div className="mt-4 flex flex-wrap justify-center gap-3">
+                <button onClick={handleDownload} disabled={downloading} className="fn-btn inline-flex items-center gap-2"><Download size={14} />{downloading ? 'Generating…' : 'Download Player Card'}</button>
+                <button onClick={handlePrint} className="fn-btn-outline inline-flex items-center gap-2"><Printer size={14} />Print Player Card</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="print-card-only"><PlayerCard athlete={a} team={team} rating={rating} achievements={achievements} primary={primary} /></div>
+    </div>
+  );
 }
