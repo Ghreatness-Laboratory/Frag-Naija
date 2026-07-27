@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 export const DEFAULT_HOMEPAGE_SETTINGS = {
-  hero_eyebrow: "NIGERIA'S PREMIERE ESPORTS PLATFORM",
+  hero_eyebrow: "NIGERIA'S PREMIER ESPORTS PLATFORM",
   hero_headline: 'FRAG NAIJA',
   hero_tagline: "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.",
   stat_players: '1,242+',
@@ -16,13 +16,21 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
 };
 
 export async function getHomepageSettings() {
-  const { data, error } = await supabaseAdmin.from('homepage_settings').select('*');
-  if (error) return DEFAULT_HOMEPAGE_SETTINGS;
-  return { ...DEFAULT_HOMEPAGE_SETTINGS, ...Object.fromEntries((data || []).map((row) => [row.key, row.value])) };
+  const { data, error } = await supabaseAdmin.from('homepage_settings').select('*').single();
+  if (error || !data) return DEFAULT_HOMEPAGE_SETTINGS;
+  return { ...DEFAULT_HOMEPAGE_SETTINGS, ...data };
 }
 
 export async function updateHomepageSettings(settings) {
-  const rows = Object.entries(settings).map(([key, value]) => ({ key, value: String(value ?? ''), updated_at: new Date().toISOString() }));
-  const { error } = await supabaseAdmin.from('homepage_settings').upsert(rows);
-  if (error) throw error;
+  const { data: existing } = await supabaseAdmin.from('homepage_settings').select('id').single();
+
+  const payload = { ...settings, updated_at: new Date().toISOString() };
+
+  if (existing?.id) {
+    const { error } = await supabaseAdmin.from('homepage_settings').update(payload).eq('id', existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabaseAdmin.from('homepage_settings').insert(payload);
+    if (error) throw error;
+  }
 }
