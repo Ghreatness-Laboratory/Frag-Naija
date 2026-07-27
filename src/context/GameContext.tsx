@@ -8,18 +8,18 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { type Game, GAMES, DEFAULT_GAME } from '@/lib/games';
+import { type Game, GAMES } from '@/lib/games';
 
 interface GameContextValue {
-  /** The currently active game. Defaults to PUBG Mobile before hydration. */
-  selectedGame: Game;
+  /** The currently active game. Null means the user is in a neutral all-games context. */
+  selectedGame: Game | null;
   setSelectedGame: (game: Game) => void;
   /** True once localStorage has been read on the client. */
   isHydrated: boolean;
 }
 
 const GameContext = createContext<GameContextValue>({
-  selectedGame: DEFAULT_GAME,
+  selectedGame: null,
   setSelectedGame: () => {},
   isHydrated: false,
 });
@@ -28,7 +28,7 @@ const LS_KEY = 'fn-selected-game';
 const COOKIE_NAME = 'fn-game';
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [selectedGame, setGameState] = useState<Game>(DEFAULT_GAME);
+  const [selectedGame, setGameState] = useState<Game | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {

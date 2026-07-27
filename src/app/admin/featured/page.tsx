@@ -160,6 +160,8 @@ export default function AdminFeaturedPage() {
                 <option value="news">News</option>
                 <option value="team">Team</option>
                 <option value="athlete">Athlete</option>
+                <option value="tournament">Tournament</option>
+                <option value="organization">Organization</option>
               </Select>
             </Field>
             <Field label="Badge">

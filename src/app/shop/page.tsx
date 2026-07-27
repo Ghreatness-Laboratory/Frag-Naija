@@ -10,7 +10,7 @@ export default function ShopPage() {
   const { selectedGame } = useGame();
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const primary = selectedGame.colors.primary;
+  const primary = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
 
   useEffect(() => {
     fetch('/api/shop-items', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).then(setItems).finally(() => setLoading(false));

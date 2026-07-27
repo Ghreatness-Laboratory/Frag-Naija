@@ -5,15 +5,17 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Shield, ArrowLeftRight,
   Trophy, Swords, Film, LogOut, ChevronRight, Banknote, ArrowUpCircle,
-  Newspaper, Star, TrendingUp,
+  Newspaper, Star, TrendingUp, Building2,
 } from 'lucide-react';
 
 const NAV = [
   { href: '/admin',                label: 'Dashboard',   icon: LayoutDashboard },
   { href: '/admin/athletes',       label: 'Athletes',    icon: Users },
   { href: '/admin/teams',          label: 'Teams',       icon: Shield },
+  { href: '/admin/organizations',  label: 'Organizations', icon: Building2 },
   { href: '/admin/transfers',      label: 'Transfers',   icon: ArrowLeftRight },
   { href: '/admin/tournaments',    label: 'Tournaments', icon: Trophy },
+  { href: '/admin/tournament-results', label: 'Tournament Results', icon: Trophy },
   { href: '/admin/wagers',         label: 'Wagers',      icon: Swords },
   { href: '/admin/highlights',     label: 'Highlights',  icon: Film },
   { href: '/admin/news',           label: 'News',        icon: Newspaper },

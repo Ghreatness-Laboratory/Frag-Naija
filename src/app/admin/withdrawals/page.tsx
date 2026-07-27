@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, CheckCircle, XCircle, AlertCircle, ArrowUpCircle, Download } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, AlertCircle, ArrowUpCircle } from 'lucide-react';
 
 type Withdrawal = {
   id: string;

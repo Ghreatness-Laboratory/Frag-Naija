@@ -205,7 +205,7 @@ export default function SecurityPage() {
 
               {/* Manual secret */}
               <div className="bg-fn-dark border border-fn-gborder rounded p-3">
-                <p className="text-fn-muted text-[10px] uppercase tracking-widest mb-1">Can't scan? Enter this key manually:</p>
+                <p className="text-fn-muted text-[10px] uppercase tracking-widest mb-1">Can&apos;t scan? Enter this key manually:</p>
                 <div className="flex items-center gap-2">
                   <code className="text-fn-green text-xs font-mono flex-1 break-all">{enrollData.secret}</code>
                   <button onClick={copySecret} className="text-fn-muted hover:text-fn-green transition-colors shrink-0">
@@ -218,7 +218,7 @@ export default function SecurityPage() {
                 onClick={() => setEnrollStep('confirm')}
                 className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors"
               >
-                I've scanned it →
+                I&apos;ve scanned it →
               </button>
             </div>
           )}
@@ -263,7 +263,7 @@ export default function SecurityPage() {
             <div className="text-center space-y-2 py-2">
               <ShieldCheck size={32} className="text-fn-green mx-auto" />
               <p className="text-fn-green font-bold text-sm uppercase tracking-widest">2FA Activated!</p>
-              <p className="text-fn-muted text-xs">Your account is now protected. You'll be asked for a code on every login.</p>
+              <p className="text-fn-muted text-xs">Your account is now protected. You&apos;ll be asked for a code on every login.</p>
             </div>
           )}
 

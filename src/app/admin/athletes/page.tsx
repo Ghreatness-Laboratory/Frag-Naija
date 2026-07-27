@@ -10,24 +10,6 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 
-// Keywords used to match rows to a game when no game column exists
-const GAME_KEYWORDS: Record<string, string[]> = {
-  'pubg-mobile':    ['pubg', 'battleground'],
-  'cod-mobile':     ['cod', 'duty'],
-  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
-  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
-  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
-  'efootball':      ['efootball', 'pes', 'konami'],
-  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
-};
-
-function matchesGame(row: Record<string, unknown>, slug: string): boolean {
-  const keywords = GAME_KEYWORDS[slug] ?? [];
-  const haystack = [row.team, row.ign, row.name, row.role, row.bio]
-    .map(v => String(v ?? '').toLowerCase()).join(' ');
-  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
-}
-
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
   known_name: '', game_slug: 'pubg-mobile',
