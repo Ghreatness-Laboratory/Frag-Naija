@@ -83,6 +83,7 @@ export default function RegisterPage() {
           email:    form.email,
           password: form.password,
           username: form.username || undefined,
+          preferred_game_slug: pickedGame?.slug || undefined,
         }),
       });
       const data = await res.json();

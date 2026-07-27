@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
 import { GAMES } from "@/lib/games";
 import { combatAttributes } from "@/lib/athlete-display";
+import { useGame } from "@/context/GameContext";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -211,10 +212,10 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
         <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-fn-text"><Medal size={10} style={{ color: col }} />{athlete.ign}</div>
         <div className="fn-label mb-2">{athlete.role || "Player"}</div>
         <div className="grid grid-cols-5 gap-1">
-          {attrs.map(({ value, label, color }) => (
-            <div key={label} className="text-center">
-              <div className="text-[10px] font-bold" style={{ color }}>{value}</div>
-              <div className="fn-label text-[7px]" style={{ color }}>{label}</div>
+          {attrs.map(({ value, name }) => (
+            <div key={name} className="text-center">
+              <div className="text-[10px] font-bold text-white">{value}</div>
+              <div className="fn-label text-[7px] text-fn-green">{name}</div>
             </div>
           ))}
         </div>
@@ -267,7 +268,7 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
 
 export default function HomePage() {
   const router = useRouter();
-  const { selectedGame } = useGame();
+  const { selectedGame, isHydrated } = useGame();
   const [ticker, setTicker]       = useState(0);
   const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
@@ -283,6 +284,10 @@ export default function HomePage() {
   const isFF      = selectedGame?.slug === 'free-fire';
   const reduceMotion = useReducedMotion();
   const tickerItems = selectedGame ? (TICKER_ITEMS[selectedGame.slug] ?? TICKER_ITEMS.default) : TICKER_ITEMS.default;
+
+  useEffect(() => {
+    if (isHydrated && selectedGame) router.replace(`/${selectedGame.slug}`);
+  }, [isHydrated, router, selectedGame]);
   const tagline     = homepageSettings.hero_tagline ?? "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.";
   const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
   const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
