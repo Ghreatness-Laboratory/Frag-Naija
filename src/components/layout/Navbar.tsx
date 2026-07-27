@@ -66,7 +66,7 @@ function GameSwitcher({ onClick }: { onClick: () => void }) {
           : { background: 'rgb(var(--fn-muted))' }}
       />
       <span className="text-[9px] font-bold uppercase tracking-widest text-fn-text group-hover:text-fn-green transition-colors truncate max-w-[80px]">
-        {selectedGame?.shortName ?? 'Select Game'}
+        {selectedGame?.shortName ?? 'All Games'}
       </span>
       <Gamepad2 size={10} className="text-fn-muted group-hover:text-fn-green transition-colors flex-shrink-0" />
     </button>
@@ -247,7 +247,7 @@ export default function Navbar() {
                         : { background: 'rgb(var(--fn-muted))' }}
                     />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-fn-text">
-                      {selectedGame?.shortName ?? 'Select Game'}
+                      {selectedGame?.shortName ?? 'All Games'}
                     </span>
                     <span className="text-[8px] text-fn-muted uppercase tracking-wider">{selectedGame ? '— Active Game' : '— Neutral'}</span>
                   </div>

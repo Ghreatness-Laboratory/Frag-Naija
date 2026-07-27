@@ -142,27 +142,40 @@ function GameCard({
 
 export default function SelectGamePage() {
   const router = useRouter();
-  const { setSelectedGame, isHydrated } = useGame();
+  const { selectedGame, setSelectedGame, isHydrated } = useGame();
   const [picked, setPicked] = useState<Game | null>(null);
+  const [allGamesPicked, setAllGamesPicked] = useState(true);
 
-  // Pre-select the stored game when returning to this page (e.g. to change)
+  // Pre-select All Games for first-time/neutral visitors, or the stored active game when present.
   useEffect(() => {
-    if (isHydrated) {
-      const stored = localStorage.getItem('fn-selected-game');
-      if (stored) {
-        const found = GAMES.find((g) => g.slug === stored);
-        if (found) setPicked(found);
-      }
+    if (!isHydrated) return;
+    if (selectedGame) {
+      setPicked(selectedGame);
+      setAllGamesPicked(false);
+    } else {
+      setPicked(null);
+      setAllGamesPicked(true);
     }
-  }, [isHydrated]);
+  }, [isHydrated, selectedGame]);
 
   function handleContinue() {
+    if (allGamesPicked) {
+      setSelectedGame(null);
+      router.push('/');
+      return;
+    }
     if (!picked) return;
     setSelectedGame(picked);       // → writes localStorage + sets fn-game cookie
     router.push(`/${picked.slug}`);
   }
 
-  const btnStyle = picked
+  const btnStyle = allGamesPicked
+    ? {
+        background: 'rgb(var(--fn-green))',
+        color: 'rgb(var(--fn-black))',
+        boxShadow: '0 0 20px rgb(var(--fn-green) / 0.28)',
+      }
+    : picked
     ? {
         background: picked.colors.primary,
         color: 'rgb(var(--fn-black))',
@@ -241,45 +254,54 @@ export default function SelectGamePage() {
             </h1>
           </div>
           <p className="mb-10 max-w-md text-center text-[11px] font-mono leading-relaxed text-fn-muted">
-            Choose your primary title to unlock tournaments, athlete profiles,
-            wager markets, and live analytics tailored to your game.
+            Choose All Games for the neutral combined dashboard, or pick a single title for game-scoped content.
           </p>
 
           {/* ── Game grid ── */}
           <div className="mb-10 grid w-full max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+          <button
+              type="button"
+              onClick={() => { setAllGamesPicked(true); setPicked(null); }}
+              className={`group relative overflow-hidden rounded-sm border bg-fn-card p-4 text-left transition-all duration-300 ${allGamesPicked ? 'scale-[1.02]' : 'hover:-translate-y-1'}`}
+              style={{ borderColor: allGamesPicked ? 'rgb(var(--fn-green))' : 'rgb(var(--fn-gborder))', boxShadow: allGamesPicked ? '0 0 24px rgb(var(--fn-green) / 0.18)' : undefined }}
+            >
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-sm border border-fn-green/40 bg-fn-green/10 text-fn-green">ALL</span>
+              <span className="block text-sm font-black uppercase tracking-widest text-fn-text">All Games</span>
+              <span className="mt-1 block text-[10px] leading-relaxed text-fn-muted">Neutral homepage with admin-curated cross-game highlights.</span>
+            </button>
             {GAMES.map((game) => (
               <GameCard
                 key={game.id}
                 game={game}
-                isSelected={picked?.id === game.id}
-                onSelect={setPicked}
+                isSelected={!allGamesPicked && picked?.id === game.id}
+                onSelect={(game) => { setPicked(game); setAllGamesPicked(false); }}
               />
             ))}
           </div>
 
           {/* ── Selection summary ── */}
-          {picked && (
+          {(picked || allGamesPicked) && (
             <div
               className="mb-6 flex items-center gap-3 rounded-sm border px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest"
               style={{
-                borderColor: picked.colors.border,
-                background: picked.colors.cardBg,
-                color: picked.colors.primary,
+                borderColor: allGamesPicked ? 'rgb(var(--fn-green) / 0.4)' : picked!.colors.border,
+                background: allGamesPicked ? 'rgb(var(--fn-green) / 0.05)' : picked!.colors.cardBg,
+                color: allGamesPicked ? 'rgb(var(--fn-green))' : picked!.colors.primary,
               }}
             >
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: picked.colors.primary }} />
-              {picked.name} selected
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: allGamesPicked ? 'rgb(var(--fn-green))' : picked!.colors.primary }} />
+              {allGamesPicked ? 'All Games selected' : `${picked!.name} selected`}
             </div>
           )}
 
           {/* ── Continue button ── */}
           <button
             onClick={handleContinue}
-            disabled={!picked}
+            disabled={!picked && !allGamesPicked}
             className="flex items-center gap-2.5 rounded-sm px-10 py-3.5 font-display text-sm font-black uppercase tracking-[0.2em] transition-all duration-300 active:scale-95"
             style={btnStyle}
           >
-            {picked ? `Enter as ${picked.shortName} Player` : 'Select a Game First'}
+            {allGamesPicked ? 'Enter All Games Dashboard' : picked ? `Enter as ${picked.shortName} Player` : 'Select a Game First'}
             <ChevronRight size={15} />
           </button>
 

@@ -36,6 +36,8 @@ const ATHLETE_FIELDS = new Set([
   'weaknesses',
   'game_slug',
   'jersey_number',
+  'sensitivity_settings',
+  'control_code',
 ]);
 
 function normalizeAchievements(value) {
