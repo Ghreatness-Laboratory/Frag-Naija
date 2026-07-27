@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
 import { GAMES } from "@/lib/games";
 
 type Athlete = {
@@ -123,6 +124,50 @@ function StatCounter({ value, label, icon: Icon, color }: { value: string; label
   );
 }
 
+function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolean; onClose: () => void; onSelect: (gameSlug: string) => void; primary: string }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fn-black/80 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="scout-game-title">
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="relative w-full max-w-md overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-5 shadow-2xl"
+      >
+        <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${primary}, transparent)` }} />
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-sm border border-fn-gborder p-1 text-fn-muted transition-colors hover:text-fn-text"
+          aria-label="Close game selection"
+        >
+          <X size={14} />
+        </button>
+        <p className="fn-label mb-2 flex items-center gap-1.5"><Crosshair size={10} style={{ color: primary }} /> SCOUTING TARGET</p>
+        <h2 id="scout-game-title" className="font-display text-2xl font-black uppercase text-fn-text">Choose a game</h2>
+        <p className="mt-2 text-xs leading-relaxed text-fn-muted">Select which game roster you want to scout. You’ll be taken to that game’s dedicated athletes page.</p>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          {GAMES.filter((game) => game.available).map((game) => (
+            <button
+              key={game.slug}
+              type="button"
+              onClick={() => onSelect(game.slug)}
+              className="group rounded-sm border border-fn-gborder bg-fn-black/50 p-3 text-left transition-all hover:bg-fn-card2"
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${game.colors.primary}70`; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgb(var(--fn-gborder))'; }}
+            >
+              <span className="block text-[11px] font-black uppercase tracking-widest text-fn-text">{game.name}</span>
+              <span className="mt-1 inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest" style={{ color: game.colors.primary }}>
+                Scout {game.shortName} <ChevronRight size={10} className="transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
   const rankColors = [primary, "rgb(var(--fn-yellow))", "#C0C0C0", "#00aaff"];
   const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
@@ -213,6 +258,7 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [ticker, setTicker]       = useState(0);
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
@@ -221,6 +267,7 @@ export default function HomePage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
+  const [isScoutPromptOpen, setIsScoutPromptOpen] = useState(false);
 
   const primary   = 'rgb(var(--fn-green))';
   const secondary = 'rgb(var(--fn-yellow))';
@@ -231,6 +278,11 @@ export default function HomePage() {
   const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
   const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
   const [headlineFirst, ...headlineRest] = heroHeadline.split(" ");
+
+  const handleScoutGameSelect = (gameSlug: string) => {
+    setIsScoutPromptOpen(false);
+    router.push(`/athletes?game=${gameSlug}`);
+  };
 
   useEffect(() => {
     const t = setInterval(() => setTicker((p) => (p + 1) % tickerItems.length), 4000);
@@ -283,6 +335,12 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen overflow-hidden">
+      <GameSelectionModal
+        open={isScoutPromptOpen}
+        onClose={() => setIsScoutPromptOpen(false)}
+        onSelect={handleScoutGameSelect}
+        primary={primary}
+      />
       {/* Live ticker */}
       <div className="border-b border-fn-gborder px-4 py-1.5 flex items-center gap-3 overflow-hidden"
         style={{ background: `${primary}08` }}
@@ -364,14 +422,16 @@ export default function HomePage() {
             >
               <Trophy size={13} /> JOIN TOURNAMENTS
             </Link>
-            <Link href="/athletes"
+            <button
+              type="button"
+              onClick={() => setIsScoutPromptOpen(true)}
               className="electric-button group inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase border transition-all"
               style={{ borderColor: `${primary}40`, color: primary }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = `${primary}15`)}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
             >
               <Crosshair size={13} /> SCOUT ATHLETES <ChevronRight size={13} />
-            </Link>
+            </button>
           </motion.div>
         </motion.div>
 
@@ -423,14 +483,16 @@ export default function HomePage() {
             </p>
             <h2 className="font-display text-2xl font-black uppercase text-fn-text">TOP ATHLETES</h2>
           </div>
-          <Link href="/athletes"
+          <button
+            type="button"
+            onClick={() => setIsScoutPromptOpen(true)}
             className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
             style={{ borderColor: `${primary}30`, color: primary }}
             onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = `${primary}10`)}
             onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
           >
             VIEW ALL <ChevronRight size={11} />
-          </Link>
+          </button>
         </div>
         {gameAthletes.length === 0 ? (
           <p className="text-fn-muted text-[10px] py-6">No athletes yet — add them from the admin panel.</p>
