@@ -347,7 +347,6 @@ export default function HomePage() {
         <motion.div initial="hidden" animate="visible" variants={reveal} transition={{ duration: 0.55 }} className="max-w-4xl relative">
           <p className="fn-label mb-3 flex items-center gap-2">
             <Gamepad2 size={12} style={{ color: primary }} />
-            <span className="w-6 h-px inline-block" style={{ background: primary }} />
             NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
           </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
