@@ -13,3 +13,34 @@ export async function getShopItems({ status, game_slug } = {}) {
   if (error) throw error;
   return data || [];
 }
+
+
+function cleanShopItem(body) {
+  return {
+    name: body.name || '',
+    description: body.description || null,
+    price: Number(body.price ?? 0) || 0,
+    currency: body.currency || 'NGN',
+    image_url: body.image_url || null,
+    category: body.category || 'Gear',
+    status: body.status || 'Published',
+    game_slug: body.game_slug || null,
+  };
+}
+
+export async function createShopItem(body) {
+  const { data, error } = await supabaseAdmin.from('shop_items').insert(cleanShopItem(body)).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateShopItem(id, body) {
+  const { data, error } = await supabaseAdmin.from('shop_items').update(cleanShopItem(body)).eq('id', id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteShopItem(id) {
+  const { error } = await supabaseAdmin.from('shop_items').delete().eq('id', id);
+  if (error) throw error;
+}
