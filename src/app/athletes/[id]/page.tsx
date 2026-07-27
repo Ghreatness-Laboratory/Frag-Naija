@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Download, Eye, Flag, Printer, Shield, Trophy, X } from 'lucide-react';
+import { Download, Eye, Printer, Shield, Trophy, X } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import html2canvas from '@/lib/html2canvas';
 
@@ -226,7 +226,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
                 </div>
                 <button type="button" onClick={() => setCardOpen(false)} className="fn-btn-ghost inline-flex items-center gap-2" aria-label="Close player card"><X size={16} />Close</button>
               </div>
-              <PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} />
+              <PlayerCard athlete={a} team={team} rating={rating} achievements={achievements} primary={primary} />
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <button onClick={handleDownload} disabled={downloading} className="fn-btn inline-flex items-center gap-2"><Download size={14} />{downloading ? 'Generating…' : 'Download Player Card'}</button>
                 <button onClick={handlePrint} className="fn-btn-outline inline-flex items-center gap-2"><Printer size={14} />Print Player Card</button>
@@ -236,8 +236,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
         )}
       </div>
 
-      <div className="pointer-events-none fixed -left-[10000px] top-0" aria-hidden="true"><div id="player-card-export"><PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div></div>
-      <div className="print-card-only"><PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
+      <div className="print-card-only"><PlayerCard athlete={a} team={team} rating={rating} achievements={achievements} primary={primary} /></div>
     </div>
   );
 }
