@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { Plus, Flame, CheckCircle, Trash2 } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
-import { Field, Input, Textarea, SubmitBtn } from '@/components/admin/Field';
+import AdminGameFilter from '@/components/admin/AdminGameFilter';
+import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
+import { GAMES } from '@/lib/games';
 
 type WagerOption = { label: string; odds: string };
 
@@ -14,9 +17,13 @@ const BINARY_EMPTY = {
   yes_price: '62', no_price: '38',
   closes_at: '',
   type: 'binary',
+  game_slug: 'pubg-mobile',
 };
 
-export default function AdminWagersPage() {
+function AdminWagersContent() {
+  const searchParams = useSearchParams();
+  const gameSlug = searchParams.get('game') ?? 'all';
+  const activeGame = GAMES.find((game) => game.slug === gameSlug);
   const [rows, setRows]         = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading]   = useState(true);
   const [open, setOpen]         = useState(false);
@@ -40,7 +47,7 @@ export default function AdminWagersPage() {
   function openAdd() {
     setEditing(null);
     const d = new Date(); d.setDate(d.getDate() + 7);
-    setForm({ ...BINARY_EMPTY, closes_at: d.toISOString().slice(0, 16) });
+    setForm({ ...BINARY_EMPTY, game_slug: activeGame?.slug ?? 'pubg-mobile', closes_at: d.toISOString().slice(0, 16) });
     setOptions([]);
     setError(''); setOpen(true);
   }
@@ -57,6 +64,7 @@ export default function AdminWagersPage() {
       no_price:  String(row.no_price  ?? '38'),
       closes_at: closesAt,
       type:      String(row.type ?? 'binary'),
+      game_slug: String(row.game_slug ?? (gameSlug === 'all' ? 'pubg-mobile' : gameSlug)),
     });
     const rawOptions = row.options;
     if (Array.isArray(rawOptions)) {
@@ -97,6 +105,7 @@ export default function AdminWagersPage() {
         subtitle:  form.subtitle,
         closes_at: form.closes_at,
         type:      form.type,
+        game_slug: form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
       };
 
       if (form.type === 'binary') {
@@ -158,9 +167,10 @@ export default function AdminWagersPage() {
   }
 
   const f = (k: keyof typeof BINARY_EMPTY) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm(p => ({ ...p, [k]: e.target.value }));
 
+  const filteredRows = gameSlug === 'all' ? rows : rows.filter((row) => String(row.game_slug ?? '') === gameSlug);
   const isActive     = (r: Record<string, unknown>) => r.status === 'Active';
   const settlingRow  = settleId ? rows.find(r => String(r.id) === settleId) : null;
   const settlingType = String(settlingRow?.type ?? 'binary');
@@ -173,15 +183,17 @@ export default function AdminWagersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-fn-text uppercase tracking-widest">Wagers</h1>
-          <p className="text-fn-muted text-xs mt-0.5">{rows.length} market{rows.length !== 1 ? 's' : ''}</p>
+          <p className="text-fn-muted text-xs mt-0.5">{filteredRows.length} market{filteredRows.length !== 1 ? 's' : ''}{activeGame ? ` — ${activeGame.name}` : ''}</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-fn-green text-fn-black text-sm font-bold px-4 py-2 rounded uppercase tracking-widest hover:bg-fn-gdim transition-colors">
           <Plus className="w-4 h-4" /> Add Wager
         </button>
       </div>
 
+      <AdminGameFilter currentSlug={gameSlug} />
+
       <AdminTable
-        loading={loading} rows={rows} onEdit={openEdit} onDelete={handleDelete}
+        loading={loading} rows={filteredRows} onEdit={openEdit} onDelete={handleDelete}
         emptyText="No wagers yet"
         extraActions={row => (
           <>
@@ -214,6 +226,7 @@ export default function AdminWagersPage() {
               )}
             </div>
           )},
+          { key: 'game_slug', label: 'Game' },
           { key: 'type',      label: 'Type',   render: r => r.type === 'player_pick'
               ? <span className="text-fn-yellow text-xs">Player Pick</span>
               : <span className="text-fn-green text-xs">Binary</span> },
@@ -235,6 +248,12 @@ export default function AdminWagersPage() {
           </Field>
           <Field label="Subtitle">
             <Input value={form.subtitle} onChange={f('subtitle')} placeholder="Short context line" />
+          </Field>
+
+          <Field label="Game">
+            <Select value={form.game_slug} onChange={f('game_slug')}>
+              {GAMES.map((game) => <option key={game.slug} value={game.slug}>{game.name}</option>)}
+            </Select>
           </Field>
 
           {/* Type toggle */}
@@ -386,4 +405,8 @@ export default function AdminWagersPage() {
       </AdminModal>
     </div>
   );
+}
+
+export default function AdminWagersPage() {
+  return <Suspense><AdminWagersContent /></Suspense>;
 }

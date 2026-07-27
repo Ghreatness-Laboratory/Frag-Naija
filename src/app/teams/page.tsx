@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, Shield, Star, Flame } from "lucide-react";
+import { Trophy, Users, Shield, Star, Flame, Search } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent, type DummyTeam } from "@/lib/game-content";
 
@@ -28,6 +28,7 @@ type Team = {
   strength: number | null;
   achievements: string[] | string | null;
   players: Athlete[];
+  game_slug?: string | null;
 };
 
 function parseArray(val: string[] | string | null | undefined): string[] {
@@ -48,6 +49,7 @@ export default function TeamsPage() {
   const [apiTeams, setApiTeams] = useState<Team[]>([]);
   const [selected, setSelected] = useState<Team | null>(null);
   const [loading, setLoading]   = useState(true);
+  const [search, setSearch] = useState("");
 
   const primary   = selectedGame.colors.primary;
   const secondary = selectedGame.colors.secondary;
@@ -55,7 +57,7 @@ export default function TeamsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/teams", { cache: "no-store" });
+    const res = await fetch(`/api/teams?game_slug=${selectedGame.slug}`, { cache: "no-store" });
     if (res.ok) {
       const data: Team[] = await res.json();
       const sorted = [...data].sort((a, b) => {
@@ -67,24 +69,26 @@ export default function TeamsPage() {
       setApiTeams(sorted);
     }
     setLoading(false);
-  }, []);
+  }, [selectedGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 
   const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
-  const apiForGame  = apiTeams.filter(
-    (t) => t.region?.toLowerCase().includes('nigeria') || selectedGame.slug === 'pubg-mobile'
-  );
-  const teams: Team[] = apiForGame.length > 0
+  const apiForGame = apiTeams.filter((t) => (t.game_slug ?? selectedGame.slug) === selectedGame.slug);
+  const gameTeams: Team[] = apiForGame.length > 0
     ? apiForGame
     : (gameContent?.teams as Team[] | undefined) ?? [];
+  const normalizedSearch = search.trim().toLowerCase();
+  const teams = normalizedSearch
+    ? gameTeams.filter((t) => t.name.toLowerCase().includes(normalizedSearch))
+    : gameTeams;
 
   useEffect(() => {
     if (teams.length > 0) {
       const current = selected ? teams.find(t => t.id === selected.id) : null;
       setSelected(current ?? teams[0]);
     }
-  }, [teams.length, selectedGame.slug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [teams.length, selectedGame.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -95,7 +99,7 @@ export default function TeamsPage() {
     );
   }
 
-  if (teams.length === 0) {
+  if (gameTeams.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <Shield className="w-12 h-12" style={{ color: primary }} />
@@ -130,10 +134,21 @@ export default function TeamsPage() {
               {teams.length} {selectedGame.shortName.toUpperCase()} TEAMS
             </span>
           </div>
+          <label className="mt-4 flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-black/70 px-3 py-2 focus-within:border-fn-green/60">
+            <Search size={13} style={{ color: primary }} />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search teams"
+              className="w-full bg-transparent text-xs text-fn-text outline-none placeholder:text-fn-muted"
+            />
+          </label>
         </div>
 
-        <div className="overflow-y-auto max-h-[50vh] lg:max-h-none lg:h-[calc(100vh-13rem)]">
-          {teams.map((team, idx) => {
+        <div className="overflow-y-auto max-h-[50vh] lg:max-h-none lg:h-[calc(100vh-15rem)]">
+          {teams.length === 0 ? (
+            <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">No results found for &quot;{search}&quot;</p>
+          ) : teams.map((team, idx) => {
             const rank = team.rank ?? idx + 1;
             const isActive = (selected?.id ?? teams[0].id) === team.id;
             const wr = winRate(team.wins, team.losses);

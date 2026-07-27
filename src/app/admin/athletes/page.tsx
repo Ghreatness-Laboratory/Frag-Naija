@@ -30,7 +30,7 @@ function matchesGame(row: Record<string, unknown>, slug: string): boolean {
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
-  known_name: '',
+  known_name: '', game_slug: 'pubg-mobile',
   attack: '0', defense: '0', clutch: '0', survival: '0', iq: '0', aggression: '0',
   overall_rating: '0', perks: '', strengths: '', weaknesses: '',
   previous_aliases: [''],
@@ -204,6 +204,7 @@ function AthletesContent() {
       name:           String(row.name   ?? ''),
       ign:            String(row.ign    ?? ''),
       known_name:     String(row.known_name ?? row.ign ?? ''),
+      game_slug:      String(row.game_slug ?? (gameSlug === 'all' ? 'pubg-mobile' : gameSlug)),
       team:           String(row.team   ?? ''),
       role:           String(row.role   ?? ''),
       status:         String(row.status ?? 'Active'),
@@ -250,6 +251,7 @@ function AthletesContent() {
         name:           form.name,
         ign:            form.ign,
         known_name:     form.known_name || form.ign,
+        game_slug:      form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
         team:           form.team,
         role:           form.role,
         status:         form.status,
@@ -298,7 +300,7 @@ function AthletesContent() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug));
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug ?? '') === gameSlug);
 
   return (
     <div className="p-8">
@@ -342,6 +344,7 @@ function AthletesContent() {
           { key: 'name',           label: 'Name' },
           { key: 'ign',            label: 'IGN' },
           { key: 'team',           label: 'Team' },
+          { key: 'game_slug',      label: 'Game' },
           { key: 'role',           label: 'Role' },
           { key: 'overall_rating', label: 'OVR' },
           {
@@ -379,6 +382,12 @@ function AthletesContent() {
 
           <Field label="Known Name / Alias">
             <Input value={form.known_name} onChange={f('known_name')} placeholder="Primary public gamertag" />
+          </Field>
+
+          <Field label="Game">
+            <Select value={form.game_slug} onChange={f('game_slug')}>
+              {GAMES.map((game) => <option key={game.slug} value={game.slug}>{game.name}</option>)}
+            </Select>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
@@ -420,21 +429,21 @@ function AthletesContent() {
 
           {/* Combat attributes */}
           <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
-            Combat Attributes (0–100)
+            Player Card Stats (0–100)
           </p>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Attack">
+            <Field label="ATT / Attack">
               <Input type="number" min="0" max="100" value={form.attack} onChange={f('attack')} placeholder="0" />
             </Field>
-            <Field label="Defense">
+            <Field label="DEF / Defense">
               <Input type="number" min="0" max="100" value={form.defense} onChange={f('defense')} placeholder="0" />
             </Field>
-            <Field label="Clutch">
+            <Field label="CLU / Clutch">
               <Input type="number" min="0" max="100" value={form.clutch} onChange={f('clutch')} placeholder="0" />
             </Field>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Survival">
+            <Field label="SUR / Survival">
               <Input type="number" min="0" max="100" value={form.survival} onChange={f('survival')} placeholder="0" />
             </Field>
             <Field label="IQ">

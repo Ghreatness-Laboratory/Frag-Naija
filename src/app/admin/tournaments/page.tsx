@@ -11,7 +11,7 @@ import { Field, Input, Select, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 
 const EMPTY = {
-  name: '', game: 'PUBG Mobile', prize_pool: '', currency: 'NGN',
+  name: '', game: 'PUBG Mobile', game_slug: 'pubg-mobile', prize_pool: '', currency: 'NGN',
   start_date: '', end_date: '', status: 'Upcoming', format: '', region: 'Nigeria', image_url: '',
 };
 
@@ -41,7 +41,7 @@ function TournamentsContent() {
 
   function openAdd() {
     setEditing(null);
-    setForm({ ...EMPTY, game: activeGame?.name ?? 'PUBG Mobile' });
+    setForm({ ...EMPTY, game: activeGame?.name ?? 'PUBG Mobile', game_slug: activeGame?.slug ?? 'pubg-mobile' });
     setError(''); setOpen(true);
   }
 
@@ -50,6 +50,7 @@ function TournamentsContent() {
     setForm({
       name:       String(row.name       ?? ''),
       game:       String(row.game       ?? 'PUBG Mobile'),
+      game_slug:  String(row.game_slug  ?? (gameSlug === 'all' ? 'pubg-mobile' : gameSlug)),
       prize_pool: String(row.prize_pool ?? ''),
       currency:   String(row.currency   ?? 'NGN'),
       start_date: String(row.start_date ?? ''),
@@ -66,7 +67,7 @@ function TournamentsContent() {
     e.preventDefault();
     setSaving(true); setError('');
     try {
-      const body   = { ...form, prize_pool: Number(form.prize_pool) || 0 };
+      const body   = { ...form, game_slug: form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug), prize_pool: Number(form.prize_pool) || 0 };
       const url    = editing ? `/api/tournaments/${editing.id}` : '/api/tournaments';
       const method = editing ? 'PUT' : 'POST';
       const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -92,12 +93,7 @@ function TournamentsContent() {
     setForm(p => ({ ...p, [k]: e.target.value }));
 
   // Filter rows by selected game
-  const filtered = gameSlug === 'all'
-    ? rows
-    : rows.filter(r => {
-        const gameName = activeGame?.name ?? '';
-        return String(r.game ?? '').toLowerCase().includes(gameName.toLowerCase().split(' ')[0].toLowerCase());
-      });
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug ?? '') === gameSlug);
 
   return (
     <div className="p-8">
@@ -136,6 +132,7 @@ function TournamentsContent() {
         )}
         columns={[
           { key: 'name',       label: 'Name' },
+          { key: 'game_slug',  label: 'Game Slug' },
           { key: 'game',       label: 'Game', render: r => {
             const g = GAMES.find(g => g.name === String(r.game));
             return (
@@ -162,8 +159,14 @@ function TournamentsContent() {
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Game" required>
-              <Select value={form.game} onChange={f('game')}>
-                {GAMES.map(g => <option key={g.slug} value={g.name}>{g.name}</option>)}
+              <Select
+                value={form.game_slug}
+                onChange={(event) => {
+                  const next = GAMES.find((game) => game.slug === event.target.value);
+                  setForm((prev) => ({ ...prev, game_slug: event.target.value, game: next?.name ?? prev.game }));
+                }}
+              >
+                {GAMES.map(g => <option key={g.slug} value={g.slug}>{g.name}</option>)}
               </Select>
             </Field>
             <Field label="Region"><Input value={form.region} onChange={f('region')} /></Field>
