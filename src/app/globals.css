@@ -178,7 +178,7 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
 .print-card-only { display: none; }
 
 @media print {
-  @page { size: 4.5in 7.2in portrait; margin: 0.15in; }
+  @page { size: 3.5in 5in portrait; margin: 0.12in; }
   body { background: #fff !important; }
   body * { visibility: hidden !important; }
   .print-card-only, .print-card-only * { visibility: visible !important; }
@@ -192,8 +192,8 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
     padding: 0 !important;
   }
   .player-card {
-    width: 4.2in !important;
-    height: 6.72in !important;
+    width: 3.5in !important;
+    height: 5in !important;
     max-width: none !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;

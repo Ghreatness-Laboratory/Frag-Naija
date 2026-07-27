@@ -83,24 +83,28 @@ export async function processWithdrawal(userId, { amount, account_number, bank_c
   return { success: true, reference, amount };
 }
 
-export async function getWagers() {
-  const { data, error } = await supabaseAdmin
+export async function getWagers({ game_slug } = {}) {
+  let query = supabaseAdmin
     .from('wagers')
     .select('*')
     .order('created_at', { ascending: false });
+  if (game_slug) query = query.eq('game_slug', game_slug);
+  const { data, error } = await query;
   if (error) throw error;
 
   return data;
 }
 
-export async function getActiveWagers() {
-  const { data, error } = await supabaseAdmin
+export async function getActiveWagers({ game_slug } = {}) {
+  let query = supabaseAdmin
     .from('wagers')
     .select('*')
     .eq('status', 'Active')
     .gt('closes_at', new Date().toISOString())
     .order('hot', { ascending: false })
     .order('created_at', { ascending: false });
+  if (game_slug) query = query.eq('game_slug', game_slug);
+  const { data, error } = await query;
   if (error) throw error;
 
   return data;
