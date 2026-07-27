@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
+import { GAMES } from "@/lib/games";
 
 type Athlete = {
   id: string;
@@ -99,7 +100,7 @@ function RatingRing({ value, primary }: { value: number; primary: string }) {
 
 export default function AthletesPage() {
   const router = useRouter();
-  const { selectedGame, isHydrated } = useGame();
+  const { selectedGame, setSelectedGame, isHydrated } = useGame();
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [selected, setSelected] = useState<Athlete | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +119,12 @@ export default function AthletesPage() {
     }
     setLoading(false);
   }, [selectedGame.slug]);
+
+  useEffect(() => {
+    const requestedGame = new URLSearchParams(window.location.search).get("game");
+    const game = GAMES.find((item) => item.slug === requestedGame && item.available);
+    if (game && game.slug !== selectedGame.slug) setSelectedGame(game);
+  }, [selectedGame.slug, setSelectedGame]);
 
   useEffect(() => { load(); }, [load]);
 
