@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS athletes (
   previous_aliases JSONB DEFAULT '[]'::jsonb,
   previous_teams   JSONB DEFAULT '[]'::jsonb,
   performance_history JSONB DEFAULT '[]'::jsonb,
+  sensitivity_settings JSONB DEFAULT '{}'::jsonb,
+  control_code TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -61,6 +63,8 @@ ALTER TABLE athletes ADD COLUMN IF NOT EXISTS defense NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS survival NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS iq NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS clutch NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS sensitivity_settings JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS control_code TEXT;
 
 ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "athletes_public_read"  ON athletes FOR SELECT USING (true);

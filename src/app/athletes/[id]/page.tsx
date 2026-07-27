@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Download, Eye, Flag, Printer, Shield, Trophy, X } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import html2canvas from '@/lib/html2canvas';
+import { combatAttributes, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 
 type Achievement = { title?: string; date?: string };
 type Team = { id: string; name: string; logo_url: string | null; rank: number | null };
@@ -33,6 +34,9 @@ type Athlete = {
   previous_teams?: { team: string; years: string }[] | string | null;
   achievements?: Achievement[] | string | null;
   bio: string | null;
+  game_slug?: string | null;
+  sensitivity_settings?: Record<string, unknown> | string | null;
+  control_code?: string | null;
 };
 
 function parseArray(v: unknown) {
@@ -50,21 +54,10 @@ function parseObjects<T extends Record<string, unknown> = Achievement>(v: unknow
   return (Array.isArray(a) ? a.filter((x) => x && typeof x === 'object') : []) as T[];
 }
 
-function statValue(value: number | null | undefined, fallback: number) {
-  const numeric = Number(value ?? fallback ?? 0);
-  return Number.isFinite(numeric) ? Math.max(0, Math.min(99, Math.round(numeric))) : 0;
-}
-
 function PlayerCard({ athlete, team, rating, primary, gameName }: { athlete: Athlete; team: Team | null; rating: number; primary: string; gameName: string }) {
   const displayName = athlete.known_name || athlete.ign;
   const cardNumber = athlete.jersey_number || team?.rank || Math.max(1, Math.round(Number(rating) || 0));
-  const stats = [
-    { label: 'ATT', value: statValue(athlete.attack, athlete.kills) },
-    { label: 'DEF', value: statValue(athlete.defense, athlete.winrate) },
-    { label: 'SUR', value: statValue(athlete.survival, athlete.damage ? athlete.damage / 10 : athlete.winrate) },
-    { label: 'IQ', value: statValue(athlete.iq, athlete.assists) },
-    { label: 'CLU', value: statValue(athlete.clutch, rating) },
-  ];
+  const stats = combatAttributes(athlete as unknown as Record<string, unknown>);
 
   return (
     <div
@@ -113,8 +106,8 @@ function PlayerCard({ athlete, team, rating, primary, gameName }: { athlete: Ath
       <div className="absolute bottom-8 left-5 right-5 z-20 grid grid-cols-5 overflow-hidden rounded-lg border bg-black/78" style={{ borderColor: `${primary}70` }}>
         {stats.map((stat) => (
           <div key={stat.label} className="border-r border-white/10 px-1.5 py-2 text-center last:border-r-0">
-            <div className="font-display text-2xl font-black leading-none text-white">{stat.value}</div>
-            <div className="mt-1 text-[8px] font-black tracking-widest" style={{ color: primary }}>{stat.label}</div>
+            <div className="font-display text-2xl font-black leading-none" style={{ color: stat.color }}>{stat.value}</div>
+            <div className="mt-1 text-[8px] font-black tracking-widest" style={{ color: stat.color }}>{stat.label}</div>
           </div>
         ))}
       </div>
@@ -150,12 +143,22 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
   const aliases = parseArray(a.previous_aliases);
   const previousTeams = parseObjects<{ team?: string; years?: string }>(a.previous_teams);
   const achievements = parseObjects<Achievement>(a.achievements);
-  const rating = Number(a.overall_rating ?? a.rating ?? 0);
+  const rating = normalizeRating(a.overall_rating, a.rating);
+  const profileAttrs = combatAttributes(a as unknown as Record<string, unknown>);
+  const showLoadout = isShooterGame(a.game_slug);
+  const sensitivityEntries = (() => {
+    const value = a.sensitivity_settings;
+    if (!value) return [];
+    if (typeof value === 'string') {
+      try { return Object.entries(JSON.parse(value)); } catch { return value.trim() ? [['Settings', value]] : []; }
+    }
+    return Object.entries(value);
+  })();
   const displayName = a.known_name || a.ign;
 
   async function handleDownload() {
     const card = document.getElementById('player-card-export');
-    if (!card) return;
+    if (!card) { console.error('Player card export element was not found'); return; }
     setDownloading(true);
     try {
       const canvas = await html2canvas(card, 3);
@@ -191,7 +194,13 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {a.bio && <p className="mt-5 text-sm leading-relaxed text-fn-muted">{a.bio}</p>}
+          {a.bio && (
+            <div className="mt-5 space-y-3 rounded-sm border border-fn-gborder/70 bg-fn-dark/40 p-4 text-sm leading-7 text-fn-muted sm:p-5">
+              {a.bio.split(/\n{2,}|\r?\n/).map((paragraph) => paragraph.trim()).filter(Boolean).map((paragraph, index) => (
+                <p key={index} className="max-w-prose">{paragraph}</p>
+              ))}
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-3">
             <button onClick={() => setCardOpen(true)} className="fn-btn inline-flex items-center gap-2"><Eye size={14} />View Player Card</button>
@@ -200,9 +209,32 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
           </div>
         </section>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[["KLS", a.kills], ["AST", a.assists], ["DMG", a.damage], ["WR", `${a.winrate}%`]].map(([l, v]) => <div key={l} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center"><div className="font-display text-2xl font-black text-fn-text">{v}</div><div className="fn-label">{l}</div></div>)}
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {profileAttrs.map((stat) => (
+            <div key={stat.label} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center">
+              <div className="font-display text-2xl font-black" style={{ color: stat.color }}>{stat.value}</div>
+              <div className="fn-label">{stat.label}</div>
+            </div>
+          ))}
         </div>
+
+        {showLoadout && (
+          <article className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-4">
+            <h2 className="fn-label mb-3" style={{ color: primary }}>LOADOUT / SETTINGS</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                <div className="fn-label mb-2">Sensitivity</div>
+                {sensitivityEntries.length ? sensitivityEntries.map(([key, value]) => (
+                  <p key={String(key)} className="flex justify-between gap-3 border-b border-fn-gborder/50 py-1 text-xs last:border-b-0"><span className="capitalize text-fn-muted">{String(key).replaceAll('_', ' ')}</span><span className="font-bold text-fn-text">{String(value)}</span></p>
+                )) : <p className="text-xs text-fn-muted">No sensitivity settings recorded.</p>}
+              </div>
+              <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                <div className="fn-label mb-2">Control Code</div>
+                <p className="break-all font-mono text-xs font-bold text-fn-text">{a.control_code || 'No control code recorded.'}</p>
+              </div>
+            </div>
+          </article>
+        )}
 
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           <article className="rounded-sm border border-fn-gborder bg-fn-card p-4">
@@ -237,6 +269,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
       </div>
 
       <div className="print-card-only"><PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
+      <div id="player-card-export" className="pointer-events-none fixed -left-[9999px] top-0 z-[-1]" aria-hidden="true"><PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
     </div>
   );
 }

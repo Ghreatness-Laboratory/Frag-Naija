@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
 import { GAMES } from "@/lib/games";
+import { combatAttributes } from "@/lib/athlete-display";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
-  rating: number; kills: number; assists: number; winrate: number;
+  rating: number; overall_rating?: number; kills: number; assists: number; winrate: number;
+  attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
   photo_url: string | null; status: string;
 };
 
@@ -171,6 +173,7 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
 function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
   const rankColors = [primary, "rgb(var(--fn-yellow))", "#C0C0C0", "#00aaff"];
   const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
+  const attrs = combatAttributes(athlete as unknown as Record<string, unknown>);
   return (
     <motion.div variants={reveal} whileHover={{ y: -6, rotateX: 2 }} className="flex-shrink-0">
     <Link href={`/athletes/${athlete.id}`} className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
@@ -198,15 +201,11 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
       <div className="p-3">
         <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-fn-text"><Medal size={10} style={{ color: col }} />{athlete.ign}</div>
         <div className="fn-label mb-2">{athlete.role || "Player"}</div>
-        <div className="grid grid-cols-3 gap-1">
-          {[
-            { v: String(athlete.kills),   l: "ATT" },
-            { v: `${athlete.winrate}%`,   l: "DEF"  },
-            { v: String(Number(athlete.rating).toFixed(1)), l: "RTG" },
-          ].map(({ v, l }) => (
-            <div key={l} className="text-center">
-              <div className="text-[10px] font-bold text-fn-text">{v}</div>
-              <div className="fn-label text-[7px]">{l}</div>
+        <div className="grid grid-cols-5 gap-1">
+          {attrs.map(({ value, label, color }) => (
+            <div key={label} className="text-center">
+              <div className="text-[10px] font-bold" style={{ color }}>{value}</div>
+              <div className="fn-label text-[7px]" style={{ color }}>{label}</div>
             </div>
           ))}
         </div>

@@ -6,6 +6,7 @@ import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, 
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
+import { combatAttributes, normalizeRating } from "@/lib/athlete-display";
 
 type Athlete = {
   id: string;
@@ -39,11 +40,11 @@ type Athlete = {
 };
 
 function computeRating(a: Athlete): number {
-  if (a.overall_rating) return Number(a.overall_rating);
+  if (a.overall_rating) return normalizeRating(a.overall_rating);
   const vals = [a.attack, a.defense, a.clutch, a.survival, a.iq, a.aggression]
     .map(Number).filter((v) => v > 0);
   if (!vals.length) return Number(a.overall_rating ?? 0);
-  return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
+  return normalizeRating(vals.reduce((s, v) => s + v, 0) / vals.length);
 }
 
 function parseArray(val: string[] | string | null | undefined): string[] {
@@ -136,8 +137,8 @@ export default function AthletesPage() {
   useEffect(() => {
     const requestedGame = new URLSearchParams(window.location.search).get("game");
     const game = GAMES.find((item) => item.slug === requestedGame && item.available);
-    if (game && game.slug !== selectedGame.slug) setSelectedGame(game);
-  }, [selectedGame.slug, setSelectedGame]);
+    if (game && game.slug !== selectedGame?.slug) setSelectedGame(game);
+  }, [selectedGame?.slug, setSelectedGame]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -205,11 +206,7 @@ export default function AthletesPage() {
   const displayName = a.known_name || a.ign;
 
   const attrs = [
-    { label: "ATTACK",     value: a.attack ?? 0,     color: primary },
-    { label: "DEFENSE",    value: a.defense ?? 0,    color: "#00aaff" },
-    { label: "CLUTCH",     value: a.clutch ?? 0,     color: "rgb(var(--fn-yellow))" },
-    { label: "SURVIVAL",   value: a.survival ?? 0,   color: "rgb(var(--fn-green))" },
-    { label: "IQ",         value: a.iq ?? 0,         color: secondary },
+    ...combatAttributes(a as unknown as Record<string, unknown>).map((attr) => ({ label: attr.name.toUpperCase(), value: attr.value, color: attr.color })),
     { label: "AGGRESSION", value: a.aggression ?? 0, color: isFF ? "#FFD700" : "#ff8c42" },
   ];
 
