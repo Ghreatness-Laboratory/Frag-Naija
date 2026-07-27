@@ -316,3 +316,34 @@ UPDATE shop_items  SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game
 ALTER TABLE shop_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "shop_items_public_read" ON shop_items FOR SELECT USING (status = 'Published');
 CREATE POLICY "shop_items_admin_write" ON shop_items FOR ALL USING (false);
+
+-- ─── HOMEPAGE SETTINGS ──────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS homepage_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE homepage_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "homepage_settings_public_read" ON homepage_settings FOR SELECT USING (true);
+CREATE POLICY "homepage_settings_admin_write" ON homepage_settings FOR ALL USING (false);
+
+INSERT INTO homepage_settings (key, value) VALUES
+  ('hero_eyebrow', 'NIGERIA''S PREMIERE ESPORTS PLATFORM'),
+  ('hero_headline', 'FRAG NAIJA'),
+  ('hero_tagline', 'Nigeria''s premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.'),
+  ('stat_players', '1,242+'),
+  ('stat_tournaments', '48'),
+  ('stat_championships', '12'),
+  ('stat_prize_pool', '₦17.2M'),
+  ('recruitment_headline', 'RECRUITMENT OPEN'),
+  ('recruitment_body', 'JOIN FRAG NAIJA AND GET RANKED IN THE OPEN TRIALS.'),
+  ('recruitment_cta', 'JOIN THE RANKS'),
+  ('popup_title', ''),
+  ('popup_body', ''),
+  ('popup_cta', ''),
+  ('featured_athlete_ids', ''),
+  ('featured_team_ids', ''),
+  ('featured_tournament_ids', '')
+ON CONFLICT (key) DO NOTHING;

@@ -159,7 +159,7 @@ export default function SelectGamePage() {
   function handleContinue() {
     if (!picked) return;
     setSelectedGame(picked);       // → writes localStorage + sets fn-game cookie
-    router.push('/');
+    router.push(`/${picked.slug}`);
   }
 
   const btnStyle = picked

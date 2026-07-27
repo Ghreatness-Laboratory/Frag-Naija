@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays } from "lucide-react";
-import { useGame } from "@/context/GameContext";
-import { getGameContent } from "@/lib/game-content";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -27,6 +25,8 @@ type Transfer = {
 type ShopItem = {
   id: string; name: string; price: number; currency: string | null; image_url: string | null; category: string | null; status: string | null;
 };
+
+type HomepageSettings = Record<string, string>;
 
 type Tournament = {
   id: string; name: string; start_date: string | null; end_date: string | null; status: string; game: string | null; prize_pool: number | null; currency: string | null;
@@ -221,7 +221,6 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
 }
 
 export default function HomePage() {
-  const { selectedGame, isHydrated } = useGame();
   const [ticker, setTicker]       = useState(0);
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
@@ -229,13 +228,17 @@ export default function HomePage() {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
 
-  const primary   = selectedGame.colors.primary;
-  const secondary = selectedGame.colors.secondary;
-  const isFF      = selectedGame.slug === 'free-fire';
+  const primary   = 'rgb(var(--fn-green))';
+  const secondary = 'rgb(var(--fn-yellow))';
+  const isFF      = false;
   const reduceMotion = useReducedMotion();
-  const tickerItems = TICKER_ITEMS[selectedGame.slug] ?? TICKER_ITEMS.default;
-  const tagline     = HERO_TAGLINES[selectedGame.slug] ?? HERO_TAGLINES['pubg-mobile'];
+  const tickerItems = TICKER_ITEMS.default;
+  const tagline     = homepageSettings.hero_tagline ?? "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.";
+  const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
+  const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
+  const [headlineFirst, ...headlineRest] = heroHeadline.split(" ");
 
   useEffect(() => {
     const t = setInterval(() => setTicker((p) => (p + 1) % tickerItems.length), 4000);
@@ -257,40 +260,20 @@ export default function HomePage() {
       setShopItems(s.slice(0, 4));
       setTournaments(tourneys.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
       setTeams(teamRows.slice(0, 4));
+      setHomepageSettings(settings);
     });
   }, [selectedGame.slug]);
 
-  const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
+  // Neutral all-games dashboard: use all API rows without selected-game filtering.
+  const gameAthletes: Athlete[] = apiAthletes;
 
-  // Athletes: filter API by game, fall back to game-specific dummies
-  const gameAthletes: Athlete[] = (() => {
-    const fromApi = apiAthletes.filter(a =>
-      a.role || selectedGame.slug === 'pubg-mobile'
-    );
-    if (fromApi.length > 0) return fromApi;
-    return (gameContent?.athletes ?? []).map(a => ({
-      ...a,
-      rating: a.overall_rating,
-      kills: a.kills,
-      assists: a.assists,
-      winrate: a.winrate,
-    })) as Athlete[];
-  })();
-
-  // Transfers: fall back to game-specific dummies
-  const transfers: Transfer[] = apiTransfers.length > 0
-    ? apiTransfers
-    : (gameContent?.transfers ?? []).map(t => ({
-        id: t.id, from_team: t.from_team, to_team: t.to_team,
-        fee: t.fee, status: t.status, date: t.date,
-        athletes: t.athletes,
-      }));
+  const transfers: Transfer[] = apiTransfers;
 
   const stats = [
-    { value: "1,242+", label: "Players",  icon: Users  },
-    { value: "48",     label: "Tournaments",      icon: Trophy },
-    { value: "12",     label: "Championships",    icon: Award  },
-    { value: "₦17.2M",  label: "Total Prize Pool", icon: Zap    },
+    { value: homepageSettings.stat_players ?? "1,242+", label: "Players",  icon: Users  },
+    { value: homepageSettings.stat_tournaments ?? "48", label: "Tournaments", icon: Trophy },
+    { value: homepageSettings.stat_championships ?? "12", label: "Championships", icon: Award },
+    { value: homepageSettings.stat_prize_pool ?? "₦17.2M", label: "Total Prize Pool", icon: Zap },
   ];
 
   return (
@@ -350,10 +333,10 @@ export default function HomePage() {
             NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
           </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
-            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">FRAG</span>
+            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">{headlineFirst}</span>
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl tracking-tight"
               style={{ color: primary, textShadow: `0 0 40px ${primary}40` }}>
-              NAIJA
+              {headlineRest.join(" ") || "NAIJA"}
             </span>
           </motion.h1>
           {/* Active game badge */}
@@ -363,7 +346,7 @@ export default function HomePage() {
               className="electric-live inline-flex items-center gap-1.5 text-[9px] font-bold px-3 py-1 tracking-widest uppercase border rounded-sm"
               style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
             >
-              <span className="live-dot !h-1.5 !w-1.5" /> {selectedGame.name.toUpperCase()} MODE ACTIVE
+              <span className="live-dot !h-1.5 !w-1.5" /> ALL GAMES DASHBOARD
             </span>
           </motion.div>
           <motion.p variants={reveal} className="text-fn-text text-xs sm:text-sm tracking-wider max-w-lg mb-8 leading-relaxed">
@@ -498,7 +481,7 @@ export default function HomePage() {
       {/* Events Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder" style={{ background: `${primary}04` }}>
         <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><CalendarDays size={9} style={{ color: primary }} /> EVENTS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TOURNAMENTS</h2></div><Link href="/tournaments" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL EVENTS <ChevronRight size={11} /></Link></div>
-        {tournaments.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No live or upcoming tournaments yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{tournaments.map((event) => <Link key={event.id} href="/tournaments" className="rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="fn-label mb-2">{event.game || selectedGame.name}</div><h3 className="text-sm font-black uppercase text-fn-text">{event.name}</h3><div className="mt-3 flex items-center justify-between"><span className="text-[9px] font-bold uppercase" style={{ color: primary }}>{event.status}</span><span className="text-[9px] text-fn-muted">{event.start_date ? new Date(event.start_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }) : 'TBA'}</span></div></Link>)}</motion.div>}
+        {tournaments.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No live or upcoming tournaments yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{tournaments.map((event) => <Link key={event.id} href="/tournaments" className="rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="fn-label mb-2">{event.game || "All Games"}</div><h3 className="text-sm font-black uppercase text-fn-text">{event.name}</h3><div className="mt-3 flex items-center justify-between"><span className="text-[9px] font-bold uppercase" style={{ color: primary }}>{event.status}</span><span className="text-[9px] text-fn-muted">{event.start_date ? new Date(event.start_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }) : 'TBA'}</span></div></Link>)}</motion.div>}
       </motion.section>
 
       {/* Teams Preview */}
@@ -512,7 +495,7 @@ export default function HomePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="fn-label mb-1 flex items-center gap-1.5">
-              <TrendingUp size={9} style={{ color: primary }} /> {selectedGame.shortName.toUpperCase()} TRANSFER ACTIVITY
+              <TrendingUp size={9} style={{ color: primary }} /> ALL GAMES TRANSFER ACTIVITY
             </p>
             <h2 className="font-display text-2xl font-black uppercase text-fn-text">PENDING PAYABLES</h2>
           </div>
@@ -578,12 +561,10 @@ export default function HomePage() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp size={12} style={{ color: primary }} />
-              <span className="fn-label font-bold" style={{ color: primary }}>RECRUITMENT OPEN</span>
+              <span className="fn-label font-bold" style={{ color: primary }}>{homepageSettings.recruitment_headline ?? "RECRUITMENT OPEN"}</span>
             </div>
             <p className="text-xs text-fn-text tracking-wide">
-              {isFF
-                ? "FRAG QUALIFIED FREE FIRE PLAYERS — OPEN TRIALS NOW LIVE"
-                : "FRAG QUALIFIED ATHLETES IN THE OPEN TRIALS."}
+              {homepageSettings.recruitment_body ?? "FRAG QUALIFIED ATHLETES IN THE OPEN TRIALS."}
             </p>
           </div>
           <Link
@@ -591,7 +572,7 @@ export default function HomePage() {
             className="whitespace-nowrap text-[10px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
             style={{ background: primary, color: 'rgb(var(--fn-black))' }}
           >
-            JOIN THE RANKS
+            {homepageSettings.recruitment_cta ?? "JOIN THE RANKS"}
           </Link>
         </div>
       </motion.section>
