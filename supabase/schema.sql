@@ -347,3 +347,36 @@ INSERT INTO homepage_settings (key, value) VALUES
   ('featured_team_ids', ''),
   ('featured_tournament_ids', '')
 ON CONFLICT (key) DO NOTHING;
+
+-- ─── ESPORTS ORGANIZATIONS ─────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS organizations (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name         TEXT NOT NULL,
+  logo_url     TEXT,
+  region       TEXT,
+  founded_year INTEGER,
+  founded_date DATE,
+  description  TEXT,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS organization_achievements (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  title           TEXT NOT NULL,
+  date            DATE,
+  game_slug       TEXT,
+  description     TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE teams ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_achievements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "organizations_public_read" ON organizations FOR SELECT USING (true);
+CREATE POLICY "organizations_admin_write" ON organizations FOR ALL USING (false);
+CREATE POLICY "organization_achievements_public_read" ON organization_achievements FOR SELECT USING (true);
+CREATE POLICY "organization_achievements_admin_write" ON organization_achievements FOR ALL USING (false);

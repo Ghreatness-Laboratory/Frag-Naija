@@ -12,6 +12,7 @@ const navLinks = [
   { label: "Tournaments",     href: "/tournaments" },
   { label: "Athletes",        href: "/athletes" },
   { label: "Teams",           href: "/teams" },
+  { label: "Organizations",   href: "/organizations" },
   { label: "Transfer Window", href: "/transfer-window" },
   { label: "Highlights",      href: "/highlights" },
 ];
