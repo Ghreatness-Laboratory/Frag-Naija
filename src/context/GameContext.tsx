@@ -10,6 +10,8 @@ import {
 } from 'react';
 import { type Game, GAMES } from '@/lib/games';
 
+type AuthUser = { preferred_game_slug?: string | null };
+
 interface GameContextValue {
   /** The currently active game. Null means the user is in a neutral all-games context. */
   selectedGame: Game | null;
@@ -32,12 +34,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(LS_KEY);
-    if (stored) {
-      const found = GAMES.find((g) => g.slug === stored);
-      if (found) setGameState(found);
+    let active = true;
+
+    async function hydrateGame() {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        if (!active) return;
+
+        if (!res.ok) {
+          setGameState(null);
+          localStorage.removeItem(LS_KEY);
+          setIsHydrated(true);
+          return;
+        }
+
+        const user = (await res.json()) as AuthUser;
+        const stored = localStorage.getItem(LS_KEY);
+        const preferredSlug = user.preferred_game_slug || stored;
+        const found = GAMES.find((g) => g.slug === preferredSlug && g.available) ?? null;
+        setGameState(found);
+      } catch {
+        if (active) setGameState(null);
+      } finally {
+        if (active) setIsHydrated(true);
+      }
     }
-    setIsHydrated(true);
+
+    hydrateGame();
+    return () => { active = false; };
   }, []);
 
   const setSelectedGame = useCallback((game: Game | null) => {

@@ -7,21 +7,21 @@
 /* ─── DARK MODE (default) ──────────────────────────────────────────────────── */
 /* Values are space-separated R G B — used with rgb(var(--x) / alpha) in Tailwind */
 :root, html, html.dark {
-  --fn-black:   4 9 4;
-  --fn-dark:    7 13 7;
-  --fn-card:    12 26 12;
-  --fn-card2:   15 34 15;
-  --fn-green:   0 255 65;
-  --fn-gdim:    0 204 51;
-  --fn-gborder: 26 58 26;
-  --fn-yellow:  240 192 64;
-  --fn-amber:   232 160 32;
-  --fn-red:     255 65 65;
-  --fn-pink:    255 107 138;
-  --fn-muted:   61 92 61;
-  --fn-text:    184 204 184;
-  --background: #040904;
-  --foreground: #b8ccb8;
+  --fn-black:   5 10 8;
+  --fn-dark:    10 18 14;
+  --fn-card:    14 27 21;
+  --fn-card2:   20 38 30;
+  --fn-green:   0 230 92;
+  --fn-gdim:    0 176 70;
+  --fn-gborder: 42 72 58;
+  --fn-yellow:  236 181 64;
+  --fn-amber:   217 142 38;
+  --fn-red:     239 68 68;
+  --fn-pink:    236 72 153;
+  --fn-muted:   132 158 143;
+  --fn-text:    232 242 236;
+  --background: #050a08;
+  --foreground: #e8f2ec;
   /* Hero gradient */
   --hero-from: #0d2010;
   --hero-to:   #040904;
@@ -32,21 +32,21 @@
 
 /* ─── LIGHT MODE ─────────────────────────────────────────────────────────────*/
 html.light {
-  --fn-black:   247 250 247;
-  --fn-dark:    235 243 235;
+  --fn-black:   247 250 248;
+  --fn-dark:    233 241 236;
   --fn-card:    255 255 255;
-  --fn-card2:   241 247 241;
-  --fn-green:   0 122 26;
-  --fn-gdim:    0 96 20;
-  --fn-gborder: 189 213 189;
-  --fn-yellow:  142 94 0;
-  --fn-amber:   128 82 0;
-  --fn-red:     184 28 28;
-  --fn-pink:    174 39 74;
-  --fn-muted:   81 112 81;
-  --fn-text:    21 36 21;
-  --background: #f7faf7;
-  --foreground: #152415;
+  --fn-card2:   240 247 243;
+  --fn-green:   0 130 64;
+  --fn-gdim:    0 104 51;
+  --fn-gborder: 184 207 193;
+  --fn-yellow:  151 99 16;
+  --fn-amber:   139 88 14;
+  --fn-red:     185 28 28;
+  --fn-pink:    190 24 93;
+  --fn-muted:   78 102 88;
+  --fn-text:    18 31 24;
+  --background: #f7faf8;
+  --foreground: #121f18;
   --hero-from: #dff1df;
   --hero-to:   #f7faf7;
   --scroll-thumb: #b7d4b7;

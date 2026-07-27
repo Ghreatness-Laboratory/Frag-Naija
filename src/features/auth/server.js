@@ -19,11 +19,11 @@ export async function loginWithPassword({ email, password }) {
   return data;
 }
 
-export async function registerUser({ email, password, username }) {
+export async function registerUser({ email, password, username, preferred_game_slug }) {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    user_metadata: { username: username || email.split('@')[0] },
+    user_metadata: { username: username || email.split('@')[0], preferred_game_slug: preferred_game_slug || null },
     email_confirm: true,
   });
   if (error) throw error;
@@ -82,6 +82,7 @@ export async function getCurrentUser() {
     id:           user.id,
     email:        user.email,
     username:     user.user_metadata?.username,
+    preferred_game_slug: user.user_metadata?.preferred_game_slug ?? null,
     provider:     user.app_metadata?.provider ?? 'email',
     totp_enabled: factors.some(f => f.status === 'verified'),
     factors,
