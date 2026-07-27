@@ -420,21 +420,21 @@ function AthletesContent() {
 
           {/* Combat attributes */}
           <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
-            Combat Attributes (0–100)
+            Player Card Stats (0–100)
           </p>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Attack">
+            <Field label="ATT / Attack">
               <Input type="number" min="0" max="100" value={form.attack} onChange={f('attack')} placeholder="0" />
             </Field>
-            <Field label="Defense">
+            <Field label="DEF / Defense">
               <Input type="number" min="0" max="100" value={form.defense} onChange={f('defense')} placeholder="0" />
             </Field>
-            <Field label="Clutch">
+            <Field label="CLU / Clutch">
               <Input type="number" min="0" max="100" value={form.clutch} onChange={f('clutch')} placeholder="0" />
             </Field>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Survival">
+            <Field label="SUR / Survival">
               <Input type="number" min="0" max="100" value={form.survival} onChange={f('survival')} placeholder="0" />
             </Field>
             <Field label="IQ">

@@ -37,6 +37,11 @@ CREATE TABLE IF NOT EXISTS athletes (
   assists     INT  DEFAULT 0,
   damage      INT  DEFAULT 0,
   winrate     NUMERIC(5,2) DEFAULT 0,
+  attack      NUMERIC(5,2) DEFAULT 0,
+  defense     NUMERIC(5,2) DEFAULT 0,
+  survival    NUMERIC(5,2) DEFAULT 0,
+  iq          NUMERIC(5,2) DEFAULT 0,
+  clutch      NUMERIC(5,2) DEFAULT 0,
   photo_url   TEXT,
   status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Free Agent')),
   bio         TEXT,
@@ -47,6 +52,12 @@ CREATE TABLE IF NOT EXISTS athletes (
   performance_history JSONB DEFAULT '[]'::jsonb,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS attack NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS defense NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS survival NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS iq NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS clutch NUMERIC(5,2) DEFAULT 0;
 
 ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "athletes_public_read"  ON athletes FOR SELECT USING (true);
