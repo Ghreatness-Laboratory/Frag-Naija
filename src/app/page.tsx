@@ -264,7 +264,7 @@ export default function HomePage() {
       setApiTransfers(transfers.slice(0, 4));
       setShopItems(items.slice(0, 4));
       setTournaments(events.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
-      setTeams(teamList.slice(0, 6));
+      setTeams(teamList.slice(0, 4));
       setHomepageSettings(settings && !Array.isArray(settings) ? settings as HomepageSettings : {});
     });
   }, []);
