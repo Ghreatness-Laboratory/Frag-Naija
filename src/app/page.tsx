@@ -5,13 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
 import { GAMES } from "@/lib/games";
-import { useGame } from "@/context/GameContext";
 import { combatAttributes } from "@/lib/athlete-display";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
   rating: number; overall_rating?: number; kills: number; assists: number; winrate: number;
-  attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number; game_slug?: string | null;
+  attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
   photo_url: string | null; status: string;
 };
 
