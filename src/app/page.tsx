@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
 import { GAMES } from "@/lib/games";
 import { combatAttributes } from "@/lib/athlete-display";
+import { useGame } from "@/context/GameContext";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
