@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays } from "lucide-react";
+import { GAMES } from "@/lib/games";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -33,7 +34,7 @@ type Tournament = {
 };
 
 type Team = {
-  id: string; name: string; logo_url: string | null; region: string | null; rank: number | null; wins: number; losses: number; kills: number; strength: number | null; players?: Athlete[];
+  id: string; name: string; logo_url: string | null; region: string | null; rank: number | null; wins: number; losses: number; kills: number; strength: number | null; game_slug?: string | null; total_ranking_points?: number; power_rank?: number; players?: Athlete[];
 };
 
 const TICKER_ITEMS: Record<string, string[]> = {
@@ -77,15 +78,6 @@ function formatStat(value: string, current: number) {
   return String(Math.round(current));
 }
 
-const HERO_TAGLINES: Record<string, string> = {
-  'free-fire':        "Survive the island. Claim the Booyah. Nigeria's fiercest Free Fire circuits are live.",
-  'pubg-mobile':      "Nigeria's premier esports command platform. Compete in elite PUBG tournaments and place tactical wagers.",
-  'cod-mobile':       "Drop in. Dominate. Nigeria's Call of Duty Mobile scene — ranked matches, tournaments, and live wagers.",
-  'ea-fc-26':         "Lace up for Nigeria's top EA FC 26 leagues. Squad battles, tournaments, and live match wagers.",
-  'mortal-kombat':    "Finish them. Nigeria's Mortal Kombat arena — brutal kombat, ranked ladders, and live wagers.",
-  'efootball':        "Beautiful game, tactical edge. Nigeria's premier eFootball platform — leagues, players, and wagers.",
-  'mobile-legends':   "5v5 glory awaits. Nigeria's Mobile Legends: Bang Bang circuits — drafts, tournaments, and wagers.",
-};
 
 function StatCounter({ value, label, icon: Icon, color }: { value: string; label: string; icon: React.ElementType; color: string }) {
   const reduceMotion = useReducedMotion();
@@ -246,23 +238,36 @@ export default function HomePage() {
   }, [tickerItems.length]);
 
   useEffect(() => {
+    const fetchJson = (url: string, fallback: unknown) =>
+      fetch(url, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : fallback))
+        .catch(() => fallback);
+
     Promise.all([
-      fetch(`/api/athletes?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/wagers/active?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/transfers?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/shop-items?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/tournaments?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/teams?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-    ]).then(([a, w, t, s, tourneys, teamRows]) => {
-      setApiAthletes(a.slice(0, 6));
-      setWagers(w.slice(0, 3));
-      setApiTransfers(t.slice(0, 4));
-      setShopItems(s.slice(0, 4));
-      setTournaments(tourneys.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
-      setTeams(teamRows.slice(0, 4));
-      setHomepageSettings(settings);
+      fetchJson('/api/athletes', []),
+      fetchJson('/api/wagers/active', []),
+      fetchJson('/api/transfers', []),
+      fetchJson('/api/shop-items', []),
+      fetchJson('/api/tournaments', []),
+      fetchJson('/api/teams', []),
+      fetchJson('/api/homepage-settings', {}),
+    ]).then(([a, w, t, s, tourneys, teamRows, settings]) => {
+      const athletes = Array.isArray(a) ? a : [];
+      const activeWagers = Array.isArray(w) ? w : [];
+      const transfers = Array.isArray(t) ? t : [];
+      const items = Array.isArray(s) ? s : [];
+      const events = Array.isArray(tourneys) ? tourneys : [];
+      const teamList = Array.isArray(teamRows) ? teamRows : [];
+
+      setApiAthletes(athletes.slice(0, 6));
+      setWagers(activeWagers.slice(0, 3));
+      setApiTransfers(transfers.slice(0, 4));
+      setShopItems(items.slice(0, 4));
+      setTournaments(events.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
+      setTeams(teamList.slice(0, 6));
+      setHomepageSettings(settings && !Array.isArray(settings) ? settings as HomepageSettings : {});
     });
-  }, [selectedGame.slug]);
+  }, []);
 
   // Neutral all-games dashboard: use all API rows without selected-game filtering.
   const gameAthletes: Athlete[] = apiAthletes;
@@ -330,7 +335,7 @@ export default function HomePage() {
         <motion.div initial="hidden" animate="visible" variants={reveal} transition={{ duration: 0.55 }} className="max-w-4xl relative">
           <p className="fn-label mb-3 flex items-center gap-2">
             <Gamepad2 size={12} style={{ color: primary }} />
-            NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
+            {heroEyebrow}
           </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">{headlineFirst}</span>
@@ -487,7 +492,7 @@ export default function HomePage() {
       {/* Teams Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> POWER RANKINGS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TEAMS</h2></div><Link href="/teams" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL TEAMS <ChevronRight size={11} /></Link></div>
-        {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No teams have been ranked yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{teams.map((team, index) => <Link key={team.id} href={`/teams/${team.id}`} className="rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="flex items-center gap-3"><div className="h-12 w-12 overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark flex items-center justify-center">{team.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <span className="font-display text-xl font-black" style={{ color: primary }}>{team.name[0]}</span>}</div><div><div className="fn-label">#{team.rank ?? index + 1}</div><h3 className="text-sm font-black uppercase text-fn-text">{team.name}</h3></div></div><div className="mt-3 grid grid-cols-3 gap-2 text-center"><div><div className="text-xs font-bold text-fn-text">{team.wins}</div><div className="fn-label">W</div></div><div><div className="text-xs font-bold text-fn-text">{team.losses}</div><div className="fn-label">L</div></div><div><div className="text-xs font-bold text-fn-text">{team.kills}</div><div className="fn-label">KLS</div></div></div></Link>)}</motion.div>}
+        {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No teams have been ranked yet.</p> : <motion.div variants={cardStagger} className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">{teams.map((team, index) => { const game = GAMES.find((g) => g.slug === team.game_slug); return <Link key={team.id} href={`/teams/${team.id}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-fn-gborder/60 p-3 text-left transition-all last:border-0 hover:bg-fn-card2"><span className="font-display text-lg font-black" style={{ color: index === 0 ? secondary : primary }}>#{team.power_rank ?? index + 1}</span><span className="min-w-0"><span className="block truncate text-xs font-black uppercase text-fn-text">{team.name}</span><span className="mt-1 inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest" style={{ borderColor: `${game?.colors.primary ?? primary}40`, color: game?.colors.primary ?? primary, background: `${game?.colors.primary ?? primary}12` }}>{game?.shortName ?? team.game_slug ?? "Game"}</span></span><span className="text-right"><span className="block text-sm font-black text-fn-text">{Number(team.total_ranking_points ?? 0).toFixed(0)}</span><span className="fn-label">PTS</span></span></Link>; })}</motion.div>}
       </motion.section>
 
       {/* Transfer Activity */}

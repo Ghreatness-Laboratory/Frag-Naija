@@ -12,7 +12,7 @@ import { GAMES } from '@/lib/games';
 
 const EMPTY = {
   name: '', game: 'PUBG Mobile', game_slug: 'pubg-mobile', prize_pool: '', currency: 'NGN',
-  start_date: '', end_date: '', status: 'Upcoming', format: '', region: 'Nigeria', image_url: '',
+  start_date: '', end_date: '', status: 'Upcoming', format: '', region: 'Nigeria', image_url: '', tier: 'local',
 };
 
 function TournamentsContent() {
@@ -59,6 +59,7 @@ function TournamentsContent() {
       format:     String(row.format     ?? ''),
       region:     String(row.region     ?? 'Nigeria'),
       image_url:  String(row.image_url  ?? ''),
+      tier:       String(row.tier       ?? 'local'),
     });
     setError(''); setOpen(true);
   }
@@ -143,6 +144,7 @@ function TournamentsContent() {
             );
           }},
           { key: 'prize_pool', label: 'Prize',  render: r => `₦${Number(r.prize_pool || 0).toLocaleString()}` },
+          { key: 'tier', label: 'Tier' },
           { key: 'start_date', label: 'Start' },
           { key: 'status',     label: 'Status', render: r => {
             const c = r.status === 'Live' ? 'bg-fn-green/10 text-fn-green' : r.status === 'Upcoming' ? 'bg-fn-yellow/10 text-fn-yellow' : 'bg-fn-muted/10 text-fn-muted';
@@ -173,6 +175,9 @@ function TournamentsContent() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Prize Pool (₦)"><Input type="number" value={form.prize_pool} onChange={f('prize_pool')} placeholder="500000" /></Field>
+            <Field label="Tier"><Select value={form.tier} onChange={f('tier')}><option value="local">Local</option><option value="national">National</option><option value="international">International</option></Select></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Currency">
               <Select value={form.currency} onChange={f('currency')}>
                 <option value="NGN">NGN (₦)</option>

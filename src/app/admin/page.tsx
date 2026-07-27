@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight, Banknote, LayoutDashboard } from 'lucide-react';
+import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight, Banknote, LayoutDashboard, Building2 } from 'lucide-react';
 import { GAMES } from '@/lib/games';
 
 const SECTIONS = [
   { href: '/admin/homepage',   icon: LayoutDashboard, label: 'Homepage',   desc: 'Edit neutral all-games dashboard'          },
   { href: '/admin/athletes',    icon: Users,          label: 'Athletes',    desc: 'Add players, update stats & photos'   },
   { href: '/admin/teams',       icon: Shield,         label: 'Teams',       desc: 'Create and manage esports teams'       },
+  { href: '/admin/organizations', icon: Building2,     label: 'Organizations', desc: 'Manage multi-game esports organizations' },
   { href: '/admin/transfers',   icon: ArrowLeftRight, label: 'Transfers',   desc: 'Post rumours and confirmed moves'       },
   { href: '/admin/tournaments', icon: Trophy,         label: 'Tournaments', desc: 'Schedule and update tournaments'        },
+  { href: '/admin/tournament-results', icon: Trophy, label: 'Tournament Results', desc: 'Record placements and ranking points' },
   { href: '/admin/wagers',      icon: Swords,         label: 'Wagers',      desc: 'Create markets, toggle hot, settle'    },
   { href: '/admin/highlights',  icon: Film,           label: 'Highlights',  desc: 'Upload clips and Theatre of War vids'  },
   { href: '/admin/finance',     icon: Banknote,       label: 'Finance',     desc: 'Transactions, settings, manual credit' },

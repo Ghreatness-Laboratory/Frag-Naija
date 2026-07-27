@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, Users, Shield, Star, Flame, Search } from "lucide-react";
 import { useGame } from "@/context/GameContext";
-import { getGameContent, type DummyTeam } from "@/lib/game-content";
+import { getGameContent } from "@/lib/game-content";
+import { DEFAULT_GAME } from "@/lib/games";
 
 type Athlete = {
   id: string;
@@ -29,6 +30,8 @@ type Team = {
   achievements: string[] | string | null;
   players: Athlete[];
   game_slug?: string | null;
+  total_ranking_points?: number;
+  power_rank?: number;
 };
 
 function parseArray(val: string[] | string | null | undefined): string[] {
@@ -51,30 +54,22 @@ export default function TeamsPage() {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch] = useState("");
 
-  const primary   = selectedGame.colors.primary;
-  const secondary = selectedGame.colors.secondary;
-  const isFF      = selectedGame.slug === 'free-fire';
+  const activeGame = selectedGame ?? DEFAULT_GAME;
+  const primary   = activeGame.colors.primary;
+  const secondary = activeGame.colors.secondary;
+  const isFF      = activeGame.slug === 'free-fire';
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/teams?game_slug=${selectedGame.slug}`, { cache: "no-store" });
-    if (res.ok) {
-      const data: Team[] = await res.json();
-      const sorted = [...data].sort((a, b) => {
-        if (a.rank != null && b.rank != null) return a.rank - b.rank;
-        if (a.rank != null) return -1;
-        if (b.rank != null) return 1;
-        return b.wins - a.wins;
-      });
-      setApiTeams(sorted);
-    }
+    const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { cache: "no-store" });
+    if (res.ok) setApiTeams(await res.json());
     setLoading(false);
-  }, [selectedGame.slug]);
+  }, [activeGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 
-  const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
-  const apiForGame = apiTeams.filter((t) => (t.game_slug ?? selectedGame.slug) === selectedGame.slug);
+  const gameContent = isHydrated ? getGameContent(activeGame.slug) : null;
+  const apiForGame = apiTeams.filter((t) => (t.game_slug ?? activeGame.slug) === activeGame.slug);
   const gameTeams: Team[] = apiForGame.length > 0
     ? apiForGame
     : (gameContent?.teams as Team[] | undefined) ?? [];
@@ -88,7 +83,7 @@ export default function TeamsPage() {
       const current = selected ? teams.find(t => t.id === selected.id) : null;
       setSelected(current ?? teams[0]);
     }
-  }, [teams.length, selectedGame.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [teams.length, activeGame.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -103,7 +98,7 @@ export default function TeamsPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <Shield className="w-12 h-12" style={{ color: primary }} />
-        <p className="text-fn-muted text-sm uppercase tracking-widest">No {selectedGame.shortName} teams yet</p>
+        <p className="text-fn-muted text-sm uppercase tracking-widest">No {activeGame.shortName} teams yet</p>
       </div>
     );
   }
@@ -131,7 +126,7 @@ export default function TeamsPage() {
               className="text-[9px] font-bold px-2 py-1 tracking-widest uppercase border"
               style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
             >
-              {teams.length} {selectedGame.shortName.toUpperCase()} TEAMS
+              {teams.length} {activeGame.shortName.toUpperCase()} TEAMS
             </span>
           </div>
           <label className="mt-4 flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-black/70 px-3 py-2 focus-within:border-fn-green/60">
@@ -149,9 +144,8 @@ export default function TeamsPage() {
           {teams.length === 0 ? (
             <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">No results found for &quot;{search}&quot;</p>
           ) : teams.map((team, idx) => {
-            const rank = team.rank ?? idx + 1;
+            const rank = team.power_rank ?? idx + 1;
             const isActive = (selected?.id ?? teams[0].id) === team.id;
-            const wr = winRate(team.wins, team.losses);
             const rankColor = rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : rank === 3 ? secondary : 'rgb(var(--fn-muted))';
             return (
               <button
@@ -186,8 +180,8 @@ export default function TeamsPage() {
                 </div>
 
                 <div className="flex-shrink-0 text-right">
-                  <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{wr}%</div>
-                  <div className="fn-label text-[7px]">WIN</div>
+                  <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{Number(team.total_ranking_points ?? 0).toFixed(0)}</div>
+                  <div className="fn-label text-[7px]">PTS</div>
                 </div>
               </button>
             );
@@ -234,6 +228,7 @@ export default function TeamsPage() {
                 <h2 className="font-display text-3xl sm:text-4xl font-black uppercase text-fn-text tracking-wide">{t.name}</h2>
                 <div className="flex gap-4 mt-2">
                   {[
+                    { v: Number(t.total_ranking_points ?? 0).toFixed(0), l: "RANK PTS" },
                     { v: t.wins,   l: "WINS"     },
                     { v: t.losses, l: "LOSSES"    },
                     { v: `${winRate(t.wins, t.losses)}%`, l: "WIN RATE" },

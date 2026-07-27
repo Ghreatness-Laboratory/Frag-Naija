@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Clock, TrendingUp, Users, Filter, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
-import { getGameContent, type DummyTransfer } from "@/lib/game-content";
+import { getGameContent } from "@/lib/game-content";
+import { DEFAULT_GAME } from "@/lib/games";
 
 type Transfer = {
   id: string;
@@ -31,7 +32,7 @@ function useCountdown(targetDays: number, targetHrs: number, targetMins: number)
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [selectedGame.slug]);
+  }, []);
   return time;
 }
 
@@ -42,20 +43,21 @@ export default function TransferWindowPage() {
   const [loading, setLoading]           = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
 
-  const primary   = selectedGame.colors.primary;
-  const secondary = selectedGame.colors.secondary;
-  const isFF      = selectedGame.slug === 'free-fire';
+  const activeGame = selectedGame ?? DEFAULT_GAME;
+  const primary   = activeGame.colors.primary;
+  const secondary = activeGame.colors.secondary;
+  const isFF      = activeGame.slug === 'free-fire';
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/transfers?game_slug=${selectedGame.slug}`);
+    const res = await fetch(`/api/transfers?game_slug=${activeGame.slug}`);
     if (res.ok) setApiTransfers(await res.json());
     setLoading(false);
-  }, []);
+  }, [activeGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 
-  const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
+  const gameContent = isHydrated ? getGameContent(activeGame.slug) : null;
   const transfers: Transfer[] = apiTransfers.length > 0
     ? apiTransfers
     : (gameContent?.transfers as Transfer[] | undefined) ?? [];
@@ -92,7 +94,7 @@ export default function TransferWindowPage() {
                 className="text-[8px] font-bold tracking-widest uppercase px-2 py-1 border"
                 style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
               >
-                {selectedGame.shortName.toUpperCase()} — CONTRACT ANALYSIS
+                {activeGame.shortName.toUpperCase()} — CONTRACT ANALYSIS
               </span>
             </div>
             <h1 className="font-display text-4xl sm:text-5xl font-black uppercase text-fn-text tracking-tight mt-2">
@@ -150,7 +152,7 @@ export default function TransferWindowPage() {
                 ))}
               </div>
 
-              <div className="fn-label mb-3">RECENT TRANSFERS — {selectedGame.shortName.toUpperCase()}</div>
+              <div className="fn-label mb-3">RECENT TRANSFERS — {activeGame.shortName.toUpperCase()}</div>
               {loading ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-fn-card rounded animate-pulse" />)}

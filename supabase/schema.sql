@@ -347,3 +347,123 @@ INSERT INTO homepage_settings (key, value) VALUES
   ('featured_team_ids', ''),
   ('featured_tournament_ids', '')
 ON CONFLICT (key) DO NOTHING;
+
+-- ─── ESPORTS ORGANIZATIONS ─────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS organizations (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name         TEXT NOT NULL,
+  logo_url     TEXT,
+  region       TEXT,
+  founded_year INTEGER,
+  founded_date DATE,
+  description  TEXT,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS organization_achievements (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  title           TEXT NOT NULL,
+  date            DATE,
+  game_slug       TEXT,
+  description     TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE teams ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_achievements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "organizations_public_read" ON organizations FOR SELECT USING (true);
+CREATE POLICY "organizations_admin_write" ON organizations FOR ALL USING (false);
+CREATE POLICY "organization_achievements_public_read" ON organization_achievements FOR SELECT USING (true);
+CREATE POLICY "organization_achievements_admin_write" ON organization_achievements FOR ALL USING (false);
+
+-- ─── TEAM POWER RANKINGS ───────────────────────────────────────────────────
+
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS tier TEXT CHECK (tier IN ('international', 'national', 'local')) DEFAULT 'local';
+
+CREATE TABLE IF NOT EXISTS tournament_results (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  team_id        UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  placement      TEXT NOT NULL CHECK (placement IN ('1st', '2nd', '3rd_4th', 'top_8', 'participated')),
+  points_earned  NUMERIC,
+  created_at     TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tournament_results_team_id ON tournament_results(team_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_results_tournament_id ON tournament_results(tournament_id);
+
+CREATE OR REPLACE FUNCTION calculate_tournament_result_points()
+RETURNS TRIGGER AS $$
+DECLARE
+  tournament_tier TEXT;
+  tournament_prize_pool NUMERIC;
+  base_points NUMERIC;
+  multiplier NUMERIC;
+  prize_factor NUMERIC;
+BEGIN
+  SELECT COALESCE(tier, 'local'), COALESCE(prize_pool, 0)
+  INTO tournament_tier, tournament_prize_pool
+  FROM tournaments
+  WHERE id = NEW.tournament_id;
+
+  base_points := CASE NEW.placement
+    WHEN '1st' THEN 100
+    WHEN '2nd' THEN 70
+    WHEN '3rd_4th' THEN 45
+    WHEN 'top_8' THEN 25
+    ELSE 10
+  END;
+
+  multiplier := CASE tournament_tier
+    WHEN 'international' THEN 3.0
+    WHEN 'national' THEN 1.5
+    ELSE 1.0
+  END;
+
+  prize_factor := GREATEST(1, 1 + LOG(GREATEST(tournament_prize_pool, 1) / 100000));
+
+  NEW.points_earned := base_points * multiplier * prize_factor;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_tournament_result_points ON tournament_results;
+CREATE TRIGGER set_tournament_result_points
+BEFORE INSERT OR UPDATE OF tournament_id, placement
+ON tournament_results
+FOR EACH ROW
+EXECUTE FUNCTION calculate_tournament_result_points();
+
+CREATE OR REPLACE FUNCTION refresh_tournament_result_points_for_tournament()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE tournament_results
+  SET placement = placement
+  WHERE tournament_id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS refresh_tournament_result_points ON tournaments;
+CREATE TRIGGER refresh_tournament_result_points
+AFTER UPDATE OF tier, prize_pool
+ON tournaments
+FOR EACH ROW
+EXECUTE FUNCTION refresh_tournament_result_points_for_tournament();
+
+CREATE OR REPLACE VIEW team_power_rankings AS
+SELECT
+  teams.id AS team_id,
+  COALESCE(SUM(tournament_results.points_earned), 0) AS total_ranking_points
+FROM teams
+LEFT JOIN tournament_results ON tournament_results.team_id = teams.id
+GROUP BY teams.id;
+
+ALTER TABLE tournament_results ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "tournament_results_public_read" ON tournament_results FOR SELECT USING (true);
+CREATE POLICY "tournament_results_admin_write" ON tournament_results FOR ALL USING (false);
