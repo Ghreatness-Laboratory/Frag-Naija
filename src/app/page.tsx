@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays } from "lucide-react";
+import { GAMES } from "@/lib/games";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -33,7 +34,7 @@ type Tournament = {
 };
 
 type Team = {
-  id: string; name: string; logo_url: string | null; region: string | null; rank: number | null; wins: number; losses: number; kills: number; strength: number | null; players?: Athlete[];
+  id: string; name: string; logo_url: string | null; region: string | null; rank: number | null; wins: number; losses: number; kills: number; strength: number | null; game_slug?: string | null; total_ranking_points?: number; power_rank?: number; players?: Athlete[];
 };
 
 const TICKER_ITEMS: Record<string, string[]> = {
@@ -491,7 +492,7 @@ export default function HomePage() {
       {/* Teams Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> POWER RANKINGS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TEAMS</h2></div><Link href="/teams" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL TEAMS <ChevronRight size={11} /></Link></div>
-        {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No teams have been ranked yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{teams.map((team, index) => <Link key={team.id} href={`/teams/${team.id}`} className="rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="flex items-center gap-3"><div className="h-12 w-12 overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark flex items-center justify-center">{team.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <span className="font-display text-xl font-black" style={{ color: primary }}>{team.name[0]}</span>}</div><div><div className="fn-label">#{team.rank ?? index + 1}</div><h3 className="text-sm font-black uppercase text-fn-text">{team.name}</h3></div></div><div className="mt-3 grid grid-cols-3 gap-2 text-center"><div><div className="text-xs font-bold text-fn-text">{team.wins}</div><div className="fn-label">W</div></div><div><div className="text-xs font-bold text-fn-text">{team.losses}</div><div className="fn-label">L</div></div><div><div className="text-xs font-bold text-fn-text">{team.kills}</div><div className="fn-label">KLS</div></div></div></Link>)}</motion.div>}
+        {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No teams have been ranked yet.</p> : <motion.div variants={cardStagger} className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">{teams.map((team, index) => { const game = GAMES.find((g) => g.slug === team.game_slug); return <Link key={team.id} href={`/teams/${team.id}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-fn-gborder/60 p-3 text-left transition-all last:border-0 hover:bg-fn-card2"><span className="font-display text-lg font-black" style={{ color: index === 0 ? secondary : primary }}>#{team.power_rank ?? index + 1}</span><span className="min-w-0"><span className="block truncate text-xs font-black uppercase text-fn-text">{team.name}</span><span className="mt-1 inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest" style={{ borderColor: `${game?.colors.primary ?? primary}40`, color: game?.colors.primary ?? primary, background: `${game?.colors.primary ?? primary}12` }}>{game?.shortName ?? team.game_slug ?? "Game"}</span></span><span className="text-right"><span className="block text-sm font-black text-fn-text">{Number(team.total_ranking_points ?? 0).toFixed(0)}</span><span className="fn-label">PTS</span></span></Link>; })}</motion.div>}
       </motion.section>
 
       {/* Transfer Activity */}
