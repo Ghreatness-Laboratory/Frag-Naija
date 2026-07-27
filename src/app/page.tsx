@@ -247,14 +247,13 @@ export default function HomePage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/athletes").then((r) => r.ok ? r.json() : []),
-      fetch("/api/wagers/active").then((r) => r.ok ? r.json() : []),
-      fetch("/api/transfers").then((r) => r.ok ? r.json() : []),
-      fetch("/api/shop-items").then((r) => r.ok ? r.json() : []),
-      fetch("/api/tournaments").then((r) => r.ok ? r.json() : []),
-      fetch("/api/teams").then((r) => r.ok ? r.json() : []),
-      fetch("/api/homepage-settings").then((r) => r.ok ? r.json() : {}),
-    ]).then(([a, w, t, s, tourneys, teamRows, settings]) => {
+      fetch(`/api/athletes?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/wagers/active?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/transfers?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/shop-items?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/tournaments?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/teams?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+    ]).then(([a, w, t, s, tourneys, teamRows]) => {
       setApiAthletes(a.slice(0, 6));
       setWagers(w.slice(0, 3));
       setApiTransfers(t.slice(0, 4));
@@ -263,7 +262,7 @@ export default function HomePage() {
       setTeams(teamRows.slice(0, 4));
       setHomepageSettings(settings);
     });
-  }, []);
+  }, [selectedGame.slug]);
 
   // Neutral all-games dashboard: use all API rows without selected-game filtering.
   const gameAthletes: Athlete[] = apiAthletes;
@@ -331,7 +330,7 @@ export default function HomePage() {
         <motion.div initial="hidden" animate="visible" variants={reveal} transition={{ duration: 0.55 }} className="max-w-4xl relative">
           <p className="fn-label mb-3 flex items-center gap-2">
             <Gamepad2 size={12} style={{ color: primary }} />
-            {heroEyebrow}
+            NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
           </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">{headlineFirst}</span>
