@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 export async function getTeams({ game_slug } = {}) {
   let query = supabaseAdmin
     .from('teams')
-    .select('*')
+    .select('*, organization:organizations(id,name,logo_url)')
     .order('rank', { ascending: true, nullsLast: true });
 
   if (game_slug) query = query.eq('game_slug', game_slug);
@@ -23,7 +23,7 @@ export async function getTeams({ game_slug } = {}) {
 }
 
 export async function getTeamById(id) {
-  const { data: team, error } = await supabaseAdmin.from('teams').select('*').eq('id', id).single();
+  const { data: team, error } = await supabaseAdmin.from('teams').select('*, organization:organizations(id,name,logo_url)').eq('id', id).single();
   if (error) throw error;
 
   const { data: players, error: playersError } = await supabaseAdmin

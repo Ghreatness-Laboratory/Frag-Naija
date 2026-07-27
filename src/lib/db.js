@@ -5,3 +5,4 @@ export * from '@/features/tournaments/server';
 export * from '@/features/highlights/server';
 export * from '@/features/wagers/server';
 export * from '@/features/shop/server';
+export * from '@/features/organizations.server';

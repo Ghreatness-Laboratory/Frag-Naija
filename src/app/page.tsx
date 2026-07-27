@@ -77,15 +77,6 @@ function formatStat(value: string, current: number) {
   return String(Math.round(current));
 }
 
-const HERO_TAGLINES: Record<string, string> = {
-  'free-fire':        "Survive the island. Claim the Booyah. Nigeria's fiercest Free Fire circuits are live.",
-  'pubg-mobile':      "Nigeria's premier esports command platform. Compete in elite PUBG tournaments and place tactical wagers.",
-  'cod-mobile':       "Drop in. Dominate. Nigeria's Call of Duty Mobile scene — ranked matches, tournaments, and live wagers.",
-  'ea-fc-26':         "Lace up for Nigeria's top EA FC 26 leagues. Squad battles, tournaments, and live match wagers.",
-  'mortal-kombat':    "Finish them. Nigeria's Mortal Kombat arena — brutal kombat, ranked ladders, and live wagers.",
-  'efootball':        "Beautiful game, tactical edge. Nigeria's premier eFootball platform — leagues, players, and wagers.",
-  'mobile-legends':   "5v5 glory awaits. Nigeria's Mobile Legends: Bang Bang circuits — drafts, tournaments, and wagers.",
-};
 
 function StatCounter({ value, label, icon: Icon, color }: { value: string; label: string; icon: React.ElementType; color: string }) {
   const reduceMotion = useReducedMotion();
@@ -246,23 +237,36 @@ export default function HomePage() {
   }, [tickerItems.length]);
 
   useEffect(() => {
+    const fetchJson = (url: string, fallback: unknown) =>
+      fetch(url, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : fallback))
+        .catch(() => fallback);
+
     Promise.all([
-      fetch(`/api/athletes?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/wagers/active?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/transfers?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/shop-items?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/tournaments?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/teams?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
-    ]).then(([a, w, t, s, tourneys, teamRows]) => {
-      setApiAthletes(a.slice(0, 6));
-      setWagers(w.slice(0, 3));
-      setApiTransfers(t.slice(0, 4));
-      setShopItems(s.slice(0, 4));
-      setTournaments(tourneys.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
-      setTeams(teamRows.slice(0, 4));
-      setHomepageSettings(settings);
+      fetchJson('/api/athletes', []),
+      fetchJson('/api/wagers/active', []),
+      fetchJson('/api/transfers', []),
+      fetchJson('/api/shop-items', []),
+      fetchJson('/api/tournaments', []),
+      fetchJson('/api/teams', []),
+      fetchJson('/api/homepage-settings', {}),
+    ]).then(([a, w, t, s, tourneys, teamRows, settings]) => {
+      const athletes = Array.isArray(a) ? a : [];
+      const activeWagers = Array.isArray(w) ? w : [];
+      const transfers = Array.isArray(t) ? t : [];
+      const items = Array.isArray(s) ? s : [];
+      const events = Array.isArray(tourneys) ? tourneys : [];
+      const teamList = Array.isArray(teamRows) ? teamRows : [];
+
+      setApiAthletes(athletes.slice(0, 6));
+      setWagers(activeWagers.slice(0, 3));
+      setApiTransfers(transfers.slice(0, 4));
+      setShopItems(items.slice(0, 4));
+      setTournaments(events.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
+      setTeams(teamList.slice(0, 4));
+      setHomepageSettings(settings && !Array.isArray(settings) ? settings as HomepageSettings : {});
     });
-  }, [selectedGame.slug]);
+  }, []);
 
   // Neutral all-games dashboard: use all API rows without selected-game filtering.
   const gameAthletes: Athlete[] = apiAthletes;
@@ -330,7 +334,7 @@ export default function HomePage() {
         <motion.div initial="hidden" animate="visible" variants={reveal} transition={{ duration: 0.55 }} className="max-w-4xl relative">
           <p className="fn-label mb-3 flex items-center gap-2">
             <Gamepad2 size={12} style={{ color: primary }} />
-            NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
+            {heroEyebrow}
           </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">{headlineFirst}</span>

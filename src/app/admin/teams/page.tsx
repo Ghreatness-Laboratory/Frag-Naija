@@ -10,26 +10,9 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 
-const GAME_KEYWORDS: Record<string, string[]> = {
-  'pubg-mobile':    ['pubg', 'battleground'],
-  'cod-mobile':     ['cod', 'duty'],
-  'free-fire':      ['free fire', 'ff ', 'freefire', 'lions ff', 'apex', 'raiders', 'wolves', 'kings ff'],
-  'ea-fc-26':       ['ea fc', 'fc 26', 'fifa'],
-  'mortal-kombat':  ['mortal', 'kombat', ' mk'],
-  'efootball':      ['efootball', 'pes', 'konami'],
-  'mobile-legends': ['legends', 'mlbb', 'bang bang'],
-};
-
-function matchesGame(row: Record<string, unknown>, slug: string): boolean {
-  const keywords = GAME_KEYWORDS[slug] ?? [];
-  const haystack = [row.name, row.region, row.bio, row.achievements]
-    .map(v => String(v ?? '').toLowerCase()).join(' ');
-  return keywords.some(kw => haystack.includes(kw.toLowerCase()));
-}
-
 const EMPTY = {
   name: '', region: '', wins: '', losses: '', bio: '', logo_url: '', game_slug: 'pubg-mobile',
-  rank: '', strength: '0', achievements: '',
+  rank: '', strength: '0', achievements: '', organization_id: '',
 };
 
 function toArr(val: unknown): string {
@@ -47,6 +30,7 @@ function TeamsContent() {
   const activeGame   = GAMES.find(g => g.slug === gameSlug);
 
   const [rows, setRows]         = useState<Record<string, unknown>[]>([]);
+  const [organizations, setOrganizations] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading]   = useState(true);
   const [open, setOpen]         = useState(false);
   const [editing, setEditing]   = useState<Record<string, unknown> | null>(null);
@@ -59,6 +43,8 @@ function TeamsContent() {
     setLoading(true);
     const res = await fetch('/api/teams');
     if (res.ok) setRows(await res.json());
+    const orgRes = await fetch('/api/organizations');
+    if (orgRes.ok) setOrganizations(await orgRes.json());
     setLoading(false);
   }, []);
 
@@ -85,6 +71,7 @@ function TeamsContent() {
       rank:         row.rank != null ? String(row.rank) : '',
       strength:     String(row.strength ?? '0'),
       achievements: toArr(row.achievements),
+      organization_id: String(row.organization_id ?? ''),
     });
     setLogoFile(null);
     setError('');
@@ -119,6 +106,7 @@ function TeamsContent() {
         strength: Number(form.strength) || 0,
         rank:     form.rank !== '' ? Number(form.rank) : null,
         achievements: splitArr(form.achievements),
+        organization_id: form.organization_id || null,
       };
       const url = editing ? `/api/teams/${editing.id}` : '/api/teams';
       const res = await fetch(url, {
@@ -191,6 +179,7 @@ function TeamsContent() {
           { key: 'name',     label: 'Name' },
           { key: 'region',   label: 'Region' },
           { key: 'game_slug', label: 'Game' },
+          { key: 'organization', label: 'Org', render: (r) => String((r.organization as { name?: string } | null)?.name ?? '—') },
           { key: 'rank',     label: 'Rank' },
           { key: 'wins',     label: 'W' },
           { key: 'losses',   label: 'L' },
@@ -216,6 +205,13 @@ function TeamsContent() {
           <Field label="Game">
             <Select value={form.game_slug} onChange={f('game_slug')}>
               {GAMES.map((game) => <option key={game.slug} value={game.slug}>{game.name}</option>)}
+            </Select>
+          </Field>
+
+          <Field label="Organization">
+            <Select value={form.organization_id} onChange={f('organization_id')}>
+              <option value="">Independent / No organization</option>
+              {organizations.map((org) => <option key={String(org.id)} value={String(org.id)}>{String(org.name)}</option>)}
             </Select>
           </Field>
 
