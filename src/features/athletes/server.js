@@ -7,11 +7,12 @@ function computeOverallRating(athlete) {
   return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
 }
 
-export async function getAthletes({ team, status } = {}) {
+export async function getAthletes({ team, status, game_slug } = {}) {
   let query = supabaseAdmin.from('athletes').select('*').order('overall_rating', { ascending: false });
 
   if (team) query = query.eq('team', team);
   if (status) query = query.eq('status', status);
+  if (game_slug) query = query.eq('game_slug', game_slug);
 
   const { data, error } = await query;
   if (error) throw error;

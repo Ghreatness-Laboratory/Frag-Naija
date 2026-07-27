@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame } from "lucide-react";
+import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 
@@ -33,6 +33,7 @@ type Athlete = {
   perks: string[] | string | null;
   strengths: string[] | string | null;
   weaknesses: string[] | string | null;
+  game_slug?: string | null;
 };
 
 function computeRating(a: Athlete): number {
@@ -102,6 +103,7 @@ export default function AthletesPage() {
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [selected, setSelected] = useState<Athlete | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   const primary   = selectedGame.colors.primary;
   const secondary = selectedGame.colors.secondary;
@@ -109,24 +111,25 @@ export default function AthletesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/athletes", { cache: "no-store" });
+    const res = await fetch(`/api/athletes?game_slug=${selectedGame.slug}`, { cache: "no-store" });
     if (res.ok) {
       const data: Athlete[] = await res.json();
       setApiAthletes(data);
     }
     setLoading(false);
-  }, []);
+  }, [selectedGame.slug]);
 
   useEffect(() => { load(); }, [load]);
 
   const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
-  const apiForGame  = apiAthletes.filter(
-    (a) => a.team?.toLowerCase().includes(selectedGame.name.toLowerCase().split(' ')[0])
-      || selectedGame.slug === 'pubg-mobile'
-  );
-  const athletes: Athlete[] = apiForGame.length > 0
+  const apiForGame = apiAthletes.filter((a) => (a.game_slug ?? selectedGame.slug) === selectedGame.slug);
+  const gameAthletes: Athlete[] = apiForGame.length > 0
     ? apiForGame
     : (gameContent?.athletes as Athlete[] | undefined) ?? [];
+  const normalizedSearch = search.trim().toLowerCase();
+  const athletes = normalizedSearch
+    ? gameAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""}`.toLowerCase().includes(normalizedSearch))
+    : gameAthletes;
 
   // Auto-select first athlete when list loads
   useEffect(() => {
@@ -134,7 +137,7 @@ export default function AthletesPage() {
     if (athletes.length > 0 && selected && !athletes.find(a => a.id === selected.id)) {
       setSelected(athletes[0]);
     }
-  }, [athletes.length, selectedGame.slug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [athletes.length, selectedGame.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -144,7 +147,7 @@ export default function AthletesPage() {
     );
   }
 
-  if (athletes.length === 0) {
+  if (gameAthletes.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <Shield className="w-12 h-12" style={{ color: primary }} />
@@ -194,10 +197,21 @@ export default function AthletesPage() {
               {athletes.length} {selectedGame.shortName.toUpperCase()} PLAYERS
             </span>
           </div>
+          <label className="mt-4 flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-black/70 px-3 py-2 focus-within:border-fn-green/60">
+            <Search size={13} style={{ color: primary }} />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search athletes / IGN"
+              className="w-full bg-transparent text-xs text-fn-text outline-none placeholder:text-fn-muted"
+            />
+          </label>
         </div>
 
-        <div className="overflow-y-auto max-h-[40vh] lg:max-h-none lg:h-[calc(100vh-16rem)]">
-          {athletes.map((athlete) => {
+        <div className="overflow-y-auto max-h-[40vh] lg:max-h-none lg:h-[calc(100vh-18rem)]">
+          {athletes.length === 0 ? (
+            <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">No results found for &quot;{search}&quot;</p>
+          ) : athletes.map((athlete) => {
             const isActive = (selected?.id ?? athletes[0].id) === athlete.id;
             const r = computeRating(athlete);
             return (

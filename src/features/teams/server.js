@@ -1,13 +1,19 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-export async function getTeams() {
-  const { data: teams, error } = await supabaseAdmin
+export async function getTeams({ game_slug } = {}) {
+  let query = supabaseAdmin
     .from('teams')
     .select('*')
     .order('rank', { ascending: true, nullsLast: true });
+
+  if (game_slug) query = query.eq('game_slug', game_slug);
+
+  const { data: teams, error } = await query;
   if (error) throw error;
 
-  const { data: athletes, error: athletesError } = await supabaseAdmin.from('athletes').select('*');
+  let athleteQuery = supabaseAdmin.from('athletes').select('*');
+  if (game_slug) athleteQuery = athleteQuery.eq('game_slug', game_slug);
+  const { data: athletes, error: athletesError } = await athleteQuery;
   if (athletesError) throw athletesError;
 
   return teams.map((team) => ({

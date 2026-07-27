@@ -244,12 +244,12 @@ export default function HomePage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/athletes").then((r) => r.ok ? r.json() : []),
-      fetch("/api/wagers/active").then((r) => r.ok ? r.json() : []),
-      fetch("/api/transfers").then((r) => r.ok ? r.json() : []),
-      fetch("/api/shop-items").then((r) => r.ok ? r.json() : []),
-      fetch("/api/tournaments").then((r) => r.ok ? r.json() : []),
-      fetch("/api/teams").then((r) => r.ok ? r.json() : []),
+      fetch(`/api/athletes?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/wagers/active?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/transfers?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/shop-items?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/tournaments?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/teams?game_slug=${selectedGame.slug}`).then((r) => r.ok ? r.json() : []),
     ]).then(([a, w, t, s, tourneys, teamRows]) => {
       setApiAthletes(a.slice(0, 6));
       setWagers(w.slice(0, 3));
@@ -258,7 +258,7 @@ export default function HomePage() {
       setTournaments(tourneys.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
       setTeams(teamRows.slice(0, 4));
     });
-  }, []);
+  }, [selectedGame.slug]);
 
   const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
 
@@ -347,7 +347,6 @@ export default function HomePage() {
         <motion.div initial="hidden" animate="visible" variants={reveal} transition={{ duration: 0.55 }} className="max-w-4xl relative">
           <p className="fn-label mb-3 flex items-center gap-2">
             <Gamepad2 size={12} style={{ color: primary }} />
-            <span className="w-6 h-px inline-block" style={{ background: primary }} />
             NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
           </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
