@@ -343,10 +343,10 @@ export default function HomePage() {
   const featuredTeamIds = parseFeaturedIds(homepageSettings.featured_team_ids);
   const gameAthletes: Athlete[] = selectedGame
     ? allAthletes.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : (featuredAthleteIds.length ? pickByIds(allAthletes, featuredAthleteIds) : allAthletes.slice(0, 6));
+    : pickByIds(allAthletes, featuredAthleteIds);
   const teams: Team[] = selectedGame
     ? allTeams.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
-    : (featuredTeamIds.length ? pickByIds(allTeams, featuredTeamIds) : allTeams.slice(0, 4));
+    : pickByIds(allTeams, featuredTeamIds);
   const showAthletes = settingEnabled(homepageSettings, 'show_athletes');
   const showTeams = settingEnabled(homepageSettings, 'show_teams');
   const showShop = settingEnabled(homepageSettings, 'show_shop');
