@@ -7,7 +7,7 @@ import { Plus, Upload } from 'lucide-react';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
-import { Field, Input, Textarea, SubmitBtn } from '@/components/admin/Field';
+import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 
 const GAME_KEYWORDS: Record<string, string[]> = {
@@ -28,7 +28,7 @@ function matchesGame(row: Record<string, unknown>, slug: string): boolean {
 }
 
 const EMPTY = {
-  name: '', region: '', wins: '', losses: '', bio: '', logo_url: '',
+  name: '', region: '', wins: '', losses: '', bio: '', logo_url: '', game_slug: 'pubg-mobile',
   rank: '', strength: '0', achievements: '',
 };
 
@@ -77,6 +77,7 @@ function TeamsContent() {
     setForm({
       name:         String(row.name     ?? ''),
       region:       String(row.region   ?? ''),
+      game_slug:    String(row.game_slug ?? (gameSlug === 'all' ? 'pubg-mobile' : gameSlug)),
       wins:         String(row.wins     ?? ''),
       losses:       String(row.losses   ?? ''),
       bio:          String(row.bio      ?? ''),
@@ -109,6 +110,7 @@ function TeamsContent() {
       const logoUrl = await uploadLogo();
       const body = {
         name:     form.name,
+        game_slug: form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
         region:   form.region,
         bio:      form.bio,
         logo_url: logoUrl ?? form.logo_url,
@@ -146,7 +148,7 @@ function TeamsContent() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  const filtered = gameSlug === 'all' ? rows : rows.filter(r => matchesGame(r, gameSlug));
+  const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug ?? '') === gameSlug);
 
   return (
     <div className="p-8">
@@ -188,6 +190,7 @@ function TeamsContent() {
           },
           { key: 'name',     label: 'Name' },
           { key: 'region',   label: 'Region' },
+          { key: 'game_slug', label: 'Game' },
           { key: 'rank',     label: 'Rank' },
           { key: 'wins',     label: 'W' },
           { key: 'losses',   label: 'L' },
@@ -208,6 +211,12 @@ function TeamsContent() {
               placeholder="e.g. Athlegame Esports"
               required
             />
+          </Field>
+
+          <Field label="Game">
+            <Select value={form.game_slug} onChange={f('game_slug')}>
+              {GAMES.map((game) => <option key={game.slug} value={game.slug}>{game.name}</option>)}
+            </Select>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">

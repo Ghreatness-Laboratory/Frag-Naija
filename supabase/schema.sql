@@ -17,8 +17,11 @@ CREATE TABLE IF NOT EXISTS teams (
   losses      INT  DEFAULT 0,
   kills       INT  DEFAULT 0,
   bio         TEXT,
+  game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE teams ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
 
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "teams_public_read"  ON teams FOR SELECT USING (true);
@@ -50,6 +53,7 @@ CREATE TABLE IF NOT EXISTS athletes (
   previous_teams   JSONB DEFAULT '[]'::jsonb,
   achievements     JSONB DEFAULT '[]'::jsonb,
   performance_history JSONB DEFAULT '[]'::jsonb,
+  game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -74,8 +78,11 @@ CREATE TABLE IF NOT EXISTS transfers (
   status      TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Confirmed', 'Rumour')),
   date        DATE DEFAULT CURRENT_DATE,
   notes       TEXT,
+  game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE transfers ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
 
 ALTER TABLE transfers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "transfers_public_read"  ON transfers FOR SELECT USING (true);
@@ -95,8 +102,11 @@ CREATE TABLE IF NOT EXISTS tournaments (
   format      TEXT,                 -- e.g. Battle Royale, TDMS
   region      TEXT DEFAULT 'Nigeria',
   image_url   TEXT,
+  game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
 
 ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tournaments_public_read"  ON tournaments FOR SELECT USING (true);
@@ -117,8 +127,11 @@ CREATE TABLE IF NOT EXISTS wagers (
   status      TEXT DEFAULT 'Active'
                 CHECK (status IN ('Active', 'Settled — YES Wins', 'Settled — NO Wins', 'Cancelled')),
   closes_at   TIMESTAMPTZ NOT NULL,
+  game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
 
 ALTER TABLE wagers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wagers_public_read"  ON wagers FOR SELECT USING (true);
@@ -273,8 +286,19 @@ CREATE TABLE IF NOT EXISTS shop_items (
   image_url   TEXT,
   category    TEXT,
   status      TEXT DEFAULT 'Published' CHECK (status IN ('Draft', 'Published', 'Archived')),
+  game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
+
+-- One-time backfill for records created before game isolation existed.
+UPDATE athletes    SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
+UPDATE teams       SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
+UPDATE tournaments SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
+UPDATE wagers      SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
+UPDATE transfers   SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
+UPDATE shop_items  SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
 
 ALTER TABLE shop_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "shop_items_public_read" ON shop_items FOR SELECT USING (status = 'Published');

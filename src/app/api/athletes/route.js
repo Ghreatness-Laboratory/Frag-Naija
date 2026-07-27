@@ -10,6 +10,7 @@ export async function GET(request) {
     const filters = {
       team:   searchParams.get('team')   || '',
       status: searchParams.get('status') || '',
+      game_slug: searchParams.get('game_slug') || '',
     };
     const data = await getAthletes(filters);
     return NextResponse.json(data);
