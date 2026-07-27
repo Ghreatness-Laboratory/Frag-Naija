@@ -32,6 +32,15 @@ type ShopItem = {
 
 type HomepageSettings = Record<string, string>;
 
+function parseFeaturedIds(value: string | undefined) {
+  return String(value ?? "").split(/[\n,]+/).map((id) => id.trim()).filter(Boolean);
+}
+
+function pickByIds<T extends { id: string }>(rows: T[], ids: string[]) {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return ids.map((id) => byId.get(id)).filter(Boolean) as T[];
+}
+
 type Tournament = {
   id: string; name: string; start_date: string | null; end_date: string | null; status: string; game: string | null; prize_pool: number | null; currency: string | null;
 };
@@ -258,21 +267,22 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
 
 export default function HomePage() {
   const router = useRouter();
+  const { selectedGame } = useGame();
   const [ticker, setTicker]       = useState(0);
-  const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
+  const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
   const [isScoutPromptOpen, setIsScoutPromptOpen] = useState(false);
 
-  const primary   = 'rgb(var(--fn-green))';
-  const secondary = 'rgb(var(--fn-yellow))';
-  const isFF      = false;
+  const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
+  const isFF      = selectedGame?.slug === 'free-fire';
   const reduceMotion = useReducedMotion();
-  const tickerItems = TICKER_ITEMS.default;
+  const tickerItems = selectedGame ? (TICKER_ITEMS[selectedGame.slug] ?? TICKER_ITEMS.default) : TICKER_ITEMS.default;
   const tagline     = homepageSettings.hero_tagline ?? "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.";
   const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
   const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
@@ -310,18 +320,24 @@ export default function HomePage() {
       const events = Array.isArray(tourneys) ? tourneys : [];
       const teamList = Array.isArray(teamRows) ? teamRows : [];
 
-      setApiAthletes(athletes.slice(0, 6));
+      setAllAthletes(athletes);
       setWagers(activeWagers.slice(0, 3));
       setApiTransfers(transfers.slice(0, 4));
       setShopItems(items.slice(0, 4));
       setTournaments(events.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
-      setTeams(teamList.slice(0, 4));
+      setAllTeams(teamList);
       setHomepageSettings(settings && !Array.isArray(settings) ? settings as HomepageSettings : {});
     });
   }, []);
 
-  // Neutral all-games dashboard: use all API rows without selected-game filtering.
-  const gameAthletes: Athlete[] = apiAthletes;
+  const featuredAthleteIds = parseFeaturedIds(homepageSettings.featured_athlete_ids);
+  const featuredTeamIds = parseFeaturedIds(homepageSettings.featured_team_ids);
+  const gameAthletes: Athlete[] = selectedGame
+    ? allAthletes.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
+    : pickByIds(allAthletes, featuredAthleteIds);
+  const teams: Team[] = selectedGame
+    ? allTeams.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
+    : pickByIds(allTeams, featuredTeamIds);
 
   const transfers: Transfer[] = apiTransfers;
 
@@ -408,7 +424,7 @@ export default function HomePage() {
               className="electric-live inline-flex items-center gap-1.5 text-[9px] font-bold px-3 py-1 tracking-widest uppercase border rounded-sm"
               style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
             >
-              <span className="live-dot !h-1.5 !w-1.5" /> ALL GAMES DASHBOARD
+              <span className="live-dot !h-1.5 !w-1.5" /> {selectedGame ? `${selectedGame.shortName.toUpperCase()} DASHBOARD` : 'ALL GAMES DASHBOARD'}
             </span>
           </motion.div>
           <motion.p variants={reveal} className="text-fn-text text-xs sm:text-sm tracking-wider max-w-lg mb-8 leading-relaxed">
@@ -494,7 +510,7 @@ export default function HomePage() {
           </button>
         </div>
         {gameAthletes.length === 0 ? (
-          <p className="text-fn-muted text-[10px] py-6">No athletes yet — add them from the admin panel.</p>
+          <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet — add them from the admin panel.'}</p>
         ) : (
           <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
             {gameAthletes.map((a, i) => (
@@ -553,7 +569,7 @@ export default function HomePage() {
       {/* Teams Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> POWER RANKINGS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TEAMS</h2></div><Link href="/teams" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL TEAMS <ChevronRight size={11} /></Link></div>
-        {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No teams have been ranked yet.</p> : <motion.div variants={cardStagger} className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">{teams.map((team, index) => { const game = GAMES.find((g) => g.slug === team.game_slug); return <Link key={team.id} href={`/teams/${team.id}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-fn-gborder/60 p-3 text-left transition-all last:border-0 hover:bg-fn-card2"><span className="font-display text-lg font-black" style={{ color: index === 0 ? secondary : primary }}>#{team.power_rank ?? index + 1}</span><span className="min-w-0"><span className="block truncate text-xs font-black uppercase text-fn-text">{team.name}</span><span className="mt-1 inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest" style={{ borderColor: `${game?.colors.primary ?? primary}40`, color: game?.colors.primary ?? primary, background: `${game?.colors.primary ?? primary}12` }}>{game?.shortName ?? team.game_slug ?? "Game"}</span></span><span className="text-right"><span className="block text-sm font-black text-fn-text">{Number(team.total_ranking_points ?? 0).toFixed(0)}</span><span className="fn-label">PTS</span></span></Link>; })}</motion.div>}
+        {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} teams have been ranked yet.` : 'No featured teams yet — add them from the admin panel.'}</p> : <motion.div variants={cardStagger} className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">{teams.map((team, index) => { const game = GAMES.find((g) => g.slug === team.game_slug); return <Link key={team.id} href={`/teams/${team.id}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-fn-gborder/60 p-3 text-left transition-all last:border-0 hover:bg-fn-card2"><span className="font-display text-lg font-black" style={{ color: index === 0 ? secondary : primary }}>#{team.power_rank ?? index + 1}</span><span className="min-w-0"><span className="block truncate text-xs font-black uppercase text-fn-text">{team.name}</span><span className="mt-1 inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest" style={{ borderColor: `${game?.colors.primary ?? primary}40`, color: game?.colors.primary ?? primary, background: `${game?.colors.primary ?? primary}12` }}>{game?.shortName ?? team.game_slug ?? "Game"}</span></span><span className="text-right"><span className="block text-sm font-black text-fn-text">{Number(team.total_ranking_points ?? 0).toFixed(0)}</span><span className="fn-label">PTS</span></span></Link>; })}</motion.div>}
       </motion.section>
 
       {/* Transfer Activity */}

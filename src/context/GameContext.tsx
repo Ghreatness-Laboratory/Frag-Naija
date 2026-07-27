@@ -13,7 +13,7 @@ import { type Game, GAMES } from '@/lib/games';
 interface GameContextValue {
   /** The currently active game. Null means the user is in a neutral all-games context. */
   selectedGame: Game | null;
-  setSelectedGame: (game: Game) => void;
+  setSelectedGame: (game: Game | null) => void;
   /** True once localStorage has been read on the client. */
   isHydrated: boolean;
 }
@@ -40,8 +40,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setIsHydrated(true);
   }, []);
 
-  const setSelectedGame = useCallback((game: Game) => {
+  const setSelectedGame = useCallback((game: Game | null) => {
     setGameState(game);
+    if (!game) {
+      localStorage.removeItem(LS_KEY);
+      document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
+      return;
+    }
     localStorage.setItem(LS_KEY, game.slug);
     // Cookie lets the middleware know a game has been chosen (1-year expiry)
     document.cookie = `${COOKIE_NAME}=${game.slug}; path=/; max-age=31536000; SameSite=Lax`;
