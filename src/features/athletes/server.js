@@ -17,9 +17,12 @@ export async function getAthletes({ team, status, game_slug } = {}) {
   const { data, error } = await query;
   if (error) throw error;
 
+  const achievementMap = await getAchievementsForAthletes((data || []).map((athlete) => athlete.id));
+
   // Back-fill overall_rating if missing
   return (data || []).map((a) => ({
     ...a,
+    achievements: achievementMap.get(a.id) || [],
     overall_rating: a.overall_rating ?? computeOverallRating(a),
   }));
 }
@@ -28,26 +31,31 @@ export async function getAthleteById(id) {
   const { data, error } = await supabaseAdmin.from('athletes').select('*').eq('id', id).single();
   if (error) throw error;
 
-  return data;
+  const achievementMap = await getAchievementsForAthletes([id]);
+  return { ...data, achievements: achievementMap.get(id) || [] };
 }
 
 export async function createAthlete(body) {
-  const { data, error } = await supabaseAdmin.from('athletes').insert([body]).select().single();
+  const { athlete, achievements } = splitAthletePayload(body);
+  const { data, error } = await supabaseAdmin.from('athletes').insert([athlete]).select().single();
   if (error) throw error;
 
-  return data;
+  await replaceAthleteAchievements(data.id, achievements);
+  return { ...data, achievements };
 }
 
 export async function updateAthlete(id, body) {
+  const { athlete, achievements } = splitAthletePayload(body);
   const { data, error } = await supabaseAdmin
     .from('athletes')
-    .update(body)
+    .update(athlete)
     .eq('id', id)
     .select()
     .single();
   if (error) throw error;
 
-  return data;
+  await replaceAthleteAchievements(id, achievements);
+  return { ...data, achievements };
 }
 
 export async function deleteAthlete(id) {

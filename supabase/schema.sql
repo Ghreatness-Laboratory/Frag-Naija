@@ -51,7 +51,6 @@ CREATE TABLE IF NOT EXISTS athletes (
   known_name  TEXT,
   previous_aliases JSONB DEFAULT '[]'::jsonb,
   previous_teams   JSONB DEFAULT '[]'::jsonb,
-  achievements     JSONB DEFAULT '[]'::jsonb,
   performance_history JSONB DEFAULT '[]'::jsonb,
   game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -66,6 +65,20 @@ ALTER TABLE athletes ADD COLUMN IF NOT EXISTS clutch NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "athletes_public_read"  ON athletes FOR SELECT USING (true);
 CREATE POLICY "athletes_admin_write"  ON athletes FOR ALL   USING (false);
+
+-- ─── ATHLETE ACHIEVEMENTS ────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS achievements (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  athlete_id  UUID NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  date        TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "achievements_public_read" ON achievements FOR SELECT USING (true);
+CREATE POLICY "achievements_admin_write" ON achievements FOR ALL USING (false);
 
 -- ─── TRANSFERS ────────────────────────────────────────────────────────────────
 
