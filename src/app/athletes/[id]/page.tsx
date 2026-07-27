@@ -106,8 +106,8 @@ function PlayerCard({ athlete, team, rating, primary, gameName }: { athlete: Ath
       <div className="absolute bottom-8 left-5 right-5 z-20 grid grid-cols-5 overflow-hidden rounded-lg border bg-black/78" style={{ borderColor: `${primary}70` }}>
         {stats.map((stat) => (
           <div key={stat.label} className="border-r border-white/10 px-1.5 py-2 text-center last:border-r-0">
-            <div className="font-display text-2xl font-black leading-none" style={{ color: stat.color }}>{stat.value}</div>
-            <div className="mt-1 text-[8px] font-black tracking-widest" style={{ color: stat.color }}>{stat.label}</div>
+            <div className="font-display text-2xl font-black leading-none text-white">{stat.value}</div>
+            <div className="mt-1 text-[8px] font-black tracking-widest text-fn-green">{stat.name}</div>
           </div>
         ))}
       </div>
@@ -212,8 +212,8 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
           {profileAttrs.map((stat) => (
             <div key={stat.label} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center">
-              <div className="font-display text-2xl font-black" style={{ color: stat.color }}>{stat.value}</div>
-              <div className="fn-label">{stat.label}</div>
+              <div className="font-display text-2xl font-black text-white">{stat.value}</div>
+              <div className="fn-label text-fn-green">{stat.name}</div>
             </div>
           ))}
         </div>
@@ -269,7 +269,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
       </div>
 
       <div className="print-card-only"><PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
-      <div id="player-card-export" className="pointer-events-none fixed -left-[9999px] top-0 z-[-1]" aria-hidden="true"><PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
+      <div id="player-card-export" className="pointer-events-none fixed -left-[10000px] top-0 opacity-100" aria-hidden="true"><PlayerCard athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
     </div>
   );
 }

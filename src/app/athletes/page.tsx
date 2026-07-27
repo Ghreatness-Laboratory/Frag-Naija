@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
@@ -72,8 +71,8 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
   return (
     <div className="mb-2.5">
       <div className="flex justify-between items-center mb-1">
-        <span className="fn-label">{label}</span>
-        <span className="text-[10px] font-bold text-fn-text font-mono">{pct}</span>
+        <span className="fn-label text-fn-green">{label}</span>
+        <span className="text-[10px] font-bold text-white font-mono">{pct}</span>
       </div>
       <div className="h-1.5 bg-fn-dark border border-fn-gborder rounded-sm overflow-hidden">
         <div
@@ -101,7 +100,6 @@ function RatingRing({ value, primary }: { value: number; primary: string }) {
 }
 
 export default function AthletesPage() {
-  const router = useRouter();
   const { selectedGame, setSelectedGame, isHydrated } = useGame();
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [selected, setSelected] = useState<Athlete | null>(null);
@@ -127,12 +125,6 @@ export default function AthletesPage() {
     }
     setLoading(false);
   }, [selectedGame]);
-
-  useEffect(() => {
-    const requestedGame = new URLSearchParams(window.location.search).get("game");
-    const game = GAMES.find((item) => item.slug === requestedGame && item.available);
-    if (game && game.slug !== selectedGame?.slug) setSelectedGame(game);
-  }, [selectedGame?.slug, setSelectedGame]);
 
   useEffect(() => {
     const requestedGame = new URLSearchParams(window.location.search).get("game");
@@ -206,8 +198,8 @@ export default function AthletesPage() {
   const displayName = a.known_name || a.ign;
 
   const attrs = [
-    ...combatAttributes(a as unknown as Record<string, unknown>).map((attr) => ({ label: attr.name.toUpperCase(), value: attr.value, color: attr.color })),
-    { label: "AGGRESSION", value: a.aggression ?? 0, color: isFF ? "#FFD700" : "#ff8c42" },
+    ...combatAttributes(a as unknown as Record<string, unknown>),
+    { key: "aggression", label: "AGG", name: "Aggression", value: a.aggression ?? 0, color: isFF ? "#FFD700" : "#ff8c42" },
   ];
 
   return (
@@ -249,10 +241,11 @@ export default function AthletesPage() {
             const isActive = (selected?.id ?? athletes[0].id) === athlete.id;
             const r = computeRating(athlete);
             return (
+              <div key={athlete.id} className="border-b border-fn-gborder/50">
               <button
-                key={athlete.id}
-                onClick={() => router.push(`/athletes/${athlete.id}`)}
-                className="w-full flex items-center gap-3 px-4 py-3 border-b border-fn-gborder/50 transition-all text-left"
+                onClick={() => setSelected((current) => current?.id === athlete.id ? null : athlete)}
+                aria-expanded={isActive}
+                className="w-full flex items-center gap-3 px-4 py-3 transition-all text-left"
                 style={isActive
                   ? { background: `${primary}10`, borderLeft: `2px solid ${primary}` }
                   : { borderLeft: '2px solid transparent' }}
@@ -275,7 +268,19 @@ export default function AthletesPage() {
                   <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{r}</div>
                   <div className="fn-label text-[7px]">OVR</div>
                 </div>
+                {isActive ? <ChevronRight size={12} className="rotate-90 text-fn-green transition-transform" /> : <ChevronRight size={12} className="text-fn-muted transition-transform" />}
               </button>
+              {isActive && athlete.bio && (
+                <div className="border-b border-fn-gborder/50 bg-fn-black/45 px-4 pb-4 pt-1">
+                  <div className="rounded-sm border border-fn-gborder bg-fn-card p-3">
+                    <p className="text-[10px] leading-relaxed text-fn-muted">{athlete.bio}</p>
+                    <Link href={`/athletes/${athlete.id}`} className="mt-3 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-fn-green">
+                      View full profile <ChevronRight size={10} />
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
             );
           })}
         </div>

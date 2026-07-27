@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
 import { GAMES } from "@/lib/games";
 import { combatAttributes } from "@/lib/athlete-display";
+import { useGame } from "@/context/GameContext";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
   rating: number; overall_rating?: number; kills: number; assists: number; winrate: number;
   attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
-  photo_url: string | null; status: string;
+  photo_url: string | null; status: string; game_slug?: string | null;
 };
 
 type Wager = {
@@ -31,6 +32,10 @@ type ShopItem = {
 };
 
 type HomepageSettings = Record<string, string>;
+
+function settingEnabled(settings: HomepageSettings, key: string) {
+  return String(settings[key] ?? 'true').toLowerCase() !== 'false';
+}
 
 function parseFeaturedIds(value: string | undefined) {
   return String(value ?? "").split(/[\n,]+/).map((id) => id.trim()).filter(Boolean);
@@ -211,10 +216,10 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
         <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-fn-text"><Medal size={10} style={{ color: col }} />{athlete.ign}</div>
         <div className="fn-label mb-2">{athlete.role || "Player"}</div>
         <div className="grid grid-cols-5 gap-1">
-          {attrs.map(({ value, label, color }) => (
-            <div key={label} className="text-center">
-              <div className="text-[10px] font-bold" style={{ color }}>{value}</div>
-              <div className="fn-label text-[7px]" style={{ color }}>{label}</div>
+          {attrs.map(({ value, name }) => (
+            <div key={name} className="text-center">
+              <div className="text-[10px] font-bold text-white">{value}</div>
+              <div className="fn-label text-[7px] text-fn-green">{name}</div>
             </div>
           ))}
         </div>
@@ -267,7 +272,7 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
 
 export default function HomePage() {
   const router = useRouter();
-  const { selectedGame } = useGame();
+  const { selectedGame, isHydrated } = useGame();
   const [ticker, setTicker]       = useState(0);
   const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
@@ -283,6 +288,10 @@ export default function HomePage() {
   const isFF      = selectedGame?.slug === 'free-fire';
   const reduceMotion = useReducedMotion();
   const tickerItems = selectedGame ? (TICKER_ITEMS[selectedGame.slug] ?? TICKER_ITEMS.default) : TICKER_ITEMS.default;
+
+  useEffect(() => {
+    if (isHydrated && selectedGame) router.replace(`/${selectedGame.slug}`);
+  }, [isHydrated, router, selectedGame]);
   const tagline     = homepageSettings.hero_tagline ?? "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.";
   const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
   const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
@@ -334,10 +343,13 @@ export default function HomePage() {
   const featuredTeamIds = parseFeaturedIds(homepageSettings.featured_team_ids);
   const gameAthletes: Athlete[] = selectedGame
     ? allAthletes.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : pickByIds(allAthletes, featuredAthleteIds);
+    : (featuredAthleteIds.length ? pickByIds(allAthletes, featuredAthleteIds) : allAthletes.slice(0, 6));
   const teams: Team[] = selectedGame
     ? allTeams.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
-    : pickByIds(allTeams, featuredTeamIds);
+    : (featuredTeamIds.length ? pickByIds(allTeams, featuredTeamIds) : allTeams.slice(0, 4));
+  const showAthletes = settingEnabled(homepageSettings, 'show_athletes');
+  const showTeams = settingEnabled(homepageSettings, 'show_teams');
+  const showShop = settingEnabled(homepageSettings, 'show_shop');
 
   const transfers: Transfer[] = apiTransfers;
 
@@ -489,7 +501,7 @@ export default function HomePage() {
       </section>
 
       {/* Top Athletes */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+      {showAthletes && <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="fn-label mb-1 flex items-center gap-1.5">
@@ -518,7 +530,7 @@ export default function HomePage() {
             ))}
           </motion.div>
         )}
-      </motion.section>
+      </motion.section>}
 
       {/* Wager Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder"
@@ -549,7 +561,7 @@ export default function HomePage() {
 
 
       {/* Shop Preview */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+      {showShop && <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6">
           <div><p className="fn-label mb-1 flex items-center gap-1.5"><ShoppingBag size={9} style={{ color: primary }} /> MERCH DROP</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">SHOP</h2></div>
           <Link href="/shop" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW SHOP <ChevronRight size={11} /></Link>
@@ -558,7 +570,7 @@ export default function HomePage() {
           <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {shopItems.map((item) => <Link key={item.id} href="/shop" className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
           </motion.div>)}
-      </motion.section>
+      </motion.section>}
 
       {/* Events Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder" style={{ background: `${primary}04` }}>
@@ -567,10 +579,10 @@ export default function HomePage() {
       </motion.section>
 
       {/* Teams Preview */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+      {showTeams && <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> POWER RANKINGS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TEAMS</h2></div><Link href="/teams" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL TEAMS <ChevronRight size={11} /></Link></div>
         {teams.length === 0 ? <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} teams have been ranked yet.` : 'No featured teams yet — add them from the admin panel.'}</p> : <motion.div variants={cardStagger} className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">{teams.map((team, index) => { const game = GAMES.find((g) => g.slug === team.game_slug); return <Link key={team.id} href={`/teams/${team.id}`} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-fn-gborder/60 p-3 text-left transition-all last:border-0 hover:bg-fn-card2"><span className="font-display text-lg font-black" style={{ color: index === 0 ? secondary : primary }}>#{team.power_rank ?? index + 1}</span><span className="min-w-0"><span className="block truncate text-xs font-black uppercase text-fn-text">{team.name}</span><span className="mt-1 inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest" style={{ borderColor: `${game?.colors.primary ?? primary}40`, color: game?.colors.primary ?? primary, background: `${game?.colors.primary ?? primary}12` }}>{game?.shortName ?? team.game_slug ?? "Game"}</span></span><span className="text-right"><span className="block text-sm font-black text-fn-text">{Number(team.total_ranking_points ?? 0).toFixed(0)}</span><span className="fn-label">PTS</span></span></Link>; })}</motion.div>}
-      </motion.section>
+      </motion.section>}
 
       {/* Transfer Activity */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">

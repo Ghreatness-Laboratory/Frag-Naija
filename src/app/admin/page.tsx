@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight, Banknote, LayoutDashboard, Building2 } from 'lucide-react';
+import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight, Banknote, LayoutDashboard, Building2, MessageCircle, ShoppingBag } from 'lucide-react';
 import { GAMES } from '@/lib/games';
 
 const SECTIONS = [
@@ -14,6 +14,8 @@ const SECTIONS = [
   { href: '/admin/tournament-results', icon: Trophy, label: 'Tournament Results', desc: 'Record placements and ranking points' },
   { href: '/admin/wagers',      icon: Swords,         label: 'Wagers',      desc: 'Create markets, toggle hot, settle'    },
   { href: '/admin/highlights',  icon: Film,           label: 'Highlights',  desc: 'Upload clips and Theatre of War vids'  },
+  { href: '/admin/communities', icon: MessageCircle, label: 'Communities', desc: 'Manage public WhatsApp and Discord hubs' },
+  { href: '/admin/shop', icon: ShoppingBag, label: 'Shop', desc: 'Sell accounts, iMercs, and gaming gear' },
   { href: '/admin/finance',     icon: Banknote,       label: 'Finance',     desc: 'Transactions, settings, manual credit' },
 ];
 
@@ -54,6 +56,7 @@ export default function AdminDashboard() {
                   { label: 'Teams',       href: `/admin/teams?game=${game.slug}` },
                   { label: 'Transfers',   href: `/admin/transfers?game=${game.slug}` },
                   { label: 'Highlights',  href: `/admin/highlights?game=${game.slug}` },
+                  { label: 'Communities', href: `/admin/communities?game=${game.slug}` },
                 ].map(({ label, href }) => (
                   <Link
                     key={label}
