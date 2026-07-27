@@ -9,12 +9,13 @@ import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
+import { isShooterGame, normalizeRating } from '@/lib/athlete-display';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
   known_name: '', game_slug: 'pubg-mobile',
   attack: '0', defense: '0', clutch: '0', survival: '0', iq: '0', aggression: '0',
-  overall_rating: '0', perks: '', strengths: '', weaknesses: '',
+  overall_rating: '0', sensitivity_settings: '', control_code: '', perks: '', strengths: '', weaknesses: '',
   previous_aliases: [''],
   previous_teams: [{ team: '', years: '' }],
   achievements: [{ title: '', date: '' }],
@@ -198,7 +199,9 @@ function AthletesContent() {
       survival:       String(row.survival ?? '0'),
       iq:             String(row.iq       ?? '0'),
       aggression:     String(row.aggression ?? '0'),
-      overall_rating: String(row.overall_rating ?? '0'),
+      overall_rating: String(normalizeRating(row.overall_rating, row.rating)),
+      sensitivity_settings: typeof row.sensitivity_settings === 'string' ? row.sensitivity_settings : JSON.stringify(row.sensitivity_settings ?? {}, null, 2),
+      control_code: String(row.control_code ?? ''),
       perks:      toArr(row.perks),
       strengths:  toArr(row.strengths),
       weaknesses: toArr(row.weaknesses),
@@ -245,7 +248,8 @@ function AthletesContent() {
         survival:       Number(form.survival)       || 0,
         iq:             Number(form.iq)             || 0,
         aggression:     Number(form.aggression)     || 0,
-        overall_rating: Number(form.overall_rating) || 0,
+        overall_rating: normalizeRating(form.overall_rating),
+        ...(isShooterGame(form.game_slug) ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
         perks:      splitArr(form.perks),
         strengths:  splitArr(form.strengths),
         weaknesses: splitArr(form.weaknesses),
@@ -283,6 +287,7 @@ function AthletesContent() {
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
   const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug ?? '') === gameSlug);
+  const shooterSelected = isShooterGame(form.game_slug);
 
   return (
     <div className="p-8">
@@ -292,7 +297,7 @@ function AthletesContent() {
           <p className="text-fn-muted text-xs mt-0.5">
             {filtered.length} player{filtered.length !== 1 ? 's' : ''}
             {activeGame ? ` — ${activeGame.name}` : ''}
-            {gameSlug !== 'all' && <span className="ml-2 text-fn-muted">(filtered by team name)</span>}
+            {gameSlug !== 'all' && <span className="ml-2 text-fn-muted">(filtered by game)</span>}
           </p>
         </div>
         <button
@@ -396,15 +401,15 @@ function AthletesContent() {
                 <option value="Free Agent">Free Agent</option>
               </Select>
             </Field>
-            <Field label="Overall Rating (0–10)">
+            <Field label="Overall Rating (0–100)">
               <Input
                 type="number"
-                step="0.1"
+                step="1"
                 min="0"
-                max="10"
+                max="100"
                 value={form.overall_rating}
                 onChange={f('overall_rating')}
-                placeholder="8.5"
+                placeholder="85"
               />
             </Field>
           </div>
@@ -435,6 +440,24 @@ function AthletesContent() {
               <Input type="number" min="0" max="100" value={form.aggression} onChange={f('aggression')} placeholder="0" />
             </Field>
           </div>
+
+
+
+          {shooterSelected && (
+            <div className="space-y-3 rounded border border-fn-gborder bg-fn-dark/30 p-3">
+              <p className="text-fn-muted text-xs uppercase tracking-widest">Shooter Loadout / Settings</p>
+              <Field label="Sensitivity Settings (JSON or text)">
+                <Textarea
+                  value={form.sensitivity_settings}
+                  onChange={f('sensitivity_settings')}
+                  placeholder='{"general": 100, "red_dot": 85, "2x": 75, "3x": 65, "4x": 55, "6x": 45, "8x": 35}'
+                />
+              </Field>
+              <Field label="Control Code">
+                <Input value={form.control_code} onChange={f('control_code')} placeholder="Shareable control layout code" />
+              </Field>
+            </div>
+          )}
 
           {/* Perks / Strengths / Weaknesses */}
           <Field label="Perks (comma-separated)">

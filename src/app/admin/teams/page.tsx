@@ -41,12 +41,12 @@ function TeamsContent() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/teams');
+    const res = await fetch(gameSlug === 'all' ? '/api/teams' : `/api/teams?game_slug=${gameSlug}`);
     if (res.ok) setRows(await res.json());
     const orgRes = await fetch('/api/organizations');
     if (orgRes.ok) setOrganizations(await orgRes.json());
     setLoading(false);
-  }, []);
+  }, [gameSlug]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -136,6 +136,8 @@ function TeamsContent() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm((p) => ({ ...p, [k]: e.target.value }));
 
+  const missingGameSlugCount = rows.filter((r) => !String(r.game_slug ?? '').trim()).length;
+  const grouped = GAMES.map((game) => ({ game, rows: rows.filter((r) => String(r.game_slug ?? '') === game.slug) })).filter((group) => group.rows.length > 0);
   const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug ?? '') === gameSlug);
 
   return (
@@ -146,6 +148,7 @@ function TeamsContent() {
           <p className="text-fn-muted text-xs mt-0.5">
             {filtered.length} team{filtered.length !== 1 ? 's' : ''}
             {activeGame ? ` — ${activeGame.name}` : ''}
+            {missingGameSlugCount > 0 ? ` · ${missingGameSlugCount} missing game_slug` : ''}
           </p>
         </div>
         <button
@@ -158,6 +161,16 @@ function TeamsContent() {
       </div>
 
       <AdminGameFilter currentSlug={gameSlug} />
+
+      {gameSlug === 'all' && grouped.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {grouped.map(({ game, rows: groupRows }) => (
+            <span key={game.slug} className="rounded border px-2 py-1 text-[10px] font-bold uppercase tracking-widest" style={{ borderColor: `${game.colors.primary}40`, color: game.colors.primary }}>
+              {game.shortName}: {groupRows.length}
+            </span>
+          ))}
+        </div>
+      )}
 
       <AdminTable
         loading={loading}
