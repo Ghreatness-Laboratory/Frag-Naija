@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { GAMES } from '@/lib/games';
 
 export default function AdminGameFilter({ currentSlug }: { currentSlug: string }) {

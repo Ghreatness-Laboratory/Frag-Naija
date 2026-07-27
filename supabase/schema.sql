@@ -120,10 +120,83 @@ CREATE TABLE IF NOT EXISTS tournaments (
 );
 
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'local';
 
 ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tournaments_public_read"  ON tournaments FOR SELECT USING (true);
 CREATE POLICY "tournaments_admin_write"  ON tournaments FOR ALL   USING (false);
+
+-- ─── TOURNAMENT RESULTS / TEAM POWER POINTS ────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS tournament_results (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tournament_id  UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  team_id        UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  placement      TEXT NOT NULL DEFAULT 'participated',
+  points_earned  NUMERIC(12,2) NOT NULL DEFAULT 0,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (tournament_id, team_id)
+);
+
+CREATE OR REPLACE FUNCTION calculate_tournament_result_points()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  tournament_tier TEXT;
+  tournament_prize NUMERIC;
+  tier_multiplier NUMERIC;
+  placement_multiplier NUMERIC;
+BEGIN
+  SELECT COALESCE(tier, 'local'), COALESCE(prize_pool, 0)
+  INTO tournament_tier, tournament_prize
+  FROM tournaments
+  WHERE id = NEW.tournament_id;
+
+  tier_multiplier := CASE lower(tournament_tier)
+    WHEN 'international' THEN 5
+    WHEN 'national' THEN 3
+    WHEN 'regional' THEN 2
+    WHEN 'state' THEN 1.5
+    ELSE 1
+  END;
+
+  placement_multiplier := CASE lower(NEW.placement)
+    WHEN '1st' THEN 1
+    WHEN 'first' THEN 1
+    WHEN 'winner' THEN 1
+    WHEN 'champion' THEN 1
+    WHEN '2nd' THEN 0.7
+    WHEN 'second' THEN 0.7
+    WHEN 'runner-up' THEN 0.7
+    WHEN '3rd' THEN 0.5
+    WHEN 'third' THEN 0.5
+    WHEN 'semi-finalist' THEN 0.3
+    WHEN 'semifinalist' THEN 0.3
+    WHEN 'quarter-finalist' THEN 0.2
+    WHEN 'quarterfinalist' THEN 0.2
+    ELSE 0.1
+  END;
+
+  -- Formula: tier multiplier × prize pool scale × placement multiplier.
+  -- Prize pool is scaled by ₦100,000 so local low/no-prize events still earn baseline points.
+  NEW.points_earned := ROUND(tier_multiplier * GREATEST(tournament_prize / 100000, 1) * placement_multiplier, 2);
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tournament_results_points_trigger ON tournament_results;
+CREATE TRIGGER tournament_results_points_trigger
+BEFORE INSERT OR UPDATE OF tournament_id, placement
+ON tournament_results
+FOR EACH ROW
+EXECUTE FUNCTION calculate_tournament_result_points();
+
+ALTER TABLE tournament_results ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "tournament_results_public_read" ON tournament_results FOR SELECT USING (true);
+CREATE POLICY "tournament_results_admin_write" ON tournament_results FOR ALL USING (false);
 
 -- ─── WAGERS ───────────────────────────────────────────────────────────────────
 
@@ -347,6 +420,26 @@ INSERT INTO homepage_settings (key, value) VALUES
   ('featured_team_ids', ''),
   ('featured_tournament_ids', '')
 ON CONFLICT (key) DO NOTHING;
+
+-- ─── HOMEPAGE FEATURED ITEMS ───────────────────────────────────────────────
+-- Existing app code uses the `featured` table for homepage/admin curation.
+-- The type check includes organization alongside athlete/team/tournament.
+
+CREATE TABLE IF NOT EXISTS featured (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type        TEXT NOT NULL CHECK (type IN ('athlete', 'team', 'tournament', 'organization', 'wager', 'match', 'news')),
+  ref_id      UUID,
+  label       TEXT NOT NULL DEFAULT '',
+  badge       TEXT,
+  priority    INT NOT NULL DEFAULT 0,
+  is_active   BOOLEAN NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE featured ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "featured_public_read" ON featured FOR SELECT USING (is_active = true);
+CREATE POLICY "featured_admin_write" ON featured FOR ALL USING (false);
 
 -- ─── ESPORTS ORGANIZATIONS ─────────────────────────────────────────────────
 

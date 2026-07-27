@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Trophy, ChevronRight, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
-import { getGameContent, type DummyTournament } from "@/lib/game-content";
+import { getGameContent } from "@/lib/game-content";
 
 type Tournament = {
   id: string; name: string; game: string; prize_pool: number | null;
@@ -10,7 +11,7 @@ type Tournament = {
   status: string; format: string | null; region: string; image_url: string | null;
 };
 
-function fmtPrize(amount: number | null, _currency: string) {
+function fmtPrize(amount: number | null) {
   if (!amount) return "TBA";
   return `₦${Number(amount).toLocaleString()}`;
 }
@@ -27,10 +28,16 @@ export default function TournamentsPage() {
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState<"all" | "live" | "upcoming" | "completed">("all");
 
-  const primary = selectedGame.colors.primary;
-  const isFF    = selectedGame.slug === 'free-fire';
+  const primary = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const isFF    = selectedGame?.slug === 'free-fire';
 
   const load = useCallback(async () => {
+    if (!selectedGame) {
+      setTournaments([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const res = await fetch(`/api/tournaments?game_slug=${selectedGame.slug}`);
     if (res.ok) {
@@ -38,13 +45,13 @@ export default function TournamentsPage() {
       setTournaments(data);
     }
     setLoading(false);
-  }, [selectedGame.slug]);
+  }, [selectedGame]);
 
   useEffect(() => { load(); }, [load]);
 
-  const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
+  const gameContent = isHydrated && selectedGame ? getGameContent(selectedGame.slug) : null;
   const apiForGame  = tournaments.filter(
-    (t) => t.game?.toLowerCase().includes(selectedGame.name.toLowerCase().split(' ')[0])
+    (t) => selectedGame && t.game?.toLowerCase().includes(selectedGame.name.toLowerCase().split(' ')[0])
   );
   const displayed: Tournament[] = apiForGame.length > 0
     ? apiForGame
@@ -59,6 +66,23 @@ export default function TournamentsPage() {
     : activeTab === "live"      ? live
     : activeTab === "upcoming"  ? upcoming
     : completed;
+
+  if (!selectedGame) {
+    return (
+      <div className="min-h-screen px-4 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-2xl rounded-sm border border-fn-gborder bg-fn-card p-8 text-center">
+          <Trophy className="mx-auto mb-4 h-10 w-10 text-fn-green" />
+          <h1 className="font-display text-3xl font-black uppercase text-fn-text">Select a game to view tournaments</h1>
+          <p className="mt-3 text-xs leading-relaxed text-fn-muted">
+            Tournament pages are game-scoped. Choose a game first to see live, upcoming, and completed events for that title.
+          </p>
+          <Link href="/select-game" className="fn-btn mt-6 inline-flex items-center gap-2">
+            Select Game <ChevronRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -161,7 +185,7 @@ export default function TournamentsPage() {
 
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     <div className="bg-fn-dark border border-fn-gborder rounded-sm p-2 text-center">
-                      <div className="text-xs font-bold" style={{ color: primary }}>{fmtPrize(t.prize_pool, t.currency)}</div>
+                      <div className="text-xs font-bold" style={{ color: primary }}>{fmtPrize(t.prize_pool)}</div>
                       <div className="fn-label">Prize Pool</div>
                     </div>
                     <div className="bg-fn-dark border border-fn-gborder rounded-sm p-2 text-center">

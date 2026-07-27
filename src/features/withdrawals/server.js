@@ -216,7 +216,7 @@ export async function getAllWithdrawals({ status } = {}) {
   return data;
 }
 
-export async function adminUpdateWithdrawal(withdrawalId, { action, note, adminId }) {
+export async function adminUpdateWithdrawal(withdrawalId, { action, note }) {
   const { data: withdrawal, error: fetchError } = await supabaseAdmin
     .from('withdrawals')
     .select('*')

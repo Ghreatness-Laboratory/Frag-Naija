@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search } from "lucide-react";
+import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
+import { GAMES } from "@/lib/games";
 
 type Athlete = {
   id: string;
@@ -99,17 +101,23 @@ function RatingRing({ value, primary }: { value: number; primary: string }) {
 
 export default function AthletesPage() {
   const router = useRouter();
-  const { selectedGame, isHydrated } = useGame();
+  const { selectedGame, setSelectedGame, isHydrated } = useGame();
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [selected, setSelected] = useState<Athlete | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const primary   = selectedGame.colors.primary;
-  const secondary = selectedGame.colors.secondary;
-  const isFF      = selectedGame.slug === 'free-fire';
+  const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
+  const isFF      = selectedGame?.slug === 'free-fire';
 
   const load = useCallback(async () => {
+    if (!selectedGame) {
+      setApiAthletes([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const res = await fetch(`/api/athletes?game_slug=${selectedGame.slug}`, { cache: "no-store" });
     if (res.ok) {
@@ -117,12 +125,18 @@ export default function AthletesPage() {
       setApiAthletes(data);
     }
     setLoading(false);
-  }, [selectedGame.slug]);
+  }, [selectedGame]);
+
+  useEffect(() => {
+    const requestedGame = new URLSearchParams(window.location.search).get("game");
+    const game = GAMES.find((item) => item.slug === requestedGame && item.available);
+    if (game && game.slug !== selectedGame?.slug) setSelectedGame(game);
+  }, [selectedGame?.slug, setSelectedGame]);
 
   useEffect(() => { load(); }, [load]);
 
-  const gameContent = isHydrated ? getGameContent(selectedGame.slug) : null;
-  const apiForGame = apiAthletes.filter((a) => (a.game_slug ?? selectedGame.slug) === selectedGame.slug);
+  const gameContent = isHydrated && selectedGame ? getGameContent(selectedGame.slug) : null;
+  const apiForGame = selectedGame ? apiAthletes.filter((a) => (a.game_slug ?? selectedGame.slug) === selectedGame.slug) : [];
   const gameAthletes: Athlete[] = apiForGame.length > 0
     ? apiForGame
     : (gameContent?.athletes as Athlete[] | undefined) ?? [];
@@ -137,7 +151,24 @@ export default function AthletesPage() {
     if (athletes.length > 0 && selected && !athletes.find(a => a.id === selected.id)) {
       setSelected(athletes[0]);
     }
-  }, [athletes.length, selectedGame.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [athletes.length, selectedGame?.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!selectedGame) {
+    return (
+      <div className="min-h-screen px-4 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-2xl rounded-sm border border-fn-gborder bg-fn-card p-8 text-center">
+          <Shield className="mx-auto mb-4 h-10 w-10 text-fn-green" />
+          <h1 className="font-display text-3xl font-black uppercase text-fn-text">Select a game to scout athletes</h1>
+          <p className="mt-3 text-xs leading-relaxed text-fn-muted">
+            Athlete rosters are game-scoped. Choose a game first to view player rankings and profiles.
+          </p>
+          <Link href="/select-game" className="fn-btn mt-6 inline-flex items-center gap-2">
+            Select Game <ChevronRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

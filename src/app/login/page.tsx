@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 

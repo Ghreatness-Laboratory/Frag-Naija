@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, Shield, Star, Flame, Search } from "lucide-react";
+import { Trophy, Users, Shield, Star, Flame, Search, ChevronRight } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
-import { DEFAULT_GAME } from "@/lib/games";
 
 type Athlete = {
   id: string;
@@ -54,22 +54,28 @@ export default function TeamsPage() {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch] = useState("");
 
-  const activeGame = selectedGame ?? DEFAULT_GAME;
-  const primary   = activeGame.colors.primary;
-  const secondary = activeGame.colors.secondary;
-  const isFF      = activeGame.slug === 'free-fire';
+  const activeGame = selectedGame;
+  const primary   = activeGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const secondary = activeGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
+  const isFF      = activeGame?.slug === 'free-fire';
 
   const load = useCallback(async () => {
+    if (!activeGame) {
+      setApiTeams([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { cache: "no-store" });
     if (res.ok) setApiTeams(await res.json());
     setLoading(false);
-  }, [activeGame.slug]);
+  }, [activeGame]);
 
   useEffect(() => { load(); }, [load]);
 
-  const gameContent = isHydrated ? getGameContent(activeGame.slug) : null;
-  const apiForGame = apiTeams.filter((t) => (t.game_slug ?? activeGame.slug) === activeGame.slug);
+  const gameContent = isHydrated && activeGame ? getGameContent(activeGame.slug) : null;
+  const apiForGame = activeGame ? apiTeams.filter((t) => (t.game_slug ?? activeGame.slug) === activeGame.slug) : [];
   const gameTeams: Team[] = apiForGame.length > 0
     ? apiForGame
     : (gameContent?.teams as Team[] | undefined) ?? [];
@@ -83,7 +89,24 @@ export default function TeamsPage() {
       const current = selected ? teams.find(t => t.id === selected.id) : null;
       setSelected(current ?? teams[0]);
     }
-  }, [teams.length, activeGame.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [teams.length, activeGame?.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!activeGame) {
+    return (
+      <div className="min-h-screen px-4 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-2xl rounded-sm border border-fn-gborder bg-fn-card p-8 text-center">
+          <Shield className="mx-auto mb-4 h-10 w-10 text-fn-green" />
+          <h1 className="font-display text-3xl font-black uppercase text-fn-text">Select a game to view teams</h1>
+          <p className="mt-3 text-xs leading-relaxed text-fn-muted">
+            Team rankings are game-scoped. Choose a game first to see that title&apos;s leaderboard and rosters.
+          </p>
+          <Link href="/select-game" className="fn-btn mt-6 inline-flex items-center gap-2">
+            Select Game <ChevronRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -36,7 +36,7 @@ export default async function html2canvas(element: HTMLElement, scale = 2): Prom
 function inlineComputedStyles(source: Element, target: Element) {
   if (source instanceof HTMLElement && target instanceof HTMLElement) {
     const computed = window.getComputedStyle(source);
-    for (const property of computed) {
+    for (const property of Array.from(computed)) {
       target.style.setProperty(property, computed.getPropertyValue(property), computed.getPropertyPriority(property));
     }
   }

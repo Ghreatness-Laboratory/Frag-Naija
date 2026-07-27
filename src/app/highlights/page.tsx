@@ -34,11 +34,11 @@ export default function HighlightsPage() {
   const [playing, setPlaying]       = useState(false);
   const [archiveOffset, setArchiveOffset] = useState(0);
 
-  const primary   = selectedGame.colors.primary;
-  const secondary = selectedGame.colors.secondary;
-  const isFF      = selectedGame.slug === 'free-fire';
+  const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
+  const isFF      = selectedGame?.slug === 'free-fire';
 
-  const gameContent  = isHydrated ? getGameContent(selectedGame.slug) : null;
+  const gameContent  = isHydrated && selectedGame ? getGameContent(selectedGame.slug) : null;
   const dummyVideos  = gameContent?.highlights.map(toHighlight) ?? [];
   const videos       = dummyVideos.length > 0 ? dummyVideos : archiveVideos.map(v => ({ ...v, featured: false }));
 
@@ -69,7 +69,7 @@ export default function HighlightsPage() {
       >
         <div className="flex items-center gap-2 mb-1">
           {isFF && <Flame size={10} style={{ color: primary }} />}
-          <div className="fn-label">TACTICAL VISUAL INTERFACE // {selectedGame.shortName.toUpperCase()} HIGHLIGHTS</div>
+          <div className="fn-label">TACTICAL VISUAL INTERFACE // {(selectedGame?.shortName ?? 'ALL GAMES').toUpperCase()} HIGHLIGHTS</div>
         </div>
         <h1 className="font-display font-black uppercase leading-none">
           <span className="block text-5xl sm:text-7xl text-fn-text">THE THEATRE</span>
@@ -193,7 +193,7 @@ export default function HighlightsPage() {
               >
                 {[...Array(4)].map((_, i) => <div key={i} style={{ background: primary }} />)}
               </div>
-              <span className="fn-label text-fn-text">TACTICAL ARCHIVE — {selectedGame.shortName.toUpperCase()}</span>
+              <span className="fn-label text-fn-text">TACTICAL ARCHIVE — {(selectedGame?.shortName ?? 'ALL GAMES').toUpperCase()}</span>
             </div>
             <div className="flex items-center gap-2">
               <button

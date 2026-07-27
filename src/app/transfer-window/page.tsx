@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Clock, TrendingUp, Users, Filter, Flame } from "lucide-react";
+import Link from "next/link";
+import { Clock, TrendingUp, Users, Filter, Flame, ChevronRight } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
-import { DEFAULT_GAME } from "@/lib/games";
 
 type Transfer = {
   id: string;
@@ -43,21 +43,27 @@ export default function TransferWindowPage() {
   const [loading, setLoading]           = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
 
-  const activeGame = selectedGame ?? DEFAULT_GAME;
-  const primary   = activeGame.colors.primary;
-  const secondary = activeGame.colors.secondary;
-  const isFF      = activeGame.slug === 'free-fire';
+  const activeGame = selectedGame;
+  const primary   = activeGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const secondary = activeGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
+  const isFF      = activeGame?.slug === 'free-fire';
 
   const load = useCallback(async () => {
+    if (!activeGame) {
+      setApiTransfers([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const res = await fetch(`/api/transfers?game_slug=${activeGame.slug}`);
     if (res.ok) setApiTransfers(await res.json());
     setLoading(false);
-  }, [activeGame.slug]);
+  }, [activeGame]);
 
   useEffect(() => { load(); }, [load]);
 
-  const gameContent = isHydrated ? getGameContent(activeGame.slug) : null;
+  const gameContent = isHydrated && activeGame ? getGameContent(activeGame.slug) : null;
   const transfers: Transfer[] = apiTransfers.length > 0
     ? apiTransfers
     : (gameContent?.transfers as Transfer[] | undefined) ?? [];
@@ -71,6 +77,23 @@ export default function TransferWindowPage() {
     fee ? `₦${Number(fee).toLocaleString()}` : "—";
 
   const totalValue = transfers.reduce((sum, t) => sum + (t.fee ?? 0), 0);
+
+  if (!activeGame) {
+    return (
+      <div className="min-h-screen px-4 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-2xl rounded-sm border border-fn-gborder bg-fn-card p-8 text-center">
+          <TrendingUp className="mx-auto mb-4 h-10 w-10 text-fn-green" />
+          <h1 className="font-display text-3xl font-black uppercase text-fn-text">Select a game to view transfers</h1>
+          <p className="mt-3 text-xs leading-relaxed text-fn-muted">
+            Transfer windows are game-scoped. Choose a game first to see that title&apos;s roster movement.
+          </p>
+          <Link href="/select-game" className="fn-btn mt-6 inline-flex items-center gap-2">
+            Select Game <ChevronRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   function statusStyle(status: string) {
     if (status === "Confirmed") return { background: `${primary}20`, color: primary, borderColor: `${primary}40` };

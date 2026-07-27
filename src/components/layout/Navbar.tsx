@@ -61,10 +61,12 @@ function GameSwitcher({ onClick }: { onClick: () => void }) {
     >
       <span
         className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-        style={{ background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }}
+        style={selectedGame
+          ? { background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }
+          : { background: 'rgb(var(--fn-muted))' }}
       />
       <span className="text-[9px] font-bold uppercase tracking-widest text-fn-text group-hover:text-fn-green transition-colors truncate max-w-[80px]">
-        {selectedGame.shortName}
+        {selectedGame?.shortName ?? 'Select Game'}
       </span>
       <Gamepad2 size={10} className="text-fn-muted group-hover:text-fn-green transition-colors flex-shrink-0" />
     </button>
@@ -240,12 +242,14 @@ export default function Navbar() {
                   <div className="flex items-center gap-2">
                     <span
                       className="h-2 w-2 rounded-full flex-shrink-0"
-                      style={{ background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }}
+                      style={selectedGame
+                        ? { background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }
+                        : { background: 'rgb(var(--fn-muted))' }}
                     />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-fn-text">
-                      {selectedGame.shortName}
+                      {selectedGame?.shortName ?? 'Select Game'}
                     </span>
-                    <span className="text-[8px] text-fn-muted uppercase tracking-wider">— Active Game</span>
+                    <span className="text-[8px] text-fn-muted uppercase tracking-wider">{selectedGame ? '— Active Game' : '— Neutral'}</span>
                   </div>
                   <div className="flex items-center gap-1 text-[8px] text-fn-muted">
                     <Gamepad2 size={10} /> Switch
