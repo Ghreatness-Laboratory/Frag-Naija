@@ -477,3 +477,44 @@ CREATE POLICY "organizations_public_read" ON organizations FOR SELECT USING (tru
 CREATE POLICY "organizations_admin_write" ON organizations FOR ALL USING (false);
 CREATE POLICY "organization_achievements_public_read" ON organization_achievements FOR SELECT USING (true);
 CREATE POLICY "organization_achievements_admin_write" ON organization_achievements FOR ALL USING (false);
+
+-- ─── GAME SLUG CHECKS ───────────────────────────────────────────────────────
+DO $$
+DECLARE
+  allowed_games text := '''pubg-mobile'', ''free-fire'', ''cod-mobile'', ''ea-fc-26'', ''mortal-kombat'', ''efootball'', ''mobile-legends'', ''fc-mobile'', ''blood-strike''';
+  tbl text;
+BEGIN
+  FOREACH tbl IN ARRAY ARRAY['athletes', 'teams', 'tournaments', 'wagers', 'transfers', 'shop_items', 'communities'] LOOP
+    IF to_regclass(format('public.%I', tbl)) IS NOT NULL THEN
+      EXECUTE format('ALTER TABLE public.%I DROP CONSTRAINT IF EXISTS %I', tbl, tbl || '_game_slug_check');
+      EXECUTE format('ALTER TABLE public.%I ADD CONSTRAINT %I CHECK (game_slug IS NULL OR game_slug IN (%s))', tbl, tbl || '_game_slug_check', allowed_games);
+    END IF;
+  END LOOP;
+END $$;
+
+-- ─── TEAM MEMBERS ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS team_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  bio TEXT,
+  photo_url TEXT,
+  currently_playing_game_slug TEXT,
+  twitter_url TEXT,
+  instagram_url TEXT,
+  linkedin_url TEXT,
+  twitch_url TEXT,
+  youtube_url TEXT,
+  sort_order INT DEFAULT 0,
+  status TEXT DEFAULT 'Published' CHECK (status IN ('Draft', 'Published')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT team_members_currently_playing_game_slug_check CHECK (
+    currently_playing_game_slug IS NULL OR currently_playing_game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends', 'fc-mobile', 'blood-strike')
+  )
+);
+
+CREATE INDEX IF NOT EXISTS team_members_status_sort_idx ON team_members(status, sort_order);
+ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "team_members_public_read" ON team_members FOR SELECT USING (status = 'Published');
+CREATE POLICY "team_members_admin_write" ON team_members FOR ALL USING (false);

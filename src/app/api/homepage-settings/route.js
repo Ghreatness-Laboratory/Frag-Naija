@@ -5,8 +5,15 @@ import { getHomepageSettings, updateHomepageSettings } from '@/features/homepage
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  try { return NextResponse.json(await getHomepageSettings()); }
-  catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }); }
+  try {
+    return NextResponse.json(await getHomepageSettings(), {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
+    });
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }
 
 export async function PUT(request) {
