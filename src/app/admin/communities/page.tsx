@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Users } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import AdminModal from '@/components/admin/AdminModal';
 import AdminTable from '@/components/admin/AdminTable';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';

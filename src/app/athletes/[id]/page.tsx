@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Download, Eye, Flag, Printer, Shield, Trophy, X } from 'lucide-react';
 import { useGame } from '@/context/GameContext';
 import html2canvas from '@/lib/html2canvas';
-import { combatAttributes, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { combatAttributes, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 
 type Achievement = { title?: string; date?: string };
 type Team = { id: string; name: string; logo_url: string | null; rank: number | null };
@@ -57,7 +57,7 @@ function parseObjects<T extends Record<string, unknown> = Achievement>(v: unknow
 function PlayerCard({ athlete, team, rating, primary, gameName }: { athlete: Athlete; team: Team | null; rating: number; primary: string; gameName: string }) {
   const displayName = athlete.known_name || athlete.ign;
   const cardNumber = athlete.jersey_number || team?.rank || Math.max(1, Math.round(Number(rating) || 0));
-  const stats = combatAttributes(athlete as unknown as Record<string, unknown>);
+  const stats = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
 
   return (
     <div
@@ -100,10 +100,10 @@ function PlayerCard({ athlete, team, rating, primary, gameName }: { athlete: Ath
           {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <Flag size={16} style={{ color: primary }} />}
         </div>
         <h2 className="max-w-[250px] font-display text-4xl font-black uppercase leading-[0.86] tracking-tight" style={{ color: primary, textShadow: `0 0 20px ${primary}55` }}>{displayName}</h2>
-        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{team?.name || athlete.team || 'Free Agent'}</p>
+        {!isFootballGame(athlete.game_slug) && <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{team?.name || athlete.team || 'Free Agent'}</p>}
       </div>
 
-      <div className="absolute bottom-8 left-5 right-5 z-20 grid grid-cols-5 overflow-hidden rounded-lg border bg-black/78" style={{ borderColor: `${primary}70` }}>
+      <div className={`absolute bottom-8 left-5 right-5 z-20 grid overflow-hidden rounded-lg border bg-black/78 ${stats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`} style={{ borderColor: `${primary}70` }}>
         {stats.map((stat) => (
           <div key={stat.label} className="border-r border-white/10 px-1.5 py-2 text-center last:border-r-0">
             <div className="font-display text-2xl font-black leading-none text-white">{stat.value}</div>
@@ -144,7 +144,8 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
   const previousTeams = parseObjects<{ team?: string; years?: string }>(a.previous_teams);
   const achievements = parseObjects<Achievement>(a.achievements);
   const rating = normalizeRating(a.overall_rating, a.rating);
-  const profileAttrs = combatAttributes(a as unknown as Record<string, unknown>);
+  const footballProfile = isFootballGame(a.game_slug);
+  const profileAttrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);
   const showLoadout = isShooterGame(a.game_slug);
   const sensitivityEntries = (() => {
     const value = a.sensitivity_settings;
@@ -184,9 +185,9 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
               {a.photo_url ? <img src={a.photo_url} alt={a.ign} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}
             </div>
             <div className="flex-1">
-              <p className="fn-label">{a.status} · {a.role || 'Player'}{team?.rank ? ` · rank #${team.rank}` : ''}</p>
+              <p className="fn-label">{footballProfile ? a.status : `${a.status} · ${a.role || 'Player'}${team?.rank ? ` · rank #${team.rank}` : ''}`}</p>
               <h1 className="font-display text-4xl font-black uppercase text-fn-text">{displayName}</h1>
-              <p className="text-xs text-fn-muted">{a.name}{aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p>
+              <p className="text-xs text-fn-muted">{a.name}{!footballProfile && aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p>
             </div>
             <div className="text-center">
               <div className="font-display text-5xl font-black" style={{ color: primary }}>{rating}</div>
@@ -209,7 +210,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
           </div>
         </section>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className={`mt-4 grid grid-cols-2 gap-3 ${footballProfile ? 'sm:grid-cols-3' : 'sm:grid-cols-5'}`}>
           {profileAttrs.map((stat) => (
             <div key={stat.label} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center">
               <div className="font-display text-2xl font-black text-white">{stat.value}</div>
@@ -237,12 +238,12 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
         )}
 
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <article className="rounded-sm border border-fn-gborder bg-fn-card p-4">
+          {!footballProfile && <article className="rounded-sm border border-fn-gborder bg-fn-card p-4">
             <h2 className="fn-label mb-3" style={{ color: primary }}>TEAMS</h2>
             <p className="text-xs font-bold text-fn-text">Current: {a.team || 'Free Agent'}</p>
             {previousTeams.map((t, i) => <p key={i} className="mt-2 text-xs text-fn-muted">Previous: {t.team} {t.years}</p>)}
-          </article>
-          <article className="rounded-sm border border-fn-gborder bg-fn-card p-4 lg:col-span-2">
+          </article>}
+          <article className={`rounded-sm border border-fn-gborder bg-fn-card p-4 ${footballProfile ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
             <h2 className="fn-label mb-3 flex items-center gap-2"><Trophy size={12} style={{ color: primary }} /> ACHIEVEMENTS / TITLES</h2>
             {achievements.length ? achievements.map((x, i) => <p key={i} className="mb-2 text-xs text-fn-text">{x.title} <span className="text-fn-muted">{x.date}</span></p>) : <p className="text-xs text-fn-muted">No titles recorded yet.</p>}
           </article>
