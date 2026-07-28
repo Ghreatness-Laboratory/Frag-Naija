@@ -166,11 +166,21 @@ function AthletesContent() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [ar, tr] = await Promise.all([fetch('/api/athletes'), fetch('/api/teams')]);
-    if (ar.ok) setRows(await ar.json());
-    const teamData = await tr.json();
-    setTeams(Array.isArray(teamData) ? teamData : []);
-    setLoading(false);
+    setError('');
+    try {
+      const [ar, tr] = await Promise.all([fetch('/api/athletes'), fetch('/api/teams')]);
+      const athleteData = ar.ok ? await ar.json() : [];
+      const teamData = tr.ok ? await tr.json() : [];
+      setRows(Array.isArray(athleteData) ? athleteData : []);
+      setTeams(Array.isArray(teamData) ? teamData : []);
+    } catch (err) {
+      console.error('Failed to load admin athlete data', err);
+      setRows([]);
+      setTeams([]);
+      setError('Unable to load athlete data. Please refresh and try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
