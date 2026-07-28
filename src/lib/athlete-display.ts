@@ -1,6 +1,6 @@
-import { isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS } from './game-categories';
+import { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS } from './game-categories';
 
-export { isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS };
+export { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS };
 
 export const COMBAT_ATTRIBUTE_COLORS = {
   attack: '#ff7a1a',
@@ -31,7 +31,7 @@ export function combatAttributes(athlete: Record<string, unknown>, gameSlug?: st
     { key: 'clutch', label: 'CLU', name: 'Clutch', value: clampStat(athlete.clutch), color: COMBAT_ATTRIBUTE_COLORS.clutch },
   ];
 
-  return isFootballGame(gameSlug ?? String(athlete.game_slug ?? ''))
+  return isFcMobileGame(gameSlug ?? String(athlete.game_slug ?? ''))
     ? attrs.filter((attr) => ['attack', 'defense', 'iq'].includes(attr.key))
     : attrs;
 }
