@@ -242,19 +242,19 @@ function AthletesContent() {
         team:           isFootballGame(form.game_slug) ? '' : form.team,
         role:           isFootballGame(form.game_slug) ? '' : form.role,
         status:         form.status,
-        bio:            form.bio,
+        bio:            isFootballGame(form.game_slug) ? '' : form.bio,
         photo_url:      photoUrl ?? form.photo_url,
-        attack:         Number(form.attack) || 0,
-        defense:        Number(form.defense) || 0,
+        attack:         Number(form.attack)         || 0,
+        defense:        Number(form.defense)        || 0,
         clutch:         isFootballGame(form.game_slug) ? 0 : Number(form.clutch) || 0,
         survival:       isFootballGame(form.game_slug) ? 0 : Number(form.survival) || 0,
-        iq:             Number(form.iq) || 0,
-        aggression:     isFootballGame(form.game_slug) ? 0 : Number(form.aggression) || 0,
+        iq:             Number(form.iq)             || 0,
+        aggression:     Number(form.aggression)     || 0,
         overall_rating: normalizeRating(form.overall_rating),
         ...(isShooterGame(form.game_slug) ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
-        perks:      isFootballGame(form.game_slug) ? [] : splitArr(form.perks),
-        strengths:  isFootballGame(form.game_slug) ? [] : splitArr(form.strengths),
-        weaknesses: isFootballGame(form.game_slug) ? [] : splitArr(form.weaknesses),
+        perks:      splitArr(form.perks),
+        strengths:  splitArr(form.strengths),
+        weaknesses: splitArr(form.weaknesses),
         previous_aliases: isFootballGame(form.game_slug) ? [] : cleanStringList(form.previous_aliases),
         previous_teams: isFootballGame(form.game_slug) ? [] : cleanObjectList(form.previous_teams),
         achievements: cleanObjectList(form.achievements),
@@ -426,7 +426,7 @@ function AthletesContent() {
             </Select>
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          {!footballSelected && <div className="grid grid-cols-2 gap-3">
             <Field label="Team">
               <Select value={form.team} onChange={f('team')}>
                 <option value="">Free Agent</option>
@@ -440,7 +440,7 @@ function AthletesContent() {
             <Field label="Role">
               <Input value={form.role} onChange={f('role')} placeholder="IGL / Fragger / Support" />
             </Field>
-          </div>
+          </div>}
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Status">
@@ -467,18 +467,21 @@ function AthletesContent() {
           <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
             Player Card Stats (0–100)
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className={footballSelected ? "grid grid-cols-3 gap-3" : "grid grid-cols-3 gap-3"}>
             <Field label="ATT / Attack">
               <Input type="number" min="0" max="100" value={form.attack} onChange={f('attack')} placeholder="0" />
             </Field>
             <Field label="DEF / Defense">
               <Input type="number" min="0" max="100" value={form.defense} onChange={f('defense')} placeholder="0" />
             </Field>
-            <Field label="CLU / Clutch">
+            {!footballSelected && <Field label="CLU / Clutch">
               <Input type="number" min="0" max="100" value={form.clutch} onChange={f('clutch')} placeholder="0" />
-            </Field>
+            </Field>}
+            {footballSelected && <Field label="IQ">
+              <Input type="number" min="0" max="100" value={form.iq} onChange={f('iq')} placeholder="0" />
+            </Field>}
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          {!footballSelected && <div className="grid grid-cols-3 gap-3">
             <Field label="SUR / Survival">
               <Input type="number" min="0" max="100" value={form.survival} onChange={f('survival')} placeholder="0" />
             </Field>
@@ -488,7 +491,7 @@ function AthletesContent() {
             <Field label="Aggression">
               <Input type="number" min="0" max="100" value={form.aggression} onChange={f('aggression')} placeholder="0" />
             </Field>
-          </div>
+          </div>}
 
 
 
@@ -508,7 +511,7 @@ function AthletesContent() {
             </div>
           )}
 
-          <>
+          {!footballSelected && <>
           {/* Perks / Strengths / Weaknesses */}
           <Field label="Perks (comma-separated)">
             <Textarea
@@ -533,13 +536,13 @@ function AthletesContent() {
               />
             </Field>
           </div>
-          </>
+          </>}
 
           <Field label="Bio">
             <Textarea value={form.bio} onChange={f('bio')} placeholder="Player description..." />
           </Field>
 
-          <>
+          {!footballSelected && <>
           <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
             Career History
           </p>
@@ -559,7 +562,7 @@ function AthletesContent() {
             ]}
             onChange={(values) => setForm((p) => ({ ...p, previous_teams: values }))}
           />
-          </>
+          </>}
           <ObjectListEditor
             label="Titles & Championships"
             values={form.achievements}
