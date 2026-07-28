@@ -234,6 +234,9 @@ function AthletesContent() {
     setError('');
     try {
       const photoUrl = await uploadPhoto();
+      const fcMobileGame = isFcMobileGame(form.game_slug);
+      const footballGame = isFootballGame(form.game_slug);
+      const shooterGame = isShooterGame(form.game_slug);
       const body = {
         name:           isFcMobileGame(form.game_slug) ? form.ign : form.name,
         ign:            form.ign,
