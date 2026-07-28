@@ -9,8 +9,7 @@ import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
-import { isFcMobileGame, isFootballGame, isShooterGame } from '@/lib/athlete-display';
-import { calculateAthleteOverallRating, normalizeStatValue } from '@/lib/athlete-rating';
+import { isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
@@ -238,34 +237,31 @@ function AthletesContent() {
       const fcMobileGame = isFcMobileGame(form.game_slug);
       const footballGame = isFootballGame(form.game_slug);
       const shooterGame = isShooterGame(form.game_slug);
-      const calculatedOverallRating = calculateAthleteOverallRating(form, form.game_slug);
-      const statValue = (value: string) => normalizeStatValue(value);
       const body = {
-        name:           fcMobileGame ? form.ign : form.name,
+        name:           isFcMobileGame(form.game_slug) ? form.ign : form.name,
         ign:            form.ign,
-        known_name:     fcMobileGame ? form.ign : (form.known_name || form.ign),
+        known_name:     isFcMobileGame(form.game_slug) ? form.ign : (form.known_name || form.ign),
         game_slug:      form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
-        team:           footballGame ? null : form.team,
-        role:           footballGame ? null : form.role,
+        team:           isFcMobileGame(form.game_slug) ? '' : form.team,
+        role:           isFcMobileGame(form.game_slug) ? '' : form.role,
         status:         form.status,
         bio:            form.bio,
         photo_url:      photoUrl ?? form.photo_url,
-        attack:         statValue(form.attack),
-        defense:        statValue(form.defense),
-        clutch:         fcMobileGame ? null : statValue(form.clutch),
-        survival:       fcMobileGame ? null : statValue(form.survival),
-        iq:             statValue(form.iq),
-        aggression:     statValue(form.aggression),
-        overall_rating: calculatedOverallRating,
-        sensitivity_settings: shooterGame ? (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })() : null,
-        control_code: shooterGame ? form.control_code : null,
-        perks:      footballGame ? null : splitArr(form.perks),
-        strengths:  footballGame ? null : splitArr(form.strengths),
-        weaknesses: footballGame ? null : splitArr(form.weaknesses),
-        previous_aliases: footballGame ? null : cleanStringList(form.previous_aliases),
-        previous_teams: footballGame ? null : cleanObjectList(form.previous_teams),
-        achievements: fcMobileGame ? [] : cleanObjectList(form.achievements),
-        performance_history: footballGame ? null : cleanObjectList(form.performance_history),
+        attack:         Number(form.attack)         || 0,
+        defense:        Number(form.defense)        || 0,
+        clutch:         isFcMobileGame(form.game_slug) ? 0 : Number(form.clutch) || 0,
+        survival:       isFcMobileGame(form.game_slug) ? 0 : Number(form.survival) || 0,
+        iq:             Number(form.iq)             || 0,
+        aggression:     Number(form.aggression)     || 0,
+        overall_rating: normalizeRating(form.overall_rating),
+        ...(isShooterGame(form.game_slug) ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
+        perks:      splitArr(form.perks),
+        strengths:  splitArr(form.strengths),
+        weaknesses: splitArr(form.weaknesses),
+        previous_aliases: isFcMobileGame(form.game_slug) ? [] : cleanStringList(form.previous_aliases),
+        previous_teams: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.previous_teams),
+        achievements: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.achievements),
+        performance_history: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.performance_history),
       };
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
@@ -405,7 +401,6 @@ function AthletesContent() {
               <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
                 Player Card Stats (0–100)
               </p>
-              <p className="text-[10px] text-fn-muted">Overall Rating is automatically calculated from the valid stats below.</p>
               <div className="grid grid-cols-3 gap-3">
                 <Field label="ATT / Attack">
                   <Input type="number" min="0" max="100" value={form.attack} onChange={f('attack')} placeholder="0" />
