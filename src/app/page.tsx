@@ -3,14 +3,16 @@ import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
+import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
+import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { GAMES } from "@/lib/games";
-import { combatAttributes } from "@/lib/athlete-display";
+import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
-  rating: number; overall_rating?: number; kills: number; assists: number; winrate: number;
+  known_name?: string | null; team?: string | null; jersey_number?: number | string | null;
+  rating?: number; overall_rating?: number; kills: number; assists: number; winrate: number;
   attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
   photo_url: string | null; status: string; game_slug?: string | null;
 };
@@ -189,47 +191,21 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
 }
 
 function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
-  const rankColors = [primary, "rgb(var(--fn-yellow))", "#C0C0C0", "#00aaff"];
-  const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
-  const attrs = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
+  const game = GAMES.find((item) => item.slug === athlete.game_slug);
+  const rating = Number(athlete.overall_rating ?? athlete.rating ?? 0);
+
   return (
-    <motion.div variants={reveal} whileHover={{ y: -6, rotateX: 2 }} className="flex-shrink-0">
-    <Link href={`/athletes/${athlete.id}`} className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
-      onMouseEnter={e => (e.currentTarget.style.borderColor = `${primary}50`)}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = '')}
-    >
-      <div className="relative h-32 sm:h-40 bg-gradient-to-b from-fn-card2 to-fn-dark flex items-center justify-center overflow-hidden">
-        {athlete.photo_url
-          ? <img src={athlete.photo_url} alt={athlete.ign} className="w-full h-full object-cover" />
-          : (
-            <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-display font-black border-2 transition-all group-hover:scale-105"
-              style={{ borderColor: col, color: col, background: `${col}15` }}>
-              {athlete.ign[0]}
-            </div>
-          )}
-        <div className="absolute top-2 left-2 px-1.5 py-0.5 text-[8px] font-bold tracking-widest uppercase"
-          style={{ background: `${col}20`, border: `1px solid ${col}50`, color: col }}>
-          #{rank + 1}
-        </div>
-        <div className="absolute top-2 right-2 flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: col }} />
-          <span className="text-[7px] font-bold tracking-widest uppercase" style={{ color: col }}>{athlete.status}</span>
-        </div>
-      </div>
-      <div className="p-3">
-        <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-fn-text"><Medal size={10} style={{ color: col }} />{athlete.ign}</div>
-        <div className="fn-label mb-2">{athlete.role || "Player"}</div>
-        <div className="grid grid-cols-5 gap-1">
-          {attrs.map(({ value, name }) => (
-            <div key={name} className="text-center">
-              <div className="text-[10px] font-bold text-white">{value}</div>
-              <div className="fn-label text-[7px] text-fn-green">{name}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-all" style={{ background: primary }} />
-    </Link>
+    <motion.div variants={reveal} className="flex-shrink-0">
+      <Link href={`/athletes/${athlete.id}`} className="group block">
+        <PlayerCardTemplate
+          athlete={athlete}
+          rating={rating}
+          primary={game?.colors.primary ?? primary}
+          gameName={(game?.shortName ?? 'ALL').toUpperCase()}
+          rank={rank + 1}
+          variant="featured"
+        />
+      </Link>
     </motion.div>
   );
 }
@@ -349,12 +325,33 @@ export default function HomePage() {
 
   const featuredAthleteIds = parseFeaturedIds(homepageSettings.featured_athlete_ids);
   const featuredTeamIds = parseFeaturedIds(homepageSettings.featured_team_ids);
+  const fallbackAthletes = (selectedGame
+    ? (GAME_CONTENT[selectedGame.slug]?.athletes ?? [])
+    : Object.values(GAME_CONTENT).flatMap((content) => content.athletes)
+  ).map((athlete) => ({ ...athlete, rating: athlete.overall_rating }));
+  const fallbackTeams = selectedGame
+    ? (GAME_CONTENT[selectedGame.slug]?.teams ?? [])
+    : Object.values(GAME_CONTENT).flatMap((content) => content.teams);
+  const fallbackTeamCards: Team[] = fallbackTeams.map((team) => ({
+    id: team.id,
+    name: team.name,
+    logo_url: team.logo_url,
+    region: team.region,
+    rank: team.rank,
+    wins: team.wins,
+    losses: team.losses,
+    kills: team.kills,
+    strength: team.strength,
+    game_slug: team.game_slug,
+  }));
+  const athleteSource = allAthletes.length ? allAthletes : fallbackAthletes;
+  const teamSource = allTeams.length ? allTeams : fallbackTeamCards;
   const gameAthletes: Athlete[] = selectedGame
-    ? allAthletes.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : pickByIds(allAthletes, featuredAthleteIds);
+    ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
+    : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6));
   const teams: Team[] = selectedGame
-    ? allTeams.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
-    : pickByIds(allTeams, featuredTeamIds);
+    ? teamSource.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
+    : (featuredTeamIds.length && allTeams.length ? pickByIds(allTeams, featuredTeamIds) : teamSource.slice(0, 4));
   const showAthletes = settingEnabled(homepageSettings, 'show_athletes');
   const showTeams = settingEnabled(homepageSettings, 'show_teams');
   const showShop = settingEnabled(homepageSettings, 'show_shop');

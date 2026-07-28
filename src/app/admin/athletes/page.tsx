@@ -8,8 +8,10 @@ import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
-import { GAMES } from '@/lib/games';
+import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
+import { DEFAULT_GAME, GAMES } from '@/lib/games';
 import { isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
@@ -54,6 +56,122 @@ function cleanObjectList<T extends Record<string, string>>(items: T[]) {
   return items
     .map((item) => Object.fromEntries(Object.entries(item).map(([k, v]) => [k, v.trim()])) as T)
     .filter((item) => Object.values(item).some(Boolean));
+}
+
+async function prepareAthletePhotoForCard(file: File): Promise<File> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file;
+
+  try {
+    const image = await loadImageFile(file);
+    const maxSide = 1600;
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return file;
+
+    ctx.drawImage(image, 0, 0, width, height);
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const { data } = imageData;
+    const total = width * height;
+    const background = new Uint8Array(total);
+    const queue: number[] = [];
+
+    const enqueue = (index: number) => {
+      if (background[index]) return;
+      const offset = index * 4;
+      if (!isWhiteBackdropPixel(data[offset], data[offset + 1], data[offset + 2], data[offset + 3])) return;
+      background[index] = 1;
+      queue.push(index);
+    };
+
+    for (let x = 0; x < width; x += 1) {
+      enqueue(x);
+      enqueue((height - 1) * width + x);
+    }
+    for (let y = 0; y < height; y += 1) {
+      enqueue(y * width);
+      enqueue(y * width + width - 1);
+    }
+
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+      const index = queue[cursor];
+      const x = index % width;
+      const y = Math.floor(index / width);
+      if (x > 0) enqueue(index - 1);
+      if (x < width - 1) enqueue(index + 1);
+      if (y > 0) enqueue(index - width);
+      if (y < height - 1) enqueue(index + width);
+    }
+
+    if (!queue.length) return file;
+
+    const feather = new Uint8Array(total);
+    for (let index = 0; index < total; index += 1) {
+      if (background[index]) continue;
+      const x = index % width;
+      const y = Math.floor(index / width);
+      const touchesBackground =
+        (x > 0 && background[index - 1]) ||
+        (x < width - 1 && background[index + 1]) ||
+        (y > 0 && background[index - width]) ||
+        (y < height - 1 && background[index + width]);
+      if (touchesBackground) feather[index] = 1;
+    }
+
+    for (let index = 0; index < total; index += 1) {
+      const offset = index * 4;
+      if (background[index]) {
+        data[offset + 3] = 0;
+      } else if (feather[index] && isWhiteBackdropPixel(data[offset], data[offset + 1], data[offset + 2], data[offset + 3], 212)) {
+        data[offset + 3] = Math.min(data[offset + 3], 82);
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    const blob = await canvasToBlob(canvas);
+    const filename = file.name.replace(/\.[^.]+$/, '') || 'athlete-photo';
+    return new File([blob], `${filename}-card.png`, { type: 'image/png' });
+  } catch (error) {
+    console.warn('Unable to remove athlete photo backdrop before upload', error);
+    return file;
+  }
+}
+
+function isWhiteBackdropPixel(red: number, green: number, blue: number, alpha: number, threshold = 224) {
+  if (alpha < 16) return true;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const brightness = (red + green + blue) / 3;
+  return brightness >= threshold && max - min <= 42;
+}
+
+function loadImageFile(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Unable to read athlete image'));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Unable to prepare athlete image'));
+    }, 'image/png');
+  });
 }
 
 function ListEditor({
@@ -163,6 +281,7 @@ function AthletesContent() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -184,6 +303,17 @@ function AthletesContent() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!photoFile) {
+      setPhotoPreviewUrl('');
+      return;
+    }
+
+    const url = URL.createObjectURL(photoFile);
+    setPhotoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photoFile]);
 
   function openAdd() {
     setEditing(null);
@@ -238,6 +368,17 @@ function AthletesContent() {
     return data.url;
   }
 
+  async function handlePhotoFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) {
+      setPhotoFile(null);
+      return;
+    }
+
+    setError('');
+    setPhotoFile(await prepareAthletePhotoForCard(file));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -245,33 +386,32 @@ function AthletesContent() {
     try {
       const photoUrl = await uploadPhoto();
       const fcMobileGame = isFcMobileGame(form.game_slug);
-      const footballGame = isFootballGame(form.game_slug);
       const shooterGame = isShooterGame(form.game_slug);
       const body = {
-        name:           isFcMobileGame(form.game_slug) ? form.ign : form.name,
+        name:           fcMobileGame ? form.ign : form.name,
         ign:            form.ign,
-        known_name:     isFcMobileGame(form.game_slug) ? form.ign : (form.known_name || form.ign),
+        known_name:     fcMobileGame ? form.ign : (form.known_name || form.ign),
         game_slug:      form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
-        team:           isFcMobileGame(form.game_slug) ? '' : form.team,
-        role:           isFcMobileGame(form.game_slug) ? '' : form.role,
+        team:           fcMobileGame ? '' : form.team,
+        role:           fcMobileGame ? '' : form.role,
         status:         form.status,
         bio:            form.bio,
         photo_url:      photoUrl ?? form.photo_url,
         attack:         Number(form.attack)         || 0,
         defense:        Number(form.defense)        || 0,
-        clutch:         isFcMobileGame(form.game_slug) ? 0 : Number(form.clutch) || 0,
-        survival:       isFcMobileGame(form.game_slug) ? 0 : Number(form.survival) || 0,
+        clutch:         fcMobileGame ? 0 : Number(form.clutch) || 0,
+        survival:       fcMobileGame ? 0 : Number(form.survival) || 0,
         iq:             Number(form.iq)             || 0,
         aggression:     Number(form.aggression)     || 0,
         overall_rating: normalizeRating(form.overall_rating),
-        ...(isShooterGame(form.game_slug) ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
+        ...(shooterGame ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
         perks:      splitArr(form.perks),
         strengths:  splitArr(form.strengths),
         weaknesses: splitArr(form.weaknesses),
-        previous_aliases: isFcMobileGame(form.game_slug) ? [] : cleanStringList(form.previous_aliases),
-        previous_teams: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.previous_teams),
-        achievements: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.achievements),
-        performance_history: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.performance_history),
+        previous_aliases: fcMobileGame ? [] : cleanStringList(form.previous_aliases),
+        previous_teams: fcMobileGame ? [] : cleanObjectList(form.previous_teams),
+        achievements: fcMobileGame ? [] : cleanObjectList(form.achievements),
+        performance_history: fcMobileGame ? [] : cleanObjectList(form.performance_history),
       };
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
@@ -306,6 +446,22 @@ function AthletesContent() {
   const fcMobileSelected = isFcMobileGame(form.game_slug);
   const footballSelected = isFootballGame(form.game_slug);
   const calculatedOverallRating = calculateAthleteOverallRating(form, form.game_slug);
+  const formGame = GAMES.find((game) => game.slug === form.game_slug) ?? activeGame ?? DEFAULT_GAME;
+  const previewRating = calculatedOverallRating ?? normalizeRating(form.overall_rating);
+  const previewAthlete = {
+    ign: form.ign || 'Player',
+    known_name: form.known_name || form.ign || 'Player',
+    team: form.team || null,
+    role: form.role || 'Player',
+    status: form.status,
+    photo_url: photoPreviewUrl || form.photo_url || null,
+    attack: Number(form.attack) || 0,
+    defense: Number(form.defense) || 0,
+    survival: Number(form.survival) || 0,
+    clutch: Number(form.clutch) || 0,
+    iq: Number(form.iq) || 0,
+    game_slug: form.game_slug,
+  };
 
   return (
     <div className="p-8">
@@ -490,7 +646,7 @@ function AthletesContent() {
             <Field label="DEF / Defense">
               <Input type="number" min="0" max="100" value={form.defense} onChange={f('defense')} placeholder="0" />
             </Field>
-            {!footballSelected && <Field label="CLU / Clutch">
+            {!footballSelected && <Field label="CLT / Clutch">
               <Input type="number" min="0" max="100" value={form.clutch} onChange={f('clutch')} placeholder="0" />
             </Field>}
             {footballSelected && <Field label="IQ">
@@ -616,13 +772,21 @@ function AthletesContent() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+                  onChange={handlePhotoFileChange}
                 />
               </label>
               <Input
                 value={form.photo_url}
                 onChange={f('photo_url')}
                 placeholder="Or paste image URL"
+              />
+              <PlayerCardTemplate
+                athlete={previewAthlete}
+                team={form.team ? { name: form.team } : null}
+                rating={previewRating}
+                primary={formGame.colors.primary}
+                gameName={formGame.shortName.toUpperCase()}
+                variant="compact"
               />
             </div>
           </Field>

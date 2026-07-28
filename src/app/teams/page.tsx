@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trophy, Users, Shield, Star, Flame, Search, ChevronRight } from "lucide-react";
+import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 
@@ -12,8 +13,15 @@ type Athlete = {
   ign: string;
   role: string | null;
   overall_rating: number;
+  attack?: number | null;
+  defense?: number | null;
+  survival?: number | null;
+  clutch?: number | null;
+  iq?: number | null;
   photo_url: string | null;
   status: string;
+  team?: string | null;
+  game_slug?: string | null;
 };
 
 type Team = {
@@ -333,37 +341,18 @@ export default function TeamsPage() {
                 <Users size={9} style={{ color: primary }} /> ACTIVE ROSTER — {t.players.length} PLAYERS
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {t.players.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-3 p-3 bg-fn-dark border border-fn-gborder rounded-sm transition-colors"
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = `${primary}40`)}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = '')}
-                  >
-                    <div
-                      className="w-8 h-8 rounded-sm border flex items-center justify-center overflow-hidden flex-shrink-0"
-                      style={{ background: `${primary}15`, borderColor: `${primary}30` }}
-                    >
-                      {p.photo_url
-                        ? <img src={p.photo_url} alt={p.ign} className="w-full h-full object-cover" />
-                        : <span className="font-display text-sm font-black" style={{ color: primary }}>{p.ign[0]}</span>}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[11px] font-bold text-fn-text truncate">{p.ign}</div>
-                      <div className="fn-label truncate">{p.role || "Player"}</div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="text-[8px] font-bold px-1.5 py-0.5 rounded-sm"
-                        style={p.status === "Active"
-                          ? { background: `${primary}20`, color: primary }
-                          : { background: 'rgb(var(--fn-card2) / 0.75)', color: 'rgb(var(--fn-muted))' }}>
-                        {p.status}
-                      </div>
-                      {p.overall_rating > 0 && (
-                        <div className="text-[9px] font-bold font-mono" style={{ color: secondary }}>{p.overall_rating}</div>
-                      )}
-                    </div>
-                  </div>
+                {t.players.map((p, index) => (
+                  <Link key={p.id} href={`/athletes/${p.id}`} className="group block">
+                    <PlayerCardTemplate
+                      athlete={{ ...p, team: t.name, game_slug: activeGame.slug }}
+                      team={{ name: t.name, logo_url: t.logo_url, rank: t.rank }}
+                      rating={p.overall_rating}
+                      primary={primary}
+                      gameName={activeGame.shortName.toUpperCase()}
+                      rank={index + 1}
+                      variant="compact"
+                    />
+                  </Link>
                 ))}
               </div>
             </div>

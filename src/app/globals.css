@@ -111,6 +111,14 @@ body {
 .stat-bar { height: 4px; background: rgb(var(--fn-gborder)); border-radius: 2px; overflow: hidden; }
 .stat-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease-out; }
 
+.fn-mini-bio {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  max-height: 4.7rem;
+  overflow: hidden;
+}
+
 /* ─── PREDICTION BUTTONS ─────────────────────────────────────────────────────*/
 .pred-yes {
   background: rgb(var(--fn-green)/0.08);
