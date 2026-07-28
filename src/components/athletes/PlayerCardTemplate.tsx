@@ -4,6 +4,7 @@ import { combatAttributes } from '@/lib/athlete-display';
 
 export type PlayerCardTemplateAthlete = {
   ign: string;
+  name?: string | null;
   known_name?: string | null;
   team?: string | null;
   role?: string | null;
@@ -42,6 +43,33 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
+function playerAccentHue(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) hash = (hash * 31 + value.charCodeAt(i)) % 360;
+  return hash;
+}
+
+function playerBackdropStyle(primary: string, athlete: PlayerCardTemplateAthlete, team: PlayerCardTemplateTeam | null): CSSProperties {
+  const identity = `${athlete.name || ''}-${athlete.known_name || athlete.ign}-${team?.name || athlete.team || ''}-${athlete.role || ''}-${athlete.game_slug || ''}`;
+  const isMeleMisayo = /mele|misayo/i.test(`${athlete.name || ''} ${athlete.known_name || ''} ${athlete.ign || ''}`);
+  const hue = isMeleMisayo ? 146 : playerAccentHue(identity);
+  const secondaryHue = isMeleMisayo ? 44 : (hue + 42) % 360;
+  const photoLayer = athlete.photo_url
+    ? `linear-gradient(180deg, rgba(2,7,3,0.12), rgba(2,7,3,0.9)), url(${athlete.photo_url})`
+    : undefined;
+
+  return {
+    backgroundImage: [
+      `radial-gradient(circle at 28% 18%, hsl(${hue} 85% 55% / 0.24), transparent 28%)`,
+      `radial-gradient(circle at 76% 38%, ${primary}42, transparent 32%)`,
+      `linear-gradient(135deg, ${primary}14, transparent 45%, hsl(${secondaryHue} 92% 48% / ${isMeleMisayo ? 0.24 : 0.18}))`,
+      photoLayer,
+    ].filter(Boolean).join(', '),
+    backgroundPosition: 'center, center, center, center 20%',
+    backgroundSize: 'cover, cover, cover, cover',
+  };
+}
+
 function cardShellStyle(primary: string): CSSProperties {
   return {
     clipPath: 'polygon(0 0, calc(100% - 40px) 0, 100% 40px, 100% calc(100% - 46px), calc(100% - 46px) 100%, 0 100%)',
@@ -54,7 +82,7 @@ function cardNumberFrom(athlete: PlayerCardTemplateAthlete, team: PlayerCardTemp
   return athlete.jersey_number || rank || team?.rank || Math.max(1, Math.min(10, Math.round((Number(rating) || 0) / 10)));
 }
 
-function CardBackdrop({ primary }: { primary: string }) {
+function CardBackdrop({ primary, athlete, team }: { primary: string; athlete: PlayerCardTemplateAthlete; team: PlayerCardTemplateTeam | null }) {
   return (
     <>
       <div className="absolute inset-0 p-[3px]" style={{ background: `linear-gradient(135deg, ${primary}, rgba(255,255,255,0.62), ${primary}55, #061006)` }}>
@@ -64,7 +92,9 @@ function CardBackdrop({ primary }: { primary: string }) {
         />
       </div>
       <div className="absolute inset-[9px] border border-white/10" style={{ clipPath: 'polygon(0 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 38px), calc(100% - 38px) 100%, 0 100%)' }} />
+      <div className="player-card-identity-bg absolute inset-[3px] opacity-90" style={playerBackdropStyle(primary, athlete, team)} />
       <div className="absolute inset-0 opacity-85" style={{ background: `radial-gradient(circle at 78% 30%, ${primary}42, transparent 27%), radial-gradient(circle at 88% 48%, ${primary}26, transparent 18%), linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.82) 73%)` }} />
+      <div className="absolute inset-0 opacity-60" style={{ background: `repeating-linear-gradient(118deg, transparent 0 12px, ${primary}10 12px 13px, transparent 13px 26px)` }} />
       <div className="fn-scanlines absolute inset-0 opacity-30" />
     </>
   );
@@ -118,17 +148,17 @@ export default function PlayerCardTemplate({
   if (variant === 'compact') {
     return (
       <div className={cx('player-card player-card-compact relative h-[118px] w-full overflow-hidden bg-[#030803] text-white', className)} style={cardShellStyle(primary)}>
-        <CardBackdrop primary={primary} />
+        <CardBackdrop primary={primary} athlete={athlete} team={team} />
         <div className="absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-end justify-center overflow-hidden border bg-black/55" style={{ borderColor: `${primary}70` }}>
           <PlayerImage
             athlete={athlete}
             displayName={displayName}
             primary={primary}
-            className="h-full w-full object-contain object-bottom drop-shadow-[0_14px_14px_rgba(0,0,0,0.75)]"
+            className="player-card-subject h-full w-full object-contain object-bottom drop-shadow-[0_14px_14px_rgba(0,0,0,0.75)]"
             fallbackClassName="flex h-full w-full items-center justify-center bg-black/35"
           />
         </div>
-        <div className="absolute left-[92px] right-4 top-3 z-20 min-w-0 pr-12">
+        <div className="absolute left-[92px] right-4 top-3 z-20 min-w-0 pr-[4.75rem]">
           <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={{ color: primary }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: primary }} />
             {status}
@@ -136,7 +166,7 @@ export default function PlayerCardTemplate({
           <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: primary, textShadow: `0 0 16px ${primary}55` }}>{displayName}</h3>
           <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{role} / {teamName}</p>
         </div>
-        <div className="absolute right-3 top-3 z-20 text-right">
+        <div className="absolute right-11 top-3 z-20 text-right">
           <div className="font-display text-2xl font-black leading-none" style={{ color: primary }}>{Math.round(Number(rating) || 0)}</div>
           <div className="text-[7px] font-black uppercase tracking-widest text-white/45">OVR</div>
         </div>
@@ -158,7 +188,7 @@ export default function PlayerCardTemplate({
   if (variant === 'featured') {
     return (
       <div className={cx('player-card player-card-featured relative h-[360px] w-[216px] max-w-full overflow-hidden bg-[#030803] text-white transition-transform duration-200 group-hover:-translate-y-1', className)} style={cardShellStyle(primary)}>
-        <CardBackdrop primary={primary} />
+        <CardBackdrop primary={primary} athlete={athlete} team={team} />
         <div className="absolute left-4 top-4 z-20 border bg-black/70 px-2.5 py-2 text-center shadow-lg" style={{ borderColor: `${primary}80`, boxShadow: `0 0 18px ${primary}24` }}>
           <div className="font-display text-3xl font-black leading-none" style={{ color: primary }}>{cardNumber}</div>
           <div className="text-[8px] font-black tracking-[0.22em] text-white/55">RTG</div>
@@ -174,7 +204,7 @@ export default function PlayerCardTemplate({
             athlete={athlete}
             displayName={displayName}
             primary={primary}
-            className="h-full w-full object-contain object-bottom drop-shadow-[0_20px_20px_rgba(0,0,0,0.75)]"
+            className="player-card-subject h-full w-full object-contain object-bottom drop-shadow-[0_20px_20px_rgba(0,0,0,0.75)]"
             fallbackClassName="mb-3 flex h-24 w-24 items-center justify-center rounded-full border bg-black/40"
           />
         </div>
@@ -206,7 +236,7 @@ export default function PlayerCardTemplate({
 
   return (
     <div className={cx('player-card player-card-full relative mx-auto h-[500px] w-[300px] max-w-full overflow-hidden bg-[#030803] text-white shadow-2xl', className)} style={cardShellStyle(primary)}>
-      <CardBackdrop primary={primary} />
+      <CardBackdrop primary={primary} athlete={athlete} team={team} />
 
       <div className="absolute left-5 top-5 z-20 border bg-black/70 px-3 py-2 text-center shadow-lg" style={{ borderColor: `${primary}80`, boxShadow: `0 0 22px ${primary}24` }}>
         <div className="font-display text-5xl font-black leading-none" style={{ color: primary }}>{cardNumber}</div>
@@ -221,7 +251,7 @@ export default function PlayerCardTemplate({
           athlete={athlete}
           displayName={displayName}
           primary={primary}
-          className="h-full w-full object-contain object-bottom drop-shadow-[0_24px_24px_rgba(0,0,0,0.75)]"
+          className="player-card-subject h-full w-full object-contain object-bottom drop-shadow-[0_24px_24px_rgba(0,0,0,0.75)]"
           fallbackClassName="mb-6 flex h-36 w-36 items-center justify-center rounded-full border bg-black/40"
         />
       </div>
