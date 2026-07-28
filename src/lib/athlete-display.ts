@@ -1,5 +1,4 @@
 import { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS } from './game-categories';
-import { getAthleteStatCategories } from './athlete-rating';
 
 export { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS };
 
@@ -34,6 +33,7 @@ export function combatAttributes(athlete: Record<string, unknown>, gameSlug?: st
     { key: 'aggression', label: 'AGR', name: 'Aggression', value: clampStat(athlete.aggression), color: COMBAT_ATTRIBUTE_COLORS.aggression },
   ];
 
-  const statKeys = getAthleteStatCategories(gameSlug ?? String(athlete.game_slug ?? ''));
-  return attrs.filter((attr) => statKeys.includes(attr.key as typeof statKeys[number]));
+  return isFcMobileGame(gameSlug ?? String(athlete.game_slug ?? ''))
+    ? attrs.filter((attr) => ['attack', 'defense', 'iq'].includes(attr.key))
+    : attrs;
 }
