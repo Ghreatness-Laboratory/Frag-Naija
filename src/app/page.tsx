@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
 import { GAMES } from "@/lib/games";
 import { combatAttributes } from "@/lib/athlete-display";
+import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
-  rating: number; overall_rating?: number; kills: number; assists: number; winrate: number;
+  rating?: number; overall_rating?: number; kills: number; assists: number; winrate: number;
   attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
   photo_url: string | null; status: string; game_slug?: string | null;
 };
@@ -220,10 +221,10 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
         <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-fn-text"><Medal size={10} style={{ color: col }} />{athlete.ign}</div>
         <div className="fn-label mb-2">{athlete.role || "Player"}</div>
         <div className="grid grid-cols-5 gap-1">
-          {attrs.map(({ value, name }) => (
-            <div key={name} className="text-center">
+          {attrs.map(({ value, label }) => (
+            <div key={label} className="text-center">
               <div className="text-[10px] font-bold text-white">{value}</div>
-              <div className="fn-label text-[7px] text-fn-green">{name}</div>
+              <div className="fn-label text-[7px] text-fn-green">{label}</div>
             </div>
           ))}
         </div>
@@ -349,12 +350,33 @@ export default function HomePage() {
 
   const featuredAthleteIds = parseFeaturedIds(homepageSettings.featured_athlete_ids);
   const featuredTeamIds = parseFeaturedIds(homepageSettings.featured_team_ids);
+  const fallbackAthletes = (selectedGame
+    ? (GAME_CONTENT[selectedGame.slug]?.athletes ?? [])
+    : Object.values(GAME_CONTENT).flatMap((content) => content.athletes)
+  ).map((athlete) => ({ ...athlete, rating: athlete.overall_rating }));
+  const fallbackTeams = selectedGame
+    ? (GAME_CONTENT[selectedGame.slug]?.teams ?? [])
+    : Object.values(GAME_CONTENT).flatMap((content) => content.teams);
+  const fallbackTeamCards: Team[] = fallbackTeams.map((team) => ({
+    id: team.id,
+    name: team.name,
+    logo_url: team.logo_url,
+    region: team.region,
+    rank: team.rank,
+    wins: team.wins,
+    losses: team.losses,
+    kills: team.kills,
+    strength: team.strength,
+    game_slug: team.game_slug,
+  }));
+  const athleteSource = allAthletes.length ? allAthletes : fallbackAthletes;
+  const teamSource = allTeams.length ? allTeams : fallbackTeamCards;
   const gameAthletes: Athlete[] = selectedGame
-    ? allAthletes.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : pickByIds(allAthletes, featuredAthleteIds);
+    ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
+    : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6));
   const teams: Team[] = selectedGame
-    ? allTeams.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
-    : pickByIds(allTeams, featuredTeamIds);
+    ? teamSource.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
+    : (featuredTeamIds.length && allTeams.length ? pickByIds(allTeams, featuredTeamIds) : teamSource.slice(0, 4));
   const showAthletes = settingEnabled(homepageSettings, 'show_athletes');
   const showTeams = settingEnabled(homepageSettings, 'show_teams');
   const showShop = settingEnabled(homepageSettings, 'show_shop');

@@ -28,9 +28,8 @@ export function combatAttributes(athlete: Record<string, unknown>, gameSlug?: st
     { key: 'attack', label: 'ATT', name: 'Attack', value: clampStat(athlete.attack), color: COMBAT_ATTRIBUTE_COLORS.attack },
     { key: 'defense', label: 'DEF', name: 'Defense', value: clampStat(athlete.defense), color: COMBAT_ATTRIBUTE_COLORS.defense },
     { key: 'survival', label: 'SUR', name: 'Survival', value: clampStat(athlete.survival), color: COMBAT_ATTRIBUTE_COLORS.survival },
+    { key: 'clutch', label: 'CLT', name: 'Clutch', value: clampStat(athlete.clutch), color: COMBAT_ATTRIBUTE_COLORS.clutch },
     { key: 'iq', label: 'IQ', name: 'IQ', value: clampStat(athlete.iq), color: COMBAT_ATTRIBUTE_COLORS.iq },
-    { key: 'clutch', label: 'CLU', name: 'Clutch', value: clampStat(athlete.clutch), color: COMBAT_ATTRIBUTE_COLORS.clutch },
-    { key: 'aggression', label: 'AGR', name: 'Aggression', value: clampStat(athlete.aggression), color: COMBAT_ATTRIBUTE_COLORS.aggression },
   ];
 
   return isFcMobileGame(gameSlug ?? String(athlete.game_slug ?? ''))

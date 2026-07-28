@@ -10,6 +10,7 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 import { isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
@@ -245,33 +246,32 @@ function AthletesContent() {
     try {
       const photoUrl = await uploadPhoto();
       const fcMobileGame = isFcMobileGame(form.game_slug);
-      const footballGame = isFootballGame(form.game_slug);
       const shooterGame = isShooterGame(form.game_slug);
       const body = {
-        name:           isFcMobileGame(form.game_slug) ? form.ign : form.name,
+        name:           fcMobileGame ? form.ign : form.name,
         ign:            form.ign,
-        known_name:     isFcMobileGame(form.game_slug) ? form.ign : (form.known_name || form.ign),
+        known_name:     fcMobileGame ? form.ign : (form.known_name || form.ign),
         game_slug:      form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
-        team:           isFcMobileGame(form.game_slug) ? '' : form.team,
-        role:           isFcMobileGame(form.game_slug) ? '' : form.role,
+        team:           fcMobileGame ? '' : form.team,
+        role:           fcMobileGame ? '' : form.role,
         status:         form.status,
         bio:            form.bio,
         photo_url:      photoUrl ?? form.photo_url,
         attack:         Number(form.attack)         || 0,
         defense:        Number(form.defense)        || 0,
-        clutch:         isFcMobileGame(form.game_slug) ? 0 : Number(form.clutch) || 0,
-        survival:       isFcMobileGame(form.game_slug) ? 0 : Number(form.survival) || 0,
+        clutch:         fcMobileGame ? 0 : Number(form.clutch) || 0,
+        survival:       fcMobileGame ? 0 : Number(form.survival) || 0,
         iq:             Number(form.iq)             || 0,
         aggression:     Number(form.aggression)     || 0,
         overall_rating: normalizeRating(form.overall_rating),
-        ...(isShooterGame(form.game_slug) ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
+        ...(shooterGame ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
         perks:      splitArr(form.perks),
         strengths:  splitArr(form.strengths),
         weaknesses: splitArr(form.weaknesses),
-        previous_aliases: isFcMobileGame(form.game_slug) ? [] : cleanStringList(form.previous_aliases),
-        previous_teams: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.previous_teams),
-        achievements: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.achievements),
-        performance_history: isFcMobileGame(form.game_slug) ? [] : cleanObjectList(form.performance_history),
+        previous_aliases: fcMobileGame ? [] : cleanStringList(form.previous_aliases),
+        previous_teams: fcMobileGame ? [] : cleanObjectList(form.previous_teams),
+        achievements: fcMobileGame ? [] : cleanObjectList(form.achievements),
+        performance_history: fcMobileGame ? [] : cleanObjectList(form.performance_history),
       };
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
@@ -490,7 +490,7 @@ function AthletesContent() {
             <Field label="DEF / Defense">
               <Input type="number" min="0" max="100" value={form.defense} onChange={f('defense')} placeholder="0" />
             </Field>
-            {!footballSelected && <Field label="CLU / Clutch">
+            {!footballSelected && <Field label="CLT / Clutch">
               <Input type="number" min="0" max="100" value={form.clutch} onChange={f('clutch')} placeholder="0" />
             </Field>}
             {footballSelected && <Field label="IQ">

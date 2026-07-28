@@ -268,10 +268,10 @@ export default function AthletesPage() {
                 {isActive ? <ChevronRight size={12} className="rotate-90 text-fn-green transition-transform" /> : <ChevronRight size={12} className="text-fn-muted transition-transform" />}
               </button>
               {isActive && athlete.bio && (
-                <div className="border-b border-fn-gborder/50 bg-fn-black/45 px-4 pb-4 pt-1">
-                  <div className="rounded-sm border border-fn-gborder bg-fn-card p-3">
-                    <p className="text-[10px] leading-relaxed text-fn-muted">{athlete.bio}</p>
-                    <Link href={`/athletes/${athlete.id}`} className="mt-3 inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-fn-green">
+                <div className="border-b border-fn-gborder/50 bg-fn-black/45 px-4 pb-3 pt-1">
+                  <div className="rounded-sm border border-fn-gborder bg-fn-card/80 p-2.5">
+                    <p className="fn-mini-bio text-[10px] leading-relaxed text-fn-muted">{athlete.bio}</p>
+                    <Link href={`/athletes/${athlete.id}`} className="mt-2 inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-fn-green">
                       View full profile <ChevronRight size={10} />
                     </Link>
                   </div>
