@@ -195,11 +195,12 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {a.bio && (
+          {(a.bio || footballProfile) && (
             <div className="mt-5 space-y-3 rounded-sm border border-fn-gborder/70 bg-fn-dark/40 p-4 text-sm leading-7 text-fn-muted sm:p-5">
-              {a.bio.split(/\n{2,}|\r?\n/).map((paragraph) => paragraph.trim()).filter(Boolean).map((paragraph, index) => (
+              <h2 className="fn-label" style={{ color: primary }}>{footballProfile ? 'PLAYER DOSSIER' : 'ATHLETE DOSSIER'}</h2>
+              {a.bio ? a.bio.split(/\n{2,}|\r?\n/).map((paragraph) => paragraph.trim()).filter(Boolean).map((paragraph, index) => (
                 <p key={index} className="max-w-prose">{paragraph}</p>
-              ))}
+              )) : <p className="max-w-prose">No dossier has been published for this football athlete yet.</p>}
             </div>
           )}
 
