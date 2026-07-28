@@ -8,3 +8,7 @@ export function isShooterGame(gameSlug?: string | null) {
 export function isFootballGame(gameSlug?: string | null) {
   return FOOTBALL_GAME_SLUGS.has(String(gameSlug ?? '').toLowerCase());
 }
+
+export function isFcMobileGame(gameSlug?: string | null) {
+  return String(gameSlug ?? '').toLowerCase() === 'fc-mobile';
+}

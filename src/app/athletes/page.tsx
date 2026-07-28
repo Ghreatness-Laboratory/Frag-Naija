@@ -5,7 +5,8 @@ import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, 
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
-import { combatAttributes, normalizeRating } from "@/lib/athlete-display";
+import { combatAttributes } from "@/lib/athlete-display";
+import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 
 type Athlete = {
   id: string;
@@ -39,11 +40,7 @@ type Athlete = {
 };
 
 function computeRating(a: Athlete): number {
-  if (a.overall_rating) return normalizeRating(a.overall_rating);
-  const vals = [a.attack, a.defense, a.clutch, a.survival, a.iq, a.aggression]
-    .map(Number).filter((v) => v > 0);
-  if (!vals.length) return Number(a.overall_rating ?? 0);
-  return normalizeRating(vals.reduce((s, v) => s + v, 0) / vals.length);
+  return calculateAthleteOverallRating(a as unknown as Record<string, unknown>, a.game_slug) ?? 0;
 }
 
 function parseArray(val: string[] | string | null | undefined): string[] {
