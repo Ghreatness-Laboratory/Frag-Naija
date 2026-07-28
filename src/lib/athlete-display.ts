@@ -1,4 +1,6 @@
-export const SHOOTER_GAME_SLUGS = new Set(['pubg-mobile', 'free-fire', 'cod-mobile']);
+import { isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS } from './game-categories';
+
+export { isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS };
 
 export const COMBAT_ATTRIBUTE_COLORS = {
   attack: '#ff7a1a',
@@ -7,10 +9,6 @@ export const COMBAT_ATTRIBUTE_COLORS = {
   iq: '#a855f7',
   clutch: 'rgb(var(--fn-green))',
 } as const;
-
-export function isShooterGame(gameSlug?: string | null) {
-  return SHOOTER_GAME_SLUGS.has(String(gameSlug ?? '').toLowerCase());
-}
 
 export function clampStat(value: unknown, fallback = 0) {
   const numeric = Number(value ?? fallback ?? 0);
@@ -24,12 +22,16 @@ export function normalizeRating(value: unknown, fallback?: unknown) {
   return Math.max(0, Math.min(100, Math.round(scaled)));
 }
 
-export function combatAttributes(athlete: Record<string, unknown>) {
-  return [
+export function combatAttributes(athlete: Record<string, unknown>, gameSlug?: string | null) {
+  const attrs = [
     { key: 'attack', label: 'ATT', name: 'Attack', value: clampStat(athlete.attack), color: COMBAT_ATTRIBUTE_COLORS.attack },
     { key: 'defense', label: 'DEF', name: 'Defense', value: clampStat(athlete.defense), color: COMBAT_ATTRIBUTE_COLORS.defense },
     { key: 'survival', label: 'SUR', name: 'Survival', value: clampStat(athlete.survival), color: COMBAT_ATTRIBUTE_COLORS.survival },
     { key: 'iq', label: 'IQ', name: 'IQ', value: clampStat(athlete.iq), color: COMBAT_ATTRIBUTE_COLORS.iq },
     { key: 'clutch', label: 'CLU', name: 'Clutch', value: clampStat(athlete.clutch), color: COMBAT_ATTRIBUTE_COLORS.clutch },
   ];
+
+  return isFootballGame(gameSlug ?? String(athlete.game_slug ?? ''))
+    ? attrs.filter((attr) => ['attack', 'defense', 'iq'].includes(attr.key))
+    : attrs;
 }
