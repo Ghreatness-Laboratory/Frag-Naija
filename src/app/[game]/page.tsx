@@ -15,6 +15,7 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
+import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { GAMES, type Game } from '@/lib/games';
 import { getGameContent } from '@/lib/game-content';
 import { useGame } from '@/context/GameContext';
@@ -201,23 +202,16 @@ function PubgMobileHub({ game }: { game: Game }) {
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {athletes.map((athlete, index) => (
-              <Link key={athlete.id} href={`/athletes/${athlete.id}`} className="overflow-hidden border border-fn-gborder bg-fn-card transition-all hover:bg-fn-card2" onMouseEnter={(event) => { event.currentTarget.style.borderColor = `${primary}70`; }} onMouseLeave={(event) => { event.currentTarget.style.borderColor = 'rgb(var(--fn-gborder))'; }}>
-                <div className="relative h-44 bg-fn-dark">
-                  {athlete.photo_url ? <img src={athlete.photo_url} alt={athlete.ign} className="h-full w-full object-cover object-top" /> : <div className="flex h-full items-center justify-center"><Crosshair style={{ color: primary }} /></div>}
-                  <span className="absolute left-3 top-3 border px-2 py-1 text-[9px] font-black uppercase tracking-widest" style={{ borderColor: `${primary}55`, background: `${primary}16`, color: primary }}>#{index + 1}</span>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-black text-fn-text">{athlete.ign}</h3>
-                      <p className="fn-label mt-1">{athlete.role || 'Player'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-display text-2xl font-black" style={{ color: primary }}>{athlete.overall_rating}</p>
-                      <p className="fn-label">OVR</p>
-                    </div>
-                  </div>
-                </div>
+              <Link key={athlete.id} href={`/athletes/${athlete.id}`} className="group block">
+                <PlayerCardTemplate
+                  athlete={athlete}
+                  rating={athlete.overall_rating}
+                  primary={primary}
+                  gameName={game.shortName.toUpperCase()}
+                  rank={index + 1}
+                  variant="featured"
+                  className="mx-auto"
+                />
               </Link>
             ))}
           </div>

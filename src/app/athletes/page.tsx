@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight } from "lucide-react";
+import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
@@ -28,6 +29,7 @@ type Athlete = {
   photo_url: string | null;
   status: string;
   bio: string | null;
+  jersey_number?: number | string | null;
   known_name?: string | null;
   previous_aliases?: string[] | string | null;
   previous_teams?: { team: string; years: string }[] | string | null;
@@ -76,21 +78,6 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
           className="h-full rounded-sm transition-all duration-700"
           style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }}
         />
-      </div>
-    </div>
-  );
-}
-
-function RatingRing({ value, primary }: { value: number; primary: string }) {
-  const color = value >= 90 ? primary : value >= 80 ? "rgb(var(--fn-yellow))" : "rgb(var(--fn-red))";
-  return (
-    <div
-      className="w-20 h-20 rounded-full border-4 flex items-center justify-center"
-      style={{ borderColor: color, boxShadow: `0 0 18px ${color}40` }}
-    >
-      <div className="text-center">
-        <div className="font-display text-2xl font-black" style={{ color }}>{value}</div>
-        <div className="fn-label text-[7px] mt-0.5">OVR</div>
       </div>
     </div>
   );
@@ -194,10 +181,7 @@ export default function AthletesPage() {
   const performanceHistory = parseObjectArray<{ label: string; value: string; date: string }>(a.performance_history);
   const displayName = a.known_name || a.ign;
 
-  const attrs = [
-    ...combatAttributes(a as unknown as Record<string, unknown>),
-    { key: "aggression", label: "AGG", name: "Aggression", value: a.aggression ?? 0, color: isFF ? "#FFD700" : "#ff8c42" },
-  ];
+  const attrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -234,7 +218,7 @@ export default function AthletesPage() {
         <div className="overflow-y-auto max-h-[40vh] lg:max-h-none lg:h-[calc(100vh-18rem)]">
           {athletes.length === 0 ? (
             <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">No results found for &quot;{search}&quot;</p>
-          ) : athletes.map((athlete) => {
+          ) : athletes.map((athlete, index) => {
             const isActive = (selected?.id ?? athletes[0].id) === athlete.id;
             const r = computeRating(athlete);
             return (
@@ -242,30 +226,20 @@ export default function AthletesPage() {
               <button
                 onClick={() => setSelected((current) => current?.id === athlete.id ? null : athlete)}
                 aria-expanded={isActive}
-                className="w-full flex items-center gap-3 px-4 py-3 transition-all text-left"
+                className="w-full p-2 transition-all text-left"
                 style={isActive
                   ? { background: `${primary}10`, borderLeft: `2px solid ${primary}` }
                   : { borderLeft: '2px solid transparent' }}
               >
-                <div
-                  className="w-9 h-9 rounded-sm flex items-center justify-center text-sm font-display font-black flex-shrink-0 overflow-hidden border"
-                  style={isActive
-                    ? { background: `${primary}20`, color: primary, borderColor: `${primary}40` }
-                    : { background: 'rgb(var(--fn-card))', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
-                >
-                  {athlete.photo_url
-                    ? <img src={athlete.photo_url} alt={athlete.ign} className="w-full h-full object-cover" />
-                    : athlete.ign[0]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-bold truncate text-fn-text">{athlete.ign}</div>
-                  <div className="fn-label truncate">{athlete.role || "Player"}</div>
-                </div>
-                <div className="flex-shrink-0 text-right">
-                  <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{r}</div>
-                  <div className="fn-label text-[7px]">OVR</div>
-                </div>
-                {isActive ? <ChevronRight size={12} className="rotate-90 text-fn-green transition-transform" /> : <ChevronRight size={12} className="text-fn-muted transition-transform" />}
+                <PlayerCardTemplate
+                  athlete={athlete}
+                  rating={r}
+                  primary={primary}
+                  gameName={selectedGame.shortName.toUpperCase()}
+                  rank={index + 1}
+                  variant="compact"
+                  className={isActive ? '' : 'opacity-80'}
+                />
               </button>
               {isActive && athlete.bio && (
                 <div className="border-b border-fn-gborder/50 bg-fn-black/45 px-4 pb-3 pt-1">
@@ -304,24 +278,16 @@ export default function AthletesPage() {
             className="bg-fn-card border border-fn-gborder rounded-sm p-4 sm:p-6 mb-4"
             style={{ background: `linear-gradient(135deg, ${primary}06 0%, rgb(var(--fn-black)) 60%)` }}
           >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              <div className="relative flex-shrink-0">
-                <div
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-sm border-2 flex items-center justify-center overflow-hidden"
-                  style={{ borderColor: primary, background: `${primary}15`, boxShadow: `0 0 20px ${primary}30` }}
-                >
-                  {a.photo_url
-                    ? <img src={a.photo_url} alt={a.ign} className="w-full h-full object-cover" />
-                    : <span className="font-display text-4xl font-black" style={{ color: primary }}>{a.ign[0]}</span>}
-                </div>
-                <div
-                  className="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center"
-                  style={{ background: primary }}
-                >
-                  <Zap size={11} className="text-black" />
-                </div>
-              </div>
-              <div className="flex-1">
+            <div className="grid gap-5 lg:grid-cols-[230px_1fr] lg:items-center">
+              <PlayerCardTemplate
+                athlete={a}
+                rating={rating}
+                primary={primary}
+                gameName={selectedGame.shortName.toUpperCase()}
+                variant="featured"
+                className="mx-0"
+              />
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span
                     className="text-[9px] font-bold px-2 py-0.5 tracking-widest uppercase border"
@@ -340,8 +306,20 @@ export default function AthletesPage() {
                     Also known as: <span className="text-fn-text">{previousAliases.join(" · ")}</span>
                   </p>
                 )}
+                <div className="mt-5 max-w-sm border border-fn-gborder bg-fn-dark/70 p-3">
+                  <div className="flex justify-between mb-2">
+                    <span className="fn-label">OVERALL RATING</span>
+                    <span className="font-display text-xl font-black" style={{ color: primary }}>{rating}</span>
+                  </div>
+                  <div className="h-2 bg-fn-black rounded-sm overflow-hidden">
+                    <div
+                      className="h-full rounded-sm"
+                      style={{ width: `${rating}%`, background: `linear-gradient(90deg, ${primary}60, ${primary})` }}
+                    />
+                  </div>
+                  <div className="fn-label mt-1 text-right">{rating} / 100</div>
+                </div>
               </div>
-              <div className="flex-shrink-0"><RatingRing value={rating} primary={primary} /></div>
             </div>
           </div>
 

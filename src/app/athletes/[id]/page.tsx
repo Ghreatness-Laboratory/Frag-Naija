@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Download, Eye, Printer, Shield, Trophy, X } from 'lucide-react';
+import { Download, Eye, Printer, Trophy, X } from 'lucide-react';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { useGame } from '@/context/GameContext';
 import html2canvas, { elementToSvgDataUrl } from '@/lib/html2canvas';
@@ -163,18 +163,25 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
         <Link href="/athletes" className="fn-label">← ALL ATHLETES</Link>
 
         <section className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border" style={{ borderColor: primary, background: `${primary}15` }}>
-              {a.photo_url ? <img src={a.photo_url} alt={a.ign} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}
-            </div>
-            <div className="flex-1">
+          <div className="grid gap-5 lg:grid-cols-[230px_1fr] lg:items-center">
+            <PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} variant="featured" className="mx-0" />
+            <div className="min-w-0">
               <p className="fn-label">{footballProfile ? a.status : `${a.status} · ${a.role || 'Player'}${team?.rank ? ` · rank #${team.rank}` : ''}`}</p>
               <h1 className="font-display text-4xl font-black uppercase text-fn-text">{displayName}</h1>
               <p className="text-xs text-fn-muted">{a.name}{!footballProfile && aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p>
-            </div>
-            <div className="text-center">
-              <div className="font-display text-5xl font-black" style={{ color: primary }}>{rating}</div>
-              <div className="fn-label">RTG</div>
+              <div className="mt-5 max-w-sm border border-fn-gborder bg-fn-dark/70 p-3">
+                <div className="flex justify-between mb-2">
+                  <span className="fn-label">OVERALL RATING</span>
+                  <span className="font-display text-xl font-black" style={{ color: primary }}>{rating}</span>
+                </div>
+                <div className="h-2 bg-fn-black rounded-sm overflow-hidden">
+                  <div
+                    className="h-full rounded-sm"
+                    style={{ width: `${rating}%`, background: `linear-gradient(90deg, ${primary}60, ${primary})` }}
+                  />
+                </div>
+                <div className="fn-label mt-1 text-right">{rating} / 100</div>
+              </div>
             </div>
           </div>
 
