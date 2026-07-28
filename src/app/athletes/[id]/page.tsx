@@ -29,6 +29,7 @@ type Athlete = {
   survival?: number | null;
   iq?: number | null;
   clutch?: number | null;
+  aggression?: number | null;
   jersey_number?: number | string | null;
   previous_aliases?: string[] | string | null;
   previous_teams?: { team: string; years: string }[] | string | null;
@@ -103,7 +104,8 @@ function PlayerCard({ athlete, team, rating, primary, gameName }: { athlete: Ath
         {!isFootballGame(athlete.game_slug) && <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{team?.name || athlete.team || 'Free Agent'}</p>}
       </div>
 
-      <div className={`absolute bottom-8 left-5 right-5 z-20 grid overflow-hidden rounded-lg border bg-black/78 ${stats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`} style={{ borderColor: `${primary}70` }}>
+      <div className="absolute bottom-8 left-5 right-5 z-20 grid overflow-hidden rounded-lg border bg-black/78"
+        style={{ borderColor: `${primary}70`, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}>
         {stats.map((stat) => (
           <div key={stat.label} className="border-r border-white/10 px-1.5 py-2 text-center last:border-r-0">
             <div className="font-display text-2xl font-black leading-none text-white">{stat.value}</div>

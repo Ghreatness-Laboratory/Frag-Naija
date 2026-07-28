@@ -14,8 +14,8 @@ import { isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
   known_name: '', game_slug: 'pubg-mobile',
-  attack: '0', defense: '0', clutch: '0', survival: '0', iq: '0', aggression: '0',
-  overall_rating: '0', sensitivity_settings: '', control_code: '', perks: '', strengths: '', weaknesses: '',
+  attack: '', defense: '', clutch: '', survival: '', iq: '', aggression: '',
+  overall_rating: '', sensitivity_settings: '', control_code: '', perks: '', strengths: '', weaknesses: '',
   previous_aliases: [''],
   previous_teams: [{ team: '', years: '' }],
   achievements: [{ title: '', date: '' }],
@@ -201,7 +201,7 @@ function AthletesContent() {
       survival:       String(row.survival ?? '0'),
       iq:             String(row.iq       ?? '0'),
       aggression:     String(row.aggression ?? '0'),
-      overall_rating: String(normalizeRating(row.overall_rating, row.rating)),
+      overall_rating: String(row.overall_rating ?? ''),
       sensitivity_settings: typeof row.sensitivity_settings === 'string' ? row.sensitivity_settings : JSON.stringify(row.sensitivity_settings ?? {}, null, 2),
       control_code: String(row.control_code ?? ''),
       perks:      toArr(row.perks),
@@ -295,6 +295,7 @@ function AthletesContent() {
   const shooterSelected = isShooterGame(form.game_slug);
   const fcMobileSelected = isFcMobileGame(form.game_slug);
   const footballSelected = isFootballGame(form.game_slug);
+  const calculatedOverallRating = calculateAthleteOverallRating(form, form.game_slug);
 
   return (
     <div className="p-8">
@@ -376,15 +377,12 @@ function AthletesContent() {
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Overall Rating (0–100)">
+                <Field label="Overall Rating (auto)">
                   <Input
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="100"
-                    value={form.overall_rating}
-                    onChange={f('overall_rating')}
-                    placeholder="85"
+                    value={calculatedOverallRating ?? ''}
+                    readOnly
+                    aria-readonly="true"
+                    placeholder="N/A until stats are entered"
                   />
                 </Field>
                 <Field label="Status">
@@ -460,15 +458,12 @@ function AthletesContent() {
                 <option value="Free Agent">Free Agent</option>
               </Select>
             </Field>
-            <Field label="Overall Rating (0–100)">
+            <Field label="Overall Rating (auto)">
               <Input
-                type="number"
-                step="1"
-                min="0"
-                max="100"
-                value={form.overall_rating}
-                onChange={f('overall_rating')}
-                placeholder="85"
+                value={calculatedOverallRating ?? ''}
+                readOnly
+                aria-readonly="true"
+                placeholder="N/A until stats are entered"
               />
             </Field>
           </div>
@@ -477,6 +472,7 @@ function AthletesContent() {
           <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
             Player Card Stats (0–100)
           </p>
+          <p className="text-[10px] text-fn-muted">Overall Rating is automatically calculated from the valid stats below.</p>
           <div className={footballSelected ? "grid grid-cols-3 gap-3" : "grid grid-cols-3 gap-3"}>
             <Field label="ATT / Attack">
               <Input type="number" min="0" max="100" value={form.attack} onChange={f('attack')} placeholder="0" />

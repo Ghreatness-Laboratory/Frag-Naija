@@ -1,10 +1,11 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
-function computeOverallRating(athlete) {
-  const attrs = ['attack', 'defense', 'clutch', 'survival', 'iq', 'aggression'];
-  const values = attrs.map((k) => Number(athlete[k] ?? 0)).filter((v) => v > 0);
-  if (!values.length) return Number(athlete.rating ?? 0);
-  return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+function applyCalculatedOverallRating(athlete) {
+  return {
+    ...athlete,
+    overall_rating: calculateAthleteOverallRating(athlete, athlete.game_slug),
+  };
 }
 
 const ATHLETE_FIELDS = new Set([
@@ -135,12 +136,13 @@ export async function getAthletes({ team, status, game_slug } = {}) {
 
   const achievementMap = await getAchievementsForAthletes((data || []).map((athlete) => athlete.id));
 
-  // Back-fill overall_rating if missing
-  return (data || []).map((a) => ({
-    ...a,
-    achievements: achievementMap.get(a.id) || [],
-    overall_rating: a.overall_rating ?? computeOverallRating(a),
-  }));
+  return (data || [])
+    .map((a) => ({
+      ...a,
+      achievements: achievementMap.get(a.id) || [],
+      overall_rating: calculateAthleteOverallRating(a, a.game_slug),
+    }))
+    .sort((a, b) => Number(b.overall_rating ?? -1) - Number(a.overall_rating ?? -1));
 }
 
 export async function getAthleteById(id) {
@@ -148,12 +150,17 @@ export async function getAthleteById(id) {
   if (error) throw error;
 
   const achievementMap = await getAchievementsForAthletes([id]);
-  return { ...data, achievements: achievementMap.get(id) || [] };
+  return {
+    ...data,
+    achievements: achievementMap.get(id) || [],
+    overall_rating: calculateAthleteOverallRating(data, data.game_slug),
+  };
 }
 
 export async function createAthlete(body) {
   const { athlete, achievements } = splitAthletePayload(body);
-  const { data, error } = await supabaseAdmin.from('athletes').insert([athlete]).select().single();
+  const calculatedAthlete = applyCalculatedOverallRating(athlete);
+  const { data, error } = await supabaseAdmin.from('athletes').insert([calculatedAthlete]).select().single();
   if (error) throw error;
 
   await replaceAthleteAchievements(data.id, achievements);
@@ -162,9 +169,17 @@ export async function createAthlete(body) {
 
 export async function updateAthlete(id, body) {
   const { athlete, achievements } = splitAthletePayload(body);
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from('athletes')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (existingError) throw existingError;
+
+  const calculatedAthlete = applyCalculatedOverallRating({ ...existing, ...athlete });
   const { data, error } = await supabaseAdmin
     .from('athletes')
-    .update(athlete)
+    .update(calculatedAthlete)
     .eq('id', id)
     .select()
     .single();
