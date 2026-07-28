@@ -1,42 +1,56 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+```
+# Dependencies
+node_modules/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
+# Environment
+.env
+.env.local
+.env.*
 
-# testing
-/coverage
+# Logs and temp files
+*.log
+*.tmp
 
-# next.js
-/.next/
-/out/
+# Editors
+.vscode/
 
-# production
-/build
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# misc
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.coverage
+coverage/
+htmlcov/
+
+# System files
 .DS_Store
-*.pem
+Thumbs.db
 
-# debug
+# Package manager
+package-lock.json
+yarn.lock
 npm-debug.log*
-yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# IDE
+.idea/
+*.swp
+*.swo
 
-# vercel
-.vercel
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# next-pwa generated service worker files
-public/sw.js
-public/workbox-*.js
-public/worker-*.js
-public/fallback-*.js
+# Testing
+.pytest_cache/
+.mypy_cache/
+.tox/
+```
