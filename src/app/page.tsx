@@ -191,7 +191,7 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
 function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
   const rankColors = [primary, "rgb(var(--fn-yellow))", "#C0C0C0", "#00aaff"];
   const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
-  const attrs = combatAttributes(athlete as unknown as Record<string, unknown>);
+  const attrs = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
   return (
     <motion.div variants={reveal} whileHover={{ y: -6, rotateX: 2 }} className="flex-shrink-0">
     <Link href={`/athletes/${athlete.id}`} className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
