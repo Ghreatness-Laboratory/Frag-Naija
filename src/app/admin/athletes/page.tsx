@@ -9,7 +9,7 @@ import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
-import { isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
@@ -21,7 +21,7 @@ const EMPTY = {
   achievements: [{ title: '', date: '' }],
   performance_history: [{ label: '', value: '', date: '' }],
 };
-const FOOTBALL_GAMES = GAMES.filter((game) => isFootballGame(game.slug));
+const FC_MOBILE_GAME = GAMES.find((game) => isFcMobileGame(game.slug));
 
 type AthleteForm = typeof EMPTY;
 type TextFormKey = {
@@ -234,31 +234,35 @@ function AthletesContent() {
     setError('');
     try {
       const photoUrl = await uploadPhoto();
+      const fcMobileGame = isFcMobileGame(form.game_slug);
+      const footballGame = isFootballGame(form.game_slug);
+      const shooterGame = isShooterGame(form.game_slug);
       const body = {
-        name:           isFootballGame(form.game_slug) ? form.ign : form.name,
+        name:           fcMobileGame ? form.ign : form.name,
         ign:            form.ign,
-        known_name:     isFootballGame(form.game_slug) ? form.ign : (form.known_name || form.ign),
+        known_name:     fcMobileGame ? form.ign : (form.known_name || form.ign),
         game_slug:      form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
-        team:           isFootballGame(form.game_slug) ? '' : form.team,
-        role:           isFootballGame(form.game_slug) ? '' : form.role,
+        team:           footballGame ? null : form.team,
+        role:           footballGame ? null : form.role,
         status:         form.status,
-        bio:            isFootballGame(form.game_slug) ? '' : form.bio,
+        bio:            form.bio,
         photo_url:      photoUrl ?? form.photo_url,
         attack:         Number(form.attack)         || 0,
         defense:        Number(form.defense)        || 0,
-        clutch:         isFootballGame(form.game_slug) ? 0 : Number(form.clutch) || 0,
-        survival:       isFootballGame(form.game_slug) ? 0 : Number(form.survival) || 0,
+        clutch:         fcMobileGame ? 0 : Number(form.clutch) || 0,
+        survival:       fcMobileGame ? 0 : Number(form.survival) || 0,
         iq:             Number(form.iq)             || 0,
         aggression:     Number(form.aggression)     || 0,
         overall_rating: normalizeRating(form.overall_rating),
-        ...(isShooterGame(form.game_slug) ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
-        perks:      splitArr(form.perks),
-        strengths:  splitArr(form.strengths),
-        weaknesses: splitArr(form.weaknesses),
-        previous_aliases: isFootballGame(form.game_slug) ? [] : cleanStringList(form.previous_aliases),
-        previous_teams: isFootballGame(form.game_slug) ? [] : cleanObjectList(form.previous_teams),
-        achievements: cleanObjectList(form.achievements),
-        performance_history: isFootballGame(form.game_slug) ? [] : cleanObjectList(form.performance_history),
+        sensitivity_settings: shooterGame ? (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })() : null,
+        control_code: shooterGame ? form.control_code : null,
+        perks:      footballGame ? null : splitArr(form.perks),
+        strengths:  footballGame ? null : splitArr(form.strengths),
+        weaknesses: footballGame ? null : splitArr(form.weaknesses),
+        previous_aliases: footballGame ? null : cleanStringList(form.previous_aliases),
+        previous_teams: footballGame ? null : cleanObjectList(form.previous_teams),
+        achievements: fcMobileGame ? [] : cleanObjectList(form.achievements),
+        performance_history: footballGame ? null : cleanObjectList(form.performance_history),
       };
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
@@ -290,6 +294,7 @@ function AthletesContent() {
 
   const filtered = gameSlug === 'all' ? rows : rows.filter(r => String(r.game_slug ?? '') === gameSlug);
   const shooterSelected = isShooterGame(form.game_slug);
+  const fcMobileSelected = isFcMobileGame(form.game_slug);
   const footballSelected = isFootballGame(form.game_slug);
 
   return (
@@ -361,16 +366,14 @@ function AthletesContent() {
         onClose={() => setOpen(false)}
       >
         <form onSubmit={handleSubmit} className="space-y-3">
-          {footballSelected ? (
+          {fcMobileSelected ? (
             <>
               <Field label="IGN" required>
                 <Input value={form.ign} onChange={f('ign')} placeholder="In-game name / alias" required />
               </Field>
 
               <Field label="Game">
-                <Select value={form.game_slug} onChange={f('game_slug')}>
-                  {FOOTBALL_GAMES.map((game) => <option key={game.slug} value={game.slug}>{game.name}</option>)}
-                </Select>
+                <Input value={FC_MOBILE_GAME?.name ?? 'FC Mobile'} readOnly aria-readonly="true" />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
@@ -394,16 +397,24 @@ function AthletesContent() {
                 </Field>
               </div>
 
-              <ObjectListEditor
-                label="Championships / Titles"
-                values={form.achievements}
-                emptyItem={{ title: '', date: '' }}
-                fields={[
-                  { key: 'title', label: 'Title', placeholder: 'Championship title' },
-                  { key: 'date', label: 'Date', placeholder: '2026' },
-                ]}
-                onChange={(values) => setForm((p) => ({ ...p, achievements: values }))}
-              />
+              <Field label="Description">
+                <Textarea value={form.bio} onChange={f('bio')} placeholder="Athlete bio / description..." />
+              </Field>
+
+              <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
+                Player Card Stats (0–100)
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="ATT / Attack">
+                  <Input type="number" min="0" max="100" value={form.attack} onChange={f('attack')} placeholder="0" />
+                </Field>
+                <Field label="DEF / Defense">
+                  <Input type="number" min="0" max="100" value={form.defense} onChange={f('defense')} placeholder="0" />
+                </Field>
+                <Field label="IQ">
+                  <Input type="number" min="0" max="100" value={form.iq} onChange={f('iq')} placeholder="0" />
+                </Field>
+              </div>
             </>
           ) : (
             <>
@@ -589,7 +600,7 @@ function AthletesContent() {
             </>
           )}
 
-          {!footballSelected && <Field label="Photo">
+          <Field label="Photo">
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer border border-dashed border-fn-gborder rounded px-3 py-2 hover:border-fn-green/40 transition-colors">
                 <Upload className="w-4 h-4 text-fn-muted" />
@@ -609,7 +620,7 @@ function AthletesContent() {
                 placeholder="Or paste image URL"
               />
             </div>
-          </Field>}
+          </Field>
 
           {error && (
             <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">
