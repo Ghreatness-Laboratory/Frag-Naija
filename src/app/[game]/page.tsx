@@ -200,7 +200,7 @@ function PubgMobileHub({ game }: { game: Game }) {
             </div>
             <Link href="/athletes" className="fn-btn-outline inline-flex items-center gap-2 text-[10px]">View roster <ChevronRight size={11} /></Link>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="flex gap-6 overflow-x-auto pb-3">
             {athletes.map((athlete, index) => (
               <Link key={athlete.id} href={`/athletes/${athlete.id}`} className="group block">
                 <PlayerCardTemplate
@@ -209,7 +209,7 @@ function PubgMobileHub({ game }: { game: Game }) {
                   primary={primary}
                   gameName={game.shortName.toUpperCase()}
                   rank={index + 1}
-                  variant="featured"
+                  variant="showcase"
                   className="mx-auto"
                 />
               </Link>

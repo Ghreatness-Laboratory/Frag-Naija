@@ -203,7 +203,7 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
           primary={game?.colors.primary ?? primary}
           gameName={(game?.shortName ?? 'ALL').toUpperCase()}
           rank={rank + 1}
-          variant="featured"
+          variant="showcase"
         />
       </Link>
     </motion.div>
@@ -529,7 +529,7 @@ export default function HomePage() {
         {gameAthletes.length === 0 ? (
           <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet — add them from the admin panel.'}</p>
         ) : (
-          <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
+          <motion.div variants={cardStagger} className="flex gap-6 overflow-x-auto pb-3">
             {gameAthletes.map((a, i) => (
               <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
             ))}
