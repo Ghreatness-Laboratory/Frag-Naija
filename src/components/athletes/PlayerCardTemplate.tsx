@@ -166,7 +166,7 @@ export default function PlayerCardTemplate({
             athlete={athlete}
             displayName={displayName}
             primary={primary}
-            className="player-card-subject h-full w-full object-contain object-bottom drop-shadow-[0_14px_14px_rgba(0,0,0,0.75)]"
+            className="player-card-subject h-full w-full object-cover object-center"
             fallbackClassName="flex h-full w-full items-center justify-center bg-black/35"
           />
         </div>
