@@ -54,20 +54,26 @@ function playerBackdropStyle(primary: string, athlete: PlayerCardTemplateAthlete
   const isMeleMisayo = /mele|misayo/i.test(`${athlete.name || ''} ${athlete.known_name || ''} ${athlete.ign || ''}`);
   const hue = isMeleMisayo ? 146 : playerAccentHue(identity);
   const secondaryHue = isMeleMisayo ? 44 : (hue + 42) % 360;
-  const photoLayer = athlete.photo_url
-    ? `linear-gradient(180deg, rgba(2,7,3,0.12), rgba(2,7,3,0.9)), url(${athlete.photo_url})`
-    : undefined;
 
   return {
     backgroundImage: [
       `radial-gradient(circle at 28% 18%, hsl(${hue} 85% 55% / 0.24), transparent 28%)`,
       `radial-gradient(circle at 76% 38%, ${primary}42, transparent 32%)`,
       `linear-gradient(135deg, ${primary}14, transparent 45%, hsl(${secondaryHue} 92% 48% / ${isMeleMisayo ? 0.24 : 0.18}))`,
-      photoLayer,
     ].filter(Boolean).join(', '),
-    backgroundPosition: 'center, center, center, center 20%',
-    backgroundSize: 'cover, cover, cover, cover',
+    backgroundPosition: 'center, center, center',
+    backgroundSize: 'cover, cover, cover',
   };
+}
+
+function playerBackdropPortraitStyle(athlete: PlayerCardTemplateAthlete): CSSProperties {
+  return athlete.photo_url
+    ? {
+        backgroundImage: `url(${athlete.photo_url})`,
+        backgroundPosition: 'center 4%',
+        backgroundSize: '185% auto',
+      }
+    : {};
 }
 
 function cardShellStyle(primary: string): CSSProperties {
@@ -82,7 +88,17 @@ function cardNumberFrom(athlete: PlayerCardTemplateAthlete, team: PlayerCardTemp
   return athlete.jersey_number || rank || team?.rank || Math.max(1, Math.min(10, Math.round((Number(rating) || 0) / 10)));
 }
 
-function CardBackdrop({ primary, athlete, team }: { primary: string; athlete: PlayerCardTemplateAthlete; team: PlayerCardTemplateTeam | null }) {
+function CardBackdrop({
+  primary,
+  athlete,
+  team,
+  includePhoto = true,
+}: {
+  primary: string;
+  athlete: PlayerCardTemplateAthlete;
+  team: PlayerCardTemplateTeam | null;
+  includePhoto?: boolean;
+}) {
   return (
     <>
       <div className="absolute inset-0 p-[3px]" style={{ background: `linear-gradient(135deg, ${primary}, rgba(255,255,255,0.62), ${primary}55, #061006)` }}>
@@ -93,6 +109,9 @@ function CardBackdrop({ primary, athlete, team }: { primary: string; athlete: Pl
       </div>
       <div className="absolute inset-[9px] border border-white/10" style={{ clipPath: 'polygon(0 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 38px), calc(100% - 38px) 100%, 0 100%)' }} />
       <div className="player-card-identity-bg absolute inset-[3px] opacity-90" style={playerBackdropStyle(primary, athlete, team)} />
+      {includePhoto && athlete.photo_url ? (
+        <div className="player-card-backdrop-portrait absolute inset-[3px]" style={playerBackdropPortraitStyle(athlete)} />
+      ) : null}
       <div className="absolute inset-0 opacity-85" style={{ background: `radial-gradient(circle at 78% 30%, ${primary}42, transparent 27%), radial-gradient(circle at 88% 48%, ${primary}26, transparent 18%), linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.82) 73%)` }} />
       <div className="absolute inset-0 opacity-60" style={{ background: `repeating-linear-gradient(118deg, transparent 0 12px, ${primary}10 12px 13px, transparent 13px 26px)` }} />
       <div className="fn-scanlines absolute inset-0 opacity-30" />
@@ -150,15 +169,22 @@ export default function PlayerCardTemplate({
   if (variant === 'compact') {
     return (
       <div className={cx('player-card player-card-compact relative h-[118px] w-full overflow-hidden bg-[#030803] text-white', className)} style={cardShellStyle(primary)}>
-        <CardBackdrop primary={primary} athlete={athlete} team={team} />
-        <div className="absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-end justify-center overflow-hidden border bg-black/55" style={{ borderColor: `${primary}70` }}>
-          <PlayerImage
-            athlete={athlete}
-            displayName={displayName}
-            primary={primary}
-            className="player-card-subject h-full w-full object-contain object-bottom drop-shadow-[0_14px_14px_rgba(0,0,0,0.75)]"
-            fallbackClassName="flex h-full w-full items-center justify-center bg-black/35"
-          />
+        <CardBackdrop primary={primary} athlete={athlete} team={team} includePhoto={false} />
+        <div
+          className="player-card-portrait-frame absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-center justify-center overflow-hidden border bg-[#031207] p-[3px]"
+          style={{ borderColor: `${primary}70`, boxShadow: `0 0 18px ${primary}26, inset 0 0 18px ${primary}12` }}
+        >
+          <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 50% 18%, ${primary}48, transparent 46%), linear-gradient(180deg, rgba(255,255,255,0.08), transparent 34%), linear-gradient(145deg, ${primary}1f, rgba(2, 8, 3, 0.96) 64%)` }} />
+          <div className="absolute inset-[2px] opacity-70" style={{ background: `radial-gradient(ellipse at 50% 72%, ${primary}30, transparent 62%)` }} />
+          <div className="relative h-full w-full overflow-hidden bg-white">
+            <PlayerImage
+              athlete={athlete}
+              displayName={displayName}
+              primary={primary}
+              className="player-card-portrait-subject h-full w-full object-contain object-center"
+              fallbackClassName="flex h-full w-full items-center justify-center bg-transparent"
+            />
+          </div>
         </div>
         <div className="absolute left-[92px] right-[88px] top-3 z-20 min-w-0">
           <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={{ color: primary }}>
