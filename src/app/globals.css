@@ -216,11 +216,10 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
 }
 
 .player-card-portrait-subject {
-  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.28));
-  mix-blend-mode: normal;
-  background-blend-mode: normal;
-  mask-image: none;
-  -webkit-mask-image: none;
+  filter: brightness(1.14) contrast(1.06) saturate(1.08) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.32));
+  mix-blend-mode: multiply;
+  mask-image: linear-gradient(180deg, black 0%, black 88%, rgba(0, 0, 0, 0.86) 96%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, black 0%, black 88%, rgba(0, 0, 0, 0.86) 96%, transparent 100%);
   transform-origin: 50% 50%;
 }
 
