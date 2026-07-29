@@ -11,7 +11,7 @@ const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,gam
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
 const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at';
 const TRANSFER_FIELDS = 'id,from_team,to_team,fee,status,date,athletes(id,name,ign)';
-const SHOP_FIELDS = 'id,name,price,currency,image_url,category,status';
+const SHOP_FIELDS = 'id,name,price,currency,image_url,category,status,tutorial_video_url';
 const MEMBER_FIELDS = 'id,name,role,bio,photo_url,currently_playing_game_slug,twitter_url,instagram_url,linkedin_url,twitch_url,youtube_url';
 
 function parseFeaturedIds(value) {

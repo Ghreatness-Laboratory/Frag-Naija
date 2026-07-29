@@ -6,7 +6,7 @@ import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
-import { combatAttributes } from "@/lib/athlete-display";
+import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 
 type Athlete = {
@@ -186,6 +186,7 @@ export default function AthletesPage() {
   const displayName = a.known_name || a.ign;
 
   const attrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);
+  const statusTone = athleteStatusTone(a.status, primary);
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -322,11 +323,9 @@ export default function AthletesPage() {
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span
                     className="text-[9px] font-bold px-2 py-0.5 tracking-widest uppercase border"
-                    style={a.status === "Active"
-                      ? { background: `${primary}20`, color: primary, borderColor: `${primary}40` }
-                      : { background: 'rgb(var(--fn-card2) / 0.75)', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
+                    style={{ background: statusTone.background, color: statusTone.color, borderColor: statusTone.borderColor }}
                   >
-                    ● {a.status}
+                    <span style={{ color: statusTone.dotColor }}>●</span> {a.status}
                   </span>
                   {a.team && <span className="text-[9px] text-fn-muted font-bold tracking-widest">{a.team}</span>}
                 </div>

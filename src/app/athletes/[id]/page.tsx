@@ -6,7 +6,7 @@ import { Download, Eye, Printer, Trophy, X } from 'lucide-react';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { useGame } from '@/context/GameContext';
 import html2canvas, { elementToSvgDataUrl } from '@/lib/html2canvas';
-import { combatAttributes, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { athleteStatusTone, combatAttributes, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { GAME_CONTENT } from '@/lib/game-content';
 import { GAMES } from '@/lib/games';
 
@@ -112,6 +112,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
 
   const activeGame = selectedGame ?? GAMES.find((game) => game.slug === a.game_slug);
   const primary = activeGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const statusTone = athleteStatusTone(a.status, primary);
   const gameName = activeGame?.shortName.toUpperCase() ?? 'ALL GAMES';
   const aliases = parseArray(a.previous_aliases);
   const previousTeams = parseObjects<{ team?: string; years?: string }>(a.previous_teams);
@@ -166,7 +167,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
           <div className="grid gap-5 lg:grid-cols-[230px_1fr] lg:items-center">
             <PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} variant="featured" className="mx-0" />
             <div className="min-w-0">
-              <p className="fn-label">{footballProfile ? a.status : `${a.status} · ${a.role || 'Player'}${team?.rank ? ` · rank #${team.rank}` : ''}`}</p>
+              <div className="mb-2 flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-widest" style={{ background: statusTone.background, color: statusTone.color, borderColor: statusTone.borderColor }}><span style={{ color: statusTone.dotColor }}>●</span>{a.status}</span>{!footballProfile && <span className="fn-label">{a.role || 'Player'}{team?.rank ? ` · rank #${team.rank}` : ''}</span>}</div>
               <h1 className="font-display text-4xl font-black uppercase text-fn-text">{displayName}</h1>
               <p className="text-xs text-fn-muted">{a.name}{!footballProfile && aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p>
               <div className="mt-5 max-w-sm border border-fn-gborder bg-fn-dark/70 p-3">

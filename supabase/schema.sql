@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS athletes (
   iq          NUMERIC(5,2) DEFAULT 0,
   clutch      NUMERIC(5,2) DEFAULT 0,
   photo_url   TEXT,
-  status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Free Agent')),
+  status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Banned', 'Free Agent', 'Suspended', 'Dead')),
   bio         TEXT,
   known_name  TEXT,
   previous_aliases JSONB DEFAULT '[]'::jsonb,
@@ -369,6 +369,7 @@ ON CONFLICT (key) DO NOTHING;
 -- Bucket: athletes  (public)
 -- Bucket: teams     (public)
 -- Bucket: highlights (public)
+-- Bucket: team-members (public)
 
 -- ─── SHOP ITEMS ──────────────────────────────────────────────────────────────
 
@@ -386,6 +387,7 @@ CREATE TABLE IF NOT EXISTS shop_items (
 );
 
 ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
+ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS tutorial_video_url TEXT;
 
 -- One-time backfill for records created before game isolation existed.
 UPDATE athletes    SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
