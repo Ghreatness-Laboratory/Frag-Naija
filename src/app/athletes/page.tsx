@@ -6,7 +6,7 @@ import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
-import { combatAttributes } from "@/lib/athlete-display";
+import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 
 type Athlete = {
@@ -90,6 +90,7 @@ export default function AthletesPage() {
   const [selected, setSelected] = useState<Athlete | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [rosterMode, setRosterMode] = useState<"athletes" | "icons">("athletes");
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
@@ -103,13 +104,14 @@ export default function AthletesPage() {
     }
 
     setLoading(true);
-    const res = await fetch(`/api/athletes?game_slug=${selectedGame.slug}`, { cache: "no-store" });
+    const params = new URLSearchParams({ game_slug: selectedGame.slug, is_icon: rosterMode === "icons" ? "true" : "false" });
+    const res = await fetch(`/api/athletes?${params.toString()}`, { cache: "no-store" });
     if (res.ok) {
       const data: Athlete[] = await res.json();
       setApiAthletes(data);
     }
     setLoading(false);
-  }, [selectedGame]);
+  }, [selectedGame, rosterMode]);
 
   useEffect(() => {
     const requestedGame = new URLSearchParams(window.location.search).get("game");
@@ -125,20 +127,16 @@ export default function AthletesPage() {
     ? apiForGame
     : (gameContent?.athletes as Athlete[] | undefined) ?? [];
   const normalizedSearch = search.trim().toLowerCase();
-  const iconAthletes = gameAthletes.filter((a) => Boolean(a.is_icon));
-  const searchableAthletes = gameAthletes.filter((a) => !a.is_icon);
+  const rosterAthletes = gameAthletes.filter((a) => rosterMode === "icons" ? Boolean(a.is_icon) : !a.is_icon);
   const athletes = normalizedSearch
-    ? searchableAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""}`.toLowerCase().includes(normalizedSearch))
-    : searchableAthletes;
+    ? rosterAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""}`.toLowerCase().includes(normalizedSearch))
+    : rosterAthletes;
 
   // Auto-select first athlete when list loads
   useEffect(() => {
-    const selectable = athletes.length > 0 ? athletes : iconAthletes;
-    if (selectable.length > 0 && !selected) setSelected(selectable[0]);
-    if (selectable.length > 0 && selected && !selectable.find(a => a.id === selected.id) && !iconAthletes.find(a => a.id === selected.id)) {
-      setSelected(selectable[0]);
-    }
-  }, [athletes.length, iconAthletes.length, selectedGame?.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (athletes.length > 0 && (!selected || !athletes.find((athlete) => athlete.id === selected.id))) setSelected(athletes[0]);
+    if (athletes.length === 0 && selected) setSelected(null);
+  }, [athletes, selected, selectedGame?.slug, normalizedSearch, rosterMode]);
 
   if (!selectedGame) {
     return (
@@ -174,7 +172,25 @@ export default function AthletesPage() {
     );
   }
 
-  const a = selected ?? athletes[0] ?? iconAthletes[0];
+  const a = selected ?? athletes[0];
+
+  if (!a) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+        <Shield className="w-12 h-12" style={{ color: rosterMode === "icons" ? '#f5c542' : primary }} />
+        <p className="text-fn-muted text-sm uppercase tracking-widest">No {rosterMode === "icons" ? 'Icon' : selectedGame.shortName} athletes yet</p>
+        <button
+          type="button"
+          onClick={() => setRosterMode(rosterMode === "icons" ? "athletes" : "icons")}
+          className="rounded-sm border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all"
+          style={{ borderColor: rosterMode === "icons" ? 'rgba(245, 197, 66, 0.45)' : `${primary}55`, color: rosterMode === "icons" ? '#f5c542' : primary }}
+        >
+          View {rosterMode === "icons" ? 'Athletes' : 'Icons'}
+        </button>
+      </div>
+    );
+  }
+
   const rating = computeRating(a);
   const perks = parseArray(a.perks);
   const strengths = parseArray(a.strengths);
@@ -186,6 +202,7 @@ export default function AthletesPage() {
   const displayName = a.known_name || a.ign;
 
   const attrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);
+  const statusTone = athleteStatusTone(a.status, primary);
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -205,10 +222,26 @@ export default function AthletesPage() {
               className="text-[9px] font-bold px-2 py-1 tracking-widest uppercase border"
               style={{ background: `${primary}15`, color: primary, borderColor: `${primary}40` }}
             >
-              {athletes.length} {selectedGame.shortName.toUpperCase()} PLAYERS
+              {athletes.length} {rosterMode === "icons" ? "ICON" : selectedGame.shortName.toUpperCase()} {rosterMode === "icons" ? (athletes.length === 1 ? "PLAYER" : "PLAYERS") : "PLAYERS"}
             </span>
           </div>
-          <label className="mt-4 flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-black/70 px-3 py-2 focus-within:border-fn-green/60">
+          <div className="mt-4 grid grid-cols-2 gap-1 rounded-sm border border-fn-gborder bg-fn-black/70 p-1">
+            {([
+              ["athletes", "Athletes"],
+              ["icons", "Icons"],
+            ] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => { setRosterMode(mode); setSelected(null); }}
+                className="rounded-sm px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all"
+                style={rosterMode === mode ? { background: mode === "icons" ? "rgba(245, 197, 66, 0.14)" : `${primary}16`, color: mode === "icons" ? "#f5c542" : primary } : { color: "rgb(var(--fn-muted))" }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label className="mt-3 flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-black/70 px-3 py-2 focus-within:border-fn-green/60">
             <Search size={13} style={{ color: primary }} />
             <input
               value={search}
@@ -221,7 +254,7 @@ export default function AthletesPage() {
 
         <div className="overflow-y-auto max-h-[40vh] lg:max-h-none lg:h-[calc(100vh-18rem)]">
           {athletes.length === 0 ? (
-            <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">No results found for &quot;{search}&quot;</p>
+            <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">{normalizedSearch ? <>No results found for &quot;{search}&quot;</> : <>No {rosterMode === "icons" ? "Icon" : "regular"} athletes found.</>}</p>
           ) : athletes.map((athlete, index) => {
             const isActive = (selected?.id ?? athletes[0].id) === athlete.id;
             const r = computeRating(athlete);
@@ -241,14 +274,14 @@ export default function AthletesPage() {
                   primary={primary}
                   gameName={selectedGame.shortName.toUpperCase()}
                   rank={index + 1}
-                  variant="compact"
+                  variant={rosterMode === "icons" ? "icon" : "compact"}
                   className={isActive ? '' : 'opacity-80'}
                 />
               </button>
-              {isActive && athlete.bio && (
+              {isActive && (
                 <div className="border-b border-fn-gborder/50 bg-fn-black/45 px-4 pb-3 pt-1">
                   <div className="rounded-sm border border-fn-gborder bg-fn-card/80 p-2.5">
-                    <p className="fn-mini-bio text-[10px] leading-relaxed text-fn-muted">{athlete.bio}</p>
+                    {athlete.bio && <p className="fn-mini-bio text-[10px] leading-relaxed text-fn-muted">{athlete.bio}</p>}
                     <Link href={`/athletes/${athlete.id}`} className="mt-2 inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-fn-green">
                       View full profile <ChevronRight size={10} />
                     </Link>
@@ -277,33 +310,6 @@ export default function AthletesPage() {
       {/* Main profile */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl">
-          {iconAthletes.length > 0 && (
-            <section className="mb-5 rounded-sm border border-fn-yellow/30 bg-fn-yellow/5 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="fn-label text-fn-yellow">ICON TIER</p>
-                  <h2 className="font-display text-xl font-black uppercase text-fn-text">ICONS</h2>
-                </div>
-                <span className="rounded-sm border border-fn-yellow/40 bg-fn-yellow/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-yellow">
-                  {iconAthletes.length} Legend{iconAthletes.length === 1 ? '' : 's'}
-                </span>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2">
-                {iconAthletes.map((athlete) => (
-                  <button key={athlete.id} type="button" onClick={() => setSelected(athlete)} className="w-56 flex-shrink-0 text-left">
-                    <PlayerCardTemplate
-                      athlete={athlete}
-                      rating={computeRating(athlete)}
-                      primary={primary}
-                      gameName={selectedGame.shortName.toUpperCase()}
-                      variant="icon"
-                    />
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Profile header */}
           <div
             className="bg-fn-card border border-fn-gborder rounded-sm p-4 sm:p-6 mb-4"
@@ -322,11 +328,9 @@ export default function AthletesPage() {
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span
                     className="text-[9px] font-bold px-2 py-0.5 tracking-widest uppercase border"
-                    style={a.status === "Active"
-                      ? { background: `${primary}20`, color: primary, borderColor: `${primary}40` }
-                      : { background: 'rgb(var(--fn-card2) / 0.75)', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
+                    style={{ background: statusTone.background, color: statusTone.color, borderColor: statusTone.borderColor }}
                   >
-                    ● {a.status}
+                    <span style={{ color: statusTone.dotColor }}>●</span> {a.status}
                   </span>
                   {a.team && <span className="text-[9px] text-fn-muted font-bold tracking-widest">{a.team}</span>}
                 </div>

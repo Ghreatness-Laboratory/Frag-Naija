@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Flag, Shield, Star } from 'lucide-react';
-import { combatAttributes } from '@/lib/athlete-display';
+import { athleteStatusTone, combatAttributes } from '@/lib/athlete-display';
 
 export type PlayerCardTemplateAthlete = {
   ign: string;
@@ -171,6 +171,7 @@ export default function PlayerCardTemplate({
   const teamName = team?.name || athlete.team || 'Free Agent';
   const role = athlete.role || 'Player';
   const status = athlete.status || 'Active';
+  const statusTone = athleteStatusTone(status, accent);
   const brandFirst = brandLabel.slice(0, 4);
   const brandRest = brandLabel.slice(4);
   const numericRank = Number(rank);
@@ -192,8 +193,8 @@ export default function PlayerCardTemplate({
           />
         </div>
         <div className="absolute left-[92px] right-[88px] top-3 z-20 min-w-0">
-          <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={{ color: accent }}>
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+          <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={isIcon ? { color: accent } : { color: statusTone.color }}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: isIcon ? accent : statusTone.dotColor }} />
             {isIcon ? 'ICON' : status}
           </div>
           <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: accent, textShadow: `0 0 16px ${accent}55` }}>{displayName}</h3>
@@ -234,8 +235,8 @@ export default function PlayerCardTemplate({
           <div className="absolute left-6 top-6 z-20 text-[13px] font-black uppercase tracking-widest" style={{ color: showcaseAccent }}>
             #{rank ?? cardNumber}
           </div>
-          <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: showcaseAccent }}>
-            <span className="h-2 w-2 rounded-full" style={{ background: showcaseAccent }} />
+          <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em]" style={isIcon ? { color: showcaseAccent, borderColor: `${showcaseAccent}55`, background: `${showcaseAccent}12` } : { color: statusTone.color, borderColor: statusTone.borderColor, background: statusTone.background }}>
+            <span className="h-2 w-2 rounded-full" style={{ background: isIcon ? showcaseAccent : statusTone.dotColor }} />
             {isIcon ? 'ICON' : status}
           </div>
         </div>

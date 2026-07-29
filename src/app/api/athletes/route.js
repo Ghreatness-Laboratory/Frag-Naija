@@ -11,6 +11,7 @@ export async function GET(request) {
       team:   searchParams.get('team')   || '',
       status: searchParams.get('status') || '',
       game_slug: searchParams.get('game_slug') || '',
+      is_icon: searchParams.get('is_icon') || '',
     };
     const data = await getAthletes(filters);
     return NextResponse.json(data);
