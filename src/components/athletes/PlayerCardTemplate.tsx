@@ -161,21 +161,14 @@ export default function PlayerCardTemplate({
     return (
       <div className={cx('player-card player-card-compact relative h-[118px] w-full overflow-hidden bg-[#030803] text-white', className)} style={cardShellStyle(primary)}>
         <CardBackdrop primary={primary} athlete={athlete} team={team} includePhoto={false} />
-        <div
-          className="player-card-portrait-frame absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-center justify-center overflow-hidden border bg-[#031207] p-[3px]"
-          style={{ borderColor: `${primary}70`, boxShadow: `0 0 18px ${primary}26, inset 0 0 18px ${primary}12` }}
-        >
-          <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 50% 18%, ${primary}48, transparent 46%), linear-gradient(180deg, rgba(255,255,255,0.08), transparent 34%), linear-gradient(145deg, ${primary}1f, rgba(2, 8, 3, 0.96) 64%)` }} />
-          <div className="absolute inset-[2px] opacity-70" style={{ background: `radial-gradient(ellipse at 50% 72%, ${primary}30, transparent 62%)` }} />
-          <div className="relative h-full w-full overflow-hidden">
-            <PlayerImage
-              athlete={athlete}
-              displayName={displayName}
-              primary={primary}
-              className="player-card-portrait-subject h-full w-full scale-[1.08] object-cover object-center"
-              fallbackClassName="flex h-full w-full items-center justify-center bg-transparent"
-            />
-          </div>
+        <div className="absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-end justify-center overflow-hidden border bg-black/55" style={{ borderColor: `${primary}70` }}>
+          <PlayerImage
+            athlete={athlete}
+            displayName={displayName}
+            primary={primary}
+            className="player-card-subject h-full w-full object-cover object-center"
+            fallbackClassName="flex h-full w-full items-center justify-center bg-black/35"
+          />
         </div>
         <div className="absolute left-[92px] right-[88px] top-3 z-20 min-w-0">
           <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={{ color: primary }}>
