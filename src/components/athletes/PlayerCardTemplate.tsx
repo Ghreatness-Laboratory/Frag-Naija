@@ -37,6 +37,8 @@ export type PlayerCardTemplateProps = {
   variant?: PlayerCardTemplateVariant;
   rank?: number | string;
   className?: string;
+  imageLoading?: 'eager' | 'lazy';
+  imageFetchPriority?: 'high' | 'low' | 'auto';
 };
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -49,15 +51,11 @@ function playerAccentHue(value: string): number {
   return hash;
 }
 
-function playerBackdropStyle(primary: string, athlete: PlayerCardTemplateAthlete, team: PlayerCardTemplateTeam | null, includePhoto = true): CSSProperties {
+function playerBackdropStyle(primary: string, athlete: PlayerCardTemplateAthlete, team: PlayerCardTemplateTeam | null): CSSProperties {
   const identity = `${athlete.name || ''}-${athlete.known_name || athlete.ign}-${team?.name || athlete.team || ''}-${athlete.role || ''}-${athlete.game_slug || ''}`;
   const isMeleMisayo = /mele|misayo/i.test(`${athlete.name || ''} ${athlete.known_name || ''} ${athlete.ign || ''}`);
   const hue = isMeleMisayo ? 146 : playerAccentHue(identity);
   const secondaryHue = isMeleMisayo ? 44 : (hue + 42) % 360;
-  const photoLayer = includePhoto && athlete.photo_url
-    ? `linear-gradient(180deg, rgba(2,7,3,0.12), rgba(2,7,3,0.9)), url(${athlete.photo_url})`
-    : undefined;
-
   return {
     backgroundImage: [
       `radial-gradient(circle at 28% 18%, hsl(${hue} 85% 55% / 0.24), transparent 28%)`,
@@ -69,15 +67,6 @@ function playerBackdropStyle(primary: string, athlete: PlayerCardTemplateAthlete
   };
 }
 
-function playerBackdropPortraitStyle(athlete: PlayerCardTemplateAthlete): CSSProperties {
-  return athlete.photo_url
-    ? {
-        backgroundImage: `url(${athlete.photo_url})`,
-        backgroundPosition: 'center 4%',
-        backgroundSize: '185% auto',
-      }
-    : {};
-}
 
 function cardShellStyle(primary: string): CSSProperties {
   return {
@@ -95,12 +84,10 @@ function CardBackdrop({
   primary,
   athlete,
   team,
-  includePhoto = true,
 }: {
   primary: string;
   athlete: PlayerCardTemplateAthlete;
   team: PlayerCardTemplateTeam | null;
-  includePhoto?: boolean;
 }) {
   return (
     <>
@@ -111,7 +98,7 @@ function CardBackdrop({
         />
       </div>
       <div className="absolute inset-[9px] border border-white/10" style={{ clipPath: 'polygon(0 0, calc(100% - 32px) 0, 100% 32px, 100% calc(100% - 38px), calc(100% - 38px) 100%, 0 100%)' }} />
-      <div className="player-card-identity-bg absolute inset-[3px] opacity-90" style={playerBackdropStyle(primary, athlete, team, includePhoto)} />
+      <div className="player-card-identity-bg absolute inset-[3px] opacity-90" style={playerBackdropStyle(primary, athlete, team)} />
       <div className="absolute inset-0 opacity-85" style={{ background: `radial-gradient(circle at 78% 30%, ${primary}42, transparent 27%), radial-gradient(circle at 88% 48%, ${primary}26, transparent 18%), linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.82) 73%)` }} />
       <div className="absolute inset-0 opacity-60" style={{ background: `repeating-linear-gradient(118deg, transparent 0 12px, ${primary}10 12px 13px, transparent 13px 26px)` }} />
       <div className="fn-scanlines absolute inset-0 opacity-30" />
@@ -125,15 +112,19 @@ function PlayerImage({
   primary,
   className,
   fallbackClassName,
+  loading = 'lazy',
+  fetchPriority = 'auto',
 }: {
   athlete: PlayerCardTemplateAthlete;
   displayName: string;
   primary: string;
   className: string;
   fallbackClassName: string;
+  loading?: 'eager' | 'lazy';
+  fetchPriority?: 'high' | 'low' | 'auto';
 }) {
   return athlete.photo_url ? (
-    <img src={athlete.photo_url} alt={displayName} className={className} />
+    <img src={athlete.photo_url} alt={displayName} className={className} loading={loading} fetchPriority={fetchPriority} decoding="async" width={160} height={160} />
   ) : (
     <div className={fallbackClassName} style={{ borderColor: `${primary}70`, color: primary }}>
       <Shield size={72} />
@@ -151,6 +142,8 @@ export default function PlayerCardTemplate({
   variant = 'full',
   rank,
   className,
+  imageLoading = 'lazy',
+  imageFetchPriority = 'auto',
 }: PlayerCardTemplateProps) {
   const displayName = athlete.known_name || athlete.ign;
   const cardNumber = cardNumberFrom(athlete, team, rating, rank);
@@ -169,7 +162,7 @@ export default function PlayerCardTemplate({
   if (variant === 'compact') {
     return (
       <div className={cx('player-card player-card-compact relative h-[118px] w-full overflow-hidden bg-[#030803] text-white', className)} style={cardShellStyle(primary)}>
-        <CardBackdrop primary={primary} athlete={athlete} team={team} includePhoto={false} />
+        <CardBackdrop primary={primary} athlete={athlete} team={team} />
         <div className="absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-end justify-center overflow-hidden border bg-black/55" style={{ borderColor: `${primary}70` }}>
           <PlayerImage
             athlete={athlete}
@@ -177,6 +170,8 @@ export default function PlayerCardTemplate({
             primary={primary}
             className="player-card-subject h-full w-full object-cover object-center"
             fallbackClassName="flex h-full w-full items-center justify-center bg-black/35"
+            loading={imageLoading}
+            fetchPriority={imageFetchPriority}
           />
         </div>
         <div className="absolute left-[92px] right-[88px] top-3 z-20 min-w-0">
@@ -216,6 +211,8 @@ export default function PlayerCardTemplate({
             primary={primary}
             className="h-full w-full object-cover object-top"
             fallbackClassName="flex h-full w-full items-center justify-center bg-white text-black/85"
+            loading={imageLoading}
+            fetchPriority={imageFetchPriority}
           />
           <div className="absolute left-6 top-6 z-20 text-[13px] font-black uppercase tracking-widest" style={{ color: showcaseAccent }}>
             #{rank ?? cardNumber}
@@ -272,11 +269,13 @@ export default function PlayerCardTemplate({
             primary={primary}
             className="player-card-subject h-full w-full object-contain object-bottom drop-shadow-[0_20px_20px_rgba(0,0,0,0.75)]"
             fallbackClassName="mb-3 flex h-24 w-24 items-center justify-center rounded-full border bg-black/40"
+            loading={imageLoading}
+            fetchPriority={imageFetchPriority}
           />
         </div>
         <div className="absolute bottom-[86px] left-4 right-4 z-20">
           <div className="mb-2 flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${primary}80` }}>
-            {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <Flag size={13} style={{ color: primary }} />}
+            {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={13} style={{ color: primary }} />}
           </div>
           <h3 className="line-clamp-2 break-words font-display text-[23px] font-black uppercase leading-[0.88]" style={{ color: primary, textShadow: `0 0 18px ${primary}55` }}>{displayName}</h3>
           <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.18em] text-white/60">{role} / {teamName}</p>
@@ -319,12 +318,14 @@ export default function PlayerCardTemplate({
           primary={primary}
           className="player-card-subject h-full w-full object-contain object-bottom drop-shadow-[0_24px_24px_rgba(0,0,0,0.75)]"
           fallbackClassName="mb-6 flex h-36 w-36 items-center justify-center rounded-full border bg-black/40"
+          loading={imageLoading}
+          fetchPriority={imageFetchPriority}
         />
       </div>
 
       <div className="absolute bottom-[112px] left-6 right-5 z-20">
         <div className="mb-2 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${primary}80` }}>
-          {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <Flag size={16} style={{ color: primary }} />}
+          {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={16} style={{ color: primary }} />}
         </div>
         <h2 className="max-w-[245px] break-words font-display text-[32px] font-black uppercase leading-[0.86]" style={{ color: primary, textShadow: `0 0 20px ${primary}55` }}>{displayName}</h2>
         <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{teamName}</p>
