@@ -63,11 +63,20 @@ function playerBackdropStyle(primary: string, athlete: PlayerCardTemplateAthlete
       `radial-gradient(circle at 28% 18%, hsl(${hue} 85% 55% / 0.24), transparent 28%)`,
       `radial-gradient(circle at 76% 38%, ${primary}42, transparent 32%)`,
       `linear-gradient(135deg, ${primary}14, transparent 45%, hsl(${secondaryHue} 92% 48% / ${isMeleMisayo ? 0.24 : 0.18}))`,
-      photoLayer,
     ].filter(Boolean).join(', '),
-    backgroundPosition: 'center, center, center, center 20%',
-    backgroundSize: 'cover, cover, cover, cover',
+    backgroundPosition: 'center, center, center',
+    backgroundSize: 'cover, cover, cover',
   };
+}
+
+function playerBackdropPortraitStyle(athlete: PlayerCardTemplateAthlete): CSSProperties {
+  return athlete.photo_url
+    ? {
+        backgroundImage: `url(${athlete.photo_url})`,
+        backgroundPosition: 'center 4%',
+        backgroundSize: '185% auto',
+      }
+    : {};
 }
 
 function cardShellStyle(primary: string): CSSProperties {
