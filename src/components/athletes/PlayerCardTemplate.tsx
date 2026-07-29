@@ -144,6 +144,8 @@ export default function PlayerCardTemplate({
   const status = athlete.status || 'Active';
   const brandFirst = brandLabel.slice(0, 4);
   const brandRest = brandLabel.slice(4);
+  const numericRank = Number(rank);
+  const showcaseAccent = numericRank === 2 ? 'rgb(var(--fn-yellow))' : primary;
 
   if (variant === 'compact') {
     return (
@@ -166,9 +168,9 @@ export default function PlayerCardTemplate({
           <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: primary, textShadow: `0 0 16px ${primary}55` }}>{displayName}</h3>
           <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{role} / {teamName}</p>
         </div>
-        <div className="absolute right-1 top-3 z-30 flex w-[64px] flex-col items-center text-center">
+        <div className="absolute right-0 top-[18px] z-30 flex w-[74px] flex-col items-center text-center">
           <div className="font-display text-2xl font-black leading-none" style={{ color: primary, textShadow: `0 0 14px ${primary}66` }}>{Math.round(Number(rating) || 0)}</div>
-          <div className="text-[7px] font-black uppercase tracking-widest text-white/45">OVR</div>
+          <div className="mt-0.5 text-[7px] font-black uppercase tracking-widest text-white/45">OVR</div>
         </div>
         <div
           className="absolute bottom-3 left-[92px] right-[74px] z-20 grid overflow-hidden rounded-sm border bg-black/75 shadow-[inset_0_0_18px_rgba(0,255,85,0.08)]"
@@ -187,42 +189,41 @@ export default function PlayerCardTemplate({
 
   if (variant === 'showcase') {
     return (
-      <div className={cx('player-card player-card-showcase relative h-[424px] w-[304px] max-w-full overflow-hidden rounded-sm border bg-[#061008] text-white transition-transform duration-200 group-hover:-translate-y-1', className)} style={{ borderColor: `${primary}55`, boxShadow: `0 18px 32px rgba(0,0,0,0.35), 0 0 22px ${primary}12` }}>
+      <div className={cx('player-card player-card-showcase relative h-[424px] w-[304px] max-w-full overflow-hidden rounded-sm border bg-[#061008] text-white transition-transform duration-200 group-hover:-translate-y-1', className)} style={{ borderColor: `${primary}3d`, boxShadow: '0 14px 28px rgba(0,0,0,0.28)' }}>
         <div className="relative h-[246px] overflow-hidden bg-white">
           <PlayerImage
             athlete={athlete}
             displayName={displayName}
             primary={primary}
             className="h-full w-full object-cover object-top"
-            fallbackClassName="flex h-full w-full items-center justify-center bg-black/35"
+            fallbackClassName="flex h-full w-full items-center justify-center bg-white text-black/85"
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
-          <div className="absolute left-6 top-6 z-20 text-[15px] font-black uppercase tracking-widest" style={{ color: primary }}>
+          <div className="absolute left-6 top-6 z-20 text-[13px] font-black uppercase tracking-widest" style={{ color: showcaseAccent }}>
             #{rank ?? cardNumber}
           </div>
-          <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5 text-[12px] font-black uppercase tracking-[0.24em]" style={{ color: primary }}>
-            <span className="h-2.5 w-2.5 rounded-full" style={{ background: primary }} />
+          <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: showcaseAccent }}>
+            <span className="h-2 w-2 rounded-full" style={{ background: showcaseAccent }} />
             {status}
           </div>
         </div>
 
-        <div className="relative h-[178px] border-t px-7 py-6" style={{ borderColor: `${primary}35`, background: `linear-gradient(180deg, ${primary}12, rgba(3,13,6,0.96) 34%, #061008 100%)` }}>
+        <div className="relative h-[178px] border-t px-7 py-5" style={{ borderColor: `${primary}26`, background: `linear-gradient(180deg, ${primary}0e, rgba(7,23,12,0.98) 38%, #07130b 100%)` }}>
           <div className="flex items-center gap-3">
-            <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border" style={{ borderColor: `${primary}80`, color: primary }}>
-              <Flag size={12} />
+            <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center" style={{ color: showcaseAccent }}>
+              <Shield size={15} />
             </div>
-            <h3 className="min-w-0 truncate font-mono text-[22px] font-black leading-none tracking-wide text-white">{displayName}</h3>
+            <h3 className="min-w-0 truncate font-mono text-[21px] font-black leading-none tracking-wide text-white">{displayName}</h3>
           </div>
-          <p className="mt-3 truncate text-[15px] font-mono uppercase tracking-[0.28em] text-white/50">{role}</p>
+          <p className="mt-2 truncate text-[14px] font-mono uppercase tracking-[0.26em] text-white/48">{role}</p>
 
           <div
-            className="mt-6 grid gap-3"
+            className="mt-5 grid gap-2"
             style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
           >
             {stats.map((stat) => (
               <div key={stat.label} className="min-w-0 text-center">
                 <div className="font-display text-[20px] font-black leading-none text-white">{stat.value}</div>
-                <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-white/45">{stat.label}</div>
+                <div className="mt-2 text-[9px] font-black uppercase tracking-[0.18em] text-white/45">{stat.label}</div>
               </div>
             ))}
           </div>
