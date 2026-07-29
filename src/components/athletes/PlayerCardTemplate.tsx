@@ -117,8 +117,7 @@ export default function PlayerCardTemplate({
 
   if (variant === 'compact') {
     return (
-      <div className={cx('player-card player-card-compact relative h-[118px] w-full overflow-hidden bg-[#030803] text-white', className)} style={cardShellStyle(primary)}>
-        <CardBackdrop primary={primary} />
+      <div className={cx('player-card player-card-compact relative h-[118px] w-full overflow-hidden rounded-sm border border-fn-gborder bg-fn-card text-white', className)}>
         <div className="absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-end justify-center overflow-hidden border bg-black/55" style={{ borderColor: `${primary}70` }}>
           <PlayerImage
             athlete={athlete}
@@ -128,7 +127,7 @@ export default function PlayerCardTemplate({
             fallbackClassName="flex h-full w-full items-center justify-center bg-black/35"
           />
         </div>
-        <div className="absolute left-[92px] right-4 top-3 z-20 min-w-0 pr-12">
+        <div className="absolute left-[92px] right-4 top-3 z-20 min-w-0 pr-[4.75rem]">
           <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={{ color: primary }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: primary }} />
             {status}
@@ -136,7 +135,7 @@ export default function PlayerCardTemplate({
           <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: primary, textShadow: `0 0 16px ${primary}55` }}>{displayName}</h3>
           <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{role} / {teamName}</p>
         </div>
-        <div className="absolute right-3 top-3 z-20 text-right">
+        <div className="absolute right-11 top-3 z-20 text-right">
           <div className="font-display text-2xl font-black leading-none" style={{ color: primary }}>{Math.round(Number(rating) || 0)}</div>
           <div className="text-[7px] font-black uppercase tracking-widest text-white/45">OVR</div>
         </div>
