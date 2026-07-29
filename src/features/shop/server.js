@@ -25,6 +25,7 @@ function cleanShopItem(body) {
     category: body.category || 'Gear',
     status: body.status || 'Published',
     game_slug: body.game_slug || null,
+    tutorial_video_url: body.tutorial_video_url || null,
   };
 }
 
