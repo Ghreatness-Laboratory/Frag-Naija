@@ -1,69 +1,15 @@
 'use client';
 
 import { useEffect } from 'react';
-import type { ElementType } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
-  Activity,
-  CalendarDays,
   ChevronRight,
-  Crosshair,
   Gamepad2,
-  Radio,
-  ShieldCheck,
-  Trophy,
-  Users,
 } from 'lucide-react';
-import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { GAMES, type Game } from '@/lib/games';
-import { getGameContent } from '@/lib/game-content';
 import { useGame } from '@/context/GameContext';
 
-type HubLink = {
-  label: string;
-  href: string;
-  eyebrow: string;
-  copy: string;
-  icon: ElementType;
-};
-
-const PUBG_LINKS: HubLink[] = [
-  {
-    label: 'Roster Intel',
-    href: '/athletes',
-    eyebrow: 'Operator scouting',
-    copy: 'Compare fraggers, IGLs, support anchors, and public player cards.',
-    icon: Crosshair,
-  },
-  {
-    label: 'Squad Rankings',
-    href: '/teams',
-    eyebrow: 'Power table',
-    copy: 'Track Nigerian PUBG squads by wins, kills, strength, and team form.',
-    icon: Users,
-  },
-  {
-    label: 'Tournament Ops',
-    href: '/tournaments',
-    eyebrow: 'Scrims and finals',
-    copy: 'Follow live championships, TDM cups, prize pools, and event dates.',
-    icon: Trophy,
-  },
-  {
-    label: 'Transfer Watch',
-    href: '/transfer-window',
-    eyebrow: 'Market movement',
-    copy: 'Watch confirmed moves, rumours, and roster rebuilds before events.',
-    icon: Activity,
-  },
-];
-
-const PUBG_MAP_FLOW = [
-  { map: 'Erangel', phase: 'Hot drop watch', detail: 'School, Apartments, Pochinki contests' },
-  { map: 'Miramar', phase: 'Vehicle priority', detail: 'Long rotations, ridge control, utility patience' },
-  { map: 'Sanhok', phase: 'Close-range chaos', detail: 'Fast third parties and compact late circles' },
-];
 
 function GenericHub({ game }: { game: Game }) {
   const links = [
@@ -247,6 +193,5 @@ export default function GameHubPage() {
 
   useEffect(() => { if (game) setSelectedGame(game); }, [game, setSelectedGame]);
   if (!game) return <main className="min-h-screen p-8 text-fn-muted">Game not found.</main>;
-  if (game.slug === 'pubg-mobile') return <PubgMobileHub game={game} />;
   return <GenericHub game={game} />;
 }
