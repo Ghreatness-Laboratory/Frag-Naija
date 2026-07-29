@@ -50,18 +50,12 @@ type HomepagePayload = {
   teamMembers?: TeamMember[];
 };
 
-let homepageDataCache: HomepagePayload | null = null;
 let homepageDataPromise: Promise<HomepagePayload> | null = null;
 
 function fetchHomepageData() {
-  if (homepageDataCache) return Promise.resolve(homepageDataCache);
   if (!homepageDataPromise) {
-    homepageDataPromise = fetch('/api/homepage-data', { cache: 'force-cache' })
+    homepageDataPromise = fetch('/api/homepage-data', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : {}))
-      .then((payload: HomepagePayload) => {
-        homepageDataCache = payload;
-        return payload;
-      })
       .catch(() => ({}))
       .finally(() => {
         homepageDataPromise = null;
@@ -221,7 +215,7 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
   );
 }
 
-const AthleteCard = memo(function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
+const AthleteCard = memo(function AthleteCard({ athlete, rank, primary, priority = false }: { athlete: Athlete; rank: number; primary: string; priority?: boolean }) {
   const game = GAMES.find((item) => item.slug === athlete.game_slug);
   const rating = Number(athlete.overall_rating ?? athlete.rating ?? 0);
 
@@ -368,8 +362,8 @@ export default function HomePage() {
       game_slug: team.game_slug,
     }));
   }, [selectedGame]);
-  const athleteSource = allAthletes.length ? allAthletes : fallbackAthletes;
-  const teamSource = allTeams.length ? allTeams : fallbackTeamCards;
+  const athleteSource = allAthletes.length || featuredAthleteIds.length ? allAthletes : fallbackAthletes;
+  const teamSource = allTeams.length || featuredTeamIds.length ? allTeams : fallbackTeamCards;
   const gameAthletes: Athlete[] = useMemo(() => selectedGame
     ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
     : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6)), [allAthletes, athleteSource, featuredAthleteIds, selectedGame]);

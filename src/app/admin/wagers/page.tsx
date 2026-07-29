@@ -12,7 +12,7 @@ import { GAMES } from '@/lib/games';
 type WagerOption = { label: string; odds: string };
 
 const BINARY_EMPTY = {
-  question: '', subtitle: '',
+  question: '', subtitle: '', match_name: '',
   yes_odds: '1.60', no_odds: '2.63',
   yes_price: '62', no_price: '38',
   closes_at: '',
@@ -58,6 +58,7 @@ function AdminWagersContent() {
     setForm({
       question:  String(row.question  ?? ''),
       subtitle:  String(row.subtitle  ?? ''),
+      match_name: String(row.match_name ?? ''),
       yes_odds:  String(row.yes_odds  ?? '1.60'),
       no_odds:   String(row.no_odds   ?? '2.63'),
       yes_price: String(row.yes_price ?? '62'),
@@ -103,6 +104,7 @@ function AdminWagersContent() {
       const body: Record<string, unknown> = {
         question:  form.question,
         subtitle:  form.subtitle,
+        match_name: form.match_name.trim(),
         closes_at: form.closes_at,
         type:      form.type,
         game_slug: form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
@@ -227,6 +229,7 @@ function AdminWagersContent() {
             </div>
           )},
           { key: 'game_slug', label: 'Game' },
+          { key: 'match_name', label: 'Match', render: r => String(r.match_name || '—') },
           { key: 'type',      label: 'Type',   render: r => r.type === 'player_pick'
               ? <span className="text-fn-yellow text-xs">Player Pick</span>
               : <span className="text-fn-green text-xs">Binary</span> },
@@ -248,6 +251,10 @@ function AdminWagersContent() {
           </Field>
           <Field label="Subtitle">
             <Input value={form.subtitle} onChange={f('subtitle')} placeholder="Short context line" />
+          </Field>
+
+          <Field label="Match / Game Fixture" required>
+            <Input value={form.match_name} onChange={f('match_name')} placeholder="e.g. Lagos Lions vs Abuja Storm" required />
           </Field>
 
           <Field label="Game">

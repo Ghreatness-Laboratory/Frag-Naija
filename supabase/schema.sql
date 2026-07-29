@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS wagers (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   question    TEXT NOT NULL,
   subtitle    TEXT,
+  match_name  TEXT DEFAULT '',
   yes_odds    NUMERIC(6,2) DEFAULT 1.60,
   no_odds     NUMERIC(6,2) DEFAULT 2.63,
   yes_price   INT DEFAULT 62,        -- probability price (YES + NO = 100)
@@ -222,6 +223,7 @@ CREATE TABLE IF NOT EXISTS wagers (
 );
 
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS match_name TEXT DEFAULT '';
 
 ALTER TABLE wagers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wagers_public_read"  ON wagers FOR SELECT USING (true);
