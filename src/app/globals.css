@@ -182,6 +182,25 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
   .section-title  { @apply font-display text-2xl sm:text-3xl font-bold uppercase tracking-wider text-fn-text; }
 }
 
+/* ─── PLAYER CARD COMPOSITION ───────────────────────────────────────────────*/
+.player-card-identity-bg {
+  background-blend-mode: screen, screen, overlay, luminosity;
+  filter: saturate(1.22) contrast(1.08) blur(0.2px);
+  mask-image: radial-gradient(circle at 50% 38%, black 0%, black 58%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at 50% 38%, black 0%, black 58%, transparent 100%);
+}
+
+.player-card-subject {
+  filter: saturate(1.08) contrast(1.07) drop-shadow(0 16px 18px rgba(0, 0, 0, 0.82));
+  mix-blend-mode: multiply;
+  mask-image: linear-gradient(180deg, black 0%, black 82%, rgba(0, 0, 0, 0.72) 93%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, black 0%, black 82%, rgba(0, 0, 0, 0.72) 93%, transparent 100%);
+}
+
+.player-card-subject:is([src$='.png'], [src*='.png?'], [src*='.png#']) {
+  mix-blend-mode: normal;
+}
+
 /* ─── PLAYER CARD PRINT EXPORT ──────────────────────────────────────────────*/
 .print-card-only { display: none; }
 
