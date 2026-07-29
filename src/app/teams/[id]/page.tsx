@@ -22,6 +22,7 @@ type Athlete = {
   iq?: number | null;
   team?: string | null;
   game_slug?: string | null;
+  is_icon?: boolean | null;
 };
 
 type Team = {

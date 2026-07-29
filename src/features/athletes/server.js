@@ -39,6 +39,7 @@ const ATHLETE_FIELDS = new Set([
   'jersey_number',
   'sensitivity_settings',
   'control_code',
+  'is_icon',
 ]);
 
 function normalizeAchievements(value) {

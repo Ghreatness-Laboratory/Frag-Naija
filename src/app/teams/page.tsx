@@ -22,6 +22,7 @@ type Athlete = {
   status: string;
   team?: string | null;
   game_slug?: string | null;
+  is_icon?: boolean | null;
 };
 
 type Team = {

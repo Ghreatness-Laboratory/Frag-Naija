@@ -22,6 +22,7 @@ const EMPTY = {
   previous_teams: [{ team: '', years: '' }],
   achievements: [{ title: '', date: '' }],
   performance_history: [{ label: '', value: '', date: '' }],
+  is_icon: false,
 };
 const FC_MOBILE_GAME = GAMES.find((game) => isFcMobileGame(game.slug));
 
@@ -239,6 +240,7 @@ function AthletesContent() {
       previous_teams: objectList(row.previous_teams, { team: '', years: '' }),
       achievements: objectList(row.achievements, { title: '', date: '' }),
       performance_history: objectList(row.performance_history, { label: '', value: '', date: '' }),
+      is_icon: Boolean(row.is_icon),
     });
     setPhotoFile(null);
     setError('');
@@ -285,6 +287,7 @@ function AthletesContent() {
         status:         form.status,
         bio:            form.bio,
         photo_url:      photoUrl ?? form.photo_url,
+        is_icon:        form.is_icon,
         attack:         Number(form.attack)         || 0,
         defense:        Number(form.defense)        || 0,
         clutch:         fcMobileGame ? 0 : Number(form.clutch) || 0,
@@ -349,6 +352,7 @@ function AthletesContent() {
     clutch: Number(form.clutch) || 0,
     iq: Number(form.iq) || 0,
     game_slug: form.game_slug,
+    is_icon: form.is_icon,
   };
 
   return (
@@ -396,6 +400,7 @@ function AthletesContent() {
           { key: 'game_slug',      label: 'Game' },
           { key: 'role',           label: 'Role' },
           { key: 'overall_rating', label: 'OVR' },
+          { key: 'is_icon', label: 'Icon', render: (r) => r.is_icon ? <span className="rounded border border-fn-yellow/40 bg-fn-yellow/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-fn-yellow">ICON</span> : <span className="text-fn-muted text-xs">—</span> },
           {
             key: 'status',
             label: 'Status',
@@ -429,6 +434,11 @@ function AthletesContent() {
               <Field label="Game">
                 <Input value={FC_MOBILE_GAME?.name ?? 'FC Mobile'} readOnly aria-readonly="true" />
               </Field>
+
+              <label className="flex items-center gap-2 rounded border border-fn-yellow/30 bg-fn-yellow/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-fn-yellow">
+                <input type="checkbox" checked={form.is_icon} onChange={(event) => setForm((prev) => ({ ...prev, is_icon: event.target.checked }))} className="h-4 w-4 accent-fn-yellow" />
+                Mark as Icon
+              </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Overall Rating (auto)">
@@ -487,6 +497,11 @@ function AthletesContent() {
               {GAMES.map((game) => <option key={game.slug} value={game.slug}>{game.name}</option>)}
             </Select>
           </Field>
+
+          <label className="flex items-center gap-2 rounded border border-fn-yellow/30 bg-fn-yellow/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-fn-yellow">
+            <input type="checkbox" checked={form.is_icon} onChange={(event) => setForm((prev) => ({ ...prev, is_icon: event.target.checked }))} className="h-4 w-4 accent-fn-yellow" />
+            Mark as Icon
+          </label>
 
           {!footballSelected && <div className="grid grid-cols-2 gap-3">
             <Field label="Team">
@@ -677,7 +692,7 @@ function AthletesContent() {
                 rating={previewRating}
                 primary={formGame.colors.primary}
                 gameName={formGame.shortName.toUpperCase()}
-                variant="compact"
+                variant={form.is_icon ? "icon" : "compact"}
               />
             </div>
           </Field>

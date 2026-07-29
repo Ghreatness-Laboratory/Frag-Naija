@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS teams (
   kills       INT  DEFAULT 0,
   bio         TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
+  is_icon     BOOLEAN DEFAULT false,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS athletes (
   sensitivity_settings JSONB DEFAULT '{}'::jsonb,
   control_code TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
+  is_icon     BOOLEAN DEFAULT false,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -64,6 +66,7 @@ ALTER TABLE athletes ADD COLUMN IF NOT EXISTS survival NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS iq NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS clutch NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS sensitivity_settings JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS is_icon BOOLEAN DEFAULT false;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS control_code TEXT;
 
 ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;
@@ -208,6 +211,7 @@ CREATE TABLE IF NOT EXISTS wagers (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   question    TEXT NOT NULL,
   subtitle    TEXT,
+  match_name  TEXT DEFAULT '',
   yes_odds    NUMERIC(6,2) DEFAULT 1.60,
   no_odds     NUMERIC(6,2) DEFAULT 2.63,
   yes_price   INT DEFAULT 62,        -- probability price (YES + NO = 100)
@@ -222,6 +226,7 @@ CREATE TABLE IF NOT EXISTS wagers (
 );
 
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS match_name TEXT DEFAULT '';
 
 ALTER TABLE wagers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wagers_public_read"  ON wagers FOR SELECT USING (true);
