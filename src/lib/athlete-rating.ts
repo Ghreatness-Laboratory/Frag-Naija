@@ -1,15 +1,15 @@
-import { isFcMobileGame } from './game-categories';
+import { isFootballGame } from './game-categories';
 
 export type AthleteStatKey = 'attack' | 'defense' | 'survival' | 'iq' | 'clutch' | 'aggression';
 
 export const ATHLETE_STAT_CATEGORIES: Record<string, AthleteStatKey[]> = {
-  'fc-mobile': ['attack', 'defense', 'iq'],
+  'football': ['attack', 'defense', 'iq'],
   default: ['attack', 'defense', 'survival', 'iq', 'clutch', 'aggression'],
 };
 
 export function getAthleteStatCategories(gameSlug?: string | null): AthleteStatKey[] {
-  return isFcMobileGame(gameSlug)
-    ? ATHLETE_STAT_CATEGORIES['fc-mobile']
+  return isFootballGame(gameSlug)
+    ? ATHLETE_STAT_CATEGORIES['football']
     : ATHLETE_STAT_CATEGORIES.default;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -501,6 +501,10 @@ function getMarketQuestion(market: Record<string, unknown>) {
   );
 }
 
+function getMarketMatch(market: Record<string, unknown>) {
+  return String(market.match_name ?? market.match ?? market.game_match ?? "").trim();
+}
+
 function getMarketSubtitle(market: Record<string, unknown>) {
   const subtitle =
     market.subtitle ??
@@ -662,7 +666,14 @@ function WagerCard({
         <h3 className="mb-1 text-sm font-bold leading-snug text-fn-text sm:text-base">
           {String(getMarketQuestion(market))}
         </h3>
-        <p className="fn-label">{getMarketSubtitle(market)}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {getMarketMatch(market) && (
+            <span className="rounded-sm border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-green">
+              {getMarketMatch(market)}
+            </span>
+          )}
+          <span className="fn-label py-1">{getMarketSubtitle(market)}</span>
+        </div>
       </div>
 
       <div className="space-y-3 px-4 pb-3">
@@ -1160,6 +1171,7 @@ function TicketActions({ ticket, onClose }: { ticket: PlacedTicket | null; onClo
 
 function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState("all");
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [slipSelections, setSlipSelections] = useState<SlipSelection[]>([]);
@@ -1194,13 +1206,14 @@ function WagerPageContent() {
   const { data: predictorsData } = usePredictors();
   const { data: featuredData } = useFeatured();
   const currentUser = me as CurrentUser;
-  const liveWagers = (Array.isArray(wagers) ? wagers : []) as CurrentMarket[];
+  const liveWagers = useMemo(() => (Array.isArray(wagers) ? wagers : []) as CurrentMarket[], [wagers]);
   const currentUserWagers = (Array.isArray(myWagers) ? myWagers : []) as CurrentUserWager[];
   const walletTxList = (Array.isArray(walletTransactions) ? walletTransactions : []) as WalletTransaction[];
   const predictors = Array.isArray(predictorsData) ? predictorsData : [];
   const featured = Array.isArray(featuredData) ? featuredData : [];
 
-  const allMarkets = liveWagers;
+  const matchOptions = useMemo(() => Array.from(new Set(liveWagers.map(getMarketMatch).filter(Boolean))).sort(), [liveWagers]);
+  const allMarkets = selectedMatch === "all" ? liveWagers : liveWagers.filter((market) => getMarketMatch(market) === selectedMatch);
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
   const username = getUsername(currentUser);
@@ -1326,8 +1339,21 @@ function WagerPageContent() {
               </div>
             )}
 
-            <div className="flex items-center gap-2 fn-label">
-              <span className="live-dot" /> LIVE MARKETS - {allMarkets.length} OPEN
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 fn-label">
+                <span className="live-dot" /> LIVE MARKETS - {allMarkets.length} OPEN
+              </div>
+              {matchOptions.length > 0 && (
+                <select
+                  value={selectedMatch}
+                  onChange={(event) => { setSelectedMatch(event.target.value); setShowAll(false); }}
+                  className="rounded-sm border border-fn-gborder bg-fn-card px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-text outline-none"
+                  aria-label="Filter wagers by match"
+                >
+                  <option value="all">All matches</option>
+                  {matchOptions.map((match) => <option key={match} value={match}>{match}</option>)}
+                </select>
+              )}
             </div>
 
             {wagersLoading && (

@@ -3,12 +3,13 @@ import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { DEFAULT_HOMEPAGE_SETTINGS, getHomepageSettings } from '@/features/homepage/server';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const ATHLETE_FIELDS = 'id,name,ign,role,known_name,team,jersey_number,rating,overall_rating,kills,assists,winrate,attack,defense,survival,iq,clutch,photo_url,status,game_slug';
 const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
-const WAGER_FIELDS = 'id,question,subtitle,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at';
+const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at';
 const TRANSFER_FIELDS = 'id,from_team,to_team,fee,status,date,athletes(id,name,ign)';
 const SHOP_FIELDS = 'id,name,price,currency,image_url,category,status';
 const MEMBER_FIELDS = 'id,name,role,bio,photo_url,currently_playing_game_slug,twitter_url,instagram_url,linkedin_url,twitch_url,youtube_url';
@@ -77,7 +78,7 @@ export async function GET() {
       teamMembers,
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (e) {

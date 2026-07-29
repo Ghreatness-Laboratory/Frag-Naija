@@ -32,7 +32,7 @@ export function combatAttributes(athlete: Record<string, unknown>, gameSlug?: st
     { key: 'iq', label: 'IQ', name: 'IQ', value: clampStat(athlete.iq), color: COMBAT_ATTRIBUTE_COLORS.iq },
   ];
 
-  return isFcMobileGame(gameSlug ?? String(athlete.game_slug ?? ''))
+  return isFootballGame(gameSlug ?? String(athlete.game_slug ?? ''))
     ? attrs.filter((attr) => ['attack', 'defense', 'iq'].includes(attr.key))
     : attrs;
 }

@@ -12,3 +12,16 @@ export function isFootballGame(gameSlug?: string | null) {
 export function isFcMobileGame(gameSlug?: string | null) {
   return String(gameSlug ?? '').toLowerCase() === 'fc-mobile';
 }
+
+
+export const GAME_METRIC_THRESHOLDS = {
+  shooter: { operator: '>', value: 5, label: 'over 5' },
+  football: { operator: '>', value: 3, label: 'over 3' },
+  default: { operator: '>', value: 5, label: 'over 5' },
+} as const;
+
+export function getMetricThreshold(gameSlug?: string | null) {
+  if (isFootballGame(gameSlug)) return GAME_METRIC_THRESHOLDS.football;
+  if (isShooterGame(gameSlug)) return GAME_METRIC_THRESHOLDS.shooter;
+  return GAME_METRIC_THRESHOLDS.default;
+}
