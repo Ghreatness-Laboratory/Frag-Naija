@@ -316,47 +316,6 @@ export type WagerMarket = {
 export const wagerMarkets: WagerMarket[] = [];
 
 
-export const elitePredictors = [
-  { rank: 1, tag: "PrideEsport",  accuracy: "92%", weekly: "+₦12,400" },
-  { rank: 2, tag: "Vector99",     accuracy: "88%", weekly: "+₦8,150"  },
-  { rank: 3, tag: "LionHeart",    accuracy: "85%", weekly: "+₦5,920"  },
-  { rank: 4, tag: "TacticalAce",  accuracy: "83%", weekly: "+₦4,200"  },
-  { rank: 5, tag: "ZeroLoss_NG",  accuracy: "81%", weekly: "+₦3,780"  },
-];
-
-export const activePredictions = [
-  {
-    event: "Cyber Kings vs Outlaws",
-    subtitle: "VALORANT PREMIER",
-    type: "YES (Cyber Kings)",
-    odds: "1.75x",
-    stake: "200 FRG",
-    estReturn: "350 FRG",
-    status: "LIVE/MAP 2",
-    statusColor: "#00ff41",
-  },
-  {
-    event: "Total Headshots > 10",
-    subtitle: "INDIVIDUAL STATS",
-    type: "OVER",
-    odds: "2.10x",
-    stake: "150 FRG",
-    estReturn: "315 FRG",
-    status: "PENDING",
-    statusColor: "#f0c040",
-  },
-  {
-    event: "Naija Force vs Delta Kings",
-    subtitle: "APEX LEGENDS",
-    type: "YES (Naija Force)",
-    odds: "1.55x",
-    stake: "300 FRG",
-    estReturn: "465 FRG",
-    status: "UPCOMING",
-    statusColor: "#3d5c3d",
-  },
-];
-
 // ─── HIGHLIGHTS ───────────────────────────────────────────────────────────────
 export const archiveVideos = [
   {
