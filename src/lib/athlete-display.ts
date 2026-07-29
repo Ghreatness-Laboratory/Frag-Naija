@@ -2,6 +2,29 @@ import { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS } fro
 
 export { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS };
 
+
+export const ATHLETE_STATUSES = ['Active', 'Inactive', 'Banned', 'Free Agent', 'Suspended', 'Dead'] as const;
+
+export type AthleteStatus = (typeof ATHLETE_STATUSES)[number];
+
+export function normalizeAthleteStatus(value: unknown): AthleteStatus {
+  const status = String(value ?? 'Active').trim();
+  return (ATHLETE_STATUSES as readonly string[]).includes(status) ? status as AthleteStatus : 'Active';
+}
+
+export function athleteStatusTone(statusValue: unknown, primary = 'rgb(var(--fn-green))') {
+  const status = normalizeAthleteStatus(statusValue);
+  const tones: Record<AthleteStatus, { background: string; color: string; borderColor: string; dotColor: string }> = {
+    Active: { background: `${primary}20`, color: primary, borderColor: `${primary}55`, dotColor: primary },
+    Inactive: { background: 'rgb(var(--fn-card2) / 0.75)', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))', dotColor: 'rgb(var(--fn-muted))' },
+    'Free Agent': { background: 'rgba(59, 130, 246, 0.14)', color: '#60a5fa', borderColor: 'rgba(96, 165, 250, 0.45)', dotColor: '#60a5fa' },
+    Suspended: { background: 'rgba(245, 197, 66, 0.14)', color: '#f5c542', borderColor: 'rgba(245, 197, 66, 0.45)', dotColor: '#f5c542' },
+    Banned: { background: 'rgba(239, 68, 68, 0.14)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.45)', dotColor: '#ef4444' },
+    Dead: { background: 'rgba(8, 12, 10, 0.82)', color: 'rgba(148, 163, 184, 0.78)', borderColor: 'rgba(71, 85, 105, 0.42)', dotColor: 'rgba(100, 116, 139, 0.72)' },
+  };
+  return tones[status];
+}
+
 export const COMBAT_ATTRIBUTE_COLORS = {
   attack: '#ff7a1a',
   defense: '#00aaff',

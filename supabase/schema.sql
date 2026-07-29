@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS athletes (
   iq          NUMERIC(5,2) DEFAULT 0,
   clutch      NUMERIC(5,2) DEFAULT 0,
   photo_url   TEXT,
-  status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Free Agent')),
+  status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Banned', 'Free Agent', 'Suspended', 'Dead')),
   bio         TEXT,
   known_name  TEXT,
   previous_aliases JSONB DEFAULT '[]'::jsonb,

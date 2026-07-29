@@ -10,7 +10,7 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { DEFAULT_GAME, GAMES } from '@/lib/games';
-import { isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { ATHLETE_STATUSES, athleteStatusTone, isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
 const EMPTY = {
@@ -404,17 +404,14 @@ function AthletesContent() {
           {
             key: 'status',
             label: 'Status',
-            render: (r) => (
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  r.status === 'Active'
-                    ? 'bg-fn-green/10 text-fn-green'
-                    : 'bg-fn-muted/10 text-fn-muted'
-                }`}
-              >
-                {String(r.status)}
-              </span>
-            ),
+            render: (r) => {
+              const tone = athleteStatusTone(r.status);
+              return (
+                <span className="rounded-full border px-2 py-0.5 text-xs font-bold" style={{ background: tone.background, color: tone.color, borderColor: tone.borderColor }}>
+                  {String(r.status)}
+                </span>
+              );
+            },
           },
         ]}
       />
@@ -451,9 +448,7 @@ function AthletesContent() {
                 </Field>
                 <Field label="Status">
                   <Select value={form.status} onChange={f('status')}>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Free Agent">Free Agent</option>
+                    {ATHLETE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
                   </Select>
                 </Field>
               </div>
@@ -522,9 +517,7 @@ function AthletesContent() {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Status">
               <Select value={form.status} onChange={f('status')}>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Free Agent">Free Agent</option>
+                {ATHLETE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
               </Select>
             </Field>
             <Field label="Overall Rating (auto)">
