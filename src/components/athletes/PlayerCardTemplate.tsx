@@ -161,7 +161,7 @@ export default function PlayerCardTemplate({
     return (
       <div className={cx('player-card player-card-compact relative h-[118px] w-full overflow-hidden bg-[#030803] text-white', className)} style={cardShellStyle(primary)}>
         <CardBackdrop primary={primary} athlete={athlete} team={team} includePhoto={false} />
-        <div className="absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-center justify-center overflow-hidden border bg-black" style={{ borderColor: `${primary}70` }}>
+        <div className="absolute left-3 top-3 z-20 flex h-[68px] w-[68px] items-end justify-center overflow-hidden border bg-black/55" style={{ borderColor: `${primary}70` }}>
           <PlayerImage
             athlete={athlete}
             displayName={displayName}
