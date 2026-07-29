@@ -565,7 +565,7 @@ export default function HomePage() {
         ) : (
           <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
             {gameAthletes.map((a, i) => (
-              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
+              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} priority={i < 3} />
             ))}
           </motion.div>
         )}
