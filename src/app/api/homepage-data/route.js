@@ -6,7 +6,7 @@ import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const ATHLETE_FIELDS = 'id,name,ign,role,known_name,team,jersey_number,rating,overall_rating,kills,assists,winrate,attack,defense,survival,iq,clutch,photo_url,status,game_slug';
+const ATHLETE_FIELDS = 'id,name,ign,role,known_name,team,jersey_number,rating,overall_rating,kills,assists,winrate,attack,defense,survival,iq,clutch,photo_url,status,game_slug,is_icon';
 const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
 const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at';

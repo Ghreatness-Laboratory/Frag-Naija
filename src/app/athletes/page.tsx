@@ -39,6 +39,7 @@ type Athlete = {
   strengths: string[] | string | null;
   weaknesses: string[] | string | null;
   game_slug?: string | null;
+  is_icon?: boolean | null;
 };
 
 function computeRating(a: Athlete): number {
@@ -124,17 +125,20 @@ export default function AthletesPage() {
     ? apiForGame
     : (gameContent?.athletes as Athlete[] | undefined) ?? [];
   const normalizedSearch = search.trim().toLowerCase();
+  const iconAthletes = gameAthletes.filter((a) => Boolean(a.is_icon));
+  const searchableAthletes = gameAthletes.filter((a) => !a.is_icon);
   const athletes = normalizedSearch
-    ? gameAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""}`.toLowerCase().includes(normalizedSearch))
-    : gameAthletes;
+    ? searchableAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""}`.toLowerCase().includes(normalizedSearch))
+    : searchableAthletes;
 
   // Auto-select first athlete when list loads
   useEffect(() => {
-    if (athletes.length > 0 && !selected) setSelected(athletes[0]);
-    if (athletes.length > 0 && selected && !athletes.find(a => a.id === selected.id)) {
-      setSelected(athletes[0]);
+    const selectable = athletes.length > 0 ? athletes : iconAthletes;
+    if (selectable.length > 0 && !selected) setSelected(selectable[0]);
+    if (selectable.length > 0 && selected && !selectable.find(a => a.id === selected.id) && !iconAthletes.find(a => a.id === selected.id)) {
+      setSelected(selectable[0]);
     }
-  }, [athletes.length, selectedGame?.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [athletes.length, iconAthletes.length, selectedGame?.slug, normalizedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!selectedGame) {
     return (
@@ -170,7 +174,7 @@ export default function AthletesPage() {
     );
   }
 
-  const a = selected ?? athletes[0];
+  const a = selected ?? athletes[0] ?? iconAthletes[0];
   const rating = computeRating(a);
   const perks = parseArray(a.perks);
   const strengths = parseArray(a.strengths);
@@ -273,6 +277,33 @@ export default function AthletesPage() {
       {/* Main profile */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl">
+          {iconAthletes.length > 0 && (
+            <section className="mb-5 rounded-sm border border-fn-yellow/30 bg-fn-yellow/5 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="fn-label text-fn-yellow">ICON TIER</p>
+                  <h2 className="font-display text-xl font-black uppercase text-fn-text">ICONS</h2>
+                </div>
+                <span className="rounded-sm border border-fn-yellow/40 bg-fn-yellow/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-yellow">
+                  {iconAthletes.length} Legend{iconAthletes.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {iconAthletes.map((athlete) => (
+                  <button key={athlete.id} type="button" onClick={() => setSelected(athlete)} className="w-56 flex-shrink-0 text-left">
+                    <PlayerCardTemplate
+                      athlete={athlete}
+                      rating={computeRating(athlete)}
+                      primary={primary}
+                      gameName={selectedGame.shortName.toUpperCase()}
+                      variant="icon"
+                    />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Profile header */}
           <div
             className="bg-fn-card border border-fn-gborder rounded-sm p-4 sm:p-6 mb-4"

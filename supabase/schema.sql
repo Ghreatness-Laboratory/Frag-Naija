@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS teams (
   kills       INT  DEFAULT 0,
   bio         TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
+  is_icon     BOOLEAN DEFAULT false,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS athletes (
   sensitivity_settings JSONB DEFAULT '{}'::jsonb,
   control_code TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
+  is_icon     BOOLEAN DEFAULT false,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -64,6 +66,7 @@ ALTER TABLE athletes ADD COLUMN IF NOT EXISTS survival NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS iq NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS clutch NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS sensitivity_settings JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS is_icon BOOLEAN DEFAULT false;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS control_code TEXT;
 
 ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;

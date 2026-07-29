@@ -14,7 +14,7 @@ type Athlete = {
   known_name?: string | null; team?: string | null; jersey_number?: number | string | null;
   rating?: number; overall_rating?: number; kills: number; assists: number; winrate: number;
   attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
-  photo_url: string | null; status: string; game_slug?: string | null;
+  photo_url: string | null; status: string; game_slug?: string | null; is_icon?: boolean | null;
 };
 
 type Wager = {
@@ -228,7 +228,7 @@ const AthleteCard = memo(function AthleteCard({ athlete, rank, primary, priority
           primary={game?.colors.primary ?? primary}
           gameName={(game?.shortName ?? 'ALL').toUpperCase()}
           rank={rank + 1}
-          variant="compact"
+          variant={athlete.is_icon ? "icon" : "compact"}
           className="transition-transform duration-200 group-hover:-translate-y-1"
         />
       </Link>
@@ -367,6 +367,11 @@ export default function HomePage() {
   const gameAthletes: Athlete[] = useMemo(() => selectedGame
     ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
     : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6)), [allAthletes, athleteSource, featuredAthleteIds, selectedGame]);
+  const iconAthletes: Athlete[] = useMemo(() => {
+    const icons = (athleteSource as Athlete[]).filter((athlete) => Boolean(athlete.is_icon));
+    return selectedGame ? icons.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6) : icons.slice(0, 6);
+  }, [athleteSource, selectedGame]);
+  const standardGameAthletes = gameAthletes.filter((athlete) => !athlete.is_icon);
   const teams: Team[] = useMemo(() => selectedGame
     ? teamSource.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
     : (featuredTeamIds.length && allTeams.length ? pickByIds(allTeams, featuredTeamIds) : teamSource.slice(0, 4)), [allTeams, featuredTeamIds, selectedGame, teamSource]);
@@ -533,6 +538,26 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      {/* Icon Athletes */}
+      {showAthletes && iconAthletes.length > 0 && <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-yellow/30" style={{ background: 'linear-gradient(135deg, rgba(245,197,66,0.10), rgba(5,5,5,0.32))' }}>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="fn-label mb-1 flex items-center gap-1.5 text-fn-yellow">
+              <Award size={9} /> ICON TIER
+            </p>
+            <h2 className="font-display text-2xl font-black uppercase text-fn-text">ICONS</h2>
+          </div>
+          <Link href="/athletes" className="inline-flex items-center gap-1 rounded-sm border border-fn-yellow/40 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-fn-yellow transition-all hover:bg-fn-yellow/10">
+            VIEW LEGENDS <ChevronRight size={11} />
+          </Link>
+        </div>
+        <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
+          {iconAthletes.map((athlete, index) => (
+            <AthleteCard key={athlete.id} athlete={athlete} rank={index} primary={primary} />
+          ))}
+        </motion.div>
+      </motion.section>}
+
       {/* Top Athletes */}
       {showAthletes && <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
         <div className="flex items-center justify-between mb-6">
@@ -554,12 +579,12 @@ export default function HomePage() {
             VIEW ALL <ChevronRight size={11} />
           </button>
         </div>
-        {gameAthletes.length === 0 ? (
+        {standardGameAthletes.length === 0 ? (
           <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet — add them from the admin panel.'}</p>
         ) : (
           <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
-            {gameAthletes.map((a, i) => (
-              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} priority={i < 3} />
+            {standardGameAthletes.map((a, i) => (
+              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
             ))}
           </motion.div>
         )}
