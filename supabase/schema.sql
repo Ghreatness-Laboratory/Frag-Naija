@@ -369,6 +369,7 @@ ON CONFLICT (key) DO NOTHING;
 -- Bucket: athletes  (public)
 -- Bucket: teams     (public)
 -- Bucket: highlights (public)
+-- Bucket: team-members (public)
 
 -- ─── SHOP ITEMS ──────────────────────────────────────────────────────────────
 
@@ -386,6 +387,7 @@ CREATE TABLE IF NOT EXISTS shop_items (
 );
 
 ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
+ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS tutorial_video_url TEXT;
 
 -- One-time backfill for records created before game isolation existed.
 UPDATE athletes    SET game_slug = 'pubg-mobile' WHERE game_slug IS NULL OR game_slug = '';
