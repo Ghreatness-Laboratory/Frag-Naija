@@ -50,51 +50,16 @@ type HomepagePayload = {
   teamMembers?: TeamMember[];
 };
 
-const HOMEPAGE_DATA_STORAGE_KEY = 'fn-homepage-data-v1';
-const HOMEPAGE_DATA_TTL_MS = 5 * 60 * 1000;
-
 let homepageDataCache: HomepagePayload | null = null;
 let homepageDataPromise: Promise<HomepagePayload> | null = null;
 
-function readStoredHomepageData() {
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const stored = window.sessionStorage.getItem(HOMEPAGE_DATA_STORAGE_KEY);
-    if (!stored) return null;
-    const parsed = JSON.parse(stored) as { savedAt?: number; payload?: HomepagePayload };
-    if (!parsed.savedAt || Date.now() - parsed.savedAt > HOMEPAGE_DATA_TTL_MS) return null;
-    return parsed.payload ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredHomepageData(payload: HomepagePayload) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.sessionStorage.setItem(HOMEPAGE_DATA_STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), payload }));
-  } catch {
-    // Ignore storage quota/private-mode failures; the in-memory cache still avoids duplicate requests.
-  }
-}
-
 function fetchHomepageData() {
   if (homepageDataCache) return Promise.resolve(homepageDataCache);
-
-  const stored = readStoredHomepageData();
-  if (stored) {
-    homepageDataCache = stored;
-    return Promise.resolve(stored);
-  }
-
   if (!homepageDataPromise) {
     homepageDataPromise = fetch('/api/homepage-data', { cache: 'force-cache' })
       .then((response) => (response.ok ? response.json() : {}))
       .then((payload: HomepagePayload) => {
         homepageDataCache = payload;
-        writeStoredHomepageData(payload);
         return payload;
       })
       .catch(() => ({}))
@@ -256,7 +221,7 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
   );
 }
 
-const AthleteCard = memo(function AthleteCard({ athlete, rank, primary, priority = false }: { athlete: Athlete; rank: number; primary: string; priority?: boolean }) {
+const AthleteCard = memo(function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
   const game = GAMES.find((item) => item.slug === athlete.game_slug);
   const rating = Number(athlete.overall_rating ?? athlete.rating ?? 0);
 
@@ -271,8 +236,6 @@ const AthleteCard = memo(function AthleteCard({ athlete, rank, primary, priority
           rank={rank + 1}
           variant="compact"
           className="transition-transform duration-200 group-hover:-translate-y-1"
-          imageLoading={priority ? "eager" : "lazy"}
-          imageFetchPriority={priority ? "high" : "auto"}
         />
       </Link>
     </motion.div>
