@@ -18,6 +18,14 @@ const nextConfig = {
         source: '/icons/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, immutable' }],
       },
+      {
+        source: '/logos/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, immutable' }],
+      },
+      {
+        source: '/api/homepage-data',
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' }],
+      },
     ];
   },
 };
@@ -33,7 +41,17 @@ export default withPWA({
 
   runtimeCaching: [
     {
-      // API routes — never cache live data
+      // Homepage shell data changes infrequently and should be instant on back/forward navigation.
+      urlPattern: /^\/api\/homepage-data/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'fn-homepage-data-v1',
+        expiration: { maxEntries: 8, maxAgeSeconds: 300 },
+        cacheableResponse: { statuses: [0, 200] },
+      },
+    },
+    {
+      // API routes — keep live/account data uncached unless explicitly handled above.
       urlPattern: /^\/api\/.*/i,
       handler: 'NetworkOnly',
       options: {},
@@ -49,8 +67,8 @@ export default withPWA({
       },
     },
     {
-      // Logo + icon assets (root and /icons/ /logos/ dirs)
-      urlPattern: /^\/(?:icons|logos)\/|\/logo[^/]*\.(jpe?g|png|svg|webp)/i,
+      // Logo, icon and player media assets (root and /icons/ /logos/ dirs)
+      urlPattern: /^(?:\/)(?:icons|logos|uploads|athletes)\/|\/logo[^/]*\.(jpe?g|png|svg|webp)/i,
       handler: 'CacheFirst',
       options: {
         cacheName: 'fn-assets-v1',

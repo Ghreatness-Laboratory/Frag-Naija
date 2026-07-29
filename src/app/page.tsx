@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,37 @@ type TeamMember = {
 };
 
 type HomepageSettings = Record<string, string>;
+
+type HomepagePayload = {
+  athletes?: Athlete[];
+  wagers?: Wager[];
+  transfers?: Transfer[];
+  shopItems?: ShopItem[];
+  tournaments?: Tournament[];
+  teams?: Team[];
+  homepageSettings?: HomepageSettings;
+  teamMembers?: TeamMember[];
+};
+
+let homepageDataCache: HomepagePayload | null = null;
+let homepageDataPromise: Promise<HomepagePayload> | null = null;
+
+function fetchHomepageData() {
+  if (homepageDataCache) return Promise.resolve(homepageDataCache);
+  if (!homepageDataPromise) {
+    homepageDataPromise = fetch('/api/homepage-data', { cache: 'force-cache' })
+      .then((response) => (response.ok ? response.json() : {}))
+      .then((payload: HomepagePayload) => {
+        homepageDataCache = payload;
+        return payload;
+      })
+      .catch(() => ({}))
+      .finally(() => {
+        homepageDataPromise = null;
+      });
+  }
+  return homepageDataPromise;
+}
 
 function settingEnabled(settings: HomepageSettings, key: string) {
   return String(settings[key] ?? 'true').toLowerCase() !== 'false';
@@ -190,7 +221,7 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
   );
 }
 
-function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
+const AthleteCard = memo(function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
   const game = GAMES.find((item) => item.slug === athlete.game_slug);
   const rating = Number(athlete.overall_rating ?? athlete.rating ?? 0);
 
@@ -209,7 +240,9 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
       </Link>
     </motion.div>
   );
-}
+});
+
+AthleteCard.displayName = "AthleteCard";
 
 function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string }) {
   const closesIn = () => {
@@ -290,69 +323,69 @@ export default function HomePage() {
   }, [tickerItems.length]);
 
   useEffect(() => {
-    const fetchJson = (url: string, fallback: unknown) =>
-      fetch(url, { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : fallback))
-        .catch(() => fallback);
+    let cancelled = false;
 
-    Promise.all([
-      fetchJson('/api/athletes', []),
-      fetchJson('/api/wagers/active', []),
-      fetchJson('/api/transfers', []),
-      fetchJson('/api/shop-items', []),
-      fetchJson('/api/tournaments', []),
-      fetchJson('/api/teams', []),
-      fetchJson('/api/homepage-settings', {}),
-      fetchJson('/api/team-members', []),
-    ]).then(([a, w, t, s, tourneys, teamRows, settings, memberRows]) => {
-      const athletes = Array.isArray(a) ? a : [];
-      const activeWagers = Array.isArray(w) ? w : [];
-      const transfers = Array.isArray(t) ? t : [];
-      const items = Array.isArray(s) ? s : [];
-      const events = Array.isArray(tourneys) ? tourneys : [];
-      const teamList = Array.isArray(teamRows) ? teamRows : [];
-      const members = Array.isArray(memberRows) ? memberRows : [];
+    fetchHomepageData().then((payload) => {
+      if (cancelled) return;
 
-      setAllAthletes(athletes);
-      setWagers(activeWagers.slice(0, 3));
-      setApiTransfers(transfers.slice(0, 4));
-      setShopItems(items.slice(0, 4));
-      setTournaments(events.filter((event: Tournament) => ["Upcoming", "Live"].includes(event.status)).slice(0, 4));
-      setAllTeams(teamList);
-      setHomepageSettings(settings && !Array.isArray(settings) ? settings as HomepageSettings : {});
-      setTeamMembers(members);
+      setAllAthletes(Array.isArray(payload.athletes) ? payload.athletes : []);
+      setWagers(Array.isArray(payload.wagers) ? payload.wagers : []);
+      setApiTransfers(Array.isArray(payload.transfers) ? payload.transfers : []);
+      setShopItems(Array.isArray(payload.shopItems) ? payload.shopItems : []);
+      setTournaments(Array.isArray(payload.tournaments) ? payload.tournaments : []);
+      setAllTeams(Array.isArray(payload.teams) ? payload.teams : []);
+      setHomepageSettings(payload.homepageSettings && !Array.isArray(payload.homepageSettings) ? payload.homepageSettings : {});
+      setTeamMembers(Array.isArray(payload.teamMembers) ? payload.teamMembers : []);
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const featuredAthleteIds = parseFeaturedIds(homepageSettings.featured_athlete_ids);
-  const featuredTeamIds = parseFeaturedIds(homepageSettings.featured_team_ids);
-  const fallbackAthletes = (selectedGame
-    ? (GAME_CONTENT[selectedGame.slug]?.athletes ?? [])
-    : Object.values(GAME_CONTENT).flatMap((content) => content.athletes)
-  ).map((athlete) => ({ ...athlete, rating: athlete.overall_rating }));
-  const fallbackTeams = selectedGame
-    ? (GAME_CONTENT[selectedGame.slug]?.teams ?? [])
-    : Object.values(GAME_CONTENT).flatMap((content) => content.teams);
-  const fallbackTeamCards: Team[] = fallbackTeams.map((team) => ({
-    id: team.id,
-    name: team.name,
-    logo_url: team.logo_url,
-    region: team.region,
-    rank: team.rank,
-    wins: team.wins,
-    losses: team.losses,
-    kills: team.kills,
-    strength: team.strength,
-    game_slug: team.game_slug,
-  }));
+  const featuredAthleteIds = useMemo(() => parseFeaturedIds(homepageSettings.featured_athlete_ids), [homepageSettings.featured_athlete_ids]);
+  const featuredTeamIds = useMemo(() => parseFeaturedIds(homepageSettings.featured_team_ids), [homepageSettings.featured_team_ids]);
+  const fallbackAthletes = useMemo(() => (
+    selectedGame
+      ? (GAME_CONTENT[selectedGame.slug]?.athletes ?? [])
+      : Object.values(GAME_CONTENT).flatMap((content) => content.athletes)
+  ).map((athlete) => ({ ...athlete, rating: athlete.overall_rating })), [selectedGame]);
+  const fallbackTeamCards: Team[] = useMemo(() => {
+    const fallbackTeams = selectedGame
+      ? (GAME_CONTENT[selectedGame.slug]?.teams ?? [])
+      : Object.values(GAME_CONTENT).flatMap((content) => content.teams);
+
+    return fallbackTeams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      logo_url: team.logo_url,
+      region: team.region,
+      rank: team.rank,
+      wins: team.wins,
+      losses: team.losses,
+      kills: team.kills,
+      strength: team.strength,
+      game_slug: team.game_slug,
+    }));
+  }, [selectedGame]);
   const athleteSource = allAthletes.length ? allAthletes : fallbackAthletes;
   const teamSource = allTeams.length ? allTeams : fallbackTeamCards;
-  const gameAthletes: Athlete[] = selectedGame
+  const gameAthletes: Athlete[] = useMemo(() => selectedGame
     ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6));
-  const teams: Team[] = selectedGame
+    : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6)), [allAthletes, athleteSource, featuredAthleteIds, selectedGame]);
+  const teams: Team[] = useMemo(() => selectedGame
     ? teamSource.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
-    : (featuredTeamIds.length && allTeams.length ? pickByIds(allTeams, featuredTeamIds) : teamSource.slice(0, 4));
+    : (featuredTeamIds.length && allTeams.length ? pickByIds(allTeams, featuredTeamIds) : teamSource.slice(0, 4)), [allTeams, featuredTeamIds, selectedGame, teamSource]);
+
+  useEffect(() => {
+    gameAthletes.slice(0, 3).forEach((athlete) => {
+      if (!athlete.photo_url) return;
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = athlete.photo_url;
+    });
+  }, [gameAthletes]);
+
   const showAthletes = settingEnabled(homepageSettings, 'show_athletes');
   const showTeams = settingEnabled(homepageSettings, 'show_teams');
   const showShop = settingEnabled(homepageSettings, 'show_shop');
