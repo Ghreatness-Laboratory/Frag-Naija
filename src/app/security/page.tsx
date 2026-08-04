@@ -28,10 +28,12 @@ export default function SecurityPage() {
   const [copied, setCopied]       = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    let active = true;
+    fetch('/api/auth/me', { credentials: 'include', headers: { 'Content-Type': 'application/json' } })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { setUser(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => { if (active) { setUser(d); setLoading(false); } })
+      .catch(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   async function startEnroll() {

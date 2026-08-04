@@ -532,6 +532,74 @@ function formatTransactionAmount(amount: number) {
   return `${amount >= 0 ? "+" : "-"}${formatCurrency(absAmount)}`;
 }
 
+/**
+ * Parses and validates wager amount input.
+ * Takes raw input string/number, strips invalid characters,
+ * and returns a valid number for validation against min ₦100, max ₦1,000,000, and user's balance.
+ */
+function parseWagerAmount(value: string | number | null | undefined): number {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+  // Convert to string and strip non-numeric characters except decimal point
+  const sanitized = String(value).replace(/[^0-9.]/g, "");
+  const parsed = parseFloat(sanitized);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * Sanitizes wager amount input for display/validation.
+ * Returns the sanitized string or null if input should be rejected.
+ */
+function sanitizeWagerAmountInput(value: string): string | null {
+  // Allow empty string (user clearing the field)
+  if (value === "") {
+    return "";
+  }
+  // Strip any character that's not a digit or decimal point
+  const sanitized = value.replace(/[^0-9.]/g, "");
+  // Prevent multiple decimal points
+  const parts = sanitized.split(".");
+  if (parts.length > 2) {
+    return parts[0] + "." + parts.slice(1).join("");
+  }
+  return sanitized;
+}
+
+/**
+ * Validates wager amount against business rules.
+ * Returns an error message string if invalid, or null if valid.
+ */
+function getWagerAmountError(
+  amount: string | number | null | undefined,
+  walletBalance: number,
+  isLoggedIn: boolean
+): string | null {
+  const numericAmount = parseWagerAmount(amount);
+  
+  if (!isLoggedIn) {
+    return "You must be logged in to place a wager.";
+  }
+  
+  if (numericAmount <= 0) {
+    return "Enter a valid wager amount.";
+  }
+  
+  if (numericAmount < 100) {
+    return "Minimum wager amount is ₦100.";
+  }
+  
+  if (numericAmount > 1000000) {
+    return "Maximum wager amount is ₦1,000,000.";
+  }
+  
+  if (numericAmount > walletBalance) {
+    return "Insufficient wallet balance.";
+  }
+  
+  return null;
+}
+
 function getPoolAmount(market: Record<string, unknown>) {
   const directPool = Number(
     market.pool_size ??

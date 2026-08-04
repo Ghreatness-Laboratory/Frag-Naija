@@ -38,7 +38,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     async function hydrateGame() {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await fetch('/api/auth/me', { 
+          cache: 'no-store',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
         if (!active) return;
 
         if (!res.ok) {

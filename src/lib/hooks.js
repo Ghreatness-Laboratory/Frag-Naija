@@ -7,7 +7,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-function useFetch(url, deps = []) {
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
+
+function useFetch(url, deps = [], options = {}) {
+  const { 
+    retries = 0, 
+    onRetryError 
+  } = options;
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -16,21 +23,39 @@ function useFetch(url, deps = []) {
     if (!url) return;
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+    
+    let lastError = null;
+    for (let attempt = 0; attempt <= Math.min(retries, MAX_RETRIES); attempt++) {
+      try {
+        const res = await fetch(url, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        const json = await res.json();
+        setData(json);
+        lastError = null;
+        break;
+      } catch (e) {
+        lastError = e.message;
+        if (attempt < Math.min(retries, MAX_RETRIES)) {
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * (attempt + 1)));
+        }
       }
-      const json = await res.json();
-      setData(json);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
     }
+    
+    if (lastError) {
+      setError(lastError);
+      if (onRetryError) {
+        onRetryError(lastError);
+      }
+    }
+    setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, ...deps]);
+  }, [url, ...deps, retries, onRetryError]);
 
   useEffect(() => { refetch(); }, [refetch]);
 
@@ -107,7 +132,7 @@ export function useHighlights(filters = {}) {
 // ─── Auth ──────────────────────────────────────────────────────────────────────────
 
 export function useMe() {
-  return useFetch('/api/auth/me');
+  return useFetch('/api/auth/me', [], { retries: 1 });
 }
 
 export function useBanks() {

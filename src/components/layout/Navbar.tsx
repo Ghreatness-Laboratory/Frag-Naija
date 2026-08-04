@@ -40,13 +40,18 @@ function useAuthState() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    
     Promise.all([
-      fetch("/api/auth/me").then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch("/api/auth/admin/check").then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch("/api/auth/me", { credentials: 'include', headers: { 'Content-Type': 'application/json' } }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch("/api/auth/admin/check", { credentials: 'include', headers: { 'Content-Type': 'application/json' } }).then(r => r.ok ? r.json() : null).catch(() => null),
     ]).then(([userData, adminData]) => {
+      if (!active) return;
       setUser(userData ?? null);
       setIsAdmin(adminData?.isAdmin ?? false);
     });
+    
+    return () => { active = false; };
   }, []);
 
   return { user, isAdmin };
