@@ -538,6 +538,7 @@ function getPoolAmount(market: Record<string, unknown>) {
       market.pool ??
       market.total_pool ??
       market.amount_pool ??
+      market.pool_total ??
       market.totalPool ??
       0
   );

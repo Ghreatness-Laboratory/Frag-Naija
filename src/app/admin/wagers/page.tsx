@@ -271,6 +271,16 @@ function AdminWagersContent() {
             </Select>
           </Field>
 
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Stake Pool (₦)" required>
+              <Input type="number" min="0" step="0.01" value={form.pool_total} onChange={f('pool_total')} required />
+              <p className="mt-1 text-[10px] text-fn-muted">Pool is the total Naira staked on this market so far and appears on the public wager card.</p>
+            </Field>
+            <Field label="Trades" required>
+              <Input type="number" min="0" step="1" value={form.trades} onChange={f('trades')} required />
+            </Field>
+          </div>
+
           {/* Type toggle */}
           <Field label="Wager Type">
             <div className="grid grid-cols-3 gap-2">
