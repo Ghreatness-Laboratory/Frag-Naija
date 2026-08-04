@@ -15,7 +15,9 @@ const BINARY_EMPTY = {
   question: '', subtitle: '', match_name: '',
   yes_odds: '1.60', no_odds: '2.63',
   yes_price: '62', no_price: '38',
+  pool_total: '0',
   closes_at: '',
+  trades: '0',
   type: 'binary',
   game_slug: 'pubg-mobile',
 };
@@ -63,7 +65,9 @@ function AdminWagersContent() {
       no_odds:   String(row.no_odds   ?? '2.63'),
       yes_price: String(row.yes_price ?? '62'),
       no_price:  String(row.no_price  ?? '38'),
+      pool_total: String(row.pool_total ?? '0'),
       closes_at: closesAt,
+      trades:    String(row.trades ?? row.trade_count ?? '0'),
       type:      String(row.type ?? 'binary'),
       game_slug: String(row.game_slug ?? (gameSlug === 'all' ? 'pubg-mobile' : gameSlug)),
     });
@@ -95,8 +99,8 @@ function AdminWagersContent() {
     e.preventDefault();
     setSaving(true); setError('');
 
-    if (form.type === 'player_pick' && options.length < 2) {
-      setError('Player Pick wagers need at least 2 options.');
+    if ((form.type === 'player_pick' || form.type === 'team_pick') && options.length < 2) {
+      setError('Pick wagers need at least 2 options.');
       setSaving(false); return;
     }
 
@@ -105,6 +109,8 @@ function AdminWagersContent() {
         question:  form.question,
         subtitle:  form.subtitle,
         match_name: form.match_name.trim(),
+        pool_total: Number(form.pool_total || 0),
+        trade_count: Number(form.trades || 0),
         closes_at: form.closes_at,
         type:      form.type,
         game_slug: form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
@@ -142,7 +148,7 @@ function AdminWagersContent() {
   function openSettle(row: Record<string, unknown>) {
     setSettleId(String(row.id));
     const rowType = String(row.type ?? 'binary');
-    if (rowType === 'player_pick') {
+    if (rowType === 'player_pick' || rowType === 'team_pick') {
       const opts = Array.isArray(row.options) ? row.options as Array<{label: string}> : [];
       setOutcome(opts[0]?.label ?? '');
     } else {
@@ -176,7 +182,7 @@ function AdminWagersContent() {
   const isActive     = (r: Record<string, unknown>) => r.status === 'Active';
   const settlingRow  = settleId ? rows.find(r => String(r.id) === settleId) : null;
   const settlingType = String(settlingRow?.type ?? 'binary');
-  const settlingOpts = settlingType === 'player_pick'
+  const settlingOpts = (settlingType === 'player_pick' || settlingType === 'team_pick')
     ? (Array.isArray(settlingRow?.options) ? settlingRow.options as Array<{label: string; odds: number}> : [])
     : [];
 
@@ -221,9 +227,9 @@ function AdminWagersContent() {
           { key: 'question', label: 'Question', render: r => (
             <div className="max-w-xs">
               <span className="truncate block">{String(r.question)}</span>
-              {r.type === 'player_pick' && (
+              {(r.type === 'player_pick' || r.type === 'team_pick') && (
                 <span className="text-[9px] bg-fn-yellow/10 text-fn-yellow border border-fn-yellow/20 px-1.5 py-0.5 rounded-sm uppercase tracking-widest mt-0.5 inline-block">
-                  Player Pick
+                  {r.type === 'team_pick' ? 'Team Pick' : 'Player Pick'}
                 </span>
               )}
             </div>
@@ -232,8 +238,11 @@ function AdminWagersContent() {
           { key: 'match_name', label: 'Match', render: r => String(r.match_name || '—') },
           { key: 'type',      label: 'Type',   render: r => r.type === 'player_pick'
               ? <span className="text-fn-yellow text-xs">Player Pick</span>
-              : <span className="text-fn-green text-xs">Binary</span> },
-          { key: 'pool_total', label: 'Pool',   render: r => `₦${Number(r.pool_total || 0).toLocaleString()}` },
+              : r.type === 'team_pick'
+                ? <span className="text-blue-400 text-xs">Team Pick</span>
+                : <span className="text-fn-green text-xs">Binary</span> },
+          { key: 'pool_total', label: 'Stake Pool', render: r => `₦${Number(r.pool_total || 0).toLocaleString()}` },
+          { key: 'trades',     label: 'Trades', render: r => Number(r.trades ?? r.trade_count ?? 0).toLocaleString() },
           { key: 'hot',        label: 'Hot',    render: r => r.hot ? <Flame className="w-4 h-4 text-fn-amber" /> : <span className="text-fn-muted text-xs">—</span> },
           { key: 'closes_at',  label: 'Closes', render: r => new Date(String(r.closes_at)).toLocaleDateString() },
           { key: 'status',     label: 'Status', render: r => {
@@ -265,7 +274,7 @@ function AdminWagersContent() {
 
           {/* Type toggle */}
           <Field label="Wager Type">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => { setForm(p => ({ ...p, type: 'binary' })); setOptions([]); }}
@@ -288,6 +297,17 @@ function AdminWagersContent() {
               >
                 Player Pick
               </button>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({ ...p, type: 'team_pick' }))}
+                className={`py-2 rounded border text-xs font-bold uppercase tracking-wider transition-colors ${
+                  form.type === 'team_pick'
+                    ? 'bg-blue-400/10 border-blue-400 text-blue-400'
+                    : 'border-fn-gborder text-fn-muted hover:border-blue-400/30'
+                }`}
+              >
+                Team Pick
+              </button>
             </div>
           </Field>
 
@@ -306,21 +326,21 @@ function AdminWagersContent() {
           )}
 
           {/* Player pick option builder */}
-          {form.type === 'player_pick' && (
+          {(form.type === 'player_pick' || form.type === 'team_pick') && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-fn-muted text-[10px] uppercase tracking-widest">Players / Options</label>
+                <label className="text-fn-muted text-[10px] uppercase tracking-widest">{form.type === 'team_pick' ? 'Teams / Options' : 'Players / Options'}</label>
                 <button
                   type="button"
                   onClick={addOption}
                   className="flex items-center gap-1 text-[10px] text-fn-green hover:text-fn-gdim uppercase tracking-widest"
                 >
-                  <Plus className="w-3 h-3" /> Add Player
+                  <Plus className="w-3 h-3" /> Add {form.type === 'team_pick' ? 'Team' : 'Player'}
                 </button>
               </div>
               {options.length === 0 && (
                 <p className="text-fn-muted text-[10px] text-center py-3 border border-dashed border-fn-gborder rounded">
-                  Add at least 2 player options
+                  Add at least 2 {form.type === 'team_pick' ? 'team' : 'player'} options
                 </p>
               )}
               {options.map((opt, i) => (
@@ -356,6 +376,16 @@ function AdminWagersContent() {
             </div>
           )}
 
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Stake Pool (₦)" required>
+              <Input type="number" min="0" step="0.01" value={form.pool_total} onChange={f('pool_total')} required />
+              <p className="mt-1 text-[10px] text-fn-muted">Pool is the total Naira staked on this market so far.</p>
+            </Field>
+            <Field label="Trades" required>
+              <Input type="number" min="0" step="1" value={form.trades} onChange={f('trades')} required />
+            </Field>
+          </div>
+
           <Field label="Closes At" required>
             <Input type="datetime-local" value={form.closes_at} onChange={f('closes_at')} required />
           </Field>
@@ -371,7 +401,7 @@ function AdminWagersContent() {
             Select the winning outcome. All bets will be resolved and winners credited to their wallets.
           </p>
 
-          {settlingType === 'player_pick' ? (
+          {(settlingType === 'player_pick' || settlingType === 'team_pick') ? (
             <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
               {settlingOpts.map((opt) => (
                 <button

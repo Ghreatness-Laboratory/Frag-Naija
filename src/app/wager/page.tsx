@@ -82,6 +82,9 @@ type SlipSelection = {
   marketSubtitle: string;
   selection: string;
   odds: number;
+  eventName?: string;
+  eventDate?: string;
+  pickType?: "player" | "team";
 };
 
 type PlacedTicket = {
@@ -108,69 +111,204 @@ function calculateCombinedOdds(selections: SlipSelection[]) {
   return selections.reduce((total, item) => total * Number(item.odds || 1), 1);
 }
 
+const MIN_WAGER_AMOUNT = 100;
+const MAX_WAGER_AMOUNT = 1000000;
+
+function parseWagerAmount(value: string) {
+  const cleaned = value.replace(/[₦,\s]/g, "");
+  return cleaned ? Number(cleaned) : 0;
+}
+
+function formatAmountInputValue(value: string) {
+  const cleaned = value.replace(/[₦,\s]/g, "");
+  if (!cleaned) return "";
+  const [whole, decimal] = cleaned.split(".");
+  const formattedWhole = Number(whole || 0).toLocaleString("en-NG");
+  return `₦${formattedWhole}${decimal !== undefined ? `.${decimal}` : ""}`;
+}
+
+function sanitizeWagerAmountInput(value: string) {
+  const cleaned = value.replace(/[₦,\s]/g, "");
+  if (!cleaned) return "";
+  if (!/^\d*(\.\d{0,2})?$/.test(cleaned)) return null;
+  return cleaned;
+}
+
+function getWagerAmountError(amount: string, balance: number, requireBalance = true) {
+  if (!amount) return "Enter a wager amount.";
+  const numericAmount = parseWagerAmount(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return "Enter a valid amount greater than ₦0.";
+  if (numericAmount < MIN_WAGER_AMOUNT) return `Minimum wager is ${formatCurrency(MIN_WAGER_AMOUNT)}.`;
+  if (numericAmount > MAX_WAGER_AMOUNT) return `Maximum wager is ${formatCurrency(MAX_WAGER_AMOUNT)}.`;
+  if (requireBalance && numericAmount > balance) return "Insufficient funds for this wager amount.";
+  return null;
+}
+
+function drawWrappedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines = 2,
+) {
+  const words = text.split(" ").filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+
+  words.forEach((word) => {
+    const testLine = line ? `${line} ${word}` : word;
+    if (ctx.measureText(testLine).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = testLine;
+    }
+  });
+  if (line) lines.push(line);
+
+  lines.slice(0, maxLines).forEach((lineText, index) => {
+    const suffix = index === maxLines - 1 && lines.length > maxLines ? "…" : "";
+    ctx.fillText(`${lineText}${suffix}`, x, y + index * lineHeight);
+  });
+}
+
+function drawCrosshairIcon(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  const center = size / 2;
+  ctx.save();
+  ctx.strokeStyle = "#00c853";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(x + center, y + center, center - 5, 0, Math.PI * 2);
+  ctx.moveTo(x + center, y + 2);
+  ctx.lineTo(x + center, y + 15);
+  ctx.moveTo(x + center, y + size - 15);
+  ctx.lineTo(x + center, y + size - 2);
+  ctx.moveTo(x + 2, y + center);
+  ctx.lineTo(x + 15, y + center);
+  ctx.moveTo(x + size - 15, y + center);
+  ctx.lineTo(x + size - 2, y + center);
+  ctx.stroke();
+  ctx.fillStyle = "#d7f7d7";
+  ctx.beginPath();
+  ctx.arc(x + center, y + center, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function getTicketEventDetails(item: SlipSelection) {
+  const eventName = item.eventName || item.marketTitle;
+  const eventDate = item.eventDate ? formatShortDate(item.eventDate) : "Date TBA";
+  return `${eventName} • ${eventDate}`;
+}
+
 async function downloadTicketImage(ticket: PlacedTicket, mode: "print" | "share") {
   const width = mode === "share" ? 1080 : 900;
-  const height = Math.max(mode === "share" ? 1350 : 1200, 760 + ticket.selections.length * 120);
+  const selectionHeight = 190;
+  const height = Math.max(mode === "share" ? 1180 : 980, 430 + ticket.selections.length * selectionHeight + 250);
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  ctx.fillStyle = "#040904";
+  const pad = mode === "share" ? 70 : 56;
+  const cardX = pad;
+  const cardY = pad;
+  const cardW = width - pad * 2;
+  const cardH = height - pad * 2;
+  const accent = "#00c853";
+  const muted = "#74a874";
+  const text = "#d7f7d7";
+
+  ctx.fillStyle = "#020602";
   ctx.fillRect(0, 0, width, height);
-  ctx.strokeStyle = "#007a1a";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(28, 28, width - 56, height - 56);
+  ctx.fillStyle = "#061006";
+  ctx.strokeStyle = "#123d12";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, 30);
+  ctx.fill();
+  ctx.stroke();
 
-  ctx.fillStyle = "#007a1a";
-  ctx.font = "900 54px monospace";
-  ctx.fillText("FRAG", 64, 105);
-  ctx.fillStyle = "#d7f7d7";
-  ctx.fillText("NAIJA", 225, 105);
-  ctx.font = "700 22px monospace";
-  ctx.fillStyle = "#74a874";
-  ctx.fillText("TACTICAL WAGER SLIP", 64, 145);
-
-  ctx.font = "700 24px monospace";
-  ctx.fillStyle = "#d7f7d7";
-  ctx.fillText(`USER: ${ticket.username}`, 64, 210);
-  ctx.fillText(`REF: ${ticket.id}`, 64, 248);
-  ctx.fillText(`STATUS: ${ticket.status}`, 64, 286);
-  ctx.fillText(`PLACED: ${new Date(ticket.placedAt).toLocaleString("en-NG")}`, 64, 324);
-
-  let y = 390;
-  ctx.font = "900 26px monospace";
-  ctx.fillStyle = "#007a1a";
-  ctx.fillText("SELECTIONS", 64, y);
-  y += 42;
-
+  let y = cardY + 58;
   ticket.selections.forEach((item, index) => {
-    ctx.fillStyle = "#081208";
-    ctx.fillRect(64, y - 28, width - 128, 92);
-    ctx.strokeStyle = "#123d12";
-    ctx.strokeRect(64, y - 28, width - 128, 92);
-    ctx.fillStyle = "#d7f7d7";
-    ctx.font = "800 22px monospace";
-    ctx.fillText(`${index + 1}. ${item.marketTitle}`.slice(0, 58), 84, y);
-    ctx.fillStyle = "#74a874";
+    const rowTop = y - 8;
+    if (index > 0) {
+      ctx.strokeStyle = "rgba(116, 168, 116, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cardX + 38, rowTop - 26);
+      ctx.lineTo(cardX + cardW - 38, rowTop - 26);
+      ctx.stroke();
+    }
+
+    drawCrosshairIcon(ctx, cardX + 38, rowTop, 50);
+    ctx.fillStyle = text;
+    ctx.font = "900 30px monospace";
+    drawWrappedText(ctx, item.selection || item.marketTitle, cardX + 108, y + 22, cardW - 285, 34, 2);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = accent;
+    ctx.font = "900 42px monospace";
+    ctx.fillText(Number(item.odds || 0).toFixed(2), cardX + cardW - 38, y + 28);
+    ctx.textAlign = "left";
+
+    ctx.fillStyle = muted;
+    ctx.font = "800 20px monospace";
+    drawWrappedText(ctx, item.marketSubtitle || "Wager Market", cardX + 108, y + 92, cardW - 170, 26, 1);
+
+    ctx.fillStyle = "#a8cfa8";
     ctx.font = "700 18px monospace";
-    ctx.fillText(`${item.selection} @ ${item.odds.toFixed(2)}x`.slice(0, 70), 84, y + 32);
-    ctx.fillText(item.marketSubtitle.slice(0, 72), 84, y + 58);
-    y += 118;
+    drawWrappedText(ctx, getTicketEventDetails(item), cardX + 108, y + 128, cardW - 170, 24, 2);
+    y += selectionHeight;
   });
 
-  y += 20;
-  ctx.fillStyle = "#071407";
-  ctx.fillRect(64, y, width - 128, 190);
-  ctx.strokeStyle = "#007a1a";
-  ctx.strokeRect(64, y, width - 128, 190);
-  ctx.fillStyle = "#d7f7d7";
-  ctx.font = "900 28px monospace";
-  ctx.fillText(`STAKE: ${formatCurrency(ticket.stake)}`, 90, y + 55);
-  ctx.fillText(`COMBINED ODDS: ${ticket.combinedOdds.toFixed(2)}x`, 90, y + 105);
-  ctx.fillStyle = "#007a1a";
-  ctx.fillText(`POTENTIAL PAYOUT: ${formatCurrency(ticket.potential)}`, 90, y + 155);
+  const logoY = y + 4;
+  const logoText = "FRAGNAIJA";
+  ctx.font = "900 24px monospace";
+  const logoWidth = ctx.measureText(logoText).width;
+  const centerX = cardX + cardW / 2;
+  ctx.strokeStyle = "rgba(0, 200, 83, 0.45)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cardX + 38, logoY);
+  ctx.lineTo(centerX - logoWidth / 2 - 24, logoY);
+  ctx.moveTo(centerX + logoWidth / 2 + 24, logoY);
+  ctx.lineTo(cardX + cardW - 38, logoY);
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = accent;
+  ctx.fillText("FRAG", centerX - 36, logoY + 8);
+  ctx.fillStyle = text;
+  ctx.fillText("NAIJA", centerX + 42, logoY + 8);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = muted;
+  ctx.font = "700 18px monospace";
+  ctx.fillText(`BET: ${ticket.id}`, cardX + cardW - 38, logoY + 55);
+
+  const totalsY = logoY + 105;
+  const labelX = cardX + 52;
+  const valueX = cardX + cardW - 52;
+  ctx.textAlign = "left";
+  ctx.fillStyle = muted;
+  ctx.font = "800 22px monospace";
+  ctx.fillText("Stake", labelX, totalsY);
+  ctx.fillText("Payout", labelX, totalsY + 68);
+  ctx.textAlign = "right";
+  ctx.fillStyle = text;
+  ctx.font = "900 34px monospace";
+  ctx.fillText(formatCurrency(ticket.stake), valueX, totalsY + 4);
+  ctx.fillStyle = accent;
+  ctx.font = "900 40px monospace";
+  ctx.fillText(formatCurrency(ticket.potential), valueX, totalsY + 76);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = "rgba(116, 168, 116, 0.7)";
+  ctx.font = "700 14px monospace";
+  ctx.fillText(`${ticket.selections.length} pick${ticket.selections.length === 1 ? "" : "s"} • ${ticket.status} • ${new Date(ticket.placedAt).toLocaleString("en-NG")}`, cardX + 52, cardY + cardH - 42);
 
   const link = document.createElement("a");
   link.download = `${ticket.id}-${mode}.png`;
@@ -545,16 +683,19 @@ function WagerCard({
   email,
   username,
   onAddToSlip,
+  walletBalance,
   onPlaced,
 }: {
   market: Record<string, unknown>;
   email?: string | null;
   username: string;
+  walletBalance: number;
   onAddToSlip: (selection: SlipSelection) => string | null;
   onPlaced?: (ticket?: PlacedTicket) => void;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
-  const [amount, setAmount] = useState("500");
+  const [pickType, setPickType] = useState<"player" | "team" | null>(null);
+  const [amount, setAmount] = useState("");
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const { placeWager, loading } = usePlaceWager();
@@ -566,9 +707,11 @@ function WagerCard({
   const { yes, no } = getImpliedSplit(market.yes_odds, market.no_odds);
   const yesOdds = Number(market.yes_odds ?? 0);
   const noOdds = Number(market.no_odds ?? 0);
-  const numericAmount = Number(amount || 0);
+  const numericAmount = parseWagerAmount(amount);
   const activeEmail = email ?? null;
-  const canSubmit = Boolean(activeEmail && picked && numericAmount >= 100 && !loading);
+  const amountError = getWagerAmountError(amount, walletBalance, Boolean(activeEmail));
+  const showPickTypeChoice = isOptionPick;
+  const canSubmit = Boolean(activeEmail && picked && (!showPickTypeChoice || pickType) && !amountError && !loading);
 
   const pickedOption = isOptionPick ? pickOptions.find((o) => o.label === picked) : null;
   const pickedOdds = isOptionPick
@@ -594,6 +737,9 @@ function WagerCard({
     marketSubtitle: getMarketSubtitle(market),
     selection: picked,
     odds: pickedOdds,
+    pickType: pickType ?? (String(market.type ?? "") === "team_pick" ? "team" : "player"),
+    eventName: getMarketMatch(market) || String(getMarketQuestion(market)),
+    eventDate: typeof market.closes_at === "string" ? market.closes_at : undefined,
   } : null;
 
   function handleAddToSlip() {
@@ -606,10 +752,17 @@ function WagerCard({
     if (!error) setPicked(null);
   }
 
+  function handleAmountChange(value: string) {
+    const sanitized = sanitizeWagerAmountInput(value);
+    if (sanitized === null) return;
+    setAmount(sanitized);
+  }
+
   async function handlePlaceWager() {
     if (!activeEmail) { setMessage("Sign in first to place a wager."); return; }
     if (!picked) { setMessage(isOptionPick ? `Choose a ${pickConfig.badge.toLowerCase()} option before placing a wager.` : "Choose YES or NO before placing a wager."); return; }
-    if (numericAmount < 100) { setMessage("Minimum wager amount is NGN 100."); return; }
+    if (showPickTypeChoice && !pickType) { setMessage("Choose Player Pick or Team Pick before placing this wager."); return; }
+    if (amountError) { setMessage(amountError); return; }
     setMessage(null);
     try {
       const result = await placeWager({
@@ -656,7 +809,7 @@ function WagerCard({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} pool</span>
+            <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} stake pool</span>
             <button onClick={() => setSaved((current) => !current)} className="transition-colors">
               <Bookmark size={13} className={saved ? "fill-fn-green text-fn-green" : "text-fn-muted hover:text-fn-text"} />
             </button>
@@ -677,6 +830,28 @@ function WagerCard({
       </div>
 
       <div className="space-y-3 px-4 pb-3">
+        {showPickTypeChoice && (
+          <div>
+            <p className="fn-label mb-2">Pick Type</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[{ key: "player", label: "Player Pick" }, { key: "team", label: "Team Pick" }].map((type) => (
+                <button
+                  key={type.key}
+                  type="button"
+                  onClick={() => setPickType(type.key as "player" | "team")}
+                  className={`rounded-sm border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    pickType === type.key
+                      ? "border-fn-green bg-fn-green/10 text-fn-green"
+                      : "border-fn-gborder bg-fn-dark/60 text-fn-muted hover:border-fn-green/40 hover:text-fn-text"
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isOptionPick ? (
           /* ── Option Pick UI (player / team / mvp / map / outcome / first_blood) ── */
           <div>
@@ -701,7 +876,7 @@ function WagerCard({
                       {Number(opt.odds).toFixed(2)}×
                     </div>
                     <div className="mt-0.5 text-[8px] text-fn-muted">
-                      {formatCurrency(numericAmount || 1000)} → {formatCurrency((numericAmount || 1000) * opt.odds)}
+                      {numericAmount > 0 ? `${formatCurrency(numericAmount)} → ${formatCurrency(numericAmount * opt.odds)}` : "Enter amount"}
                     </div>
                   </button>
                 );
@@ -732,7 +907,7 @@ function WagerCard({
                 <div className="mb-0.5 text-[10px] font-bold">BUY YES</div>
                 <div className="font-display text-xl font-black">{yesOdds.toFixed(2)}x</div>
                 <div className="mt-0.5 text-[8px] opacity-80">
-                  {formatCurrency(numericAmount || 1000)} {"->"} {formatCurrency((numericAmount || 1000) * yesOdds)}
+                  {numericAmount > 0 ? `${formatCurrency(numericAmount)} → ${formatCurrency(numericAmount * yesOdds)}` : "Enter amount"}
                 </div>
               </button>
               <button
@@ -742,7 +917,7 @@ function WagerCard({
                 <div className="mb-0.5 text-[10px] font-bold">BUY NO</div>
                 <div className="font-display text-xl font-black">{noOdds.toFixed(2)}x</div>
                 <div className="mt-0.5 text-[8px] opacity-80">
-                  {formatCurrency(numericAmount || 1000)} {"->"} {formatCurrency((numericAmount || 1000) * noOdds)}
+                  {numericAmount > 0 ? `${formatCurrency(numericAmount)} → ${formatCurrency(numericAmount * noOdds)}` : "Enter amount"}
                 </div>
               </button>
             </div>
@@ -762,48 +937,41 @@ function WagerCard({
       </div>
 
       <div className="px-4 pb-4">
-        <div className="flex gap-2">
-          <div className="flex flex-1 items-center rounded-sm border border-fn-gborder bg-fn-dark px-3 min-w-0">
+        <div className="space-y-2">
+          <label className={`flex items-center rounded-sm border bg-fn-dark px-3 min-w-0 ${amountError ? "border-fn-red/60" : "border-fn-gborder"}`}>
             <span className="mr-2 fn-label shrink-0">AMOUNT</span>
             <input
-              type="number"
-              min="100"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              type="text"
+              inputMode="decimal"
+              required
+              aria-invalid={Boolean(amountError)}
+              placeholder="₦100"
+              value={formatAmountInputValue(amount)}
+              onChange={(event) => handleAmountChange(event.target.value)}
+              className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
             />
+          </label>
+          <div className="flex items-center justify-between gap-2 text-[8px]">
+            <span className={amountError ? "text-fn-red" : "text-fn-muted"}>{amountError || `Balance: ${formatCurrency(walletBalance)}`}</span>
+            <span className="text-fn-muted">Min {formatCurrency(MIN_WAGER_AMOUNT)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
           </div>
-          <button
-            type="button"
-            onClick={handleAddToSlip}
-            className={`fn-btn-outline shrink-0 whitespace-nowrap px-3 text-[10px] ${!picked ? "cursor-not-allowed opacity-50" : ""}`}
-            disabled={!picked}
-          >
-            <Plus size={11} className="inline-block mr-1" /> SLIP
-          </button>
-          <button
-            onClick={handlePlaceWager}
-            className={`fn-btn shrink-0 whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
-            disabled={!canSubmit}
-          >
-            {loading ? "..." : "PLACE WAGER"}
-          </button>
-        </div>
-
-        <div className="mt-2 flex gap-1.5">
-          {["250", "500", "1000", "2500"].map((value) => (
+          <div className="flex gap-2">
             <button
-              key={value}
-              onClick={() => setAmount(value)}
-              className={`rounded-sm border px-2 py-1 text-[8px] font-bold tracking-wide transition-all ${
-                amount === value
-                  ? "border-fn-green bg-fn-green/10 text-fn-green"
-                  : "border-fn-gborder text-fn-muted hover:border-fn-green/40 hover:text-fn-text"
-              }`}
+              type="button"
+              onClick={handleAddToSlip}
+              className={`fn-btn-outline flex-1 whitespace-nowrap px-3 text-[10px] ${!picked || Boolean(amountError) ? "cursor-not-allowed opacity-50" : ""}`}
+              disabled={!picked || Boolean(amountError)}
             >
-              {formatCurrency(Number(value))}
+              <Plus size={11} className="inline-block mr-1" /> SLIP
             </button>
-          ))}
+            <button
+              onClick={handlePlaceWager}
+              className={`fn-btn flex-1 whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
+              disabled={!canSubmit}
+            >
+              {loading ? "..." : "PLACE WAGER"}
+            </button>
+          </div>
         </div>
 
         {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
@@ -1004,27 +1172,36 @@ function BetSlip({
   onRemove,
   onClear,
   onSubmit,
+  walletBalance,
 }: {
   selections: SlipSelection[];
   stake: string;
   setStake: (value: string) => void;
   email?: string | null;
   username: string;
+  walletBalance: number;
   onRemove: (key: string) => void;
   onClear: () => void;
   onSubmit: (ticket: PlacedTicket) => void;
 }) {
   const { placeWager, loading: placing } = usePlaceWager();
   const [message, setMessage] = useState<string | null>(null);
-  const numericStake = Number(stake || 0);
+  const numericStake = parseWagerAmount(stake);
   const combinedOdds = calculateCombinedOdds(selections);
   const potential = numericStake * combinedOdds;
-  const canSubmit = Boolean(email && selections.length > 0 && numericStake >= 100 && !placing);
+  const stakeError = getWagerAmountError(stake, walletBalance, Boolean(email));
+  const canSubmit = Boolean(email && selections.length > 0 && !stakeError && !placing);
+
+  function handleStakeChange(value: string) {
+    const sanitized = sanitizeWagerAmountInput(value);
+    if (sanitized === null) return;
+    setStake(sanitized);
+  }
 
   async function submitSlip() {
     if (!email) { setMessage("Sign in first to place this slip."); return; }
     if (!selections.length) { setMessage("Add at least one selection to your slip."); return; }
-    if (numericStake < 100) { setMessage("Minimum total stake is NGN 100."); return; }
+    if (stakeError) { setMessage(stakeError); return; }
 
     const marketIds = selections.map((item) => String(item.wagerId));
     if (new Set(marketIds).size !== marketIds.length) {
@@ -1096,15 +1273,22 @@ function BetSlip({
       )}
 
       <div className="mt-3 space-y-3">
-        <div className="flex items-center rounded-sm border border-fn-gborder bg-fn-dark px-3">
+        <label className={`flex items-center rounded-sm border bg-fn-dark px-3 ${stakeError ? "border-fn-red/60" : "border-fn-gborder"}`}>
           <span className="mr-2 fn-label shrink-0">TOTAL STAKE</span>
           <input
-            type="number"
-            min="100"
-            value={stake}
-            onChange={(event) => setStake(event.target.value)}
+            type="text"
+            inputMode="decimal"
+            required
+            aria-invalid={Boolean(stakeError)}
+            placeholder="₦100"
+            value={formatAmountInputValue(stake)}
+            onChange={(event) => handleStakeChange(event.target.value)}
             className="min-w-0 flex-1 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
           />
+        </label>
+        <div className="flex items-center justify-between gap-2 text-[8px]">
+          <span className={stakeError ? "text-fn-red" : "text-fn-muted"}>{stakeError || `Balance: ${formatCurrency(walletBalance)}`}</span>
+          <span className="text-fn-muted">Min {formatCurrency(MIN_WAGER_AMOUNT)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
@@ -1175,7 +1359,7 @@ function WagerPageContent() {
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [slipSelections, setSlipSelections] = useState<SlipSelection[]>([]);
-  const [slipStake, setSlipStake] = useState("500");
+  const [slipStake, setSlipStake] = useState("");
   const [latestTicket, setLatestTicket] = useState<PlacedTicket | null>(null);
 
   useEffect(() => {
@@ -1377,6 +1561,7 @@ function WagerPageContent() {
                 market={market}
                 email={currentUser?.email}
                 username={username}
+                walletBalance={walletBalance}
                 onAddToSlip={addToSlip}
                 onPlaced={refreshAfterPlacement}
               />
@@ -1407,6 +1592,7 @@ function WagerPageContent() {
               setStake={setSlipStake}
               email={currentUser?.email}
               username={username}
+              walletBalance={walletBalance}
               onRemove={removeFromSlip}
               onClear={() => setSlipSelections([])}
               onSubmit={refreshAfterPlacement}

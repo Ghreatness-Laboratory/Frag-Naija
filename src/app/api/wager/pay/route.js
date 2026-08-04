@@ -22,8 +22,21 @@ export async function POST(request) {
       );
     }
 
-    if (amount < 100) {
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json({ error: 'Enter a valid wager amount' }, { status: 400 });
+    }
+
+    if (!/^\d+(\.\d{1,2})?$/.test(String(amount))) {
+      return NextResponse.json({ error: 'Wager amount may include at most 2 decimal places' }, { status: 400 });
+    }
+
+    if (numericAmount < 100) {
       return NextResponse.json({ error: 'Minimum wager amount is ₦100' }, { status: 400 });
+    }
+
+    if (numericAmount > 1000000) {
+      return NextResponse.json({ error: 'Maximum wager amount is ₦1,000,000' }, { status: 400 });
     }
 
     const seenWagers = new Set();
@@ -76,7 +89,7 @@ export async function POST(request) {
       resolvedSelections.push({ wager_id: requested.wager_id, selection: requested.selection, odds: Number(odds) });
     }
 
-    const potential = Number(amount) * Number(combinedOdds);
+    const potential = numericAmount * Number(combinedOdds);
     const primarySelection = resolvedSelections[0];
 
     // ── Try wallet-balance payment first ────────────────────────────────────
@@ -93,7 +106,7 @@ export async function POST(request) {
         await supabaseAdmin
           .from('wallets')
           .update({
-            balance:    Number(wallet.balance) - Number(amount),
+            balance:    Number(wallet.balance) - numericAmount,
             updated_at: new Date().toISOString(),
           })
           .eq('user_id', user_id);
@@ -106,7 +119,7 @@ export async function POST(request) {
             user_id,
             email,
             selection: item.selection,
-            amount: index === 0 ? Number(amount) : 0,
+            amount: index === 0 ? numericAmount : 0,
             potential: index === 0 ? potential : 0,
             reference: index === 0 ? reference : `${reference}-${index + 1}`,
           });
@@ -129,7 +142,7 @@ export async function POST(request) {
 
     const result = await initializeTransaction({
       email,
-      amount,
+      amount: numericAmount,
       reference,
       metadata: {
         wager_id: primarySelection.wager_id,
