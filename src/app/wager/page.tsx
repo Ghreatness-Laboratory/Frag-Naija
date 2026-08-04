@@ -774,7 +774,7 @@ function WagerCard({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} pool</span>
+            <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} stake pool</span>
             <button onClick={() => setSaved((current) => !current)} className="transition-colors">
               <Bookmark size={13} className={saved ? "fill-fn-green text-fn-green" : "text-fn-muted hover:text-fn-text"} />
             </button>

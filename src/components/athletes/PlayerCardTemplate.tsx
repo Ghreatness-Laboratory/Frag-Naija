@@ -163,11 +163,12 @@ export default function PlayerCardTemplate({
   const accent = isIcon ? ICON_GOLD : primary;
   const statLabelClass = isIcon ? 'text-[#F5C542]' : 'text-fn-green';
   const displayName = athlete.known_name || athlete.ign;
-  const cardNumber = cardNumberFrom(athlete, team, rating, rank);
+  const ratingValue = Math.max(0, Math.min(100, Math.round(Number(rating) || 0)));
+  const cardNumber = cardNumberFrom(athlete, team, ratingValue, rank);
   const combatStats = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
   const stats = combatStats.some((stat) => stat.value > 0)
     ? combatStats
-    : [{ key: 'overall', label: 'OVR', name: 'Overall', value: Math.round(Number(rating) || 0), color: accent }];
+    : [{ key: 'overall', label: 'OVR', name: 'Overall', value: ratingValue, color: accent }];
   const teamName = team?.name || athlete.team || 'Free Agent';
   const role = athlete.role || 'Player';
   const status = athlete.status || 'Active';
@@ -201,8 +202,8 @@ export default function PlayerCardTemplate({
           <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{role} / {teamName}</p>
         </div>
         <div className="absolute right-0 top-[18px] z-30 flex w-[74px] flex-col items-center text-center">
-          <div className="font-display text-2xl font-black leading-none" style={{ color: accent, textShadow: `0 0 14px ${accent}66` }}>{Math.round(Number(rating) || 0)}</div>
-          <div className="mt-0.5 text-[7px] font-black uppercase tracking-widest text-white/45">OVR</div>
+          <div className="font-display text-2xl font-black leading-none" style={{ color: accent, textShadow: `0 0 14px ${accent}66` }}>{ratingValue}</div>
+          <div className="mt-0.5 text-[7px] font-black uppercase tracking-widest text-white/45">/100</div>
         </div>
         <div
           className="absolute bottom-3 left-[92px] right-[74px] z-20 grid overflow-hidden rounded-sm border bg-black/75 shadow-[inset_0_0_18px_rgba(0,255,85,0.08)]"
@@ -271,8 +272,8 @@ export default function PlayerCardTemplate({
       <div className={cx('player-card player-card-featured relative h-[360px] w-[216px] max-w-full overflow-hidden bg-[#030803] text-white transition-transform duration-200 group-hover:-translate-y-1', className)} style={cardShellStyle(accent, isIcon)}>
         <CardBackdrop primary={accent} athlete={athlete} team={team} isIcon={isIcon} />
         <div className="absolute left-4 top-4 z-20 border bg-black/70 px-2.5 py-2 text-center shadow-lg" style={{ borderColor: `${accent}80`, boxShadow: `0 0 18px ${accent}24` }}>
-          <div className="font-display text-3xl font-black leading-none" style={{ color: accent }}>{cardNumber}</div>
-          <div className="text-[8px] font-black tracking-[0.22em] text-white/55">RTG</div>
+          <div className="font-display text-3xl font-black leading-none" style={{ color: accent }}>{ratingValue}</div>
+          <div className="text-[8px] font-black tracking-[0.22em] text-white/55">/100</div>
         </div>
         {isIcon && (
           <div className="absolute right-4 top-4 z-30 flex items-center gap-1 border px-2 py-1 text-[8px] font-black uppercase tracking-widest" style={{ borderColor: `${accent}80`, background: `${accent}22`, color: ICON_TEXT }}>
@@ -327,8 +328,8 @@ export default function PlayerCardTemplate({
       <CardBackdrop primary={accent} athlete={athlete} team={team} isIcon={isIcon} />
 
       <div className="absolute left-5 top-5 z-20 border bg-black/70 px-3 py-2 text-center shadow-lg" style={{ borderColor: `${accent}80`, boxShadow: `0 0 22px ${accent}24` }}>
-        <div className="font-display text-5xl font-black leading-none" style={{ color: accent }}>{cardNumber}</div>
-        <div className="text-[10px] font-black tracking-[0.28em] text-white/55">RTG</div>
+        <div className="font-display text-5xl font-black leading-none" style={{ color: accent }}>{ratingValue}</div>
+        <div className="text-[10px] font-black tracking-[0.28em] text-white/55">/100</div>
       </div>
 
       {isIcon && (
