@@ -9,10 +9,18 @@ export default function PWARegister() {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
       .then((registration) => {
-        // Check for updates every time the page becomes visible
-        registration.update();
+        const safelyUpdate = () => {
+          if (!registration.active && !registration.waiting && !registration.installing) return;
+          registration.update().catch((err) => {
+            console.warn('[SW] Update check failed:', err);
+          });
+        };
+
+        // Check for updates every time the page becomes visible, without surfacing
+        // transient InvalidStateError exceptions to users.
+        safelyUpdate();
         document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') registration.update();
+          if (document.visibilityState === 'visible') safelyUpdate();
         });
       })
       .catch((err) => {
