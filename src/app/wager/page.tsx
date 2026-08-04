@@ -649,16 +649,19 @@ function WagerCard({
   email,
   username,
   onAddToSlip,
+  walletBalance,
   onPlaced,
 }: {
   market: Record<string, unknown>;
   email?: string | null;
   username: string;
+  walletBalance: number;
   onAddToSlip: (selection: SlipSelection) => string | null;
   onPlaced?: (ticket?: PlacedTicket) => void;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
-  const [amount, setAmount] = useState("500");
+  const [pickType, setPickType] = useState<"player" | "team" | null>(null);
+  const [amount, setAmount] = useState("");
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const { placeWager, loading } = usePlaceWager();
@@ -670,9 +673,11 @@ function WagerCard({
   const { yes, no } = getImpliedSplit(market.yes_odds, market.no_odds);
   const yesOdds = Number(market.yes_odds ?? 0);
   const noOdds = Number(market.no_odds ?? 0);
-  const numericAmount = Number(amount || 0);
+  const numericAmount = parseWagerAmount(amount);
   const activeEmail = email ?? null;
-  const canSubmit = Boolean(activeEmail && picked && numericAmount >= 100 && !loading);
+  const amountError = getWagerAmountError(amount, walletBalance, Boolean(activeEmail));
+  const showPickTypeChoice = isOptionPick;
+  const canSubmit = Boolean(activeEmail && picked && (!showPickTypeChoice || pickType) && !amountError && !loading);
 
   const pickedOption = isOptionPick ? pickOptions.find((o) => o.label === picked) : null;
   const pickedOdds = isOptionPick
@@ -712,10 +717,17 @@ function WagerCard({
     if (!error) setPicked(null);
   }
 
+  function handleAmountChange(value: string) {
+    const sanitized = sanitizeWagerAmountInput(value);
+    if (sanitized === null) return;
+    setAmount(sanitized);
+  }
+
   async function handlePlaceWager() {
     if (!activeEmail) { setMessage("Sign in first to place a wager."); return; }
     if (!picked) { setMessage(isOptionPick ? `Choose a ${pickConfig.badge.toLowerCase()} option before placing a wager.` : "Choose YES or NO before placing a wager."); return; }
-    if (numericAmount < 100) { setMessage("Minimum wager amount is NGN 100."); return; }
+    if (showPickTypeChoice && !pickType) { setMessage("Choose Player Pick or Team Pick before placing this wager."); return; }
+    if (amountError) { setMessage(amountError); return; }
     setMessage(null);
     try {
       const result = await placeWager({
@@ -783,6 +795,28 @@ function WagerCard({
       </div>
 
       <div className="space-y-3 px-4 pb-3">
+        {showPickTypeChoice && (
+          <div>
+            <p className="fn-label mb-2">Pick Type</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[{ key: "player", label: "Player Pick" }, { key: "team", label: "Team Pick" }].map((type) => (
+                <button
+                  key={type.key}
+                  type="button"
+                  onClick={() => setPickType(type.key as "player" | "team")}
+                  className={`rounded-sm border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    pickType === type.key
+                      ? "border-fn-green bg-fn-green/10 text-fn-green"
+                      : "border-fn-gborder bg-fn-dark/60 text-fn-muted hover:border-fn-green/40 hover:text-fn-text"
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isOptionPick ? (
           /* ── Option Pick UI (player / team / mvp / map / outcome / first_blood) ── */
           <div>
@@ -807,7 +841,7 @@ function WagerCard({
                       {Number(opt.odds).toFixed(2)}×
                     </div>
                     <div className="mt-0.5 text-[8px] text-fn-muted">
-                      {formatCurrency(numericAmount || 1000)} → {formatCurrency((numericAmount || 1000) * opt.odds)}
+                      {numericAmount > 0 ? `${formatCurrency(numericAmount)} → ${formatCurrency(numericAmount * opt.odds)}` : "Enter amount"}
                     </div>
                   </button>
                 );
@@ -838,7 +872,7 @@ function WagerCard({
                 <div className="mb-0.5 text-[10px] font-bold">BUY YES</div>
                 <div className="font-display text-xl font-black">{yesOdds.toFixed(2)}x</div>
                 <div className="mt-0.5 text-[8px] opacity-80">
-                  {formatCurrency(numericAmount || 1000)} {"->"} {formatCurrency((numericAmount || 1000) * yesOdds)}
+                  {numericAmount > 0 ? `${formatCurrency(numericAmount)} → ${formatCurrency(numericAmount * yesOdds)}` : "Enter amount"}
                 </div>
               </button>
               <button
@@ -848,7 +882,7 @@ function WagerCard({
                 <div className="mb-0.5 text-[10px] font-bold">BUY NO</div>
                 <div className="font-display text-xl font-black">{noOdds.toFixed(2)}x</div>
                 <div className="mt-0.5 text-[8px] opacity-80">
-                  {formatCurrency(numericAmount || 1000)} {"->"} {formatCurrency((numericAmount || 1000) * noOdds)}
+                  {numericAmount > 0 ? `${formatCurrency(numericAmount)} → ${formatCurrency(numericAmount * noOdds)}` : "Enter amount"}
                 </div>
               </button>
             </div>
@@ -868,48 +902,41 @@ function WagerCard({
       </div>
 
       <div className="px-4 pb-4">
-        <div className="flex gap-2">
-          <div className="flex flex-1 items-center rounded-sm border border-fn-gborder bg-fn-dark px-3 min-w-0">
+        <div className="space-y-2">
+          <label className={`flex items-center rounded-sm border bg-fn-dark px-3 min-w-0 ${amountError ? "border-fn-red/60" : "border-fn-gborder"}`}>
             <span className="mr-2 fn-label shrink-0">AMOUNT</span>
             <input
-              type="number"
-              min="100"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              type="text"
+              inputMode="decimal"
+              required
+              aria-invalid={Boolean(amountError)}
+              placeholder="₦100"
+              value={formatAmountInputValue(amount)}
+              onChange={(event) => handleAmountChange(event.target.value)}
+              className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
             />
+          </label>
+          <div className="flex items-center justify-between gap-2 text-[8px]">
+            <span className={amountError ? "text-fn-red" : "text-fn-muted"}>{amountError || `Balance: ${formatCurrency(walletBalance)}`}</span>
+            <span className="text-fn-muted">Min {formatCurrency(MIN_WAGER_AMOUNT)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
           </div>
-          <button
-            type="button"
-            onClick={handleAddToSlip}
-            className={`fn-btn-outline shrink-0 whitespace-nowrap px-3 text-[10px] ${!picked ? "cursor-not-allowed opacity-50" : ""}`}
-            disabled={!picked}
-          >
-            <Plus size={11} className="inline-block mr-1" /> SLIP
-          </button>
-          <button
-            onClick={handlePlaceWager}
-            className={`fn-btn shrink-0 whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
-            disabled={!canSubmit}
-          >
-            {loading ? "..." : "PLACE WAGER"}
-          </button>
-        </div>
-
-        <div className="mt-2 flex gap-1.5">
-          {["250", "500", "1000", "2500"].map((value) => (
+          <div className="flex gap-2">
             <button
-              key={value}
-              onClick={() => setAmount(value)}
-              className={`rounded-sm border px-2 py-1 text-[8px] font-bold tracking-wide transition-all ${
-                amount === value
-                  ? "border-fn-green bg-fn-green/10 text-fn-green"
-                  : "border-fn-gborder text-fn-muted hover:border-fn-green/40 hover:text-fn-text"
-              }`}
+              type="button"
+              onClick={handleAddToSlip}
+              className={`fn-btn-outline flex-1 whitespace-nowrap px-3 text-[10px] ${!picked || Boolean(amountError) ? "cursor-not-allowed opacity-50" : ""}`}
+              disabled={!picked || Boolean(amountError)}
             >
-              {formatCurrency(Number(value))}
+              <Plus size={11} className="inline-block mr-1" /> SLIP
             </button>
-          ))}
+            <button
+              onClick={handlePlaceWager}
+              className={`fn-btn flex-1 whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
+              disabled={!canSubmit}
+            >
+              {loading ? "..." : "PLACE WAGER"}
+            </button>
+          </div>
         </div>
 
         {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
@@ -1110,27 +1137,36 @@ function BetSlip({
   onRemove,
   onClear,
   onSubmit,
+  walletBalance,
 }: {
   selections: SlipSelection[];
   stake: string;
   setStake: (value: string) => void;
   email?: string | null;
   username: string;
+  walletBalance: number;
   onRemove: (key: string) => void;
   onClear: () => void;
   onSubmit: (ticket: PlacedTicket) => void;
 }) {
   const { placeWager, loading: placing } = usePlaceWager();
   const [message, setMessage] = useState<string | null>(null);
-  const numericStake = Number(stake || 0);
+  const numericStake = parseWagerAmount(stake);
   const combinedOdds = calculateCombinedOdds(selections);
   const potential = numericStake * combinedOdds;
-  const canSubmit = Boolean(email && selections.length > 0 && numericStake >= 100 && !placing);
+  const stakeError = getWagerAmountError(stake, walletBalance, Boolean(email));
+  const canSubmit = Boolean(email && selections.length > 0 && !stakeError && !placing);
+
+  function handleStakeChange(value: string) {
+    const sanitized = sanitizeWagerAmountInput(value);
+    if (sanitized === null) return;
+    setStake(sanitized);
+  }
 
   async function submitSlip() {
     if (!email) { setMessage("Sign in first to place this slip."); return; }
     if (!selections.length) { setMessage("Add at least one selection to your slip."); return; }
-    if (numericStake < 100) { setMessage("Minimum total stake is NGN 100."); return; }
+    if (stakeError) { setMessage(stakeError); return; }
 
     const marketIds = selections.map((item) => String(item.wagerId));
     if (new Set(marketIds).size !== marketIds.length) {
@@ -1202,15 +1238,22 @@ function BetSlip({
       )}
 
       <div className="mt-3 space-y-3">
-        <div className="flex items-center rounded-sm border border-fn-gborder bg-fn-dark px-3">
+        <label className={`flex items-center rounded-sm border bg-fn-dark px-3 ${stakeError ? "border-fn-red/60" : "border-fn-gborder"}`}>
           <span className="mr-2 fn-label shrink-0">TOTAL STAKE</span>
           <input
-            type="number"
-            min="100"
-            value={stake}
-            onChange={(event) => setStake(event.target.value)}
+            type="text"
+            inputMode="decimal"
+            required
+            aria-invalid={Boolean(stakeError)}
+            placeholder="₦100"
+            value={formatAmountInputValue(stake)}
+            onChange={(event) => handleStakeChange(event.target.value)}
             className="min-w-0 flex-1 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
           />
+        </label>
+        <div className="flex items-center justify-between gap-2 text-[8px]">
+          <span className={stakeError ? "text-fn-red" : "text-fn-muted"}>{stakeError || `Balance: ${formatCurrency(walletBalance)}`}</span>
+          <span className="text-fn-muted">Min {formatCurrency(MIN_WAGER_AMOUNT)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
@@ -1281,7 +1324,7 @@ function WagerPageContent() {
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [slipSelections, setSlipSelections] = useState<SlipSelection[]>([]);
-  const [slipStake, setSlipStake] = useState("500");
+  const [slipStake, setSlipStake] = useState("");
   const [latestTicket, setLatestTicket] = useState<PlacedTicket | null>(null);
 
   useEffect(() => {
@@ -1483,6 +1526,7 @@ function WagerPageContent() {
                 market={market}
                 email={currentUser?.email}
                 username={username}
+                walletBalance={walletBalance}
                 onAddToSlip={addToSlip}
                 onPlaced={refreshAfterPlacement}
               />
@@ -1513,6 +1557,7 @@ function WagerPageContent() {
               setStake={setSlipStake}
               email={currentUser?.email}
               username={username}
+              walletBalance={walletBalance}
               onRemove={removeFromSlip}
               onClear={() => setSlipSelections([])}
               onSubmit={refreshAfterPlacement}
