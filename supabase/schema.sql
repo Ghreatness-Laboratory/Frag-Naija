@@ -217,6 +217,7 @@ CREATE TABLE IF NOT EXISTS wagers (
   yes_price   INT DEFAULT 62,        -- probability price (YES + NO = 100)
   no_price    INT DEFAULT 38,
   pool_total  NUMERIC(12,2) DEFAULT 0,
+  trade_count NUMERIC(12,0) DEFAULT 0,
   hot         BOOLEAN DEFAULT false,
   status      TEXT DEFAULT 'Active'
                 CHECK (status IN ('Active', 'Settled — YES Wins', 'Settled — NO Wins', 'Cancelled')),
@@ -227,6 +228,7 @@ CREATE TABLE IF NOT EXISTS wagers (
 
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS match_name TEXT DEFAULT '';
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS trade_count NUMERIC(12,0) DEFAULT 0;
 
 ALTER TABLE wagers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wagers_public_read"  ON wagers FOR SELECT USING (true);
