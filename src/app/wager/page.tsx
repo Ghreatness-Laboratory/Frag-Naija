@@ -84,7 +84,6 @@ type SlipSelection = {
   odds: number;
   eventName?: string;
   eventDate?: string;
-  pickType?: "player" | "team";
 };
 
 type PlacedTicket = {
@@ -109,39 +108,6 @@ function buildTicketId(reference?: string | null) {
 
 function calculateCombinedOdds(selections: SlipSelection[]) {
   return selections.reduce((total, item) => total * Number(item.odds || 1), 1);
-}
-
-const MIN_WAGER_AMOUNT = 100;
-const MAX_WAGER_AMOUNT = 1000000;
-
-function parseWagerAmount(value: string) {
-  const cleaned = value.replace(/[₦,\s]/g, "");
-  return cleaned ? Number(cleaned) : 0;
-}
-
-function formatAmountInputValue(value: string) {
-  const cleaned = value.replace(/[₦,\s]/g, "");
-  if (!cleaned) return "";
-  const [whole, decimal] = cleaned.split(".");
-  const formattedWhole = Number(whole || 0).toLocaleString("en-NG");
-  return `₦${formattedWhole}${decimal !== undefined ? `.${decimal}` : ""}`;
-}
-
-function sanitizeWagerAmountInput(value: string) {
-  const cleaned = value.replace(/[₦,\s]/g, "");
-  if (!cleaned) return "";
-  if (!/^\d*(\.\d{0,2})?$/.test(cleaned)) return null;
-  return cleaned;
-}
-
-function getWagerAmountError(amount: string, balance: number, requireBalance = true) {
-  if (!amount) return "Enter a wager amount.";
-  const numericAmount = parseWagerAmount(amount);
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return "Enter a valid amount greater than ₦0.";
-  if (numericAmount < MIN_WAGER_AMOUNT) return `Minimum wager is ${formatCurrency(MIN_WAGER_AMOUNT)}.`;
-  if (numericAmount > MAX_WAGER_AMOUNT) return `Maximum wager is ${formatCurrency(MAX_WAGER_AMOUNT)}.`;
-  if (requireBalance && numericAmount > balance) return "Insufficient funds for this wager amount.";
-  return null;
 }
 
 function drawWrappedText(
@@ -737,7 +703,6 @@ function WagerCard({
     marketSubtitle: getMarketSubtitle(market),
     selection: picked,
     odds: pickedOdds,
-    pickType: pickType ?? (String(market.type ?? "") === "team_pick" ? "team" : "player"),
     eventName: getMarketMatch(market) || String(getMarketQuestion(market)),
     eventDate: typeof market.closes_at === "string" ? market.closes_at : undefined,
   } : null;

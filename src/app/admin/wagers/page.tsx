@@ -109,7 +109,6 @@ function AdminWagersContent() {
         question:  form.question,
         subtitle:  form.subtitle,
         match_name: form.match_name.trim(),
-        pool_total: Number(form.pool_total || 0),
         trade_count: Number(form.trades || 0),
         closes_at: form.closes_at,
         type:      form.type,
@@ -241,7 +240,7 @@ function AdminWagersContent() {
               : r.type === 'team_pick'
                 ? <span className="text-blue-400 text-xs">Team Pick</span>
                 : <span className="text-fn-green text-xs">Binary</span> },
-          { key: 'pool_total', label: 'Stake Pool', render: r => `₦${Number(r.pool_total || 0).toLocaleString()}` },
+          { key: 'pool_total', label: 'Pool',   render: r => `₦${Number(r.pool_total || 0).toLocaleString()}` },
           { key: 'trades',     label: 'Trades', render: r => Number(r.trades ?? r.trade_count ?? 0).toLocaleString() },
           { key: 'hot',        label: 'Hot',    render: r => r.hot ? <Flame className="w-4 h-4 text-fn-amber" /> : <span className="text-fn-muted text-xs">—</span> },
           { key: 'closes_at',  label: 'Closes', render: r => new Date(String(r.closes_at)).toLocaleDateString() },
@@ -376,15 +375,9 @@ function AdminWagersContent() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Stake Pool (₦)" required>
-              <Input type="number" min="0" step="0.01" value={form.pool_total} onChange={f('pool_total')} required />
-              <p className="mt-1 text-[10px] text-fn-muted">Pool is the total Naira staked on this market so far.</p>
-            </Field>
-            <Field label="Trades" required>
-              <Input type="number" min="0" step="1" value={form.trades} onChange={f('trades')} required />
-            </Field>
-          </div>
+          <Field label="Trades" required>
+            <Input type="number" min="0" step="1" value={form.trades} onChange={f('trades')} required />
+          </Field>
 
           <Field label="Closes At" required>
             <Input type="datetime-local" value={form.closes_at} onChange={f('closes_at')} required />
