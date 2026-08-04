@@ -84,7 +84,6 @@ type SlipSelection = {
   odds: number;
   eventName?: string;
   eventDate?: string;
-  pickType?: "player" | "team";
 };
 
 type PlacedTicket = {
@@ -109,39 +108,6 @@ function buildTicketId(reference?: string | null) {
 
 function calculateCombinedOdds(selections: SlipSelection[]) {
   return selections.reduce((total, item) => total * Number(item.odds || 1), 1);
-}
-
-const MIN_WAGER_AMOUNT = 100;
-const MAX_WAGER_AMOUNT = 1000000;
-
-function toWagerAmountNumber(value: string) {
-  const cleaned = value.replace(/[₦,\s]/g, "");
-  return cleaned ? Number(cleaned) : 0;
-}
-
-function formatWagerAmountInput(value: string) {
-  const cleaned = value.replace(/[₦,\s]/g, "");
-  if (!cleaned) return "";
-  const [whole, decimal] = cleaned.split(".");
-  const formattedWhole = Number(whole || 0).toLocaleString("en-NG");
-  return `₦${formattedWhole}${decimal !== undefined ? `.${decimal}` : ""}`;
-}
-
-function sanitizeWagerAmountEntry(value: string) {
-  const cleaned = value.replace(/[₦,\s]/g, "");
-  if (!cleaned) return "";
-  if (!/^\d*(\.\d{0,2})?$/.test(cleaned)) return null;
-  return cleaned;
-}
-
-function getWagerAmountError(amount: string, balance: number, requireBalance = true) {
-  if (!amount) return "Enter a wager amount.";
-  const numericAmount = toWagerAmountNumber(amount);
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return "Enter a valid amount greater than ₦0.";
-  if (numericAmount < MIN_WAGER_AMOUNT) return `Minimum wager is ${formatCurrency(MIN_WAGER_AMOUNT)}.`;
-  if (numericAmount > MAX_WAGER_AMOUNT) return `Maximum wager is ${formatCurrency(MAX_WAGER_AMOUNT)}.`;
-  if (requireBalance && numericAmount > balance) return "Insufficient funds for this wager amount.";
-  return null;
 }
 
 function drawWrappedText(
@@ -708,7 +674,7 @@ function WagerCard({
   const { yes, no } = getImpliedSplit(market.yes_odds, market.no_odds);
   const yesOdds = Number(market.yes_odds ?? 0);
   const noOdds = Number(market.no_odds ?? 0);
-  const numericAmount = toWagerAmountNumber(amount);
+  const numericAmount = parseWagerAmount(amount);
   const activeEmail = email ?? null;
   const amountError = getWagerAmountError(amount, walletBalance, Boolean(activeEmail));
   const showPickTypeChoice = isOptionPick;
@@ -738,7 +704,6 @@ function WagerCard({
     marketSubtitle: getMarketSubtitle(market),
     selection: picked,
     odds: pickedOdds,
-    pickType: pickType ?? (String(market.type ?? "") === "team_pick" ? "team" : "player"),
     eventName: getMarketMatch(market) || String(getMarketQuestion(market)),
     eventDate: typeof market.closes_at === "string" ? market.closes_at : undefined,
   } : null;
@@ -754,7 +719,7 @@ function WagerCard({
   }
 
   function handleAmountChange(value: string) {
-    const sanitized = sanitizeWagerAmountEntry(value);
+    const sanitized = sanitizeWagerAmountInput(value);
     if (sanitized === null) return;
     setAmount(sanitized);
   }
@@ -947,7 +912,7 @@ function WagerCard({
               required
               aria-invalid={Boolean(amountError)}
               placeholder="₦100"
-              value={formatWagerAmountInput(amount)}
+              value={formatAmountInputValue(amount)}
               onChange={(event) => handleAmountChange(event.target.value)}
               className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
             />
@@ -1187,14 +1152,14 @@ function BetSlip({
 }) {
   const { placeWager, loading: placing } = usePlaceWager();
   const [message, setMessage] = useState<string | null>(null);
-  const numericStake = toWagerAmountNumber(stake);
+  const numericStake = parseWagerAmount(stake);
   const combinedOdds = calculateCombinedOdds(selections);
   const potential = numericStake * combinedOdds;
   const stakeError = getWagerAmountError(stake, walletBalance, Boolean(email));
   const canSubmit = Boolean(email && selections.length > 0 && !stakeError && !placing);
 
   function handleStakeChange(value: string) {
-    const sanitized = sanitizeWagerAmountEntry(value);
+    const sanitized = sanitizeWagerAmountInput(value);
     if (sanitized === null) return;
     setStake(sanitized);
   }
@@ -1282,7 +1247,7 @@ function BetSlip({
             required
             aria-invalid={Boolean(stakeError)}
             placeholder="₦100"
-            value={formatWagerAmountInput(stake)}
+            value={formatAmountInputValue(stake)}
             onChange={(event) => handleStakeChange(event.target.value)}
             className="min-w-0 flex-1 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
           />
