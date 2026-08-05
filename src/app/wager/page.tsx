@@ -34,18 +34,6 @@ import {
   useWithdraw,
 } from "@/lib/hooks";
 
-// ─── MISSING CONSTANTS & HELPERS ADDED HERE ──────────────────────────────────
-const MIN_WAGER_AMOUNT = 100;
-const MAX_WAGER_AMOUNT = 1000000;
-
-function formatAmountInputValue(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
-  return String(value);
-}
-// ─────────────────────────────────────────────────────────────────────────────
-
 type CurrentUser = {
   id?: string | null;
   email?: string | null;
@@ -544,20 +532,33 @@ function formatTransactionAmount(amount: number) {
   return `${amount >= 0 ? "+" : "-"}${formatCurrency(absAmount)}`;
 }
 
+/**
+ * Parses and validates wager amount input.
+ * Takes raw input string/number, strips invalid characters,
+ * and returns a valid number for validation against min ₦100, max ₦1,000,000, and user's balance.
+ */
 function parseWagerAmount(value: string | number | null | undefined): number {
   if (value === null || value === undefined || value === "") {
     return 0;
   }
+  // Convert to string and strip non-numeric characters except decimal point
   const sanitized = String(value).replace(/[^0-9.]/g, "");
   const parsed = parseFloat(sanitized);
   return Number.isNaN(parsed) ? 0 : parsed;
 }
 
+/**
+ * Sanitizes wager amount input for display/validation.
+ * Returns the sanitized string or null if input should be rejected.
+ */
 function sanitizeWagerAmountInput(value: string): string | null {
+  // Allow empty string (user clearing the field)
   if (value === "") {
     return "";
   }
+  // Strip any character that's not a digit or decimal point
   const sanitized = value.replace(/[^0-9.]/g, "");
+  // Prevent multiple decimal points
   const parts = sanitized.split(".");
   if (parts.length > 2) {
     return parts[0] + "." + parts.slice(1).join("");
@@ -565,6 +566,10 @@ function sanitizeWagerAmountInput(value: string): string | null {
   return sanitized;
 }
 
+/**
+ * Validates wager amount against business rules.
+ * Returns an error message string if invalid, or null if valid.
+ */
 function getWagerAmountError(
   amount: string | number | null | undefined,
   walletBalance: number,
@@ -882,6 +887,7 @@ function WagerCard({
         )}
 
         {isOptionPick ? (
+          /* ── Option Pick UI (player / team / mvp / map / outcome / first_blood) ── */
           <div>
             <p className="fn-label mb-2">{pickConfig.prompt}</p>
             <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
@@ -919,6 +925,7 @@ function WagerCard({
             )}
           </div>
         ) : (
+          /* ── Binary YES / NO UI ── */
           <div>
             <ProbBar yes={yes} no={no} />
             <div className="mb-3 flex justify-between fn-label">
@@ -1126,6 +1133,7 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" />
       <div className="relative w-full max-w-lg overflow-hidden rounded-sm border border-fn-yellow/30 bg-fn-card shadow-2xl">
+        {/* Header */}
         <div className="flex items-center gap-2.5 border-b border-fn-gborder bg-fn-dark px-5 py-4">
           <AlertTriangle size={14} className="flex-shrink-0 text-fn-yellow animate-pulse" />
           <h2 className="font-display text-sm font-black uppercase tracking-[0.2em] text-fn-text">
@@ -1136,6 +1144,7 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
           </span>
         </div>
 
+        {/* Rules */}
         <div className="max-h-64 overflow-y-auto px-5 py-4 space-y-3">
           {WAGER_RULES.map((rule, i) => (
             <div key={i} className="flex gap-3">
@@ -1147,6 +1156,7 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
           ))}
         </div>
 
+        {/* Checkbox */}
         <div className="px-5 pb-2">
           <label className="flex items-start gap-3 cursor-pointer group">
             <div
@@ -1164,6 +1174,7 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
           </label>
         </div>
 
+        {/* Footer */}
         <div className="px-5 pb-5 pt-3 flex items-center gap-3">
           <Shield size={10} className="text-fn-muted flex-shrink-0" />
           <p className="text-[9px] text-fn-muted flex-1">Predict responsibly. Never wager more than you can afford to lose.</p>

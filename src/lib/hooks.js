@@ -1,35 +1,26 @@
 'use client';
 
+/**
+ * React hooks for data fetching from the Frag Naija API.
+ * All hooks return { data, loading, error } and re-fetch when filters change.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
-const BASE_URL = 'https://frag-naija-backend.onrender.com';
 
-function getAuthHeaders() {
-  const headers = { 'Content-Type': 'application/json' };
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('django_access_token');
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-  }
-  return headers;
-}
-
-function useFetch(endpoint, deps = [], options = {}) {
-  const { retries = 0, onRetryError } = options;
-  const [data, setData] = useState(null);
+function useFetch(url, deps = [], options = {}) {
+  const { 
+    retries = 0, 
+    onRetryError 
+  } = options;
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const url = endpoint ? `${BASE_URL}${endpoint}` : null;
+  const [error, setError]     = useState(null);
 
   const refetch = useCallback(async () => {
-    if (!url) {
-      setLoading(false);
-      return;
-    }
+    if (!url) return;
     setLoading(true);
     setError(null);
     
@@ -38,11 +29,11 @@ function useFetch(endpoint, deps = [], options = {}) {
       try {
         const res = await fetch(url, {
           credentials: 'include',
-          headers: getAuthHeaders(),
+          headers: { 'Content-Type': 'application/json' },
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: res.statusText }));
-          throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+          throw new Error(err.error || `HTTP ${res.status}`);
         }
         const json = await res.json();
         setData(json);
@@ -58,9 +49,12 @@ function useFetch(endpoint, deps = [], options = {}) {
     
     if (lastError) {
       setError(lastError);
-      if (onRetryError) onRetryError(lastError);
+      if (onRetryError) {
+        onRetryError(lastError);
+      }
     }
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, ...deps, retries, onRetryError]);
 
   useEffect(() => { refetch(); }, [refetch]);
@@ -68,88 +62,98 @@ function useFetch(endpoint, deps = [], options = {}) {
   return { data, loading, error, refetch };
 }
 
+// ─── Athletes ───────────────────────────────────────────────────────────────────────
+
 export function useAthletes(filters = {}) {
   const params = new URLSearchParams(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+    Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
   ).toString();
-  return useFetch(`/api/athletes/${params ? `?${params}` : ''}`);
+  return useFetch(`/api/athletes${params ? `?${params}` : ''}`);
 }
 
 export function useAthlete(id) {
-  return useFetch(id ? `/api/athletes/${id}/` : null);
+  return useFetch(id ? `/api/athletes/${id}` : null);
 }
 
-export function useTeams(filters = {}) {
-  const params = new URLSearchParams(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
-  ).toString();
-  return useFetch(`/api/teams/${params ? `?${params}` : ''}`);
+// ─── Teams ──────────────────────────────────────────────────────────────────────────
+
+export function useTeams() {
+  return useFetch('/api/teams');
 }
 
 export function useTeam(id) {
-  return useFetch(id ? `/api/teams/${id}/` : null);
+  return useFetch(id ? `/api/teams/${id}` : null);
 }
+
+// ─── Transfers ────────────────────────────────────────────────────────────────────
 
 export function useTransfers(filters = {}) {
   const params = new URLSearchParams(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+    Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
   ).toString();
-  return useFetch(`/api/transfers/${params ? `?${params}` : ''}`);
+  return useFetch(`/api/transfers${params ? `?${params}` : ''}`);
 }
+
+// ─── Tournaments ─────────────────────────────────────────────────────────────────
 
 export function useTournaments(filters = {}) {
   const params = new URLSearchParams(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+    Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
   ).toString();
-  return useFetch(`/api/tournaments/${params ? `?${params}` : ''}`);
+  return useFetch(`/api/tournaments${params ? `?${params}` : ''}`);
 }
 
+// ─── Wagers ────────────────────────────────────────────────────────────────────────
+
 export function useActiveWagers() {
-  return useFetch('/api/wagers/?status=Active');
+  return useFetch('/api/wagers/active');
 }
 
 export function useWager(id) {
-  return useFetch(id ? `/api/wagers/${id}/` : null);
+  return useFetch(id ? `/api/wagers/${id}` : null);
 }
 
 export function useMyWagers() {
-  return useFetch('/api/wagers/');
+  return useFetch('/api/wagers/me');
 }
 
 export function useWalletTransactions(limit = 10) {
-  return useFetch(`/api/transactions/?limit=${limit}`, [limit]);
+  return useFetch(`/api/wallet/transactions?limit=${limit}`, [limit]);
 }
+
 
 export function useHighlights(filters = {}) {
   const params = new URLSearchParams(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+    Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
   ).toString();
-  return useFetch(`/api/highlights/${params ? `?${params}` : ''}`);
+  return useFetch(`/api/highlights${params ? `?${params}` : ''}`);
 }
 
+// ─── Auth ──────────────────────────────────────────────────────────────────────────
+
 export function useMe() {
-  return useFetch('/api/auth/me/', [], { retries: 1 });
+  return useFetch('/api/auth/me', [], { retries: 1 });
 }
 
 export function useBanks() {
-  return useFetch('/api/bank-accounts/');
+  return useFetch('/api/wallet/banks');
 }
 
 export function useWithdraw() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error,   setError  ] = useState(null);
 
   async function withdraw(body) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE_URL}/api/withdrawals/`, {
+      const res = await fetch('/api/wallet/withdraw', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error || 'Withdrawal failed');
+      if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
       return data;
     } catch (e) {
       setError(e.message);
@@ -162,21 +166,29 @@ export function useWithdraw() {
   return { withdraw, loading, error };
 }
 
+// ─── Wager actions ───────────────────────────────────────────────────────────
+
+/**
+ * Returns a function to call the Paystack payment initializer.
+ * Usage:
+ *   const { placeWager, loading, error } = usePlaceWager();
+ *   const { authorization_url } = await placeWager({ wager_id, selection, amount, email });
+ */
 export function usePlaceWager() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error,   setError  ] = useState(null);
 
   async function placeWager(body) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE_URL}/api/wager-bets/`, {
+      const res = await fetch('/api/wager/pay', {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error || 'Wager failed');
+      if (!res.ok) throw new Error(data.error || 'Payment failed');
       return data;
     } catch (e) {
       setError(e.message);
@@ -189,17 +201,16 @@ export function usePlaceWager() {
   return { placeWager, loading, error };
 }
 
-export function useNews(filters = {}) {
-  const params = new URLSearchParams(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
-  ).toString();
-  return useFetch(`/api/news/${params ? `?${params}` : ''}`);
-}
+// ─── News / Predictors / Featured ────────────────────────────────────────────
 
-export function useFeatured() {
-  return useFetch('/api/homepage-featured/');
+export function useNews() {
+  return useFetch('/api/news');
 }
 
 export function usePredictors() {
-  return { data: [], loading: false, error: null };
+  return useFetch('/api/predictors');
+}
+
+export function useFeatured() {
+  return useFetch('/api/featured');
 }
