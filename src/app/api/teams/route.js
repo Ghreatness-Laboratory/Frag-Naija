@@ -1,28 +1,33 @@
 import { NextResponse } from 'next/server';
-import { getTeams, createTeam } from '@/lib/db';
-import { checkAdmin } from '@/lib/checkAdmin';
+
+const DJANGO_API_URL = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://frag-naija-backend.onrender.com';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const data = await getTeams({ game_slug: searchParams.get('game_slug') || '' });
-    return NextResponse.json(data);
-  } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
-  }
-}
-
-export async function POST(request) {
-  const authErr = await checkAdmin();
-  if (authErr) return authErr;
-
-  try {
-    const body = await request.json();
-    const data = await createTeam(body);
-    return NextResponse.json(data, { status: 201 });
-  } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    const game_slug = searchParams.get('game_slug') || '';
+    
+    const params = new URLSearchParams();
+    if (game_slug) params.append('game_slug', game_slug);
+    
+    const djangoUrl = `${DJANGO_API_URL}/api/teams/?${params.toString()}`;
+    
+    const response = await fetch(djangoUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Django API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return NextResponse.json(data.results || data);
+  } catch (error) {
+    console.error('Teams API error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
