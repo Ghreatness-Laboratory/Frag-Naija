@@ -1,16 +1,11 @@
 'use client';
 
-/**
- * React hooks for data fetching from the Frag Naija Django API.
- */
-
 import { useState, useEffect, useCallback } from 'react';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
-const BASE_URL = process.env.NEXT_PUBLIC_DJANGO_API_URL || 'https://frag-naija-backend.onrender.com';
+const BASE_URL = 'https://frag-naija-backend.onrender.com';
 
-// Helper to get auth headers for protected Django endpoints
 function getAuthHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   if (typeof window !== 'undefined') {
@@ -66,15 +61,12 @@ function useFetch(endpoint, deps = [], options = {}) {
       if (onRetryError) onRetryError(lastError);
     }
     setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, ...deps, retries, onRetryError]);
 
   useEffect(() => { refetch(); }, [refetch]);
 
   return { data, loading, error, refetch };
 }
-
-// ─── Athletes ───────────────────────────────────────────────────────────────────────
 
 export function useAthletes(filters = {}) {
   const params = new URLSearchParams(
@@ -87,8 +79,6 @@ export function useAthlete(id) {
   return useFetch(id ? `/api/athletes/${id}/` : null);
 }
 
-// ─── Teams ──────────────────────────────────────────────────────────────────────────
-
 export function useTeams(filters = {}) {
   const params = new URLSearchParams(
     Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
@@ -100,8 +90,6 @@ export function useTeam(id) {
   return useFetch(id ? `/api/teams/${id}/` : null);
 }
 
-// ─── Transfers ────────────────────────────────────────────────────────────────────
-
 export function useTransfers(filters = {}) {
   const params = new URLSearchParams(
     Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
@@ -109,16 +97,12 @@ export function useTransfers(filters = {}) {
   return useFetch(`/api/transfers/${params ? `?${params}` : ''}`);
 }
 
-// ─── Tournaments ─────────────────────────────────────────────────────────────────
-
 export function useTournaments(filters = {}) {
   const params = new URLSearchParams(
     Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
   ).toString();
   return useFetch(`/api/tournaments/${params ? `?${params}` : ''}`);
 }
-
-// ─── Wagers ────────────────────────────────────────────────────────────────────────
 
 export function useActiveWagers() {
   return useFetch('/api/wagers/?status=Active');
@@ -129,7 +113,7 @@ export function useWager(id) {
 }
 
 export function useMyWagers() {
-  return useFetch('/api/wagers/'); // Django will filter by authenticated user
+  return useFetch('/api/wagers/');
 }
 
 export function useWalletTransactions(limit = 10) {
@@ -142,8 +126,6 @@ export function useHighlights(filters = {}) {
   ).toString();
   return useFetch(`/api/highlights/${params ? `?${params}` : ''}`);
 }
-
-// ─── Auth ──────────────────────────────────────────────────────────────────────────
 
 export function useMe() {
   return useFetch('/api/auth/me/', [], { retries: 1 });
@@ -180,8 +162,6 @@ export function useWithdraw() {
   return { withdraw, loading, error };
 }
 
-// ─── Wager actions ───────────────────────────────────────────────────────────
-
 export function usePlaceWager() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -190,7 +170,6 @@ export function usePlaceWager() {
     setLoading(true);
     setError(null);
     try {
-      // Points to Django's wager-bets endpoint
       const res = await fetch(`${BASE_URL}/api/wager-bets/`, {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -210,8 +189,6 @@ export function usePlaceWager() {
   return { placeWager, loading, error };
 }
 
-// ─── News / Featured / Predictors ────────────────────────────────────────────
-
 export function useNews(filters = {}) {
   const params = new URLSearchParams(
     Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== null && v !== ''))
@@ -223,7 +200,6 @@ export function useFeatured() {
   return useFetch('/api/homepage-featured/');
 }
 
-// ─── Dummy Predictors Hook (Prevents crash until backend is fully linked) ────
 export function usePredictors() {
   return { data: [], loading: false, error: null };
 }
