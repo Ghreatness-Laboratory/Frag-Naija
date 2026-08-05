@@ -210,7 +210,7 @@ export function usePlaceWager() {
   return { placeWager, loading, error };
 }
 
-// ─── News / Featured ────────────────────────────────────────────
+// ─── News / Featured / Predictors ────────────────────────────────────────────
 
 export function useNews(filters = {}) {
   const params = new URLSearchParams(
@@ -221,4 +221,9 @@ export function useNews(filters = {}) {
 
 export function useFeatured() {
   return useFetch('/api/homepage-featured/');
+}
+
+// ─── Dummy Predictors Hook (Prevents crash until backend is fully linked) ────
+export function usePredictors() {
+  return { data: [], loading: false, error: null };
 }
