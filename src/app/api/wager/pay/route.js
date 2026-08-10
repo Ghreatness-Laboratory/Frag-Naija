@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initializeTransaction, generateReference } from '@/lib/paystack';
 import { getWagerForPlacement, getUserIdByEmail, createWagerBet } from '@/features/wagers/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from '@/features/wagers/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,12 +32,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Wager amount may include at most 2 decimal places' }, { status: 400 });
     }
 
-    if (numericAmount < 100) {
-      return NextResponse.json({ error: 'Minimum wager amount is ₦100' }, { status: 400 });
+    if (numericAmount < MIN_WAGER_AMOUNT) {
+      return NextResponse.json({ error: `Minimum wager amount is ₦${MIN_WAGER_AMOUNT.toLocaleString('en-NG')}` }, { status: 400 });
     }
 
-    if (numericAmount > 1000000) {
-      return NextResponse.json({ error: 'Maximum wager amount is ₦1,000,000' }, { status: 400 });
+    if (numericAmount > MAX_WAGER_AMOUNT) {
+      return NextResponse.json({ error: `Maximum wager amount is ₦${MAX_WAGER_AMOUNT.toLocaleString('en-NG')}` }, { status: 400 });
     }
 
     const seenWagers = new Set();
