@@ -215,7 +215,7 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
   );
 }
 
-const AthleteCard = memo(function AthleteCard({ athlete, rank, primary, priority = false }: { athlete: Athlete; rank: number; primary: string; priority?: boolean }) {
+const AthleteCard = memo(function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: number; primary: string }) {
   const game = GAMES.find((item) => item.slug === athlete.game_slug);
   const rating = Number(athlete.overall_rating ?? athlete.rating ?? 0);
 

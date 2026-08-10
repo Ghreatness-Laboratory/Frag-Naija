@@ -4,12 +4,33 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
+  CalendarDays,
   ChevronRight,
+  Crosshair,
   Gamepad2,
+  Radio,
+  ShieldCheck,
+  Trophy,
+  Users,
+  Zap,
 } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
+import { getGameContent } from '@/lib/game-content';
 import { useGame } from '@/context/GameContext';
+import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 
+const PUBG_MAP_FLOW = [
+  { map: 'Erangel', phase: 'Safe rotation', detail: 'Prioritize bridge control, vehicle timing, and late-circle ridge holds.' },
+  { map: 'Miramar', phase: 'Long sightlines', detail: 'Scout compounds early and lean on DMR pressure before committing utilities.' },
+  { map: 'Sanhok', phase: 'Fast collapse', detail: 'Play compact, trade instantly, and avoid split looting after the first zone.' },
+];
+
+const PUBG_LINKS = [
+  { label: 'Scout Operators', href: '/athletes', eyebrow: 'Roster', copy: 'Review featured PUBG Mobile athletes and compare player cards.', icon: Crosshair },
+  { label: 'Rank Squads', href: '/teams', eyebrow: 'Teams', copy: 'Track top squads, form, and power rankings for the current meta.', icon: Users },
+  { label: 'Drop Calendar', href: '/tournaments', eyebrow: 'Events', copy: 'Follow upcoming tournaments, scrims, and national championship drops.', icon: CalendarDays },
+  { label: 'Live Wagers', href: '/wager', eyebrow: 'Markets', copy: 'Check active Frag Naija wager markets for featured matchups.', icon: Zap },
+];
 
 function GenericHub({ game }: { game: Game }) {
   const links = [
@@ -146,21 +167,27 @@ function PubgMobileHub({ game }: { game: Game }) {
             </div>
             <Link href="/athletes" className="fn-btn-outline inline-flex items-center gap-2 text-[10px]">View roster <ChevronRight size={11} /></Link>
           </div>
-          <div className="flex gap-6 overflow-x-auto pb-3">
-            {athletes.map((athlete, index) => (
-              <Link key={athlete.id} href={`/athletes/${athlete.id}`} className="group block">
-                <PlayerCardTemplate
-                  athlete={athlete}
-                  rating={athlete.overall_rating}
-                  primary={primary}
-                  gameName={game.shortName.toUpperCase()}
-                  rank={index + 1}
-                  variant="showcase"
-                  className="mx-auto"
-                />
-              </Link>
-            ))}
-          </div>
+          {athletes.length === 0 ? (
+            <div className="rounded-sm border border-fn-gborder bg-fn-card p-6 text-xs text-fn-muted">
+              No featured athlete right now. Check back after the roster is updated.
+            </div>
+          ) : (
+            <div className="flex gap-6 overflow-x-auto pb-3">
+              {athletes.map((athlete, index) => (
+                <Link key={athlete.id} href={`/athletes/${athlete.id}`} className="group block">
+                  <PlayerCardTemplate
+                    athlete={athlete}
+                    rating={athlete.overall_rating}
+                    primary={primary}
+                    gameName={game.shortName.toUpperCase()}
+                    rank={index + 1}
+                    variant="showcase"
+                    className="mx-auto"
+                  />
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         <aside>
@@ -193,5 +220,5 @@ export default function GameHubPage() {
 
   useEffect(() => { if (game) setSelectedGame(game); }, [game, setSelectedGame]);
   if (!game) return <main className="min-h-screen p-8 text-fn-muted">Game not found.</main>;
-  return <GenericHub game={game} />;
+  return game.slug === 'pubg-mobile' ? <PubgMobileHub game={game} /> : <GenericHub game={game} />;
 }

@@ -33,6 +33,8 @@ import {
   useWalletTransactions,
   useWithdraw,
 } from "@/lib/hooks";
+import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
+import { publishBetSlipCount } from "@/components/layout/BottomNav";
 
 type CurrentUser = {
   id?: string | null;
@@ -608,12 +610,12 @@ function getWagerAmountError(
     return "Enter a valid wager amount.";
   }
   
-  if (numericAmount < 100) {
-    return "Minimum wager amount is ₦100.";
+  if (numericAmount < MIN_WAGER_AMOUNT) {
+    return `Minimum wager amount is ${formatCurrency(MIN_WAGER_AMOUNT)}.`;
   }
   
-  if (numericAmount > 1000000) {
-    return "Maximum wager amount is ₦1,000,000.";
+  if (numericAmount > MAX_WAGER_AMOUNT) {
+    return `Maximum wager amount is ${formatCurrency(MAX_WAGER_AMOUNT)}.`;
   }
   
   if (numericAmount > walletBalance) {
@@ -1458,6 +1460,12 @@ function WagerPageContent() {
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
   const username = getUsername(currentUser);
+
+  useEffect(() => {
+    publishBetSlipCount(slipSelections.length);
+
+    return () => publishBetSlipCount(0);
+  }, [slipSelections.length]);
 
   function addToSlip(selection: SlipSelection) {
     if (slipSelections.some((item) => item.key === selection.key)) {
