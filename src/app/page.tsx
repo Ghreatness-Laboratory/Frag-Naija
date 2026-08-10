@@ -607,7 +607,7 @@ export default function HomePage() {
       {/* Featured Athletes */}
       {showAthletes && (
         <FeaturedAthletes
-          athletes={gameAthletes}
+          athletes={standardGameAthletes}
           selectedGame={selectedGame}
           primary={primary}
           showFireIcon={isFF}
