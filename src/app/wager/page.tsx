@@ -548,6 +548,29 @@ function parseWagerAmount(value: string | number | null | undefined): number {
 }
 
 /**
+ * Formats a raw numeric value for display in the amount input field.
+ * Takes the raw input value and returns a formatted display string with
+ * Naira symbol and thousand separators (e.g., 100000 → ₦100,000).
+ * This is for display only - the underlying numeric value is preserved for validation.
+ */
+function formatAmountInputValue(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+  const numericValue = parseWagerAmount(value);
+  if (numericValue === 0) {
+    return "";
+  }
+  // Format with thousand separators and Naira symbol
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numericValue);
+}
+
+/**
  * Sanitizes wager amount input for display/validation.
  * Returns the sanitized string or null if input should be rejected.
  */
