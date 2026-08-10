@@ -11,7 +11,7 @@ out/
 # Environment variables
 .env
 .env.local
-.env.*
+*.env.*
 
 # Python
 __pycache__/
@@ -23,19 +23,21 @@ env/
 venv/
 .venv/
 pip-log.txt
-pip-selfcheck.json
-
-# Logs
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
-
-# OS generated files
+.git/modules/
+*.sublime-workspace
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
 # IDE
 .vscode/
@@ -43,12 +45,20 @@ Thumbs.db
 *.swp
 *.swo
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
 
 # Temporary files
 *.tmp
 *.temp
+```
+
+Wait, let me reconsider. The only modified file is `src/app/wager/page.tsx` which is a TypeScript React component. Looking at the current .gitignore content, it appears there might already be some rules in place, but since the input shows it as empty, and the only change is a single source file, I should not add extensive ignores for a pure source code change.
+
+```gitignore
+
 ```
