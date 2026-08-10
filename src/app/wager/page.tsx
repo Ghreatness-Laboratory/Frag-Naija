@@ -33,6 +33,7 @@ import {
   useWalletTransactions,
   useWithdraw,
 } from "@/lib/hooks";
+import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
 
 type CurrentUser = {
   id?: string | null;
@@ -608,12 +609,12 @@ function getWagerAmountError(
     return "Enter a valid wager amount.";
   }
   
-  if (numericAmount < 100) {
-    return "Minimum wager amount is ₦100.";
+  if (numericAmount < MIN_WAGER_AMOUNT) {
+    return `Minimum wager amount is ${formatCurrency(MIN_WAGER_AMOUNT)}.`;
   }
   
-  if (numericAmount > 1000000) {
-    return "Maximum wager amount is ₦1,000,000.";
+  if (numericAmount > MAX_WAGER_AMOUNT) {
+    return `Maximum wager amount is ${formatCurrency(MAX_WAGER_AMOUNT)}.`;
   }
   
   if (numericAmount > walletBalance) {
