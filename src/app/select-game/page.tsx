@@ -59,8 +59,6 @@ function GameCard({
   isSelected: boolean;
   onSelect: (g: Game) => void;
 }) {
-  const isPubg = game.slug === 'pubg-mobile';
-
   return (
     <button
       onClick={() => game.available && onSelect(game)}
@@ -70,12 +68,7 @@ function GameCard({
       className={[
         'group relative flex flex-col items-center gap-3 rounded-sm border p-4 text-left transition-all duration-300 sm:p-5',
         game.available ? 'cursor-pointer' : 'cursor-not-allowed',
-        // Base state: subtle green-tinted border for PUBG, standard for others
-        !isSelected && isPubg
-          ? 'border-fn-green/20 bg-fn-green/5'
-          : !isSelected
-          ? 'border-fn-gborder bg-fn-card'
-          : '',
+        !isSelected ? 'border-fn-gborder bg-fn-card' : '',
         !game.available ? 'opacity-45' : '',
       ].join(' ')}
       style={
@@ -85,8 +78,6 @@ function GameCard({
               background: game.colors.cardBg,
               boxShadow: `0 0 24px ${game.colors.glow}, 0 0 48px ${game.colors.glow.replace('0.35', '0.08')}`,
             }
-          : isPubg && !isSelected
-          ? { boxShadow: '0 0 12px rgba(0,255,65,0.08)' }
           : {}
       }
     >
