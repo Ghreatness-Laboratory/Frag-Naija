@@ -93,7 +93,7 @@ const TICKER_ITEMS: Record<string, string[]> = {
     "FRAG NAIJA NIGERIA'S PREMIERE ESPORTS PLATFORM",
   ],
   default: [
-    "PUBG NATIONAL CHAMPIONSHIP 2026 - REGISTRATION OPEN",
+    "NATIONAL ESPORTS CHAMPIONSHIP 2026 - REGISTRATION OPEN",
     "TRANSFER WINDOW CLOSES IN 8 DAYS",
     "NEW WAGER MARKETS ADDED - PLACE YOUR BET NOW",
     "FRAG NAIJA - NIGERIA'S PREMIERE ESPORTS PLATFORM",
@@ -275,6 +275,53 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
       </div>
       <div className="absolute bottom-0 left-0 h-0.5 w-full origin-left scale-x-0 transition-transform group-hover:scale-x-100" style={{ background: primary }} />
     </motion.div>
+  );
+}
+
+function FeaturedAthletes({
+  athletes,
+  selectedGame,
+  primary,
+  showFireIcon,
+  onViewAll,
+}: {
+  athletes: Athlete[];
+  selectedGame: ReturnType<typeof useGame>["selectedGame"];
+  primary: string;
+  showFireIcon: boolean;
+  onViewAll: () => void;
+}) {
+  return (
+    <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="fn-label mb-1 flex items-center gap-1.5">
+            {showFireIcon && <Flame size={9} style={{ color: primary }} />}
+            <ShieldCheck size={9} style={{ color: primary }} /> ROSTER
+          </p>
+          <h2 className="font-display text-2xl font-black uppercase text-fn-text">FEATURED ATHLETES</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onViewAll}
+          className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
+          style={{ borderColor: `${primary}30`, color: primary }}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = `${primary}10`)}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+        >
+          VIEW ALL <ChevronRight size={11} />
+        </button>
+      </div>
+      {athletes.length === 0 ? (
+        <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet — add them from the admin panel.'}</p>
+      ) : (
+        <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
+          {athletes.map((athlete, index) => (
+            <AthleteCard key={athlete.id} athlete={athlete} rank={index} primary={primary} />
+          ))}
+        </motion.div>
+      )}
+    </motion.section>
   );
 }
 
@@ -558,37 +605,16 @@ export default function HomePage() {
         </motion.div>
       </motion.section>}
 
-      {/* Top Athletes */}
-      {showAthletes && <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="fn-label mb-1 flex items-center gap-1.5">
-              {isFF && <Flame size={9} style={{ color: primary }} />}
-              <ShieldCheck size={9} style={{ color: primary }} /> ROSTER
-            </p>
-            <h2 className="font-display text-2xl font-black uppercase text-fn-text">TOP ATHLETES</h2>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsScoutPromptOpen(true)}
-            className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
-            style={{ borderColor: `${primary}30`, color: primary }}
-            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = `${primary}10`)}
-            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
-          >
-            VIEW ALL <ChevronRight size={11} />
-          </button>
-        </div>
-        {standardGameAthletes.length === 0 ? (
-          <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet — add them from the admin panel.'}</p>
-        ) : (
-          <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
-            {standardGameAthletes.map((a, i) => (
-              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
-            ))}
-          </motion.div>
-        )}
-      </motion.section>}
+      {/* Featured Athletes */}
+      {showAthletes && (
+        <FeaturedAthletes
+          athletes={standardGameAthletes}
+          selectedGame={selectedGame}
+          primary={primary}
+          showFireIcon={isFF}
+          onViewAll={() => setIsScoutPromptOpen(true)}
+        />
+      )}
 
       {/* Wager Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder"
