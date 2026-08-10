@@ -56,6 +56,7 @@ export default function AdminNewsPage() {
       const url = editing ? `/api/news/${editing.id}` : '/api/news';
       const res = await fetch(url, {
         method: editing ? 'PUT' : 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
@@ -72,7 +73,7 @@ export default function AdminNewsPage() {
 
   async function handleDelete(row: Record<string, unknown>) {
     if (!confirm(`Delete "${row.title}"?`)) return;
-    await fetch(`/api/news/${row.id}`, { method: 'DELETE' });
+    await fetch(`/api/news/${row.id}`, { method: 'DELETE', credentials: 'include' });
     load();
   }
 

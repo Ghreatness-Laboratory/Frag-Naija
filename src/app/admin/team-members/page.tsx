@@ -38,7 +38,7 @@ export default function AdminTeamMembersPage() {
     setForm(Object.fromEntries(Object.keys(EMPTY).map((key) => [key, String(row[key] ?? '')])) as typeof EMPTY);
     setPhotoFile(null); setError(''); setOpen(true);
   }
-  async function remove(row: Row) { if (!confirm(`Delete ${row.name}?`)) return; await fetch(`/api/team-members/${row.id}`, { method: 'DELETE' }); load(); }
+  async function remove(row: Row) { if (!confirm(`Delete ${row.name}?`)) return; await fetch(`/api/team-members/${row.id}`, { method: 'DELETE', credentials: 'include' }); load(); }
   const f = (key: Key) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   async function uploadPhoto() {
@@ -57,7 +57,7 @@ export default function AdminTeamMembersPage() {
     try {
       const photoUrl = await uploadPhoto();
       const url = editing ? `/api/team-members/${editing.id}` : '/api/team-members';
-      const res = await fetch(url, { method: editing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, photo_url: photoUrl ?? form.photo_url }) });
+      const res = await fetch(url, { method: editing ? 'PUT' : 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, photo_url: photoUrl ?? form.photo_url }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
       setOpen(false); load();

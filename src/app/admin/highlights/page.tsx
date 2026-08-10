@@ -92,7 +92,7 @@ function HighlightsContent() {
       const body = { ...form, featured: form.featured === 'true', ...(thumbUrl && { thumbnail: thumbUrl }) };
       const url    = editing ? `/api/highlights/${editing.id}` : '/api/highlights';
       const method = editing ? 'PUT' : 'POST';
-      const res  = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res  = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setOpen(false); load();
@@ -102,7 +102,7 @@ function HighlightsContent() {
 
   async function handleDelete(row: Record<string, unknown>) {
     if (!confirm(`Delete "${row.title}"?`)) return;
-    await fetch(`/api/highlights/${row.id}`, { method: 'DELETE' });
+    await fetch(`/api/highlights/${row.id}`, { method: 'DELETE', credentials: 'include' });
     load();
   }
 

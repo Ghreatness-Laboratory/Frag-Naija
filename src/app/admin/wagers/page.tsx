@@ -131,7 +131,7 @@ function AdminWagersContent() {
 
       const url    = editing ? `/api/wagers/${editing.id}` : '/api/wagers';
       const method = editing ? 'PUT' : 'POST';
-      const res  = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res  = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setOpen(false); load();
@@ -140,7 +140,7 @@ function AdminWagersContent() {
   }
 
   async function toggleHot(row: Record<string, unknown>) {
-    await fetch(`/api/wagers/${row.id}/hot`, { method: 'PATCH' });
+    await fetch(`/api/wagers/${row.id}/hot`, { method: 'PATCH', credentials: 'include' });
     load();
   }
 
@@ -160,6 +160,7 @@ function AdminWagersContent() {
     setSaving(true);
     await fetch(`/api/wagers/${settleId}/settle`, {
       method: 'PATCH',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ outcome }),
     });
@@ -168,7 +169,7 @@ function AdminWagersContent() {
 
   async function handleDelete(row: Record<string, unknown>) {
     if (!confirm('Delete this wager? (Only works if no bets placed)')) return;
-    const res = await fetch(`/api/wagers/${row.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/wagers/${row.id}`, { method: 'DELETE', credentials: 'include' });
     if (!res.ok) { const d = await res.json(); alert(d.error); return; }
     load();
   }

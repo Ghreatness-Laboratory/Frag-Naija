@@ -111,6 +111,7 @@ function TeamsContent() {
       const url = editing ? `/api/teams/${editing.id}` : '/api/teams';
       const res = await fetch(url, {
         method: editing ? 'PUT' : 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -127,7 +128,7 @@ function TeamsContent() {
 
   async function handleDelete(row: Record<string, unknown>) {
     if (!confirm(`Delete ${row.name}?`)) return;
-    await fetch(`/api/teams/${row.id}`, { method: 'DELETE' });
+    await fetch(`/api/teams/${row.id}`, { method: 'DELETE', credentials: 'include' });
     load();
   }
 
