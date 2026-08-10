@@ -33,6 +33,7 @@ import {
   useWalletTransactions,
   useWithdraw,
 } from "@/lib/hooks";
+import { publishBetSlipCount } from "@/components/layout/BottomNav";
 import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
 
 type CurrentUser = {
