@@ -307,6 +307,7 @@ function AthletesContent() {
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
         method: editing ? 'PUT' : 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -323,7 +324,7 @@ function AthletesContent() {
 
   async function handleDelete(row: Record<string, unknown>) {
     if (!confirm(`Delete ${row.name}?`)) return;
-    await fetch(`/api/athletes/${row.id}`, { method: 'DELETE' });
+    await fetch(`/api/athletes/${row.id}`, { method: 'DELETE', credentials: 'include' });
     load();
   }
 
