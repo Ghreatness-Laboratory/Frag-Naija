@@ -418,7 +418,6 @@ export default function HomePage() {
     const icons = (athleteSource as Athlete[]).filter((athlete) => Boolean(athlete.is_icon));
     return selectedGame ? icons.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6) : icons.slice(0, 6);
   }, [athleteSource, selectedGame]);
-  const standardGameAthletes = gameAthletes;
   const teams: Team[] = useMemo(() => selectedGame
     ? teamSource.filter((team) => team.game_slug === selectedGame.slug).slice(0, 4)
     : (featuredTeamIds.length && allTeams.length ? pickByIds(allTeams, featuredTeamIds) : teamSource.slice(0, 4)), [allTeams, featuredTeamIds, selectedGame, teamSource]);
