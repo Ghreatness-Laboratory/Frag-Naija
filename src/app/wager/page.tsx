@@ -1460,6 +1460,12 @@ function WagerPageContent() {
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
   const username = getUsername(currentUser);
 
+  useEffect(() => {
+    publishBetSlipCount(slipSelections.length);
+
+    return () => publishBetSlipCount(0);
+  }, [slipSelections.length]);
+
   function addToSlip(selection: SlipSelection) {
     if (slipSelections.some((item) => item.key === selection.key)) {
       return "Duplicate selection: this pick is already in your slip.";
