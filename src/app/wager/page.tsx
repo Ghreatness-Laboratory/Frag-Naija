@@ -33,7 +33,7 @@ import {
   useWalletTransactions,
   useWithdraw,
 } from "@/lib/hooks";
-import { publishBetSlipCount } from "@/components/layout/BottomNav";
+import { publishWagerCount } from "@/components/layout/BottomNav";
 import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
 
 type CurrentUser = {
@@ -807,7 +807,7 @@ function WagerCard({
       return;
     }
     const error = onAddToSlip(currentSelection);
-    setMessage(error || "Selection added to bet slip.");
+    setMessage(error || "Selection added to wager.");
     if (!error) setPicked(null);
   }
 
@@ -818,7 +818,7 @@ function WagerCard({
   }
 
   async function handlePlaceWager() {
-    if (!activeEmail) { setMessage("Sign in first to place a wager."); return; }
+    if (!activeEmail) { window.location.href = "/login?next=/wager"; return; }
     if (!picked) { setMessage(isOptionPick ? `Choose a ${pickConfig.badge.toLowerCase()} option before placing a wager.` : "Choose YES or NO before placing a wager."); return; }
     if (showPickTypeChoice && !pickType) { setMessage("Choose Player Pick or Team Pick before placing this wager."); return; }
     if (amountError) { setMessage(amountError); return; }
@@ -1222,7 +1222,7 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
   );
 }
 
-function BetSlip({
+function WagerPanel({
   selections,
   stake,
   setStake,
@@ -1258,13 +1258,13 @@ function BetSlip({
   }
 
   async function submitSlip() {
-    if (!email) { setMessage("Sign in first to place this slip."); return; }
-    if (!selections.length) { setMessage("Add at least one selection to your slip."); return; }
+    if (!email) { window.location.href = "/login?next=/wager"; return; }
+    if (!selections.length) { setMessage("Add at least one selection to your wager."); return; }
     if (stakeError) { setMessage(stakeError); return; }
 
     const marketIds = selections.map((item) => String(item.wagerId));
     if (new Set(marketIds).size !== marketIds.length) {
-      setMessage("Conflicting slip: only one selection is allowed from each market.");
+      setMessage("Conflicting wager: only one selection is allowed from each market.");
       return;
     }
 
@@ -1293,14 +1293,14 @@ function BetSlip({
         window.location.href = result.authorization_url;
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to place slip.");
+      setMessage(error instanceof Error ? error.message : "Unable to place wager.");
     }
   }
 
   return (
     <div className="sticky top-20 rounded-sm border border-fn-gborder bg-fn-card p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="fn-label text-fn-text">BET SLIP</span>
+        <span className="fn-label text-fn-text">WAGER</span>
         <span className="rounded-sm border border-fn-green/30 bg-fn-green/10 px-2 py-0.5 text-[8px] font-bold text-fn-green">
           {selections.length} PICK{selections.length === 1 ? "" : "S"}
         </span>
@@ -1308,7 +1308,7 @@ function BetSlip({
 
       {selections.length === 0 ? (
         <div className="rounded-sm border border-dashed border-fn-gborder bg-fn-dark p-4 text-center text-[10px] text-fn-muted">
-          Add picks from live markets to build an optional accumulator. Single-pick slips work too.
+          Add picks from live markets to build an optional accumulator. Single-pick wagers work too.
         </div>
       ) : (
         <div className="space-y-2">
@@ -1462,9 +1462,9 @@ function WagerPageContent() {
   const username = getUsername(currentUser);
 
   useEffect(() => {
-    publishBetSlipCount(slipSelections.length);
+    publishWagerCount(slipSelections.length);
 
-    return () => publishBetSlipCount(0);
+    return () => publishWagerCount(0);
   }, [slipSelections.length]);
 
   function addToSlip(selection: SlipSelection) {
@@ -1651,7 +1651,7 @@ function WagerPageContent() {
           </div>
 
           <div className="space-y-4 xl:col-span-1">
-            <BetSlip
+            <WagerPanel
               selections={slipSelections}
               stake={slipStake}
               setStake={setSlipStake}

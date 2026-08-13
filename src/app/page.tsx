@@ -1,5 +1,5 @@
 "use client";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -113,6 +113,29 @@ const cardStagger = {
     transition: { staggerChildren: 0.08 },
   },
 };
+
+function CarouselRail({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const railRef = useRef<HTMLDivElement | null>(null);
+  const scrollByPage = (direction: -1 | 1) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    rail.scrollBy({ left: direction * Math.max(280, rail.clientWidth * 0.85), behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative">
+      <div ref={railRef} className={`flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [-webkit-overflow-scrolling:touch] ${className}`}>
+        {children}
+      </div>
+      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-10 bg-gradient-to-r from-fn-black to-transparent lg:block" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-10 bg-gradient-to-l from-fn-black to-transparent lg:block" />
+      <div className="mt-3 hidden justify-end gap-2 lg:flex">
+        <button type="button" onClick={() => scrollByPage(-1)} className="rounded-sm border border-fn-gborder px-3 py-1 text-[10px] font-black uppercase tracking-widest text-fn-muted transition-all hover:border-fn-green hover:text-fn-green">← Prev</button>
+        <button type="button" onClick={() => scrollByPage(1)} className="rounded-sm border border-fn-gborder px-3 py-1 text-[10px] font-black uppercase tracking-widest text-fn-muted transition-all hover:border-fn-green hover:text-fn-green">Next →</button>
+      </div>
+    </div>
+  );
+}
 
 function parseStat(value: string) {
   const numeric = Number(value.replace(/[^0-9.]/g, ""));
@@ -654,15 +677,17 @@ export default function HomePage() {
           <Link href="/shop" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW SHOP <ChevronRight size={11} /></Link>
         </div>
         {shopItems.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No shop items are published yet.</p> : (
-          <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {shopItems.map((item) => <Link key={item.id} href="/shop" className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
+          <motion.div variants={cardStagger}>
+            <CarouselRail>
+              {shopItems.map((item) => <Link key={item.id} href="/shop" className="group min-w-[240px] snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
+            </CarouselRail>
           </motion.div>)}
       </motion.section>}
 
       {/* Events Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder" style={{ background: `${primary}04` }}>
         <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><CalendarDays size={9} style={{ color: primary }} /> EVENTS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TOURNAMENTS</h2></div><Link href="/tournaments" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL EVENTS <ChevronRight size={11} /></Link></div>
-        {tournaments.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No live or upcoming tournaments yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{tournaments.map((event) => <Link key={event.id} href="/tournaments" className="rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="fn-label mb-2">{event.game || "All Games"}</div><h3 className="text-sm font-black uppercase text-fn-text">{event.name}</h3><div className="mt-3 flex items-center justify-between"><span className="text-[9px] font-bold uppercase" style={{ color: primary }}>{event.status}</span><span className="text-[9px] text-fn-muted">{event.start_date ? new Date(event.start_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }) : 'TBA'}</span></div></Link>)}</motion.div>}
+        {tournaments.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No live or upcoming tournaments yet.</p> : <motion.div variants={cardStagger}><CarouselRail>{tournaments.map((event) => <Link key={event.id} href="/tournaments" className="min-w-[240px] snap-start rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="fn-label mb-2">{event.game || "All Games"}</div><h3 className="text-sm font-black uppercase text-fn-text">{event.name}</h3><div className="mt-3 flex items-center justify-between"><span className="text-[9px] font-bold uppercase" style={{ color: primary }}>{event.status}</span><span className="text-[9px] text-fn-muted">{event.start_date ? new Date(event.start_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }) : 'TBA'}</span></div></Link>)}</CarouselRail></motion.div>}
       </motion.section>
 
 
@@ -671,7 +696,7 @@ export default function HomePage() {
         <div className="mb-6 flex items-center justify-between">
           <div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> MEET THE MINDS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">MEET THE TEAM</h2></div>
         </div>
-        {teamMembers.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No team members published yet.</p> : <motion.div variants={cardStagger} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{teamMembers.map((member) => { const game = GAMES.find((g) => g.slug === member.currently_playing_game_slug); const socials = [['X', member.twitter_url], ['IG', member.instagram_url], ['IN', member.linkedin_url], ['TW', member.twitch_url], ['YT', member.youtube_url]].filter(([, url]) => Boolean(url)); return <article key={member.id} className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="flex items-start gap-3"><div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">{member.photo_url ? <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" /> : <span className="font-display text-lg font-black" style={{ color: primary }}>{member.name.slice(0, 1)}</span>}</div><div className="min-w-0"><h3 className="truncate text-sm font-black uppercase text-fn-text">{member.name}</h3><p className="fn-label" style={{ color: primary }}>{member.role}</p>{game && <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-fn-muted">Playing: {game.shortName}</p>}</div></div>{member.bio && <p className="mt-3 line-clamp-3 text-[11px] leading-5 text-fn-muted">{member.bio}</p>}{socials.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{socials.map(([label, url]) => <a key={label} href={String(url)} target="_blank" rel="noreferrer" className="rounded-sm border border-fn-gborder px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-muted hover:border-fn-green/40 hover:text-fn-green">{label}</a>)}</div>}</article>; })}</motion.div>}
+        {teamMembers.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No team members published yet.</p> : <motion.div variants={cardStagger}><CarouselRail>{teamMembers.map((member) => { const game = GAMES.find((g) => g.slug === member.currently_playing_game_slug); const socials = [['X', member.twitter_url], ['IG', member.instagram_url], ['IN', member.linkedin_url], ['TW', member.twitch_url], ['YT', member.youtube_url]].filter(([, url]) => Boolean(url)); return <article key={member.id} className="group min-w-[260px] snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="flex items-start gap-3"><div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">{member.photo_url ? <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" /> : <span className="font-display text-lg font-black" style={{ color: primary }}>{member.name.slice(0, 1)}</span>}</div><div className="min-w-0"><h3 className="truncate text-sm font-black uppercase text-fn-text">{member.name}</h3><p className="fn-label" style={{ color: primary }}>{member.role}</p>{game && <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-fn-muted">Playing: {game.shortName}</p>}</div></div>{member.bio && <p className="mt-3 line-clamp-3 text-[11px] leading-5 text-fn-muted">{member.bio}</p>}{socials.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{socials.map(([label, url]) => <a key={label} href={String(url)} target="_blank" rel="noreferrer" className="rounded-sm border border-fn-gborder px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-muted hover:border-fn-green/40 hover:text-fn-green">{label}</a>)}</div>}</article>; })}</CarouselRail></motion.div>}
       </motion.section>
 
       {/* Teams Preview */}
