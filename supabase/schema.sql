@@ -372,6 +372,7 @@ ON CONFLICT (key) DO NOTHING;
 -- Bucket: teams     (public)
 -- Bucket: highlights (public)
 -- Bucket: team-members (public)
+-- Bucket: shop-items   (public)
 
 -- ─── SHOP ITEMS ──────────────────────────────────────────────────────────────
 

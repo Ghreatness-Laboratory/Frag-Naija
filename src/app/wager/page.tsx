@@ -33,8 +33,9 @@ import {
   useWalletTransactions,
   useWithdraw,
 } from "@/lib/hooks";
-import { publishBetSlipCount } from "@/components/layout/BottomNav";
+import { publishWagerCount } from "@/components/layout/BottomNav";
 import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
+import { GAMES } from "@/lib/games";
 
 type CurrentUser = {
   id?: string | null;
@@ -807,7 +808,7 @@ function WagerCard({
       return;
     }
     const error = onAddToSlip(currentSelection);
-    setMessage(error || "Selection added to bet slip.");
+    setMessage(error || "Selection added to wager.");
     if (!error) setPicked(null);
   }
 
@@ -818,7 +819,7 @@ function WagerCard({
   }
 
   async function handlePlaceWager() {
-    if (!activeEmail) { setMessage("Sign in first to place a wager."); return; }
+    if (!activeEmail) { window.location.href = "/login?next=/wager"; return; }
     if (!picked) { setMessage(isOptionPick ? `Choose a ${pickConfig.badge.toLowerCase()} option before placing a wager.` : "Choose YES or NO before placing a wager."); return; }
     if (showPickTypeChoice && !pickType) { setMessage("Choose Player Pick or Team Pick before placing this wager."); return; }
     if (amountError) { setMessage(amountError); return; }
@@ -1222,7 +1223,7 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
   );
 }
 
-function BetSlip({
+function WagerPanel({
   selections,
   stake,
   setStake,
@@ -1258,13 +1259,13 @@ function BetSlip({
   }
 
   async function submitSlip() {
-    if (!email) { setMessage("Sign in first to place this slip."); return; }
-    if (!selections.length) { setMessage("Add at least one selection to your slip."); return; }
+    if (!email) { window.location.href = "/login?next=/wager"; return; }
+    if (!selections.length) { setMessage("Add at least one selection to your wager."); return; }
     if (stakeError) { setMessage(stakeError); return; }
 
     const marketIds = selections.map((item) => String(item.wagerId));
     if (new Set(marketIds).size !== marketIds.length) {
-      setMessage("Conflicting slip: only one selection is allowed from each market.");
+      setMessage("Conflicting wager: only one selection is allowed from each market.");
       return;
     }
 
@@ -1293,14 +1294,14 @@ function BetSlip({
         window.location.href = result.authorization_url;
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to place slip.");
+      setMessage(error instanceof Error ? error.message : "Unable to place wager.");
     }
   }
 
   return (
     <div className="sticky top-20 rounded-sm border border-fn-gborder bg-fn-card p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="fn-label text-fn-text">BET SLIP</span>
+        <span className="fn-label text-fn-text">WAGER</span>
         <span className="rounded-sm border border-fn-green/30 bg-fn-green/10 px-2 py-0.5 text-[8px] font-bold text-fn-green">
           {selections.length} PICK{selections.length === 1 ? "" : "S"}
         </span>
@@ -1308,7 +1309,7 @@ function BetSlip({
 
       {selections.length === 0 ? (
         <div className="rounded-sm border border-dashed border-fn-gborder bg-fn-dark p-4 text-center text-[10px] text-fn-muted">
-          Add picks from live markets to build an optional accumulator. Single-pick slips work too.
+          Add picks from live markets to build an optional accumulator. Single-pick wagers work too.
         </div>
       ) : (
         <div className="space-y-2">
@@ -1414,6 +1415,7 @@ function TicketActions({ ticket, onClose }: { ticket: PlacedTicket | null; onClo
 
 function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
+  const [selectedGameSlug, setSelectedGameSlug] = useState("all");
   const [selectedMatch, setSelectedMatch] = useState("all");
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -1455,16 +1457,23 @@ function WagerPageContent() {
   const predictors = Array.isArray(predictorsData) ? predictorsData : [];
   const featured = Array.isArray(featuredData) ? featuredData : [];
 
-  const matchOptions = useMemo(() => Array.from(new Set(liveWagers.map(getMarketMatch).filter(Boolean))).sort(), [liveWagers]);
-  const allMarkets = selectedMatch === "all" ? liveWagers : liveWagers.filter((market) => getMarketMatch(market) === selectedMatch);
+  const gameFilteredMarkets = useMemo(() => selectedGameSlug === "all"
+    ? liveWagers
+    : liveWagers.filter((market) => String(market.game_slug ?? "") === selectedGameSlug), [liveWagers, selectedGameSlug]);
+  const availableGameFilters = useMemo(() => {
+    const slugs = new Set(liveWagers.map((market) => String(market.game_slug ?? "")).filter(Boolean));
+    return GAMES.filter((game) => slugs.has(game.slug));
+  }, [liveWagers]);
+  const matchOptions = useMemo(() => Array.from(new Set(gameFilteredMarkets.map(getMarketMatch).filter(Boolean))).sort(), [gameFilteredMarkets]);
+  const allMarkets = selectedMatch === "all" ? gameFilteredMarkets : gameFilteredMarkets.filter((market) => getMarketMatch(market) === selectedMatch);
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
   const username = getUsername(currentUser);
 
   useEffect(() => {
-    publishBetSlipCount(slipSelections.length);
+    publishWagerCount(slipSelections.length);
 
-    return () => publishBetSlipCount(0);
+    return () => publishWagerCount(0);
   }, [slipSelections.length]);
 
   function addToSlip(selection: SlipSelection) {
@@ -1592,6 +1601,16 @@ function WagerPageContent() {
               <div className="flex items-center gap-2 fn-label">
                 <span className="live-dot" /> LIVE MARKETS - {allMarkets.length} OPEN
               </div>
+              <div className="flex flex-col gap-2 xs:flex-row">
+              <select
+                value={selectedGameSlug}
+                onChange={(event) => { setSelectedGameSlug(event.target.value); setSelectedMatch("all"); setShowAll(false); }}
+                className="rounded-sm border border-fn-gborder bg-fn-card px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-text outline-none"
+                aria-label="Filter wagers by game"
+              >
+                <option value="all">All games</option>
+                {availableGameFilters.map((game) => <option key={game.slug} value={game.slug}>{game.shortName}</option>)}
+              </select>
               {matchOptions.length > 0 && (
                 <select
                   value={selectedMatch}
@@ -1603,6 +1622,7 @@ function WagerPageContent() {
                   {matchOptions.map((match) => <option key={match} value={match}>{match}</option>)}
                 </select>
               )}
+              </div>
             </div>
 
             {wagersLoading && (
@@ -1651,7 +1671,7 @@ function WagerPageContent() {
           </div>
 
           <div className="space-y-4 xl:col-span-1">
-            <BetSlip
+            <WagerPanel
               selections={slipSelections}
               stake={slipStake}
               setStake={setSlipStake}

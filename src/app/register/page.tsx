@@ -53,8 +53,14 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
   );
 }
 
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
+  const nextPath = typeof window === 'undefined' ? '/' : safeNextPath(new URLSearchParams(window.location.search).get('next'));
   const [form, setForm]       = useState({ email: '', username: '', password: '', confirm: '' });
   const [show, setShow]       = useState(false);
   const [error, setError]     = useState('');
@@ -96,7 +102,7 @@ export default function RegisterPage() {
       }
 
       setSuccess(true);
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push(`/login?next=${encodeURIComponent(nextPath)}`), 2000);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Registration failed');
     } finally {
@@ -262,7 +268,7 @@ export default function RegisterPage() {
 
             <p className="text-center text-fn-muted text-xs">
               Already have an account?{' '}
-              <Link href="/login" className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">
+              <Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">
                 Sign in
               </Link>
             </p>
