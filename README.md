@@ -139,6 +139,8 @@ See [Environment Variables](#environment-variables) below.
    - `athletes`
    - `teams`
    - `highlights`
+   - `team-members`
+   - `shop-items`
 
 ### 5. Start the app
 
@@ -184,7 +186,7 @@ It also creates:
 Storage is used by the upload API:
 
 - `/api/upload`
-- allowed buckets: `athletes`, `teams`, `highlights`
+- allowed buckets: `athletes`, `teams`, `highlights`, `team-members`, `shop-items`
 - max file size: `10MB`
 
 ## API Surface

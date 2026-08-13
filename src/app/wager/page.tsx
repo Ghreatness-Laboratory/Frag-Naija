@@ -35,6 +35,7 @@ import {
 } from "@/lib/hooks";
 import { publishWagerCount } from "@/components/layout/BottomNav";
 import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
+import { GAMES } from "@/lib/games";
 
 type CurrentUser = {
   id?: string | null;
@@ -1414,6 +1415,7 @@ function TicketActions({ ticket, onClose }: { ticket: PlacedTicket | null; onClo
 
 function WagerPageContent() {
   const [showAll, setShowAll] = useState(false);
+  const [selectedGameSlug, setSelectedGameSlug] = useState("all");
   const [selectedMatch, setSelectedMatch] = useState("all");
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -1455,8 +1457,15 @@ function WagerPageContent() {
   const predictors = Array.isArray(predictorsData) ? predictorsData : [];
   const featured = Array.isArray(featuredData) ? featuredData : [];
 
-  const matchOptions = useMemo(() => Array.from(new Set(liveWagers.map(getMarketMatch).filter(Boolean))).sort(), [liveWagers]);
-  const allMarkets = selectedMatch === "all" ? liveWagers : liveWagers.filter((market) => getMarketMatch(market) === selectedMatch);
+  const gameFilteredMarkets = useMemo(() => selectedGameSlug === "all"
+    ? liveWagers
+    : liveWagers.filter((market) => String(market.game_slug ?? "") === selectedGameSlug), [liveWagers, selectedGameSlug]);
+  const availableGameFilters = useMemo(() => {
+    const slugs = new Set(liveWagers.map((market) => String(market.game_slug ?? "")).filter(Boolean));
+    return GAMES.filter((game) => slugs.has(game.slug));
+  }, [liveWagers]);
+  const matchOptions = useMemo(() => Array.from(new Set(gameFilteredMarkets.map(getMarketMatch).filter(Boolean))).sort(), [gameFilteredMarkets]);
+  const allMarkets = selectedMatch === "all" ? gameFilteredMarkets : gameFilteredMarkets.filter((market) => getMarketMatch(market) === selectedMatch);
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
   const username = getUsername(currentUser);
@@ -1592,6 +1601,16 @@ function WagerPageContent() {
               <div className="flex items-center gap-2 fn-label">
                 <span className="live-dot" /> LIVE MARKETS - {allMarkets.length} OPEN
               </div>
+              <div className="flex flex-col gap-2 xs:flex-row">
+              <select
+                value={selectedGameSlug}
+                onChange={(event) => { setSelectedGameSlug(event.target.value); setSelectedMatch("all"); setShowAll(false); }}
+                className="rounded-sm border border-fn-gborder bg-fn-card px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-text outline-none"
+                aria-label="Filter wagers by game"
+              >
+                <option value="all">All games</option>
+                {availableGameFilters.map((game) => <option key={game.slug} value={game.slug}>{game.shortName}</option>)}
+              </select>
               {matchOptions.length > 0 && (
                 <select
                   value={selectedMatch}
@@ -1603,6 +1622,7 @@ function WagerPageContent() {
                   {matchOptions.map((match) => <option key={match} value={match}>{match}</option>)}
                 </select>
               )}
+              </div>
             </div>
 
             {wagersLoading && (
