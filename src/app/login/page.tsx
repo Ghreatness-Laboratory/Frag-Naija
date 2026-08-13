@@ -4,11 +4,18 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import Link from 'next/link';
+
 import { Mail, Lock, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 
 type Step = 'credentials' | '2fa';
 
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
+
 export default function LoginPage() {
+  const nextPath = typeof window === 'undefined' ? '/' : safeNextPath(new URLSearchParams(window.location.search).get('next'));
   const [step, setStep]         = useState<Step>('credentials');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +45,7 @@ export default function LoginPage() {
         setFactorId(data.factors[0].id);
         setStep('2fa');
       } else {
-        window.location.href = '/';
+        window.location.href = nextPath;
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Login failed');
@@ -59,7 +66,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '2FA verification failed');
-      window.location.href = '/';
+      window.location.href = nextPath;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '2FA failed');
       setTotpCode('');
@@ -213,7 +220,7 @@ export default function LoginPage() {
 
             <p className="text-center text-fn-muted text-xs">
               No account?{' '}
-              <Link href="/register" className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">
+              <Link href={`/register?next=${encodeURIComponent(nextPath)}`} className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">
                 Create one
               </Link>
             </p>

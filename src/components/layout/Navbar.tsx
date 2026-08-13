@@ -145,10 +145,10 @@ export default function Navbar() {
           </Link>
           <ThemeToggle />
 
-          {user === null && (
+          {!user && (
             <>
               <Link href="/login" className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors">
-                Login
+                Login / Sign Up
               </Link>
               <Link href="/register" className="fn-btn text-[10px] px-3 py-1.5">
                 Sign Up
@@ -330,7 +330,7 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn-outline text-[10px] py-2 text-center">
-                    Login
+                    Login / Sign Up
                   </Link>
                   <Link href="/register" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
                     Sign Up
