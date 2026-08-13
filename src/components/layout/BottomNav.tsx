@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Home, Search, Shield, User } from "lucide-react";
+import { Home, Search, Shield, Target, User } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const BET_SLIP_COUNT_EVENT = "fn-bet-slip-count";
-const BET_SLIP_COUNT_KEY = "fn-bet-slip-count";
+const WAGER_COUNT_EVENT = "fn-wager-count";
+const WAGER_COUNT_KEY = "fn-wager-count";
 
 const HIDDEN_ROUTE_PREFIXES = [
   "/admin",
@@ -21,47 +21,47 @@ const NAV_ITEMS = [
   { label: "Search", href: "/search", icon: Search, match: (path: string) => path.startsWith("/search") },
   { label: "Athletes", href: "/athletes", icon: User, match: (path: string) => path.startsWith("/athletes") },
   { label: "Teams", href: "/teams", icon: Shield, match: (path: string) => path.startsWith("/teams") },
-  { label: "Bet Slip", href: "/wager", icon: ClipboardList, match: (path: string) => path.startsWith("/wager") },
+  { label: "Wager", href: "/wager", icon: Target, match: (path: string) => path.startsWith("/wager") },
 ];
 
-function readBetSlipCount() {
+function readWagerCount() {
   if (typeof window === "undefined") return 0;
-  const value = Number(window.localStorage.getItem(BET_SLIP_COUNT_KEY) ?? 0);
+  const value = Number(window.localStorage.getItem(WAGER_COUNT_KEY) ?? 0);
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 }
 
-export function publishBetSlipCount(count: number) {
+export function publishWagerCount(count: number) {
   if (typeof window === "undefined") return;
 
   const normalizedCount = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
-  window.localStorage.setItem(BET_SLIP_COUNT_KEY, String(normalizedCount));
-  window.dispatchEvent(new CustomEvent(BET_SLIP_COUNT_EVENT, { detail: normalizedCount }));
+  window.localStorage.setItem(WAGER_COUNT_KEY, String(normalizedCount));
+  window.dispatchEvent(new CustomEvent(WAGER_COUNT_EVENT, { detail: normalizedCount }));
 }
 
 export default function BottomNav() {
   const pathname = usePathname() || "/";
-  const [betSlipCount, setBetSlipCount] = useState(0);
+  const [wagerCount, setWagerCount] = useState(0);
 
   useEffect(() => {
-    setBetSlipCount(readBetSlipCount());
+    setWagerCount(readWagerCount());
 
     function handleCountChange(event: Event) {
-      setBetSlipCount(
+      setWagerCount(
         event instanceof CustomEvent && typeof event.detail === "number"
           ? Math.max(0, Math.floor(event.detail))
-          : readBetSlipCount()
+          : readWagerCount()
       );
     }
 
     function handleStorage(event: StorageEvent) {
-      if (event.key === BET_SLIP_COUNT_KEY) setBetSlipCount(readBetSlipCount());
+      if (event.key === WAGER_COUNT_KEY) setWagerCount(readWagerCount());
     }
 
-    window.addEventListener(BET_SLIP_COUNT_EVENT, handleCountChange);
+    window.addEventListener(WAGER_COUNT_EVENT, handleCountChange);
     window.addEventListener("storage", handleStorage);
 
     return () => {
-      window.removeEventListener(BET_SLIP_COUNT_EVENT, handleCountChange);
+      window.removeEventListener(WAGER_COUNT_EVENT, handleCountChange);
       window.removeEventListener("storage", handleStorage);
     };
   }, []);
@@ -79,7 +79,7 @@ export default function BottomNav() {
       <div className="grid grid-cols-5 items-end gap-1">
         {NAV_ITEMS.map(({ label, href, icon: Icon, match }) => {
           const isActive = match(pathname);
-          const isBetSlip = label === "Bet Slip";
+          const isWager = label === "Wager";
 
           return (
             <Link
@@ -96,9 +96,9 @@ export default function BottomNav() {
               />
               <span className="relative flex h-6 w-6 items-center justify-center">
                 <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                {isBetSlip && betSlipCount > 0 && (
+                {isWager && wagerCount > 0 && (
                   <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-fn-black bg-fn-red px-1 text-[9px] font-black leading-none text-white">
-                    {betSlipCount > 99 ? "99+" : betSlipCount}
+                    {wagerCount > 99 ? "99+" : wagerCount}
                   </span>
                 )}
               </span>
