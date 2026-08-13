@@ -5,7 +5,7 @@ const SEARCH_SHORTCUTS = [
   { label: "Athletes", href: "/athletes", description: "Find player cards, roles, status, and combat stats." },
   { label: "Teams", href: "/teams", description: "Browse squads, rankings, and roster strength." },
   { label: "Tournaments", href: "/tournaments", description: "Track upcoming and live competitions." },
-  { label: "Wager Markets", href: "/wager", description: "Jump into live bet slip markets and picks." },
+  { label: "Wager Markets", href: "/wager", description: "Jump into live wager markets and picks." },
 ];
 
 export default function SearchPage() {
