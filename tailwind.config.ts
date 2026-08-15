@@ -27,8 +27,8 @@ const config: Config = {
       },
       fontFamily: {
         sans:    ["'Archivo'", "Arial", "sans-serif"],
-        mono:    ["'Archivo'", "Arial", "sans-serif"],
-        display: ["'Archivo'", "Arial", "sans-serif"],
+        mono:    ["'Space Mono'", "'JetBrains Mono'", "'Fira Code'", "monospace"],
+        display: ["'Bebas Neue'", "'Impact'", "'Anton'", "sans-serif"],
       },
       animation: {
         blink:     "blink 1.2s step-end infinite",

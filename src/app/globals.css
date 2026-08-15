@@ -1,8 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─── FONT SYSTEM ────────────────────────────────────────────────────────────*/
+:root {
+  /* Primary Display Font - Headings & Large Metrics */
+  --font-display: 'Bebas Neue', 'Impact', 'Anton', sans-serif;
+  
+  /* Secondary UI & Body Font - Labels, Controls & Subtext */
+  --font-mono: 'Space Mono', 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ─── FONT APPLICATION RULES ────────────────────────────────────────────────*/
+/* Apply display font to all headings and large metrics */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+/* Utility classes for explicit font application */
+.font-display {
+  font-family: var(--font-display) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+/* Apply mono font to body, labels, controls, and UI elements */
+body, p, label, input, select, textarea {
+  font-family: var(--font-mono);
+}
+
+/* Specific styling for rating numbers and large metrics */
+.rating-number,
+.metric-value,
+.fn-display-large {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+}
 
 /* ─── DARK MODE (default) ──────────────────────────────────────────────────── */
 /* Values are space-separated R G B — used with rgb(var(--x) / alpha) in Tailwind */
@@ -73,7 +118,7 @@ html { scroll-behavior: smooth; }
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Archivo', Arial, sans-serif;
+  font-family: var(--font-mono);
   overflow-x: hidden;
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -174,12 +219,20 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
 
 /* ─── UTILITY LAYER ──────────────────────────────────────────────────────────*/
 @layer utilities {
-  .fn-label    { @apply text-[9px] font-mono tracking-[0.15em] uppercase text-fn-muted; }
-  .fn-value    { @apply text-fn-green font-mono font-bold; }
-  .fn-btn      { @apply bg-fn-green text-fn-black text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-gdim transition-all active:scale-95; }
-  .fn-btn-outline { @apply border border-fn-green text-fn-green text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-green hover:text-fn-black transition-all active:scale-95; }
-  .fn-btn-ghost   { @apply text-fn-muted text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:text-fn-green transition-all; }
-  .section-title  { @apply font-display text-2xl sm:text-3xl font-bold uppercase tracking-wider text-fn-text; }
+  /* Secondary Font - Labels, Controls & Subtext */
+  .fn-label    { @apply font-mono text-[9px] tracking-[0.15em] uppercase text-fn-muted; }
+  .fn-value    { @apply font-mono text-fn-green font-bold; }
+  
+  /* Primary Display Font - Headings & Large Metrics */
+  .fn-display  { @apply font-display font-bold uppercase tracking-tight; }
+  
+  /* Button Styles with Mono Font */
+  .fn-btn      { @apply font-mono bg-fn-green text-fn-black text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-gdim transition-all active:scale-95; }
+  .fn-btn-outline { @apply font-mono border border-fn-green text-fn-green text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-green hover:text-fn-black transition-all active:scale-95; }
+  .fn-btn-ghost   { @apply font-mono text-fn-muted text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:text-fn-green transition-all; }
+  
+  /* Section Titles with Display Font */
+  .section-title  { @apply font-display text-2xl sm:text-3xl font-bold uppercase tracking-tight text-fn-text; }
 }
 
 /* ─── PLAYER CARD COMPOSITION ───────────────────────────────────────────────*/
