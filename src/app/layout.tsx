@@ -53,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="bg-fn-black text-fn-text font-mono antialiased">
+      <body className="bg-fn-black text-fn-text font-sans antialiased">
         <ThemeProvider>
           <GameProvider>
             <Navbar />

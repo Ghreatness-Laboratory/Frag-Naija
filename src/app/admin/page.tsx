@@ -9,6 +9,7 @@ const SECTIONS = [
   { href: '/admin/athletes',    icon: Users,          label: 'Athletes',    desc: 'Add players, update stats & photos'   },
   { href: '/admin/teams',       icon: Shield,         label: 'Teams',       desc: 'Create and manage esports teams'       },
   { href: '/admin/organizations', icon: Building2,     label: 'Organizations', desc: 'Manage multi-game esports organizations' },
+  { href: '/admin/company-profile', icon: Building2, label: 'Company Profile', desc: 'Edit Ghreatness Laboratory About page and logo' },
   { href: '/admin/transfers',   icon: ArrowLeftRight, label: 'Transfers',   desc: 'Post rumours and confirmed moves'       },
   { href: '/admin/tournaments', icon: Trophy,         label: 'Tournaments', desc: 'Schedule and update tournaments'        },
   { href: '/admin/tournament-results', icon: Trophy, label: 'Tournament Results', desc: 'Record placements and ranking points' },

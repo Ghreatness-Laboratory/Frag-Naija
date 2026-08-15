@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { DEFAULT_HOMEPAGE_SETTINGS, getHomepageSettings } from '@/features/homepage/server';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
+import { getCompanyProfile } from '@/features/companyProfile.server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,7 +13,6 @@ const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,cu
 const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at';
 const TRANSFER_FIELDS = 'id,from_team,to_team,fee,status,date,athletes(id,name,ign)';
 const SHOP_FIELDS = 'id,name,price,currency,image_url,category,status,tutorial_video_url';
-const MEMBER_FIELDS = 'id,name,role,bio,photo_url,currently_playing_game_slug,twitter_url,instagram_url,linkedin_url,twitch_url,youtube_url';
 
 function parseFeaturedIds(value) {
   return String(value ?? '').split(/[\n,]+/).map((id) => id.trim()).filter(Boolean);
@@ -57,14 +57,14 @@ export async function GET() {
       .limit(featuredTeamIds.length || 4);
     if (featuredTeamIds.length) teamQuery = teamQuery.in('id', featuredTeamIds);
 
-    const [athletes, wagers, transfers, shopItems, tournaments, teams, teamMembers] = await Promise.all([
+    const [athletes, wagers, transfers, shopItems, tournaments, teams, companyProfile] = await Promise.all([
       readTable(athleteQuery),
       readTable(supabaseAdmin.from('wagers').select(WAGER_FIELDS).eq('status', 'Active').order('hot', { ascending: false }).order('closes_at', { ascending: true }).limit(3)),
       readTable(supabaseAdmin.from('transfers').select(TRANSFER_FIELDS).order('date', { ascending: false }).limit(4)),
       readTable(supabaseAdmin.from('shop_items').select(SHOP_FIELDS).limit(4)),
       readTable(supabaseAdmin.from('tournaments').select(TOURNAMENT_FIELDS).in('status', ['Upcoming', 'Live']).order('start_date', { ascending: true }).limit(4)),
       readTable(teamQuery),
-      readTable(supabaseAdmin.from('team_members').select(MEMBER_FIELDS).limit(12)),
+      getCompanyProfile(),
     ]);
 
     return NextResponse.json({
@@ -75,7 +75,7 @@ export async function GET() {
       tournaments,
       teams: sortByIds(teams, featuredTeamIds),
       homepageSettings: { ...DEFAULT_HOMEPAGE_SETTINGS, ...settings },
-      teamMembers,
+      companyProfile,
     }, {
       headers: {
         'Cache-Control': 'no-store',

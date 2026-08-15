@@ -26,8 +26,9 @@ const config: Config = {
         "fn-text":    "rgb(var(--fn-text)    / <alpha-value>)",
       },
       fontFamily: {
-        mono:    ["'JetBrains Mono'", "'Courier New'", "monospace"],
-        display: ["'JetBrains Mono'", "'Courier New'", "monospace"],
+        sans:    ["'Archivo'", "Arial", "sans-serif"],
+        mono:    ["'Archivo'", "Arial", "sans-serif"],
+        display: ["'Archivo'", "Arial", "sans-serif"],
       },
       animation: {
         blink:     "blink 1.2s step-end infinite",
