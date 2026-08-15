@@ -21,34 +21,21 @@ function displayName(athlete?: Athlete | null) { return athlete?.known_name || a
 function ratingOf(athlete?: Athlete | null) { return Number(athlete?.overall_rating ?? athlete?.rating ?? 0); }
 function portrait(athlete?: Athlete | null) { return athlete?.photo_url || ''; }
 
-function BrandedRouteLoader() {
+function Slot({ athlete, label }: { athlete: Athlete | null; label: string }) {
   return (
-    <motion.div
-      key="tdm-loader"
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.28 }}
-      className="fixed inset-0 z-40 flex min-h-screen flex-col items-center justify-center bg-fn-black px-6 text-center"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <motion.div
-        animate={{ textShadow: ['0 0 8px rgba(77,255,110,.35)', '0 0 26px rgba(77,255,110,.75)', '0 0 8px rgba(77,255,110,.35)'] }}
-        transition={{ duration: 1.4, repeat: Infinity }}
-        className="font-display text-4xl font-black uppercase tracking-[0.18em] sm:text-5xl"
-      >
-        <span className="text-fn-green">FRAG</span><span className="text-fn-text"> NAIJA</span>
-      </motion.div>
-      <div className="mt-5 h-px w-56 overflow-hidden bg-fn-gborder">
-        <motion.div
-          className="h-full bg-fn-green"
-          initial={{ x: '-100%' }}
-          animate={{ x: '100%' }}
-          transition={{ duration: 1.05, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.28em] text-fn-muted">Loading athletes</p>
-    </motion.div>
+    <div className={`min-h-[58px] border border-dashed p-2 ${athlete ? 'border-solid border-fn-green bg-fn-green/10' : 'border-fn-gborder bg-fn-card'}`}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-fn-muted">{label}</p>
+      {athlete ? <p className="mt-1 truncate bg-fn-green px-2 py-1 text-xs font-black uppercase text-fn-black">{displayName(athlete)}</p> : <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">Awaiting pick</p>}
+    </div>
+  );
+}
+
+function Slot({ athlete, label }: { athlete: Athlete | null; label: string }) {
+  return (
+    <div className={`min-h-[58px] border border-dashed p-2 ${athlete ? 'border-solid border-fn-green bg-fn-green/10' : 'border-fn-gborder bg-fn-card'}`}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-fn-muted">{label}</p>
+      {athlete ? <p className="mt-1 truncate bg-fn-green px-2 py-1 text-xs font-black uppercase text-fn-black">{displayName(athlete)}</p> : <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">Awaiting pick</p>}
+    </div>
   );
 }
 
@@ -108,33 +95,10 @@ export default function TdmOneVOnePage() {
   const gameSlug = activeGame.slug;
   const { data: athletes = [], loading } = useAthletes({ game_slug: isHydrated ? gameSlug : '' }) as { data: Athlete[] | null; loading: boolean };
   const roster = useMemo(() => (athletes || []).filter((a) => !a.game_slug || a.game_slug === gameSlug), [athletes, gameSlug]);
-  const [p1, setP1] = useState<Athlete | null>(null); const [p2, setP2] = useState<Athlete | null>(null); const [duel, setDuel] = useState<Duel | null>(null); const [reveal, setReveal] = useState(false); const [picked, setPicked] = useState(''); const [stake, setStake] = useState(''); const [placed, setPlaced] = useState<PlacedWager | null>(null); const [modal, setModal] = useState(false); const [saving, setSaving] = useState(false); const [error, setError] = useState(''); const [assetsReady, setAssetsReady] = useState(false);
+  const [p1, setP1] = useState<Athlete | null>(null); const [p2, setP2] = useState<Athlete | null>(null); const [duel, setDuel] = useState<Duel | null>(null); const [reveal, setReveal] = useState(false); const [picked, setPicked] = useState(''); const [stake, setStake] = useState(''); const [placed, setPlaced] = useState<PlacedWager | null>(null); const [modal, setModal] = useState(false); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
   const previewOdds = p1 && p2 ? calculateDuelOddsFromKd(kdOf(p1), kdOf(p2)) : { odds_a: 0, odds_b: 0 };
   const oddsA = Number(duel?.odds_a ?? previewOdds.odds_a); const oddsB = Number(duel?.odds_b ?? previewOdds.odds_b);
   const both = Boolean(p1 && p2);
-  const showLoader = loading || !assetsReady;
-
-  useEffect(() => {
-    let active = true;
-    setAssetsReady(false);
-
-    async function preloadRosterImages() {
-      const minimumDelay = new Promise((resolve) => window.setTimeout(resolve, 700));
-      const imageUrls = roster.map((athlete) => portrait(athlete)).filter(Boolean);
-      const imageLoads = imageUrls.map((src) => new Promise<void>((resolve) => {
-        const img = new window.Image();
-        img.onload = () => { if ('decode' in img) img.decode().then(() => resolve()).catch(() => resolve()); else resolve(); };
-        img.onerror = () => resolve();
-        img.src = src;
-      }));
-
-      await Promise.all([minimumDelay, ...imageLoads]);
-      if (active) setAssetsReady(true);
-    }
-
-    if (!loading) preloadRosterImages();
-    return () => { active = false; };
-  }, [loading, roster]);
 
   function toggle(a: Athlete) { setError(''); if (reveal || saving) return; if (p1?.id === a.id) setP1(null); else if (p2?.id === a.id) setP2(null); else if (!p1) setP1(a); else if (!p2) setP2(a); }
   async function confirm() { if (!p1 || !p2) return; setSaving(true); setError(''); try { const res = await fetch('/api/duels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ player_a_id: p1.id, player_b_id: p2.id, game_slug: gameSlug }) }); const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Could not create duel'); setDuel(data); setPicked(''); setReveal(true); } catch (e) { setError(e instanceof Error ? e.message : 'Could not create duel'); } finally { setSaving(false); } }
@@ -144,19 +108,19 @@ export default function TdmOneVOnePage() {
   const pickedAthlete = [p1, p2].find((a) => a?.id === picked); const pickedOdds = picked === p1?.id ? oddsA : picked === p2?.id ? oddsB : 0;
 
   return <main className="min-h-screen bg-fn-black text-fn-text">
-    <AnimatePresence>{showLoader && !reveal && <BrandedRouteLoader />}</AnimatePresence>
-    {!reveal ? <motion.section key="tdm-grid" initial={showLoader ? { opacity: 0 } : false} animate={{ opacity: showLoader ? 0 : 1 }} transition={{ duration: 0.28 }} className="mx-auto max-w-7xl px-2 py-4 sm:px-4 lg:px-6">
+    {!reveal ? <section className="mx-auto max-w-7xl px-2 py-4 sm:px-4 lg:px-6">
       <Link href="/games" className="mb-3 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-fn-muted hover:text-fn-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-fn-green"><ChevronLeft size={13}/> Games</Link>
-      <div className="mb-3"><p className="fn-label">TDM 1V1</p><h1 className="text-2xl font-black uppercase tracking-widest sm:text-4xl">Select Athletes</h1></div>
+      <div className="mb-3"><p className="fn-label">TDM 1V1</p><h1 className="text-2xl font-black uppercase tracking-widest sm:text-4xl">Select Combatants</h1></div>
       <div className="sticky top-14 z-20 mb-3 border border-fn-gborder bg-fn-card/95 p-2 backdrop-blur">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2"><VsPreviewSlot athlete={p1} label="P1"/><div className={`text-sm font-black ${both ? 'text-fn-green drop-shadow-[0_0_10px_rgb(77_255_110)]' : 'text-fn-muted'}`}>VS</div><VsPreviewSlot athlete={p2} label="P2"/></div>
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2"><Slot athlete={p1} label="P1"/><div className={`text-sm font-black ${both ? 'text-fn-green drop-shadow-[0_0_10px_rgb(77_255_110)]' : 'text-fn-muted'}`}>VS</div><Slot athlete={p2} label="P2"/></div>
         <AnimatePresence>{both && <motion.button initial={reduceMotion ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} type="button" onClick={confirm} disabled={saving} className="mt-2 w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green disabled:opacity-60">{saving ? 'Confirming...' : 'Confirm Matchup'}</motion.button>}</AnimatePresence>
       </div>
       {error && <p className="mb-3 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-xs text-fn-red">{error}</p>}
       <div className="grid grid-cols-4 gap-[6px] md:grid-cols-6 xl:grid-cols-8">
-        {!showLoader && roster.map((a, i) => <RosterTile key={a.id} athlete={a} index={i} selected={p1?.id === a.id || p2?.id === a.id} reduceMotion={reduceMotion} onClick={() => toggle(a)}/>)}
+        {loading && Array.from({ length: 24 }).map((_, i) => <div key={i} className="aspect-[3/4] animate-pulse border border-fn-gborder bg-fn-card"/>)}
+        {!loading && roster.map((a, i) => <RosterTile key={a.id} athlete={a} index={i} selected={p1?.id === a.id || p2?.id === a.id} reduceMotion={reduceMotion} onClick={() => toggle(a)}/>)}
       </div>
-    </motion.section> : p1 && p2 && <section className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_center,#0f1710_0%,#050704_72%)] px-4 py-6">
+    </section> : p1 && p2 && <section className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_center,#0f1710_0%,#050704_72%)] px-4 py-6">
       {!reduceMotion && <><motion.div className="pointer-events-none absolute inset-0 z-20 bg-black" initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: .5, times: [0, .35, .65, 1] }}/><motion.div className="absolute left-1/2 top-1/2 h-[90vmax] w-[90vmax] -translate-x-1/2 -translate-y-1/2 bg-[conic-gradient(from_0deg,transparent,#4dff6e22,transparent,#4dff6e18,transparent)]" initial={{ scale: .6, rotate: 0 }} animate={{ scale: 1, rotate: 20 }} transition={{ duration: 1.4 }}/></>}
       <div className="absolute -left-20 top-1/4 h-1 w-[70vw] rotate-[-18deg] bg-fn-green/20 blur-sm"/><div className="absolute -right-20 bottom-1/4 h-1 w-[70vw] rotate-[-18deg] bg-fn-green/20 blur-sm"/>
       <button type="button" onClick={backToGrid} className="relative z-30 mb-8 text-xs font-black uppercase tracking-widest text-fn-text hover:text-fn-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-fn-green">← Back</button>
