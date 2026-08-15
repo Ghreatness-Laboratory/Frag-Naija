@@ -3,7 +3,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X } from "lucide-react";
+import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X, Building2 } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
@@ -33,8 +33,9 @@ type ShopItem = {
   id: string; name: string; price: number; currency: string | null; image_url: string | null; category: string | null; status: string | null;
 };
 
-type TeamMember = {
-  id: string; name: string; role: string; bio: string | null; photo_url: string | null; currently_playing_game_slug: string | null; twitter_url: string | null; instagram_url: string | null; linkedin_url: string | null; twitch_url: string | null; youtube_url: string | null;
+type CompanyProfile = {
+  company_name?: string | null;
+  company_logo?: string | null;
 };
 
 type HomepageSettings = Record<string, string>;
@@ -47,7 +48,7 @@ type HomepagePayload = {
   tournaments?: Tournament[];
   teams?: Team[];
   homepageSettings?: HomepageSettings;
-  teamMembers?: TeamMember[];
+  companyProfile?: CompanyProfile;
 };
 
 let homepageDataPromise: Promise<HomepagePayload> | null = null;
@@ -356,7 +357,7 @@ export default function HomePage() {
   const [wagers, setWagers]       = useState<Wager[]>([]);
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
@@ -399,7 +400,7 @@ export default function HomePage() {
       setTournaments(Array.isArray(payload.tournaments) ? payload.tournaments : []);
       setAllTeams(Array.isArray(payload.teams) ? payload.teams : []);
       setHomepageSettings(payload.homepageSettings && !Array.isArray(payload.homepageSettings) ? payload.homepageSettings : {});
-      setTeamMembers(Array.isArray(payload.teamMembers) ? payload.teamMembers : []);
+      setCompanyProfile(payload.companyProfile ?? null);
     });
 
     return () => {
@@ -691,12 +692,20 @@ export default function HomePage() {
       </motion.section>
 
 
-      {/* Meet The Team */}
-      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder" style={{ background: `${primary}04` }}>
-        <div className="mb-6 flex items-center justify-between">
-          <div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> MEET THE MINDS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">MEET THE TEAM</h2></div>
-        </div>
-        {teamMembers.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No team members published yet.</p> : <motion.div variants={cardStagger}><CarouselRail>{teamMembers.map((member) => { const game = GAMES.find((g) => g.slug === member.currently_playing_game_slug); const socials = [['X', member.twitter_url], ['IG', member.instagram_url], ['IN', member.linkedin_url], ['TW', member.twitch_url], ['YT', member.youtube_url]].filter(([, url]) => Boolean(url)); return <article key={member.id} className="group min-w-[260px] snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="flex items-start gap-3"><div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">{member.photo_url ? <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" /> : <span className="font-display text-lg font-black" style={{ color: primary }}>{member.name.slice(0, 1)}</span>}</div><div className="min-w-0"><h3 className="truncate text-sm font-black uppercase text-fn-text">{member.name}</h3><p className="fn-label" style={{ color: primary }}>{member.role}</p>{game && <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-fn-muted">Playing: {game.shortName}</p>}</div></div>{member.bio && <p className="mt-3 line-clamp-3 text-[11px] leading-5 text-fn-muted">{member.bio}</p>}{socials.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{socials.map(([label, url]) => <a key={label} href={String(url)} target="_blank" rel="noreferrer" className="rounded-sm border border-fn-gborder px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-muted hover:border-fn-green/40 hover:text-fn-green">{label}</a>)}</div>}</article>; })}</CarouselRail></motion.div>}
+      {/* Company Credit */}
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-8 border-t border-fn-gborder">
+        <Link href="/about" className="group flex items-center justify-between gap-4 rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">
+              {companyProfile?.company_logo ? <img src={companyProfile.company_logo} alt={`${companyProfile.company_name ?? 'Ghreatness Laboratory'} logo`} className="h-full w-full object-cover" /> : <Building2 size={18} className="text-fn-green" />}
+            </div>
+            <div>
+              <p className="fn-label" style={{ color: primary }}>Powered by</p>
+              <p className="text-xs font-black uppercase tracking-widest text-fn-text">{companyProfile?.company_name ?? 'Ghreatness Laboratory'}</p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-fn-muted transition-colors group-hover:text-fn-green">Meet the Creators <ChevronRight size={11} /></span>
+        </Link>
       </motion.section>
 
       {/* Teams Preview */}
