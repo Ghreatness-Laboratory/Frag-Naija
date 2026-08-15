@@ -52,6 +52,72 @@ function RosterTile({ athlete, selected, index, onClick, reduceMotion }: { athle
   );
 }
 
+
+function TdmRouteLoader({ reduceMotion }: { reduceMotion: boolean }) {
+  return (
+    <motion.section
+      key="tdm-loader"
+      initial={reduceMotion ? false : { opacity: 1 }}
+      animate={{ opacity: 1 }}
+      exit={reduceMotion ? undefined : { opacity: 0 }}
+      transition={{ duration: 0.32 }}
+      className="fixed inset-0 z-40 flex min-h-screen items-center justify-center bg-[#080a07] text-fn-text"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading TDM 1V1 athletes"
+    >
+      <div className="relative flex flex-col items-center">
+        <motion.div
+          animate={reduceMotion ? undefined : {
+            textShadow: [
+              '0 0 10px rgba(77,255,110,0.28)',
+              '0 0 24px rgba(77,255,110,0.62)',
+              '0 0 10px rgba(77,255,110,0.28)',
+            ],
+          }}
+          transition={reduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+          className="flex items-center gap-2"
+        >
+          <span className="font-display text-3xl font-black tracking-widest text-fn-green glow-text sm:text-5xl">FRAG</span>
+          <span className="font-display text-3xl font-black tracking-widest text-fn-text sm:text-5xl">NAIJA</span>
+        </motion.div>
+        <div className="mt-5 h-px w-48 overflow-hidden bg-fn-green/15 sm:w-64">
+          {reduceMotion ? (
+            <span className="block h-full w-full bg-fn-green/80 shadow-[0_0_16px_rgba(77,255,110,0.85)]" />
+          ) : (
+            <motion.span
+              className="block h-full w-1/2 bg-fn-green shadow-[0_0_16px_rgba(77,255,110,0.85)]"
+              initial={{ x: '-100%' }}
+              animate={{ x: ['-100%', '220%'] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          )}
+        </div>
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.35em] text-fn-muted">Loading athletes</p>
+      </div>
+    </motion.section>
+  );
+}
+
+function preloadRosterPortraits(roster: Athlete[]) {
+  if (typeof window === 'undefined') return Promise.resolve();
+  const portraits = roster.map((athlete) => portrait(athlete)).filter(Boolean);
+  return Promise.allSettled(
+    portraits.map((src) => new Promise<void>((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        if ('decode' in image) {
+          image.decode().then(resolve).catch(resolve);
+        } else {
+          resolve();
+        }
+      };
+      image.onerror = () => resolve();
+      image.src = src;
+    }))
+  ).then(() => undefined);
+}
+
 function RevealFighter({ athlete, odds, side, reduceMotion, onPick, picked }: { athlete: Athlete; odds: number; side: 'left' | 'right'; reduceMotion: boolean; onPick: () => void; picked: boolean }) {
   return (
     <motion.div
@@ -87,11 +153,29 @@ export default function TdmOneVOnePage() {
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [rosterReady, setRosterReady] = useState(false);
 
   const previewOdds = p1 && p2 ? calculateDuelOddsFromKd(kdOf(p1), kdOf(p2)) : { odds_a: 0, odds_b: 0 };
   const oddsA = Number(duel?.odds_a ?? previewOdds.odds_a);
   const oddsB = Number(duel?.odds_b ?? previewOdds.odds_b);
   const both = Boolean(p1 && p2);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRosterReady(false);
+
+    if (loading || !isHydrated) return () => { cancelled = true; };
+
+    const minimumLoaderTime = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 700);
+    });
+
+    Promise.all([preloadRosterPortraits(roster), minimumLoaderTime]).then(() => {
+      if (!cancelled) setRosterReady(true);
+    });
+
+    return () => { cancelled = true; };
+  }, [loading, isHydrated, roster]);
 
   function toggle(a: Athlete) {
     setError('');
@@ -166,13 +250,24 @@ export default function TdmOneVOnePage() {
   return (
     <main className="min-h-screen bg-fn-black text-fn-text">
       {!reveal ? (
-        <section className="mx-auto max-w-7xl px-2 py-4 sm:px-4 lg:px-6">
+        <AnimatePresence mode="wait">
+          {!rosterReady ? (
+            <TdmRouteLoader reduceMotion={reduceMotion} />
+          ) : (
+        <motion.section
+          key="tdm-grid"
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: 0.32 }}
+          className="mx-auto max-w-7xl px-2 py-4 sm:px-4 lg:px-6"
+        >
           <Link href="/games" className="mb-3 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-fn-muted hover:text-fn-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-fn-green">
             <ChevronLeft size={13} /> Games
           </Link>
           <div className="mb-3">
             <p className="fn-label">TDM 1V1</p>
-            <h1 className="text-2xl font-black uppercase tracking-widest sm:text-4xl">Select Combatants</h1>
+            <h1 className="text-2xl font-black uppercase tracking-widest sm:text-4xl">Select Athletes</h1>
           </div>
           <div className="sticky top-14 z-20 mb-3 border border-fn-gborder bg-fn-card/95 p-2 backdrop-blur">
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -203,7 +298,9 @@ export default function TdmOneVOnePage() {
               <RosterTile key={a.id} athlete={a} index={i} selected={p1?.id === a.id || p2?.id === a.id} reduceMotion={reduceMotion} onClick={() => toggle(a)} />
             ))}
           </div>
-        </section>
+        </motion.section>
+          )}
+        </AnimatePresence>
       ) : (
         p1 && p2 && (
           <section className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_center,#0f1710_0%,#050704_72%)] px-4 py-6">
