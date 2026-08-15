@@ -43,7 +43,7 @@ export async function GET(request) {
     });
   }
 
-  try { await createWallet(user.id); } catch {}
+  try { await createWallet(user.id, { signupBonusEligible: true }); } catch {}
 
   const response = NextResponse.redirect(`${siteUrl}/`);
   response.cookies.set('sb-access-token', data.session.access_token, {

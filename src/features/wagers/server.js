@@ -6,6 +6,8 @@ import {
   generateReference,
 } from '@/lib/paystack';
 
+export const SIGNUP_BONUS_AMOUNT = 500;
+
 export async function processWithdrawal(userId, { amount, account_number, bank_code, name }) {
   // 1. Verify amount
   if (amount < 1000) {
@@ -420,15 +422,56 @@ export async function getWallet(userId) {
   return data;
 }
 
-export async function createWallet(userId) {
+export async function createWallet(userId, { signupBonusEligible = false } = {}) {
   const { data, error } = await supabaseAdmin
     .from('wallets')
-    .insert([{ user_id: userId, balance: 0, total_won: 0, total_lost: 0 }])
+    .insert([{
+      user_id: userId,
+      balance: 0,
+      total_won: 0,
+      total_lost: 0,
+      signup_bonus_eligible: signupBonusEligible,
+      signup_bonus_claimed: false,
+    }])
     .select()
     .single();
   if (error) throw error;
 
   return data;
+}
+
+export async function getSignupBonusStatus(userId) {
+  const wallet = await getWallet(userId);
+  const claimed = Boolean(wallet.signup_bonus_claimed);
+  const eligible = Boolean(wallet.signup_bonus_eligible) && !claimed;
+
+  return {
+    amount: SIGNUP_BONUS_AMOUNT,
+    eligible,
+    claimed,
+    claimed_at: wallet.signup_bonus_claimed_at ?? null,
+  };
+}
+
+export async function claimSignupBonus(userId) {
+  const { data, error } = await supabaseAdmin.rpc('claim_signup_bonus', {
+    p_user_id: userId,
+  });
+
+  if (error) throw error;
+
+  const result = Array.isArray(data) ? data[0] : data;
+
+  return {
+    amount: SIGNUP_BONUS_AMOUNT,
+    creditedAmount: Number(result?.credited_amount ?? 0),
+    claimed: Boolean(result?.signup_bonus_claimed),
+    claimed_at: result?.signup_bonus_claimed_at ?? null,
+    wallet: {
+      id: result?.wallet_id ?? null,
+      balance: Number(result?.balance ?? 0),
+    },
+  };
 }
 
 export async function getUserIdByEmail(email) {

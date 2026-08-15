@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Clock,
   Download,
+  Gift,
   Plus,
   Printer,
   Share2,
@@ -71,6 +72,13 @@ type WalletTransaction = {
   currency?: string | null;
   description?: string | null;
   created_at?: string | null;
+};
+
+type SignupBonusStatus = {
+  amount?: number | string | null;
+  eligible?: boolean | null;
+  claimed?: boolean | null;
+  claimed_at?: string | null;
 };
 
 type Bank = {
@@ -1223,6 +1231,71 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
   );
 }
 
+function SignupBonusModal({
+  amount,
+  claiming,
+  message,
+  onClaim,
+  onClose,
+}: {
+  amount: number;
+  claiming: boolean;
+  message: string | null;
+  onClaim: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[140] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md overflow-hidden rounded-sm border border-fn-green/40 bg-fn-card shadow-2xl">
+        <div className="pointer-events-none absolute inset-0 bg-grid-fn bg-grid opacity-15" />
+        <div className="relative border-b border-fn-gborder bg-fn-dark px-5 py-4">
+          <button onClick={onClose} className="absolute right-4 top-4 text-fn-muted hover:text-fn-text">
+            <X size={14} />
+          </button>
+          <div className="mb-2 flex items-center gap-2 fn-label text-fn-green">
+            <Gift size={11} /> SIGNUP DROP
+          </div>
+          <h2 className="font-display text-2xl font-black uppercase leading-none text-fn-text">
+            Claim your ₦500 signup bonus!
+          </h2>
+        </div>
+
+        <div className="relative space-y-4 px-5 py-5">
+          <div className="rounded-sm border border-fn-green/25 bg-fn-green/10 p-4">
+            <div className="fn-label mb-1">AVAILABLE CREDIT</div>
+            <div className="font-display text-4xl font-black text-fn-green">
+              {formatCurrency(amount)}
+            </div>
+            <p className="mt-2 text-[10px] leading-relaxed text-fn-muted">
+              Add this starter credit to your wallet before you place your first Wager Zone pick.
+            </p>
+          </div>
+
+          {message && (
+            <p className="rounded-sm border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-[10px] font-bold uppercase text-fn-red">
+              {message}
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={onClose} className="fn-btn-outline py-3 text-[10px] uppercase">
+              Later
+            </button>
+            <button
+              onClick={onClaim}
+              disabled={claiming}
+              className={`fn-btn py-3 text-[10px] uppercase ${claiming ? "cursor-not-allowed opacity-60" : ""}`}
+            >
+              {claiming ? "Claiming..." : "Claim"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WagerPanel({
   selections,
   stake,
@@ -1422,6 +1495,12 @@ function WagerPageContent() {
   const [slipSelections, setSlipSelections] = useState<SlipSelection[]>([]);
   const [slipStake, setSlipStake] = useState("");
   const [latestTicket, setLatestTicket] = useState<PlacedTicket | null>(null);
+  const [signupBonus, setSignupBonus] = useState<SignupBonusStatus | null>(null);
+  const [signupBonusLoading, setSignupBonusLoading] = useState(false);
+  const [signupBonusClaiming, setSignupBonusClaiming] = useState(false);
+  const [signupBonusDismissed, setSignupBonusDismissed] = useState(false);
+  const [signupBonusMessage, setSignupBonusMessage] = useState<string | null>(null);
+  const [signupBonusToast, setSignupBonusToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (localStorage.getItem(WAGER_TERMS_KEY)) setTermsAccepted(true);
@@ -1469,6 +1548,58 @@ function WagerPageContent() {
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
   const username = getUsername(currentUser);
+  const showSignupBonusPrompt = Boolean(
+    termsAccepted &&
+      currentUser?.email &&
+      signupBonus?.eligible &&
+      !signupBonus?.claimed &&
+      !signupBonusDismissed &&
+      !signupBonusLoading
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    if (meLoading) {
+      return () => {
+        active = false;
+      };
+    }
+
+    if (!currentUser?.email) {
+      setSignupBonus(null);
+      setSignupBonusDismissed(false);
+      setSignupBonusMessage(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    async function loadSignupBonus() {
+      setSignupBonusLoading(true);
+      setSignupBonusMessage(null);
+
+      try {
+        const res = await fetch("/api/wallet/signup-bonus");
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Unable to load signup bonus.");
+        if (active) {
+          setSignupBonus(data);
+          setSignupBonusDismissed(false);
+        }
+      } catch {
+        if (active) setSignupBonus(null);
+      } finally {
+        if (active) setSignupBonusLoading(false);
+      }
+    }
+
+    loadSignupBonus();
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser?.email, meLoading]);
 
   useEffect(() => {
     publishWagerCount(slipSelections.length);
@@ -1501,9 +1632,49 @@ function WagerPageContent() {
     refetchMe();
   }
 
+  async function handleClaimSignupBonus() {
+    setSignupBonusClaiming(true);
+    setSignupBonusMessage(null);
+
+    try {
+      const res = await fetch("/api/wallet/signup-bonus", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Unable to claim signup bonus.");
+
+      const creditedAmount = Number(data.creditedAmount ?? 0);
+      setSignupBonus((current) => ({
+        amount: data.amount ?? current?.amount ?? 500,
+        eligible: false,
+        claimed: true,
+        claimed_at: data.claimed_at ?? current?.claimed_at ?? null,
+      }));
+      setSignupBonusDismissed(true);
+      setSignupBonusToast(
+        creditedAmount > 0
+          ? `${formatCurrency(creditedAmount)} signup bonus added to your wallet.`
+          : "Signup bonus already claimed."
+      );
+      refetchMe();
+      refetchWalletTx();
+    } catch (error) {
+      setSignupBonusMessage(error instanceof Error ? error.message : "Unable to claim signup bonus.");
+    } finally {
+      setSignupBonusClaiming(false);
+    }
+  }
+
   return (
     <div className="min-h-screen">
       {!termsAccepted && <WagerTermsModal onAccept={acceptTerms} />}
+      {showSignupBonusPrompt && (
+        <SignupBonusModal
+          amount={Number(signupBonus?.amount ?? 500)}
+          claiming={signupBonusClaiming}
+          message={signupBonusMessage}
+          onClaim={handleClaimSignupBonus}
+          onClose={() => setSignupBonusDismissed(true)}
+        />
+      )}
       <div className="relative overflow-hidden border-b border-fn-gborder bg-fn-card/20 px-4 py-6 sm:px-8 lg:px-12">
         <div className="pointer-events-none absolute inset-0 bg-grid-fn bg-grid opacity-20" />
         <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -1555,6 +1726,15 @@ function WagerPageContent() {
         )}
         <BetDetailModal bet={selectedBet} onClose={() => setSelectedBet(null)} />
         <TicketActions ticket={latestTicket} onClose={() => setLatestTicket(null)} />
+        {signupBonusToast && (
+          <div className="mb-4 flex items-center gap-2 rounded-sm border border-fn-green/30 bg-fn-green/10 px-4 py-3 text-[11px] text-fn-text">
+            <CheckCircle size={13} className="flex-shrink-0 text-fn-green" />
+            <span className="min-w-0 flex-1">{signupBonusToast}</span>
+            <button onClick={() => setSignupBonusToast(null)} className="text-fn-muted hover:text-fn-text">
+              <X size={13} />
+            </button>
+          </div>
+        )}
         {status === "success" && (
           <div className="mb-4 rounded-sm border border-fn-green/30 bg-fn-green/10 px-4 py-3 text-[11px] text-fn-text">
             Payment completed. Your wager is being confirmed and will show up after Paystack webhook processing.
