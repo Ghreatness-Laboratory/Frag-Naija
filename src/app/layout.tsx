@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/context/GameContext";
 import PWARegister from "@/components/PWARegister";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import FontPreviewToggle from "@/components/common/FontPreviewToggle";
 
 export const metadata: Metadata = {
   title: "Frag Naija — Tactical Command Interface",
@@ -43,12 +44,14 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Get font preview mode from query params or localStorage
+  // This allows testing different fonts by adding ?font=rajdhani, ?font=chakra, or ?font=exo2 to URL
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('fn-theme')||'dark';var e=document.documentElement;e.classList.remove('dark','light');e.classList.add(t);}catch(_){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('fn-theme')||'dark';var e=document.documentElement;e.classList.remove('dark','light');e.classList.add(t);var f=localStorage.getItem('fn-font-preview');if(f){e.classList.add('font-preview-'+f);}}catch(_){}})();`,
           }}
         />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -66,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <BottomNav />
             <PWARegister />
             <PWAInstallPrompt />
+            <FontPreviewToggle />
           </GameProvider>
         </ThemeProvider>
       </body>
