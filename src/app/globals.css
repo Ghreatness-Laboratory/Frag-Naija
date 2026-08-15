@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,21 +7,21 @@
 /* ─── DARK MODE (default) ──────────────────────────────────────────────────── */
 /* Values are space-separated R G B — used with rgb(var(--x) / alpha) in Tailwind */
 :root, html, html.dark {
-  --fn-black:   5 10 8;
-  --fn-dark:    10 18 14;
-  --fn-card:    14 27 21;
-  --fn-card2:   20 38 30;
-  --fn-green:   0 230 92;
-  --fn-gdim:    0 176 70;
-  --fn-gborder: 42 72 58;
-  --fn-yellow:  236 181 64;
-  --fn-amber:   217 142 38;
-  --fn-red:     239 68 68;
-  --fn-pink:    236 72 153;
-  --fn-muted:   132 158 143;
-  --fn-text:    232 242 236;
-  --background: #050a08;
-  --foreground: #e8f2ec;
+  --fn-black:   8 10 7;
+  --fn-dark:    8 10 7;
+  --fn-card:    14 19 12;
+  --fn-card2:   14 19 12;
+  --fn-green:   77 255 110;
+  --fn-gdim:    31 92 43;
+  --fn-gborder: 33 49 33;
+  --fn-yellow:  224 168 63;
+  --fn-amber:   224 168 63;
+  --fn-red:     255 90 60;
+  --fn-pink:    255 90 60;
+  --fn-muted:   101 115 95;
+  --fn-text:    238 243 234;
+  --background: #080a07;
+  --foreground: #eef3ea;
   /* Hero gradient */
   --hero-from: #0d2010;
   --hero-to:   #040904;
@@ -176,8 +176,8 @@ button, a, input { transition: background-color 0.2s ease, border-color 0.2s eas
 @layer utilities {
   .fn-label    { @apply text-[9px] font-mono tracking-[0.15em] uppercase text-fn-muted; }
   .fn-value    { @apply text-fn-green font-mono font-bold; }
-  .fn-btn      { @apply bg-fn-green text-fn-black text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-gdim transition-all active:scale-95 rounded-sm; }
-  .fn-btn-outline { @apply border border-fn-green text-fn-green text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-green hover:text-fn-black transition-all active:scale-95 rounded-sm; }
+  .fn-btn      { @apply bg-fn-green text-fn-black text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-gdim transition-all active:scale-95; }
+  .fn-btn-outline { @apply border border-fn-green text-fn-green text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-green hover:text-fn-black transition-all active:scale-95; }
   .fn-btn-ghost   { @apply text-fn-muted text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:text-fn-green transition-all; }
   .section-title  { @apply font-display text-2xl sm:text-3xl font-bold uppercase tracking-wider text-fn-text; }
 }

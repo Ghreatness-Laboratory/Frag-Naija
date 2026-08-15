@@ -1,19 +1,14 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { calculateDuelOddsFromKd, kdOf } from '@/lib/duel-odds';
 
-export const DUEL_ODDS_STEEPNESS = 0.05;
-export const DUEL_ODDS_MARGIN = 0.92;
-
-function roundOdds(value) { return Math.round(value * 100) / 100; }
-export function calculateDuelOdds(playerARating, playerBRating) {
-  const ratingDiff = Number(playerARating || 0) - Number(playerBRating || 0);
-  const probabilityA = 1 / (1 + Math.pow(10, -ratingDiff * DUEL_ODDS_STEEPNESS));
-  const probabilityB = 1 - probabilityA;
-  return { odds_a: roundOdds((1 / probabilityA) * DUEL_ODDS_MARGIN), odds_b: roundOdds((1 / probabilityB) * DUEL_ODDS_MARGIN) };
+export function calculateDuelOdds(playerAKd, playerBKd) {
+  return calculateDuelOddsFromKd(playerAKd, playerBKd);
 }
-function ratingOf(a) { return Number(a?.overall_rating ?? a?.rating ?? 0); }
+
+function ratingOf(a) { return kdOf(a); }
 export async function createDuelMatch({ player_a_id, player_b_id, game_slug = 'pubg-mobile' }) {
   if (!player_a_id || !player_b_id || player_a_id === player_b_id) throw new Error('Select two different athletes');
-  const { data: athletes, error } = await supabaseAdmin.from('athletes').select('id,name,ign,overall_rating,rating,game_slug').in('id', [player_a_id, player_b_id]);
+  const { data: athletes, error } = await supabaseAdmin.from('athletes').select('id,name,ign,overall_rating,rating,kills,game_slug').in('id', [player_a_id, player_b_id]);
   if (error) throw error;
   const a = athletes?.find((x) => x.id === player_a_id); const b = athletes?.find((x) => x.id === player_b_id);
   if (!a || !b) throw new Error('Athlete not found');
