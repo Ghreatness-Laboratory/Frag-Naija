@@ -39,6 +39,15 @@ function Slot({ athlete, label }: { athlete: Athlete | null; label: string }) {
   );
 }
 
+function VsPreviewSlot({ athlete, label }: { athlete: Athlete | null; label: string }) {
+  return (
+    <div className={`min-h-[58px] border border-dashed p-2 ${athlete ? 'border-solid border-fn-green bg-fn-green/10' : 'border-fn-gborder bg-fn-card'}`}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-fn-muted">{label}</p>
+      {athlete ? <p className="mt-1 truncate bg-fn-green px-2 py-1 text-xs font-black uppercase text-fn-black">{displayName(athlete)}</p> : <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">Awaiting pick</p>}
+    </div>
+  );
+}
+
 function RosterTile({ athlete, selected, index, onClick, reduceMotion }: { athlete: Athlete; selected: boolean; index: number; onClick: () => void; reduceMotion: boolean }) {
   return (
     <motion.button
