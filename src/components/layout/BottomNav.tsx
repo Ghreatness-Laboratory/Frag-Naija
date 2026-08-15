@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { label: "Wager", href: "/wager", icon: Target, match: (path: string) => path.startsWith("/wager") },
 ] as const;
 
-const PENDING_MENU_ITEMS = ["Virtual", "Casino", "Games", "Fantasy League"];
+const PENDING_MENU_ITEMS = ["Virtual", "Casino", "Fantasy League"];
 
 function readWagerCount() {
   if (typeof window === "undefined") return 0;
@@ -115,6 +115,9 @@ export default function BottomNav() {
             </div>
 
             <div className="grid gap-1.5">
+              <Link href="/games" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
+                <span>Games</span><ChevronRight size={12} />
+              </Link>
               {PENDING_MENU_ITEMS.map((item) => (
                 <button
                   key={item}
@@ -156,7 +159,7 @@ export default function BottomNav() {
             )}
 
             <p className="mt-2 text-[8px] leading-relaxed text-fn-muted">
-              Virtual, Casino, Games, and Fantasy League remain placeholders until their destinations are confirmed.
+              Games is live with TDM 1V1. Virtual, Casino, and Fantasy League remain placeholders until their destinations are confirmed.
             </p>
           </section>
         </div>

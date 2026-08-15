@@ -17,6 +17,7 @@ const NAV = [
   { href: '/admin/tournaments',    label: 'Tournaments', icon: Trophy },
   { href: '/admin/tournament-results', label: 'Tournament Results', icon: Trophy },
   { href: '/admin/wagers',         label: 'Wagers',      icon: Swords },
+  { href: '/admin/duels',          label: 'TDM Duels',   icon: Swords },
   { href: '/admin/highlights',     label: 'Highlights',  icon: Film },
   { href: '/admin/news',           label: 'News',        icon: Newspaper },
   { href: '/admin/predictors',     label: 'Predictors',  icon: Star },

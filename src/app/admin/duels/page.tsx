@@ -1,0 +1,13 @@
+'use client';
+import { useCallback, useEffect, useState } from 'react';
+import AdminTable from '@/components/admin/AdminTable';
+
+type Duel = { id:string; status:string; odds_a:number; odds_b:number; player_a_rating:number; player_b_rating:number; created_at:string; player_a:{id:string;name:string;ign?:string|null}; player_b:{id:string;name:string;ign?:string|null}; winner?:{id:string;name:string;ign?:string|null}|null };
+function label(p?: {name:string; ign?:string|null}) { return p?.ign || p?.name || '—'; }
+export default function AdminDuelsPage(){
+  const [rows,setRows]=useState<Duel[]>([]); const [loading,setLoading]=useState(true); const [saving,setSaving]=useState('');
+  const load=useCallback(async()=>{ setLoading(true); const res=await fetch('/api/admin/duels',{credentials:'include'}); setRows(await res.json()); setLoading(false); },[]);
+  useEffect(()=>{load();},[load]);
+  async function settle(row:Duel,winner_id:string){ if(!confirm(`Settle ${label(row.player_a)} vs ${label(row.player_b)}?`)) return; setSaving(row.id); await fetch(`/api/admin/duels/${row.id}/settle`,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({winner_id})}); setSaving(''); load(); }
+  return <div className="p-8"><div className="mb-6"><h1 className="text-xl font-bold text-fn-text uppercase tracking-widest">TDM 1V1 Duels</h1><p className="text-fn-muted text-xs mt-0.5">Set winner and settle related duel wagers.</p></div><AdminTable loading={loading} rows={rows as unknown as Record<string,unknown>[]} emptyText="No duels yet" columns={[{key:'match',label:'Match',render:r=>`${label((r as unknown as Duel).player_a)} vs ${label((r as unknown as Duel).player_b)}`},{key:'odds',label:'Odds',render:r=>`${Number(r.odds_a).toFixed(2)}x / ${Number(r.odds_b).toFixed(2)}x`},{key:'ratings',label:'Ratings',render:r=>`${Number(r.player_a_rating).toFixed(0)} / ${Number(r.player_b_rating).toFixed(0)}`},{key:'status',label:'Status'},{key:'winner',label:'Winner',render:r=>label((r as unknown as Duel).winner || undefined)},{key:'created_at',label:'Created',render:r=>new Date(String(r.created_at)).toLocaleString()}]} extraActions={r=>{const row=r as unknown as Duel; if(row.status==='settled') return null; return <div className="flex gap-1"><button disabled={saving===row.id} onClick={()=>settle(row,row.player_a.id)} className="rounded bg-fn-green/10 px-2 py-1 text-[10px] font-bold text-fn-green">{label(row.player_a)}</button><button disabled={saving===row.id} onClick={()=>settle(row,row.player_b.id)} className="rounded bg-fn-green/10 px-2 py-1 text-[10px] font-bold text-fn-green">{label(row.player_b)}</button></div>;}} /></div>;
+}

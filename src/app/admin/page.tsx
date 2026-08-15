@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: '/admin/tournaments', icon: Trophy,         label: 'Tournaments', desc: 'Schedule and update tournaments'        },
   { href: '/admin/tournament-results', icon: Trophy, label: 'Tournament Results', desc: 'Record placements and ranking points' },
   { href: '/admin/wagers',      icon: Swords,         label: 'Wagers',      desc: 'Create markets, toggle hot, settle'    },
+  { href: '/admin/duels',       icon: Swords,         label: 'TDM Duels',   desc: 'Settle TDM 1V1 player duels'    },
   { href: '/admin/highlights',  icon: Film,           label: 'Highlights',  desc: 'Upload clips and Theatre of War vids'  },
   { href: '/admin/communities', icon: MessageCircle, label: 'Communities', desc: 'Manage public WhatsApp and Discord hubs' },
   { href: '/admin/shop', icon: ShoppingBag, label: 'Shop', desc: 'Sell accounts, iMercs, and gaming gear' },
