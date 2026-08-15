@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight } from "lucide-react";
+import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight, X } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
 import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
+import BrandedLoader from "@/components/common/BrandedLoader";
 
 type Athlete = {
   id: string;
@@ -91,6 +92,8 @@ export default function AthletesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [rosterMode, setRosterMode] = useState<"athletes" | "icons">("athletes");
+  const [roleOptions, setRoleOptions] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
@@ -121,6 +124,32 @@ export default function AthletesPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (!selectedGame) {
+      setRoleOptions([]);
+      setSelectedRoles([]);
+      return;
+    }
+
+    let active = true;
+    const params = new URLSearchParams({ game_slug: selectedGame.slug, distinct: "roles" });
+    fetch(`/api/athletes?${params.toString()}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((roles: string[]) => {
+        if (!active) return;
+        setRoleOptions(Array.isArray(roles) ? roles.filter(Boolean) : []);
+        setSelectedRoles((current) => current.filter((role) => roles.includes(role)));
+      })
+      .catch(() => { if (active) setRoleOptions([]); });
+
+    return () => { active = false; };
+  }, [selectedGame]);
+
+  function toggleRole(role: string) {
+    setSelectedRoles((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]);
+    setSelected(null);
+  }
+
   const gameContent = isHydrated && selectedGame ? getGameContent(selectedGame.slug) : null;
   const apiForGame = selectedGame ? apiAthletes.filter((a) => (a.game_slug ?? selectedGame.slug) === selectedGame.slug) : [];
   const gameAthletes: Athlete[] = apiForGame.length > 0
@@ -128,9 +157,12 @@ export default function AthletesPage() {
     : (gameContent?.athletes as Athlete[] | undefined) ?? [];
   const normalizedSearch = search.trim().toLowerCase();
   const rosterAthletes = gameAthletes.filter((a) => rosterMode === "icons" ? Boolean(a.is_icon) : !a.is_icon);
-  const athletes = normalizedSearch
-    ? rosterAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""}`.toLowerCase().includes(normalizedSearch))
+  const roleFilteredAthletes = selectedRoles.length
+    ? rosterAthletes.filter((a) => a.role && selectedRoles.includes(a.role))
     : rosterAthletes;
+  const athletes = normalizedSearch
+    ? roleFilteredAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""} ${a.role ?? ""}`.toLowerCase().includes(normalizedSearch))
+    : roleFilteredAthletes;
 
   // Auto-select first athlete when list loads
   useEffect(() => {
@@ -158,7 +190,7 @@ export default function AthletesPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${primary} transparent transparent transparent` }} />
+        <BrandedLoader label="Loading athletes" />
       </div>
     );
   }
@@ -250,11 +282,39 @@ export default function AthletesPage() {
               className="w-full bg-transparent text-xs text-fn-text outline-none placeholder:text-fn-muted"
             />
           </label>
+          {roleOptions.length > 0 && (
+            <div className="mt-3 rounded-sm border border-fn-gborder bg-fn-black/70 p-2">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="fn-label">Role filter</span>
+                {selectedRoles.length > 0 && (
+                  <button type="button" onClick={() => setSelectedRoles([])} className="inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-fn-muted hover:text-fn-text">
+                    <X size={9} /> Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {roleOptions.map((role) => {
+                  const active = selectedRoles.includes(role);
+                  return (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => toggleRole(role)}
+                      className="rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-all"
+                      style={active ? { borderColor: `${primary}80`, background: `${primary}18`, color: primary } : { borderColor: 'rgb(var(--fn-gborder))', color: 'rgb(var(--fn-muted))' }}
+                    >
+                      {role}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="overflow-y-auto max-h-[40vh] lg:max-h-none lg:h-[calc(100vh-18rem)]">
           {athletes.length === 0 ? (
-            <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">{normalizedSearch ? <>No results found for &quot;{search}&quot;</> : <>No {rosterMode === "icons" ? "Icon" : "regular"} athletes found.</>}</p>
+            <p className="px-4 py-6 text-[10px] uppercase tracking-widest text-fn-muted">{normalizedSearch || selectedRoles.length ? <>No athletes match the current search and role filters.</> : <>No {rosterMode === "icons" ? "Icon" : "regular"} athletes found.</>}</p>
           ) : athletes.map((athlete, index) => {
             const isActive = (selected?.id ?? athletes[0].id) === athlete.id;
             const r = computeRating(athlete);

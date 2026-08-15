@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
+import BrandedLoader from '@/components/common/BrandedLoader';
 import { useState, useEffect, useCallback } from 'react';
 import { Download, RefreshCw, DollarSign, Settings, Users, AlertCircle } from 'lucide-react';
 
@@ -309,7 +310,7 @@ export default function AdminFinancePage() {
               </form>
             ) : (
               <div className="h-32 flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-fn-green border-t-transparent rounded-full animate-spin" />
+                <BrandedLoader label="Loading" size="sm" />
               </div>
             )}
           </div>

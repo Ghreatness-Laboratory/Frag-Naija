@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Shield, Trophy, Users } from 'lucide-react';
+import { Images, Shield, Trophy, Users } from 'lucide-react';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { useGame } from '@/context/GameContext';
 import { DEFAULT_GAME } from '@/lib/games';
+import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Athlete = {
   id: string;
@@ -43,6 +44,7 @@ type Team = {
   bio: string | null;
   players: Athlete[];
   organization?: { id: string; name: string; logo_url: string | null } | null;
+  gallery?: { id: string; image_url: string; caption: string | null; sort_order: number | null }[];
 };
 
 function parseArray(v: unknown) {
@@ -80,7 +82,7 @@ export default function TeamDetail({ params }: { params: { id: string } }) {
       .finally(() => setLoading(false));
   }, [params.id]);
 
-  if (loading) return <div className="min-h-screen p-8 text-fn-muted">Loading team...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Loading team" /></div>;
   if (!team) {
     return (
       <div className="min-h-screen p-8">
@@ -134,6 +136,22 @@ export default function TeamDetail({ params }: { params: { id: string } }) {
           </div>
         ))}
       </div>
+
+      {team.gallery?.length ? (
+        <section className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-4">
+          <h2 className="fn-label mb-3 flex items-center gap-2"><Images size={12} style={{ color: primary }} /> GALLERY</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {team.gallery.map((item) => (
+              <figure key={item.id} className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-black/50">
+                <a href={item.image_url} target="_blank" rel="noreferrer" className="block aspect-video overflow-hidden">
+                  <img src={item.image_url} alt={item.caption || `${team.name} gallery photo`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                </a>
+                {item.caption && <figcaption className="border-t border-fn-gborder px-3 py-2 text-[10px] uppercase tracking-wider text-fn-muted">{item.caption}</figcaption>}
+              </figure>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <article className="rounded-sm border border-fn-gborder bg-fn-card p-4">

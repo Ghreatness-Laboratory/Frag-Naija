@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTeamById, updateTeam, deleteTeam } from '@/lib/db';
+import { getTeamById, updateTeam, deleteTeam, replaceTeamGallery } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,9 @@ export async function PUT(request, { params }) {
 
   try {
     const body = await request.json();
-    const data = await updateTeam(params.id, body);
+    const { gallery, ...teamBody } = body;
+    const data = await updateTeam(params.id, teamBody);
+    if (Array.isArray(gallery)) data.gallery = await replaceTeamGallery(params.id, gallery);
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

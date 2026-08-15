@@ -1,4 +1,5 @@
 "use client";
+import BrandedLoader from "@/components/common/BrandedLoader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -120,8 +121,7 @@ export default function TeamsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-          style={{ borderColor: `${primary} transparent transparent transparent` }} />
+        <BrandedLoader label="Loading" size="sm" />
       </div>
     );
   }
