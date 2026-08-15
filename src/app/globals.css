@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Rajdhani:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,6 +11,31 @@
   
   /* Secondary UI & Body Font - Labels, Controls & Subtext */
   --font-mono: 'Space Mono', 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* ─── ESPORTS FONT CANDIDATES (for preview/testing) ───────────────────────*/
+  /* Rajdhani - Angular, esports-standard, good legibility at small sizes */
+  --font-rajdhani: 'Rajdhani', sans-serif;
+  /* Chakra Petch - Technical/HUD feel, slightly wider than Rajdhani */
+  --font-chakra: 'Chakra Petch', sans-serif;
+  /* Exo 2 - Geometric with technical edge, versatile for display and body */
+  --font-exo2: 'Exo 2', sans-serif;
+}
+
+/* ─── FONT PREVIEW MODES ────────────────────────────────────────────────────*/
+/* Apply these classes to html element to preview different fonts site-wide */
+html.font-preview-rajdhani {
+  --font-display: var(--font-rajdhani);
+  --font-mono: var(--font-rajdhani);
+}
+
+html.font-preview-chakra {
+  --font-display: var(--font-chakra);
+  --font-mono: var(--font-chakra);
+}
+
+html.font-preview-exo2 {
+  --font-display: var(--font-exo2);
+  --font-mono: var(--font-exo2);
 }
 
 /* ─── FONT APPLICATION RULES ────────────────────────────────────────────────*/
@@ -19,7 +44,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em; /* Increased from -0.02em for better readability */
 }
 
 /* Utility classes for explicit font application */
@@ -27,16 +52,18 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display) !important;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
 }
 
 .font-mono {
   font-family: var(--font-mono) !important;
 }
 
-/* Apply mono font to body, labels, controls, and UI elements */
+/* Apply mono font to body, labels, controls, and UI elements with improved spacing */
 body, p, label, input, select, textarea {
   font-family: var(--font-mono);
+  letter-spacing: 0.01em; /* Slight increase for better readability */
+  line-height: 1.6; /* Increased from default for less cramped feel */
 }
 
 /* Specific styling for rating numbers and large metrics */
@@ -46,7 +73,25 @@ body, p, label, input, select, textarea {
   font-family: var(--font-display);
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.01em; /* Reduced negative tracking for cleaner look */
+}
+
+/* ─── IMPROVED TYPOGRAPHY FOR ESPORTS READABILITY ─────────────────────────*/
+/* Increase spacing in commonly cramped areas */
+.fn-label {
+  letter-spacing: 0.12em !important; /* Slightly reduced from 0.15em but still spacious */
+  line-height: 1.5 !important;
+}
+
+/* Card descriptions and body copy */
+p, .text-xs, .text-sm {
+  letter-spacing: 0.015em;
+  line-height: 1.65;
+}
+
+/* Stat readouts - keep monospace feel but with better spacing */
+.stat-value, .metric-value {
+  letter-spacing: 0.02em;
 }
 
 /* ─── DARK MODE (default) ──────────────────────────────────────────────────── */
