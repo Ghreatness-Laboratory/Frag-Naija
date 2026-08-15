@@ -1,4 +1,5 @@
 "use client";
+import BrandedLoader from "@/components/common/BrandedLoader";
 import { useState, useEffect, useCallback } from "react";
 import { Newspaper, Clock, User, ChevronRight } from "lucide-react";
 
@@ -45,7 +46,7 @@ export default function NewsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-fn-black">
-        <div className="w-6 h-6 border-2 border-fn-green border-t-transparent rounded-full animate-spin" />
+        <BrandedLoader label="Loading" size="sm" />
       </div>
     );
   }

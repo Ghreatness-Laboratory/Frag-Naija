@@ -15,6 +15,8 @@ const EMPTY = {
   rank: '', strength: '0', achievements: '', organization_id: '',
 };
 
+type GalleryFormItem = { image_url: string; caption: string; sort_order: string; file?: File | null };
+
 function toArr(val: unknown): string {
   if (Array.isArray(val)) return val.join(', ');
   return String(val ?? '');
@@ -38,6 +40,7 @@ function TeamsContent() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [gallery, setGallery] = useState<GalleryFormItem[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,11 +57,12 @@ function TeamsContent() {
     setEditing(null);
     setForm({ ...EMPTY });
     setLogoFile(null);
+    setGallery([]);
     setError('');
     setOpen(true);
   }
 
-  function openEdit(row: Record<string, unknown>) {
+  async function openEdit(row: Record<string, unknown>) {
     setEditing(row);
     setForm({
       name:         String(row.name     ?? ''),
@@ -74,19 +78,34 @@ function TeamsContent() {
       organization_id: String(row.organization_id ?? ''),
     });
     setLogoFile(null);
+    setGallery([]);
     setError('');
     setOpen(true);
+    const res = await fetch(`/api/teams/${row.id}`, { cache: 'no-store' });
+    if (res.ok) {
+      const detail = await res.json();
+      setGallery((detail.gallery ?? []).map((item: Record<string, unknown>, index: number) => ({
+        image_url: String(item.image_url ?? ''),
+        caption: String(item.caption ?? ''),
+        sort_order: String(item.sort_order ?? index),
+        file: null,
+      })));
+    }
   }
 
-  async function uploadLogo(): Promise<string | null> {
-    if (!logoFile) return null;
+  async function uploadFile(file: File, bucket = 'teams'): Promise<string> {
     const fd = new FormData();
-    fd.append('file', logoFile);
-    fd.append('bucket', 'teams');
+    fd.append('file', file);
+    fd.append('bucket', bucket);
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
     return data.url;
+  }
+
+  async function uploadLogo(): Promise<string | null> {
+    if (!logoFile) return null;
+    return uploadFile(logoFile, 'teams');
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -95,6 +114,11 @@ function TeamsContent() {
     setError('');
     try {
       const logoUrl = await uploadLogo();
+      const galleryRows = await Promise.all(gallery.map(async (item, index) => ({
+        image_url: item.file ? await uploadFile(item.file, 'teams') : item.image_url,
+        caption: item.caption,
+        sort_order: Number(item.sort_order) || index,
+      })));
       const body = {
         name:     form.name,
         game_slug: form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
@@ -107,6 +131,7 @@ function TeamsContent() {
         rank:     form.rank !== '' ? Number(form.rank) : null,
         achievements: splitArr(form.achievements),
         organization_id: form.organization_id || null,
+        gallery: galleryRows,
       };
       const url = editing ? `/api/teams/${editing.id}` : '/api/teams';
       const res = await fetch(url, {
@@ -296,6 +321,34 @@ function TeamsContent() {
               />
             </div>
           </Field>
+
+          {(editing || open) && (
+            <Field label="Gallery">
+              <div className="space-y-3 rounded-sm border border-fn-gborder bg-fn-black/40 p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] uppercase tracking-widest text-fn-muted">Upload multiple highlight photos, add captions, and set sort order.</p>
+                  <button type="button" onClick={() => setGallery((items) => [...items, { image_url: '', caption: '', sort_order: String(items.length), file: null }])} className="fn-btn-outline px-2 py-1 text-[9px]">Add Image</button>
+                </div>
+                {gallery.map((item, index) => (
+                  <div key={index} className="grid gap-2 rounded-sm border border-fn-gborder p-2 sm:grid-cols-[80px_1fr_auto]">
+                    <div className="h-20 w-20 overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">
+                      {item.file ? <img src={URL.createObjectURL(item.file)} alt="" className="h-full w-full object-cover" /> : item.image_url ? <img src={item.image_url} alt="" className="h-full w-full object-cover" /> : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Input type="file" accept="image/*" onChange={(e) => setGallery((items) => items.map((g, i) => i === index ? { ...g, file: e.target.files?.[0] ?? null } : g))} />
+                      <Input value={item.image_url} onChange={(e) => setGallery((items) => items.map((g, i) => i === index ? { ...g, image_url: e.target.value } : g))} placeholder="Or paste image URL" />
+                      <Input value={item.caption} onChange={(e) => setGallery((items) => items.map((g, i) => i === index ? { ...g, caption: e.target.value } : g))} placeholder="Optional caption" />
+                    </div>
+                    <div className="flex flex-row gap-2 sm:flex-col">
+                      <input className="w-20 rounded border border-fn-gborder bg-fn-dark px-2 py-2 text-sm text-fn-text" type="number" value={item.sort_order} onChange={(e) => setGallery((items) => items.map((g, i) => i === index ? { ...g, sort_order: e.target.value } : g))} />
+                      <button type="button" onClick={() => setGallery((items) => items.filter((_, i) => i !== index))} className="rounded border border-fn-red/30 px-2 py-1 text-[10px] text-fn-red">Delete</button>
+                    </div>
+                  </div>
+                ))}
+                {!gallery.length && <p className="text-xs text-fn-muted">No gallery images yet.</p>}
+              </div>
+            </Field>
+          )}
 
           {error && (
             <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">

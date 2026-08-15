@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAthletes, createAthlete } from '@/lib/db';
+import { getAthletes, getAthleteRoles, createAthlete } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 
 export const dynamic = 'force-dynamic';
@@ -7,10 +7,17 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    const game_slug = searchParams.get('game_slug') || '';
+
+    if (searchParams.get('distinct') === 'roles') {
+      const roles = await getAthleteRoles({ game_slug });
+      return NextResponse.json(roles);
+    }
+
     const filters = {
       team:   searchParams.get('team')   || '',
       status: searchParams.get('status') || '',
-      game_slug: searchParams.get('game_slug') || '',
+      game_slug,
       is_icon: searchParams.get('is_icon') || '',
     };
     const data = await getAthletes(filters);

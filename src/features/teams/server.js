@@ -64,9 +64,17 @@ export async function getTeamById(id) {
     .eq('team', team.name);
   if (playersError) throw playersError;
 
+  const { data: gallery, error: galleryError } = await supabaseAdmin
+    .from('team_gallery')
+    .select('*')
+    .eq('team_id', team.id)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (galleryError) throw galleryError;
+
   const totals = await getRankingTotals([team.id]);
 
-  return { ...team, total_ranking_points: totals.get(team.id) ?? 0, players };
+  return { ...team, total_ranking_points: totals.get(team.id) ?? 0, players, gallery: gallery ?? [] };
 }
 
 export async function createTeam(body) {
@@ -86,4 +94,29 @@ export async function updateTeam(id, body) {
 export async function deleteTeam(id) {
   const { error } = await supabaseAdmin.from('teams').delete().eq('id', id);
   if (error) throw error;
+}
+
+
+export async function replaceTeamGallery(teamId, gallery = []) {
+  const { error: deleteError } = await supabaseAdmin.from('team_gallery').delete().eq('team_id', teamId);
+  if (deleteError) throw deleteError;
+
+  const rows = (Array.isArray(gallery) ? gallery : [])
+    .map((item, index) => ({
+      team_id: teamId,
+      image_url: String(item.image_url ?? '').trim(),
+      caption: String(item.caption ?? '').trim() || null,
+      sort_order: Number.isFinite(Number(item.sort_order)) ? Number(item.sort_order) : index,
+    }))
+    .filter((item) => item.image_url);
+
+  if (!rows.length) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('team_gallery')
+    .insert(rows)
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
 }

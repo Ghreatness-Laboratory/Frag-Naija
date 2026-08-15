@@ -146,14 +146,9 @@ export default function Navbar() {
           <ThemeToggle />
 
           {!user && (
-            <>
-              <Link href="/login" className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors">
-                Login / Sign Up
-              </Link>
-              <Link href="/register" className="fn-btn text-[10px] px-3 py-1.5">
-                Sign Up
-              </Link>
-            </>
+            <Link href="/login" className="fn-btn text-[10px] px-3 py-1.5">
+              Login / Sign Up
+            </Link>
           )}
 
           {user && (
@@ -209,6 +204,11 @@ export default function Navbar() {
             ⚡
           </Link>
           <ThemeToggle />
+          {!user && (
+            <Link href="/login" className="fn-btn px-2.5 py-1 text-[9px]">
+              Login
+            </Link>
+          )}
           <button
             onClick={() => setOpen(!open)}
             className="p-2 text-fn-muted hover:text-fn-green transition-colors"
@@ -328,14 +328,9 @@ export default function Navbar() {
                   <LogOut size={12} /> Logout
                 </button>
               ) : (
-                <>
-                  <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn-outline text-[10px] py-2 text-center">
-                    Login / Sign Up
-                  </Link>
-                  <Link href="/register" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
-                    Sign Up
-                  </Link>
-                </>
+                <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
+                  Login / Sign Up
+                </Link>
               )}
             </div>
           </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import BrandedLoader from '@/components/common/BrandedLoader';
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -777,7 +778,7 @@ export default function WalletPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-fn-black flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-fn-green border-t-transparent rounded-full animate-spin" />
+        <BrandedLoader label="Loading" size="sm" />
       </div>
     }>
       <WalletContent />

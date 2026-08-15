@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTeams, createTeam } from '@/lib/db';
+import { getTeams, createTeam, replaceTeamGallery } from '@/lib/db';
 import { checkAdmin } from '@/lib/checkAdmin';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,9 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const data = await createTeam(body);
+    const { gallery, ...teamBody } = body;
+    const data = await createTeam(teamBody);
+    if (Array.isArray(gallery)) data.gallery = await replaceTeamGallery(data.id, gallery);
     return NextResponse.json(data, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

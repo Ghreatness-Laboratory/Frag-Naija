@@ -125,6 +125,16 @@ async function replaceAthleteAchievements(athleteId, achievements) {
   if (insertError) throw insertError;
 }
 
+export async function getAthleteRoles({ game_slug } = {}) {
+  let query = supabaseAdmin.from('athletes').select('role').not('role', 'is', null);
+  if (game_slug) query = query.eq('game_slug', game_slug);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return Array.from(new Set((data || []).map((a) => String(a.role || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+}
+
 export async function getAthletes({ team, status, game_slug, is_icon } = {}) {
   let query = supabaseAdmin.from('athletes').select('*').order('overall_rating', { ascending: false });
 
