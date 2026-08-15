@@ -1,23 +1,35 @@
 ```
 # Next.js build outputs
 .next/
-# Production builds
-dist/
-build/
-# Dependencies
-node_modules/
+
+# Compressed JS files (likely build artifacts)
+*.js
+
 # Cache directories
 .cache/
+
+# Logs
+*.log
+
 # Environment variables
 .env
 .env.local
 .env.*
-# Logs
-*.log
-# Temporary files
-*.tmp
-*.swp
-# Editor files
+
+# IDE files
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Temp files
+*.tmp
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Dependency directories
+node_modules/
 ```
