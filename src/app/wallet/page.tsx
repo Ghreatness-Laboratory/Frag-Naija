@@ -448,7 +448,7 @@ function WalletContent() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Wallet className="w-6 h-6 text-fn-green" />
-          <h1 className="text-2xl font-bold text-fn-text font-mono tracking-widest uppercase">Wallet</h1>
+          <h1 className="text-2xl font-bold text-fn-text font-display tracking-widest uppercase">Wallet</h1>
         </div>
         <p className="text-fn-muted text-sm">Manage your Frag Naija balance</p>
       </div>
@@ -514,7 +514,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <ArrowDownCircle className="w-5 h-5 text-fn-green" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Deposit Funds</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Deposit Funds</h2>
                 </div>
 
                 <form onSubmit={handleDeposit} className="space-y-4">
@@ -581,7 +581,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <Clock className="w-5 h-5 text-fn-muted" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Transaction History</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Transaction History</h2>
                 </div>
 
                 {loading ? (
@@ -634,7 +634,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <ArrowUpCircle className="w-5 h-5 text-fn-green" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Withdraw Funds</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Withdraw Funds</h2>
                 </div>
 
                 {hasPending && (
@@ -726,7 +726,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <Clock className="w-5 h-5 text-fn-muted" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Withdrawal History</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Withdrawal History</h2>
                 </div>
 
                 {loading ? (

@@ -247,7 +247,7 @@ export default function PlayerCardTemplate({
             <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center" style={{ color: showcaseAccent }}>
               <Shield size={15} />
             </div>
-            <h3 className="min-w-0 truncate font-mono text-[21px] font-black leading-none tracking-wide text-white">{displayName}</h3>
+            <h3 className="min-w-0 truncate font-display text-[21px] font-black leading-none tracking-wide text-white">{displayName}</h3>
           </div>
           <p className="mt-2 truncate text-[14px] font-mono uppercase tracking-[0.26em] text-white/48">{role}</p>
 

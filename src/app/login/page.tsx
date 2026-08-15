@@ -90,7 +90,7 @@ export default function LoginPage() {
               : <LogIn className="w-7 h-7 text-fn-green" />
             }
           </div>
-          <h1 className="text-2xl font-bold text-fn-text font-mono tracking-widest uppercase">
+          <h1 className="text-2xl font-bold text-fn-text font-display tracking-widest uppercase">
             {step === '2fa' ? '2FA Verification' : 'Sign In'}
           </h1>
           <p className="text-fn-muted text-sm mt-1">
