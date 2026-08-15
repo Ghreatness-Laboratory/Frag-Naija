@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ShieldCheck, ShieldOff, Shield, Copy, Check, ArrowLeft } from 'lucide-react';
+import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Factor = { id: string; status: string };
 type UserData = {
@@ -107,7 +108,7 @@ export default function SecurityPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-fn-black flex items-center justify-center">
-        <div className="text-fn-muted text-sm uppercase tracking-widest animate-pulse">Loading...</div>
+        <BrandedLoader label="Loading security" />
       </div>
     );
   }

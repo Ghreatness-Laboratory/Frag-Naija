@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight, X } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
@@ -94,6 +94,8 @@ export default function AthletesPage() {
   const [rosterMode, setRosterMode] = useState<"athletes" | "icons">("athletes");
   const [roleOptions, setRoleOptions] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [roleFilterOpen, setRoleFilterOpen] = useState(false);
+  const searchFilterRef = useRef<HTMLDivElement | null>(null);
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
@@ -123,6 +125,15 @@ export default function AthletesPage() {
   }, [selectedGame?.slug, setSelectedGame]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (!searchFilterRef.current?.contains(event.target as Node)) setRoleFilterOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, []);
 
   useEffect(() => {
     if (!selectedGame) {
@@ -273,43 +284,65 @@ export default function AthletesPage() {
               </button>
             ))}
           </div>
-          <label className="mt-3 flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-black/70 px-3 py-2 focus-within:border-fn-green/60">
-            <Search size={13} style={{ color: primary }} />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search athletes / IGN"
-              className="w-full bg-transparent text-xs text-fn-text outline-none placeholder:text-fn-muted"
-            />
-          </label>
-          {roleOptions.length > 0 && (
-            <div className="mt-3 rounded-sm border border-fn-gborder bg-fn-black/70 p-2">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="fn-label">Role filter</span>
-                {selectedRoles.length > 0 && (
-                  <button type="button" onClick={() => setSelectedRoles([])} className="inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-fn-muted hover:text-fn-text">
-                    <X size={9} /> Clear
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {roleOptions.map((role) => {
-                  const active = selectedRoles.includes(role);
-                  return (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => toggleRole(role)}
-                      className="rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-all"
-                      style={active ? { borderColor: `${primary}80`, background: `${primary}18`, color: primary } : { borderColor: 'rgb(var(--fn-gborder))', color: 'rgb(var(--fn-muted))' }}
-                    >
-                      {role}
+          <div ref={searchFilterRef} className="relative mt-3">
+            <form
+              role="search"
+              onSubmit={(event) => { event.preventDefault(); setRoleFilterOpen(false); }}
+              className="flex items-center gap-2 rounded-sm border border-fn-gborder bg-fn-black/70 px-3 py-2 focus-within:border-fn-green/60"
+            >
+              <button
+                type="button"
+                onClick={() => setRoleFilterOpen((current) => !current)}
+                aria-label="Toggle role filters"
+                aria-expanded={roleFilterOpen}
+                className="flex flex-shrink-0 items-center justify-center text-fn-muted transition-colors hover:text-fn-green"
+              >
+                <Search size={13} style={{ color: primary }} />
+              </button>
+              <input
+                value={search}
+                onFocus={() => setRoleFilterOpen(true)}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search athletes / IGN"
+                className="w-full bg-transparent text-xs text-fn-text outline-none placeholder:text-fn-muted"
+              />
+              {roleFilterOpen && (
+                <button type="button" onClick={() => setRoleFilterOpen(false)} aria-label="Close role filters" className="text-fn-muted hover:text-fn-text">
+                  <X size={12} />
+                </button>
+              )}
+            </form>
+            {roleFilterOpen && roleOptions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-2 rounded-sm border border-fn-green/30 bg-fn-black p-2 shadow-2xl shadow-black/60">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="fn-label">Role filter</span>
+                  {selectedRoles.length > 0 && (
+                    <button type="button" onClick={() => setSelectedRoles([])} className="inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-fn-muted hover:text-fn-text">
+                      <X size={9} /> Clear
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+                <div className="max-h-44 overflow-y-auto pr-1">
+                  <div className="flex flex-wrap gap-1.5">
+                    {roleOptions.map((role) => {
+                      const active = selectedRoles.includes(role);
+                      return (
+                        <button
+                          key={role}
+                          type="button"
+                          onClick={() => toggleRole(role)}
+                          className="rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-all"
+                          style={active ? { borderColor: `${primary}80`, background: `${primary}18`, color: primary } : { borderColor: 'rgb(var(--fn-gborder))', color: 'rgb(var(--fn-muted))' }}
+                        >
+                          {role}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="overflow-y-auto max-h-[40vh] lg:max-h-none lg:h-[calc(100vh-18rem)]">

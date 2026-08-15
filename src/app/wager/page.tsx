@@ -37,6 +37,7 @@ import {
 import { publishWagerCount } from "@/components/layout/BottomNav";
 import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
 import { GAMES } from "@/lib/games";
+import BrandedLoader from "@/components/common/BrandedLoader";
 
 type CurrentUser = {
   id?: string | null;
@@ -1806,8 +1807,8 @@ function WagerPageContent() {
             </div>
 
             {wagersLoading && (
-              <div className="rounded-sm border border-fn-gborder bg-fn-card p-6 text-[11px] text-fn-muted">
-                Loading active wager markets...
+              <div className="flex justify-center rounded-sm border border-fn-gborder bg-fn-card p-6">
+                <BrandedLoader label="Loading active wager markets" size="sm" />
               </div>
             )}
 
@@ -1922,8 +1923,8 @@ function WagerPageContent() {
                 <span className="text-[9px] font-bold text-fn-green">{currentUserWagers.length} ACTIVE</span>
               </div>
               {myWagersLoading ? (
-                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
-                  Loading your wager history...
+                <div className="flex justify-center rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                  <BrandedLoader label="Loading wager history" size="sm" />
                 </div>
               ) : !currentUser?.email ? (
                 <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
@@ -2007,8 +2008,8 @@ function WagerPageContent() {
                 <span className="text-[9px] font-bold text-fn-green">{walletTxList.length} ITEMS</span>
               </div>
               {walletTxLoading ? (
-                <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
-                  Loading wallet history...
+                <div className="flex justify-center rounded-sm border border-fn-gborder bg-fn-dark p-3">
+                  <BrandedLoader label="Loading wallet history" size="sm" />
                 </div>
               ) : !currentUser?.email ? (
                 <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px] text-fn-muted">
