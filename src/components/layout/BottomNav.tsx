@@ -91,17 +91,17 @@ export default function BottomNav() {
 
   function navItemClass(isActive: boolean) {
     return `relative flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-sm px-1 py-1 text-[9px] font-black uppercase tracking-[0.08em] transition-colors ${
-      isActive ? "text-fn-text" : "text-fn-muted hover:text-fn-green"
+      isActive ? "text-fn-green" : "text-fn-muted hover:text-fn-green"
     }`;
   }
 
   return (
     <>
       {menuOpen && (
-        <div className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden" onClick={() => setMenuOpen(false)}>
+        <div className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
           <section
             aria-label="Bottom navigation menu"
-            className="absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] rounded-sm border border-fn-green/30 bg-fn-card p-3 shadow-2xl shadow-black/70"
+            className="absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] border border-fn-green/30 bg-fn-card p-3 shadow-2xl shadow-black/70 md:left-1/2 md:right-auto md:w-[360px] md:-translate-x-1/2"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between gap-2 border-b border-fn-gborder pb-2">
@@ -167,7 +167,7 @@ export default function BottomNav() {
 
       <nav
         aria-label="Primary mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-fn-gborder bg-fn-dark/95 px-2 pt-1.5 shadow-[0_-12px_30px_rgba(0,0,0,0.45)] backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-fn-gborder bg-fn-dark/95 px-2 pt-1.5 shadow-[0_-12px_30px_rgba(0,0,0,0.45)] backdrop-blur md:left-1/2 md:right-auto md:w-[520px] md:-translate-x-1/2 md:border-x"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)" }}
       >
         <div className="grid grid-cols-5 items-end gap-1">
@@ -180,7 +180,7 @@ export default function BottomNav() {
               <>
                 <span
                   className={`absolute top-0 h-0.5 w-7 rounded-full transition-opacity ${isActive ? "opacity-100" : "opacity-0"}`}
-                  style={{ background: isActive ? "rgb(var(--fn-text))" : "transparent" }}
+                  style={{ background: isActive ? "rgb(var(--fn-green))" : "transparent" }}
                 />
                 <span className="relative flex h-6 w-6 items-center justify-center">
                   <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
