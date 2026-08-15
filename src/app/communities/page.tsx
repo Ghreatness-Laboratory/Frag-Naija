@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, MessageCircle, Users } from 'lucide-react';
 import { GAMES } from '@/lib/games';
+import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Community = { id: string; game_slug: string; tier: string; name: string; description: string | null; whatsapp_url: string | null; discord_url: string | null; status: string; sort_order: number };
 
@@ -37,7 +38,7 @@ export default function CommunitiesPage() {
         {tiers.map((item) => <button key={item} onClick={() => setTier(item)} className={`rounded-sm border px-3 py-2 text-[10px] font-bold uppercase tracking-widest ${tier === item ? 'border-fn-green bg-fn-green/10 text-fn-green' : 'border-fn-gborder text-fn-muted'}`}>{item}</button>)}
       </div>
 
-      {loading ? <p className="mt-8 text-xs text-fn-muted">Loading communities…</p> : filtered.length === 0 ? <p className="mt-8 text-xs text-fn-muted">No communities match this filter yet.</p> : (
+      {loading ? <div className="mt-8 flex justify-center"><BrandedLoader label="Loading communities" /></div> : filtered.length === 0 ? <p className="mt-8 text-xs text-fn-muted">No communities match this filter yet.</p> : (
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((row) => {
             const game = GAMES.find((item) => item.slug === row.game_slug);
