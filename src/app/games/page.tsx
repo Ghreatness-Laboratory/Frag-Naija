@@ -5,7 +5,7 @@ import { Gamepad2, Lock } from 'lucide-react';
 
 const MODES = [
   { key: 'tdm_1v1', label: 'TDM 1V1', ready: true, href: '/games/tdm-1v1' },
-  { key: 'wow_team_4v4', label: 'WOW MODE Team 4v4' },
+  { key: 'wow_team_4v4', label: 'WOW MODE Team 4v4', ready: true, href: '/games/wow-4v4', scope: 'PUBG Mobile only' },
   { key: 'wow_team_3v3', label: 'WOW MODE Team 3v3' },
   { key: 'wow_team_2v3', label: 'WOW MODE Team 2v3' },
   { key: 'wow_player_4v4', label: 'WOW MODE Player 4v4' },
@@ -36,13 +36,13 @@ export default function GamesPage() {
                   {mode.ready ? <Gamepad2 className="text-fn-green" /> : <Lock className="text-fn-muted" />}
                 </div>
                 <p className="mt-2 text-xs uppercase tracking-widest text-fn-muted">
-                  {mode.ready ? 'Live now — select combatants' : 'Coming Soon'}
+                  {mode.ready ? (mode.scope ?? 'Live now — select athletes') : 'Coming Soon'}
                 </p>
               </>
             );
 
             return mode.ready && mode.href ? (
-              <Link key={mode.key} href={mode.href} className={className} aria-label="Open TDM 1V1 mode">
+              <Link key={mode.key} href={mode.href} className={className} aria-label={`Open ${mode.label} mode`}>
                 {content}
               </Link>
             ) : (
