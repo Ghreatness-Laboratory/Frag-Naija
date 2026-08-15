@@ -1702,12 +1702,20 @@ function WagerPageContent() {
             </div>
             
             {currentUser?.email && (
-              <button
-                onClick={() => setIsWithdrawOpen(true)}
-                className="fn-btn-outline px-6 py-3.5 text-[10px] font-black uppercase tracking-widest hover:bg-fn-yellow/10 hover:border-fn-yellow/50 xs:h-full"
-              >
-                WITHDRAW
-              </button>
+              <div className="grid grid-cols-2 gap-2 xs:h-full">
+                <Link
+                  href="/wallet?tab=deposit"
+                  className="fn-btn px-6 py-3.5 text-center text-[10px] font-black uppercase tracking-widest xs:h-full"
+                >
+                  DEPOSIT
+                </Link>
+                <button
+                  onClick={() => setIsWithdrawOpen(true)}
+                  className="fn-btn-outline px-6 py-3.5 text-[10px] font-black uppercase tracking-widest hover:bg-fn-yellow/10 hover:border-fn-yellow/50 xs:h-full"
+                >
+                  WITHDRAW
+                </button>
+              </div>
             )}
           </div>
         </div>
