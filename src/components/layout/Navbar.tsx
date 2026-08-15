@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2, Search, Ticket } from "lucide-react";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGame } from "@/context/GameContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
@@ -83,10 +83,6 @@ function GameSwitcher({ onClick }: { onClick: () => void }) {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [loadCodeOpen, setLoadCodeOpen] = useState(false);
-  const [bookingCode, setBookingCode] = useState("");
-  const menuRef = useRef<HTMLDivElement | null>(null);
   const path            = usePathname();
   const router          = useRouter();
   const { user, isAdmin } = useAuthState();
@@ -94,78 +90,10 @@ export default function Navbar() {
 
   const displayName = user?.username || user?.email?.split("@")[0];
 
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, []);
-
   function goToGameSelect() {
     setOpen(false);
-    setMenuOpen(false);
     router.push('/select-game');
   }
-
-  function submitBookingCode() {
-    const code = bookingCode.trim();
-    if (!code) return;
-    setLoadCodeOpen(false);
-    setMenuOpen(false);
-    router.push(`/wager?code=${encodeURIComponent(code)}`);
-  }
-
-
-function TacticalMenu({ onNavigate }: { onNavigate?: () => void }) {
-  const pendingItems = ["Virtual", "Casino", "Games", "Fantasy League"];
-  return (
-    <div className="space-y-2">
-      <div className="fn-label text-fn-green">Tactical Menu</div>
-      <div className="grid gap-1.5">
-        {pendingItems.map((item) => (
-          <button
-            key={item}
-            type="button"
-            disabled
-            title="Pending destination confirmation"
-            className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-3 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-fn-muted opacity-70"
-          >
-            {item}<span className="text-[8px]">TBD</span>
-          </button>
-        ))}
-        <Link href="/search" onClick={onNavigate} className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
-          <span className="flex items-center gap-2"><Search size={12} /> Search</span><ChevronRight size={12} />
-        </Link>
-        <button
-          type="button"
-          onClick={() => setLoadCodeOpen((current) => !current)}
-          className="flex items-center justify-between rounded-sm border border-fn-yellow/30 bg-fn-yellow/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-yellow hover:bg-fn-yellow/20"
-        >
-          <span className="flex items-center gap-2"><Ticket size={12} /> Load Code</span><ChevronRight size={12} />
-        </button>
-      </div>
-      {loadCodeOpen && (
-        <form onSubmit={(event) => { event.preventDefault(); submitBookingCode(); }} className="rounded-sm border border-fn-gborder bg-fn-black/80 p-2">
-          <label className="fn-label" htmlFor="nav-booking-code">Booking code</label>
-          <div className="mt-2 flex gap-2">
-            <input
-              id="nav-booking-code"
-              value={bookingCode}
-              onChange={(event) => setBookingCode(event.target.value)}
-              placeholder="Enter code"
-              className="min-w-0 flex-1 rounded-sm border border-fn-gborder bg-fn-dark px-2 py-2 text-[10px] text-fn-text outline-none focus:border-fn-green/60"
-            />
-            <button type="submit" className="fn-btn px-3 py-2 text-[9px]">Load</button>
-          </div>
-        </form>
-      )}
-      <p className="text-[8px] leading-relaxed text-fn-muted">Virtual, Casino, Games, and Fantasy League are disabled until their destinations are confirmed.</p>
-    </div>
-  );
-}
-
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -206,22 +134,6 @@ function TacticalMenu({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Desktop: actions */}
         <div className="hidden lg:flex items-center gap-2 ml-auto">
-          <div ref={menuRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((current) => !current)}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className="inline-flex items-center gap-1.5 rounded-sm border border-fn-gborder bg-fn-card px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-fn-text transition-all hover:border-fn-green/40 hover:text-fn-green"
-            >
-              <Menu size={12} /> Menu
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-full z-[70] mt-2 w-72 rounded-sm border border-fn-green/30 bg-fn-card p-3 shadow-2xl shadow-black/70">
-                <TacticalMenu onNavigate={() => setMenuOpen(false)} />
-              </div>
-            )}
-          </div>
           <PWAInstallButton />
           <Link
             href="/wager"
@@ -356,9 +268,6 @@ function TacticalMenu({ onNavigate }: { onNavigate?: () => void }) {
               )}
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
-              <div className="mb-3 rounded-sm border border-fn-gborder bg-fn-card p-3">
-                <TacticalMenu onNavigate={() => setOpen(false)} />
-              </div>
               {[...navLinks, { label: "⚡ Wager Zone", href: "/wager" }].map((l) => (
                 <Link
                   key={l.href}
