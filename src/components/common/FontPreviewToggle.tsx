@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Type, X } from "lucide-react";
+import { Type, X, Check } from "lucide-react";
 
 type FontOption = {
   id: string;
@@ -39,14 +39,19 @@ const FONT_OPTIONS: FontOption[] = [
 export default function FontPreviewToggle() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentFont, setCurrentFont] = useState<string>("default");
+  const [selectedFont, setSelectedFont] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("fn-font-preview");
-    if (saved) setCurrentFont(saved);
+    if (saved) {
+      setCurrentFont(saved);
+      setSelectedFont(saved);
+    }
   }, []);
 
   const setFont = (fontId: string) => {
     setCurrentFont(fontId);
+    setSelectedFont(fontId);
     if (fontId === "default") {
       localStorage.removeItem("fn-font-preview");
       document.documentElement.classList.remove(
@@ -64,6 +69,13 @@ export default function FontPreviewToggle() {
       document.documentElement.classList.add(`font-preview-${fontId}`);
     }
   };
+
+  const handleDone = () => {
+    // Font is already applied via setFont, just close the panel
+    setIsOpen(false);
+  };
+
+  const hasSelectedCandidate = selectedFont !== null && selectedFont !== "default";
 
   return (
     <>
@@ -121,6 +133,7 @@ export default function FontPreviewToggle() {
             <div className="grid gap-2.5">
               {FONT_OPTIONS.map((font) => {
                 const isActive = currentFont === font.id;
+                const isSelected = selectedFont === font.id;
                 return (
                   <button
                     key={font.id}
@@ -147,9 +160,9 @@ export default function FontPreviewToggle() {
                           >
                             {font.name}
                           </span>
-                          {isActive && (
+                          {isSelected && (
                             <span className="inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-fn-green">
-                              • Active
+                              <Check size={8} strokeWidth={3} /> Selected
                             </span>
                           )}
                         </div>
@@ -183,11 +196,27 @@ export default function FontPreviewToggle() {
                 HOW TO TEST
               </p>
               <ol className="list-decimal list-inside text-[10px] leading-relaxed text-fn-muted space-y-0.5">
-                <li>Select a font above to apply it site-wide</li>
+                <li>Select a font candidate above (not Default)</li>
                 <li>Navigate to Home, Athletes, or Teams pages</li>
                 <li>Compare how each reads in hero, cards, and stats</li>
-                <li>Your selection persists across page reloads</li>
+                <li>Click DONE to lock in your choice site-wide</li>
               </ol>
+            </div>
+
+            {/* Done button */}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleDone}
+                disabled={!hasSelectedCandidate}
+                className={`w-full rounded-sm px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all ${
+                  hasSelectedCandidate
+                    ? "bg-fn-green text-fn-black hover:bg-fn-gdim active:scale-[0.98]"
+                    : "bg-fn-gborder text-fn-muted cursor-not-allowed opacity-50"
+                }`}
+              >
+                {hasSelectedCandidate ? "✓ Done — Apply Site-Wide" : "Select a Font Candidate First"}
+              </button>
             </div>
 
             {/* Reset hint */}
