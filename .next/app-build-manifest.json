@@ -12,7 +12,7 @@
       "static/chunks/fd9d1056-c0dced5cd08cff1c.js",
       "static/chunks/2117-5293049ac355cae4.js",
       "static/chunks/main-app-f7e7c8251964b28f.js",
-      "static/css/d15b51f9ad2f1494.css",
+      "static/css/abd14529e95cbcbf.css",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
       "static/chunks/3061-e74f662ebe417cfd.js",
       "static/chunks/app/layout-4ae4123d24999379.js"
@@ -32,9 +32,9 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/8770-fd2e32f69171b8a0.js",
+      "static/chunks/8770-32419e738ef5f74d.js",
       "static/chunks/6631-44e5c0b201b15885.js",
-      "static/chunks/app/athletes/[id]/page-696b1aadd89aa320.js"
+      "static/chunks/app/athletes/[id]/page-5739890c7b291cd0.js"
     ],
     "/athletes/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -43,9 +43,9 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/8770-fd2e32f69171b8a0.js",
+      "static/chunks/8770-32419e738ef5f74d.js",
       "static/chunks/6631-44e5c0b201b15885.js",
-      "static/chunks/app/athletes/page-e3ee4783e88d80ab.js"
+      "static/chunks/app/athletes/page-bdddf67805d676f3.js"
     ],
     "/auth/callback/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -96,9 +96,9 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/9325-475a9ada0a57a650.js",
-      "static/chunks/8770-fd2e32f69171b8a0.js",
-      "static/chunks/app/games/tdm-1v1/page-33befac53da2346c.js"
+      "static/chunks/8629-9b144c314df7837c.js",
+      "static/chunks/8770-32419e738ef5f74d.js",
+      "static/chunks/app/games/tdm-1v1/page-d953fce4c6a35df4.js"
     ],
     "/games/wow-4v4/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -107,8 +107,8 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/9325-475a9ada0a57a650.js",
-      "static/chunks/app/games/wow-4v4/page-77d01a97a96727ef.js"
+      "static/chunks/8629-9b144c314df7837c.js",
+      "static/chunks/app/games/wow-4v4/page-ae031b2bae665db8.js"
     ],
     "/highlights/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -158,9 +158,9 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/8770-fd2e32f69171b8a0.js",
+      "static/chunks/8770-32419e738ef5f74d.js",
       "static/chunks/6631-44e5c0b201b15885.js",
-      "static/chunks/app/page-397c4c017e0672f3.js"
+      "static/chunks/app/page-99508522de90223b.js"
     ],
     "/register/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -203,8 +203,8 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/8770-fd2e32f69171b8a0.js",
-      "static/chunks/app/teams/[id]/page-f93967e9f65455bf.js"
+      "static/chunks/8770-32419e738ef5f74d.js",
+      "static/chunks/app/teams/[id]/page-6af68a9570f6f1ee.js"
     ],
     "/teams/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -213,9 +213,9 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/8770-fd2e32f69171b8a0.js",
+      "static/chunks/8770-32419e738ef5f74d.js",
       "static/chunks/6631-44e5c0b201b15885.js",
-      "static/chunks/app/teams/page-22fe5098085bd32d.js"
+      "static/chunks/app/teams/page-29505ad28fe0f7e0.js"
     ],
     "/tournaments/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -235,6 +235,17 @@
       "static/chunks/6631-44e5c0b201b15885.js",
       "static/chunks/app/transfer-window/page-17d8a7e04ac41343.js"
     ],
+    "/wager/page": [
+      "static/chunks/webpack-c6074c84a5a563df.js",
+      "static/chunks/fd9d1056-c0dced5cd08cff1c.js",
+      "static/chunks/2117-5293049ac355cae4.js",
+      "static/chunks/main-app-f7e7c8251964b28f.js",
+      "static/chunks/5101-18005c917bec678b.js",
+      "static/chunks/9664-ab1e43ce9e7a3ce3.js",
+      "static/chunks/2422-54caaa6691a18c89.js",
+      "static/chunks/3061-e74f662ebe417cfd.js",
+      "static/chunks/app/wager/page-eddd5c0d21532e52.js"
+    ],
     "/wager/terms/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
       "static/chunks/fd9d1056-c0dced5cd08cff1c.js",
@@ -251,17 +262,6 @@
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/9664-ab1e43ce9e7a3ce3.js",
       "static/chunks/app/wallet/page-ebc22ae40ea67237.js"
-    ],
-    "/wager/page": [
-      "static/chunks/webpack-c6074c84a5a563df.js",
-      "static/chunks/fd9d1056-c0dced5cd08cff1c.js",
-      "static/chunks/2117-5293049ac355cae4.js",
-      "static/chunks/main-app-f7e7c8251964b28f.js",
-      "static/chunks/5101-18005c917bec678b.js",
-      "static/chunks/9664-ab1e43ce9e7a3ce3.js",
-      "static/chunks/2422-54caaa6691a18c89.js",
-      "static/chunks/3061-e74f662ebe417cfd.js",
-      "static/chunks/app/wager/page-eddd5c0d21532e52.js"
     ],
     "/about/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -286,8 +286,8 @@
       "static/chunks/main-app-f7e7c8251964b28f.js",
       "static/chunks/5101-18005c917bec678b.js",
       "static/chunks/2492-7b99dbfaad553bff.js",
-      "static/chunks/8770-fd2e32f69171b8a0.js",
-      "static/chunks/app/admin/athletes/page-8139d0c6293c39ee.js"
+      "static/chunks/8770-32419e738ef5f74d.js",
+      "static/chunks/app/admin/athletes/page-cb7862b27a443cde.js"
     ],
     "/admin/layout": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -443,12 +443,14 @@
       "static/chunks/2492-7b99dbfaad553bff.js",
       "static/chunks/app/admin/tournaments/page-34dae36e57b0b5ff.js"
     ],
-    "/admin/withdrawals/page": [
+    "/admin/transfers/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
       "static/chunks/fd9d1056-c0dced5cd08cff1c.js",
       "static/chunks/2117-5293049ac355cae4.js",
       "static/chunks/main-app-f7e7c8251964b28f.js",
-      "static/chunks/app/admin/withdrawals/page-5bad621425889178.js"
+      "static/chunks/5101-18005c917bec678b.js",
+      "static/chunks/2492-7b99dbfaad553bff.js",
+      "static/chunks/app/admin/transfers/page-2e98db8d57c12a0f.js"
     ],
     "/admin/wagers/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
@@ -459,14 +461,12 @@
       "static/chunks/2492-7b99dbfaad553bff.js",
       "static/chunks/app/admin/wagers/page-5a614cb4470faedf.js"
     ],
-    "/admin/transfers/page": [
+    "/admin/withdrawals/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
       "static/chunks/fd9d1056-c0dced5cd08cff1c.js",
       "static/chunks/2117-5293049ac355cae4.js",
       "static/chunks/main-app-f7e7c8251964b28f.js",
-      "static/chunks/5101-18005c917bec678b.js",
-      "static/chunks/2492-7b99dbfaad553bff.js",
-      "static/chunks/app/admin/transfers/page-2e98db8d57c12a0f.js"
+      "static/chunks/app/admin/withdrawals/page-5bad621425889178.js"
     ],
     "/select-game/page": [
       "static/chunks/webpack-c6074c84a5a563df.js",
