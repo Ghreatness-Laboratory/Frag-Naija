@@ -27,7 +27,7 @@ const config: Config = {
       },
       fontFamily: {
         mono:    ["'JetBrains Mono'", "'Courier New'", "monospace"],
-        display: ["'Barlow Condensed'", "Impact", "sans-serif"],
+        display: ["'JetBrains Mono'", "'Courier New'", "monospace"],
       },
       animation: {
         blink:     "blink 1.2s step-end infinite",
