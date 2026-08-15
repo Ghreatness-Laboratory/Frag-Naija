@@ -294,7 +294,7 @@ function WalletContent() {
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const [loading,     setLoading]     = useState(true);
   const [authErr,     setAuthErr]     = useState(false);
-  const [tab,         setTab]         = useState<Tab>('deposit');
+  const [tab,         setTab]         = useState<Tab>(searchParams.get('tab') === 'withdraw' ? 'withdraw' : 'deposit');
 
   // Deposit state
   const [depAmount,   setDepAmount]   = useState('');
@@ -343,6 +343,13 @@ function WalletContent() {
   }, [loadWithdrawals, loadBankAccount]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab === 'deposit' || requestedTab === 'withdraw') {
+      setTab(requestedTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (showSuccess) {
