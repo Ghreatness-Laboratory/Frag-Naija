@@ -29,7 +29,7 @@ export async function registerUser({ email, password, username, preferred_game_s
   if (error) throw error;
 
   try {
-    await createWallet(data.user.id);
+    await createWallet(data.user.id, { signupBonusEligible: true });
   } catch {
     // Wallet creation is non-fatal during registration.
   }

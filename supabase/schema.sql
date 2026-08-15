@@ -262,6 +262,9 @@ CREATE TABLE IF NOT EXISTS wallets (
   balance     NUMERIC(12,2) DEFAULT 0,
   total_won   NUMERIC(12,2) DEFAULT 0,
   total_lost  NUMERIC(12,2) DEFAULT 0,
+  signup_bonus_eligible   BOOLEAN NOT NULL DEFAULT false,
+  signup_bonus_claimed    BOOLEAN NOT NULL DEFAULT false,
+  signup_bonus_claimed_at TIMESTAMPTZ,
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -276,7 +279,7 @@ CREATE TABLE IF NOT EXISTS wallet_transactions (
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   wager_id    UUID REFERENCES wagers(id) ON DELETE SET NULL,
   bet_id      UUID REFERENCES wager_bets(id) ON DELETE SET NULL,
-  type        TEXT NOT NULL CHECK (type IN ('Stake', 'Payout', 'Refund', 'Adjustment', 'Withdrawal')),
+  type        TEXT NOT NULL CHECK (type IN ('Stake', 'Payout', 'Refund', 'Adjustment', 'Withdrawal', 'Signup Bonus')),
   amount      NUMERIC(12,2) NOT NULL, -- negative for stake, positive for payout/refund
   currency    TEXT DEFAULT 'NGN',
   description TEXT,
@@ -286,6 +289,10 @@ CREATE TABLE IF NOT EXISTS wallet_transactions (
 ALTER TABLE wallet_transactions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wallet_tx_own_read"   ON wallet_transactions FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "wallet_tx_admin_all"  ON wallet_transactions FOR ALL   USING (false);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_wallet_transactions_signup_bonus_once
+  ON wallet_transactions(user_id)
+  WHERE type = 'Signup Bonus';
 
 -- ─── HIGHLIGHTS ───────────────────────────────────────────────────────────────
 
@@ -321,6 +328,81 @@ BEGIN
   WHERE id = wager_id;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION claim_signup_bonus(p_user_id UUID)
+RETURNS TABLE (
+  wallet_id UUID,
+  balance NUMERIC,
+  credited_amount NUMERIC,
+  signup_bonus_claimed BOOLEAN,
+  signup_bonus_claimed_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_wallet wallets%ROWTYPE;
+BEGIN
+  SELECT *
+  INTO v_wallet
+  FROM wallets
+  WHERE user_id = p_user_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Wallet not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF NOT v_wallet.signup_bonus_eligible OR v_wallet.signup_bonus_claimed THEN
+    RETURN QUERY
+      SELECT
+        v_wallet.id,
+        v_wallet.balance,
+        0::NUMERIC,
+        v_wallet.signup_bonus_claimed,
+        v_wallet.signup_bonus_claimed_at;
+    RETURN;
+  END IF;
+
+  UPDATE wallets AS w
+  SET
+    balance = w.balance + 500,
+    signup_bonus_eligible = false,
+    signup_bonus_claimed = true,
+    signup_bonus_claimed_at = NOW(),
+    updated_at = NOW()
+  WHERE w.user_id = p_user_id
+  RETURNING *
+  INTO v_wallet;
+
+  INSERT INTO wallet_transactions (
+    user_id,
+    type,
+    amount,
+    currency,
+    description
+  )
+  VALUES (
+    p_user_id,
+    'Signup Bonus',
+    500,
+    'NGN',
+    'Signup bonus claimed from Wager Zone'
+  );
+
+  RETURN QUERY
+    SELECT
+      v_wallet.id,
+      v_wallet.balance,
+      500::NUMERIC,
+      v_wallet.signup_bonus_claimed,
+      v_wallet.signup_bonus_claimed_at;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION claim_signup_bonus(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claim_signup_bonus(UUID) TO service_role;
 
 -- ─── TRANSACTIONS ────────────────────────────────────────────────────────────
 

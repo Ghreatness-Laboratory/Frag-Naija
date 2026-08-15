@@ -12,7 +12,7 @@ export async function POST(request) {
     if (error || !user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
     // Ensure wallet exists for OAuth users
-    try { await createWallet(user.id); } catch {}
+    try { await createWallet(user.id, { signupBonusEligible: true }); } catch {}
 
     const response = NextResponse.json({ ok: true });
     response.cookies.set('sb-access-token', access_token, {
