@@ -36,7 +36,7 @@ export default function GamesPage() {
                   {mode.ready ? <Gamepad2 className="text-fn-green" /> : <Lock className="text-fn-muted" />}
                 </div>
                 <p className="mt-2 text-xs uppercase tracking-widest text-fn-muted">
-                  {mode.ready ? (mode.scope ?? 'Live now — select athletes') : 'Coming Soon'}
+                  {mode.ready ? 'Live now — select athletes' : 'Coming Soon'}
                 </p>
               </>
             );
