@@ -105,7 +105,7 @@ export default function Navbar() {
       <DisclaimerModal />
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-fn-dark border-b border-fn-gborder flex items-center px-3 sm:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-1.5 mr-6 shrink-0">
+        <Link href="/" className="flex shrink-0 items-center gap-1.5 border-0 outline-none ring-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-fn-green sm:mr-6">
           <span className="font-display text-lg sm:text-xl font-black text-fn-green tracking-widest glow-text">FRAG</span>
           <span className="font-display text-lg sm:text-xl font-black text-fn-text tracking-widest">NAIJA</span>
         </Link>
@@ -148,7 +148,7 @@ export default function Navbar() {
           <ThemeToggle />
 
           {!user && (
-            <Link href="/login" className="fn-btn text-[10px] px-3 py-1.5">
+            <Link href="/login" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-3 py-1.5 text-[10px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
               Login / Sign Up
             </Link>
           )}
@@ -208,7 +208,7 @@ export default function Navbar() {
           <PWAInstallButton className="px-2 py-1 text-[8px]" />
           <ThemeToggle />
           {!user && (
-            <Link href="/login" className="fn-btn px-2.5 py-1 text-[9px]">
+            <Link href="/login" className="inline-flex h-8 max-w-[72px] shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-2.5 py-1 text-[9px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
               Login
             </Link>
           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ChevronLeft, Shield, X } from 'lucide-react';
@@ -20,6 +20,15 @@ const EMBER = '#ff5a3c';
 function displayName(athlete?: Athlete | null) { return athlete?.known_name || athlete?.ign || athlete?.name || 'Empty Slot'; }
 function ratingOf(athlete?: Athlete | null) { return Number(athlete?.overall_rating ?? athlete?.rating ?? 0); }
 function portrait(athlete?: Athlete | null) { return athlete?.photo_url || ''; }
+
+function Slot({ athlete, label }: { athlete: Athlete | null; label: string }) {
+  return (
+    <div className={`min-h-[58px] border border-dashed p-2 ${athlete ? 'border-solid border-fn-green bg-fn-green/10' : 'border-fn-gborder bg-fn-card'}`}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-fn-muted">{label}</p>
+      {athlete ? <p className="mt-1 truncate bg-fn-green px-2 py-1 text-xs font-black uppercase text-fn-black">{displayName(athlete)}</p> : <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">Awaiting pick</p>}
+    </div>
+  );
+}
 
 function Slot({ athlete, label }: { athlete: Athlete | null; label: string }) {
   return (
