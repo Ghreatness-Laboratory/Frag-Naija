@@ -6,6 +6,7 @@ import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldC
 import { useTheme } from "@/components/ThemeProvider";
 import { useGame } from "@/context/GameContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
+import PWAInstallButton from "@/components/PWAInstallButton";
 
 const navLinks = [
   { label: "Home",            href: "/" },
@@ -89,10 +90,12 @@ export default function Navbar() {
 
   const displayName = user?.username || user?.email?.split("@")[0];
 
+
   function goToGameSelect() {
     setOpen(false);
     router.push('/select-game');
   }
+
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -133,6 +136,7 @@ export default function Navbar() {
 
         {/* Desktop: actions */}
         <div className="hidden lg:flex items-center gap-2 ml-auto">
+          <PWAInstallButton />
           <Link
             href="/wager"
             className={`px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all rounded-sm ${
@@ -203,6 +207,7 @@ export default function Navbar() {
           <Link href="/wager" className="text-fn-amber text-[9px] font-bold tracking-widest uppercase border border-fn-amber/30 px-2.5 py-1 rounded-sm">
             ⚡
           </Link>
+          <PWAInstallButton className="px-2 py-1 text-[8px]" />
           <ThemeToggle />
           {!user && (
             <Link href="/login" className="fn-btn px-2.5 py-1 text-[9px]">

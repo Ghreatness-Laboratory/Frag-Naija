@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Building2, MapPin, Trophy } from 'lucide-react';
+import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Org = { id: string; name: string; logo_url: string | null; region: string | null; founded_year: number | null; achievements?: unknown[] };
 
@@ -25,7 +26,7 @@ export default function OrganizationsPage() {
         <p className="mt-2 max-w-2xl text-xs leading-relaxed text-fn-muted">Organizations sit above teams and can field rosters across multiple games.</p>
       </div>
 
-      {loading ? <p className="text-xs text-fn-muted">Loading organizations…</p> : orgs.length === 0 ? <p className="text-xs text-fn-muted">No organizations have been added yet.</p> : (
+      {loading ? <div className="mt-8 flex justify-center"><BrandedLoader label="Loading organizations" /></div> : orgs.length === 0 ? <p className="text-xs text-fn-muted">No organizations have been added yet.</p> : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {orgs.map((org) => (
             <Link key={org.id} href={`/organizations/${org.id}`} className="group rounded-sm border border-fn-gborder bg-fn-card p-5 transition-all hover:border-fn-green/40 hover:bg-fn-card2">

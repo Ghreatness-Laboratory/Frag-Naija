@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Building2, CalendarDays, MapPin, Shield, Trophy } from 'lucide-react';
+import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Achievement = { id: string; title: string; date: string | null; game_slug: string | null; description: string | null };
 type Team = { id: string; name: string; logo_url: string | null; region: string | null; game_slug: string | null };
@@ -19,7 +20,7 @@ export default function OrganizationDetail({ params }: { params: { id: string } 
       .finally(() => setLoading(false));
   }, [params.id]);
 
-  if (loading) return <div className="min-h-screen p-8 text-fn-muted">Loading organization…</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Loading organization" /></div>;
   if (!org) return <div className="min-h-screen p-8"><p className="text-fn-muted">Organization not found.</p><Link href="/organizations" className="text-fn-green">Back to organizations</Link></div>;
 
   return (

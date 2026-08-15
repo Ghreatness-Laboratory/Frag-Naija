@@ -9,6 +9,7 @@ import html2canvas, { elementToSvgDataUrl } from '@/lib/html2canvas';
 import { athleteStatusTone, combatAttributes, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { GAME_CONTENT } from '@/lib/game-content';
 import { GAMES } from '@/lib/games';
+import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Achievement = { title?: string; date?: string; description?: string };
 type Team = { id: string; name: string; logo_url: string | null; rank: number | null; game_slug?: string | null };
@@ -107,7 +108,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
 
   const team = useMemo(() => teams.find((t) => t.name === a?.team) ?? null, [a?.team, teams]);
 
-  if (loading) return <div className="min-h-screen p-8 text-fn-muted">Loading athlete…</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Loading athlete" /></div>;
   if (!a) return <div className="min-h-screen p-8"><p className="text-fn-muted">Athlete not found.</p><Link href="/athletes" className="text-fn-green">Back to roster</Link></div>;
 
   const activeGame = selectedGame ?? GAMES.find((game) => game.slug === a.game_slug);
