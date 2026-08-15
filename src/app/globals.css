@@ -186,6 +186,8 @@ body {
 
 .glow-green  { box-shadow: 0 0 20px rgb(var(--fn-green)/0.25), 0 0 40px rgb(var(--fn-green)/0.10); }
 .glow-text   { text-shadow: 0 0 24px rgb(var(--fn-green)/0.55); }
+/* Remove any default outline/border on logo elements */
+a[href="/"] .glow-text, a[href="/"] span { outline: none !important; border: none !important; }
 .glow-border { border-color: rgb(var(--fn-green)); box-shadow: 0 0 12px rgb(var(--fn-green)/0.3); }
 
 /* ─── LIVE DOT ───────────────────────────────────────────────────────────────*/
