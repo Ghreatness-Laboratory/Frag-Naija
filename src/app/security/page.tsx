@@ -135,7 +135,7 @@ export default function SecurityPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-fn-text font-mono tracking-widest uppercase flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-fn-text font-display tracking-widest uppercase flex items-center gap-3">
             <Shield className="text-fn-green" size={22} /> Account Security
           </h1>
           <p className="text-fn-muted text-sm mt-1">{user.email}</p>

@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-fn-green/10 border border-fn-green/30 mb-4">
             <Shield className="w-7 h-7 text-fn-green" />
           </div>
-          <h1 className="text-2xl font-bold text-fn-text font-mono tracking-widest uppercase">Admin</h1>
+          <h1 className="text-2xl font-bold text-fn-text font-display tracking-widest uppercase">Admin</h1>
           <p className="text-fn-muted text-sm mt-1">Frag Naija Control Panel</p>
         </div>
 
