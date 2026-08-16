@@ -1,0 +1,11 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Frag Naija fallback game logo</title>
+  <desc id="desc">A green crosshair controller placeholder for missing game logos.</desc>
+  <rect width="256" height="256" rx="44" fill="#020703"/>
+  <rect x="13" y="13" width="230" height="230" rx="36" stroke="#00FF41" stroke-opacity="0.45" stroke-width="6"/>
+  <circle cx="128" cy="128" r="72" stroke="#00FF41" stroke-width="10"/>
+  <circle cx="128" cy="128" r="16" fill="#00FF41"/>
+  <path d="M128 35v42M128 179v42M35 128h42M179 128h42" stroke="#00FF41" stroke-width="10" stroke-linecap="round"/>
+  <path d="M86 151c0-13 11-24 24-24h36c13 0 24 11 24 24v9c0 8-7 15-15 15-5 0-10-3-13-8l-5-8h-18l-5 8c-3 5-8 8-13 8-8 0-15-7-15-15v-9Z" fill="#00FF41" fill-opacity="0.16" stroke="#00FF41" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M106 150h18M115 141v18M145 150h1" stroke="#F5C542" stroke-width="7" stroke-linecap="round"/>
+</svg>

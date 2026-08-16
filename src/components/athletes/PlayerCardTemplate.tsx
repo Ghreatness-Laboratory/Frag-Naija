@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { Flag, Shield, Star } from 'lucide-react';
 import { athleteStatusTone, combatAttributes } from '@/lib/athlete-display';
+import { formatAthleteSubtitle } from '@/lib/games';
 
 export type PlayerCardTemplateAthlete = {
   ign: string;
@@ -171,6 +172,7 @@ export default function PlayerCardTemplate({
     : [{ key: 'overall', label: 'OVR', name: 'Overall', value: ratingValue, color: accent }];
   const teamName = team?.name || athlete.team || 'Free Agent';
   const role = athlete.role || 'Player';
+  const athleteSubtitle = formatAthleteSubtitle({ gameSlug: athlete.game_slug, role, teamName });
   const status = athlete.status || 'Active';
   const statusTone = athleteStatusTone(status, accent);
   const brandFirst = brandLabel.slice(0, 4);
@@ -199,7 +201,7 @@ export default function PlayerCardTemplate({
             {isIcon ? 'ICON' : status}
           </div>
           <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: accent, textShadow: `0 0 16px ${accent}55` }}>{displayName}</h3>
-          <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{role} / {teamName}</p>
+          <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{athleteSubtitle}</p>
         </div>
         <div className="absolute right-0 top-[18px] z-30 flex w-[74px] flex-col items-center text-center">
           <div className="font-display text-2xl font-black leading-none" style={{ color: accent, textShadow: `0 0 14px ${accent}66` }}>{ratingValue}</div>
@@ -249,7 +251,7 @@ export default function PlayerCardTemplate({
             </div>
             <h3 className="min-w-0 truncate font-display text-[21px] font-black leading-none tracking-wide text-white">{displayName}</h3>
           </div>
-          <p className="mt-2 truncate text-[14px] font-mono uppercase tracking-[0.26em] text-white/48">{role}</p>
+          <p className="mt-2 truncate text-[14px] font-mono uppercase tracking-[0.26em] text-white/48">{athleteSubtitle}</p>
 
           <div
             className="mt-5 grid gap-2"
@@ -297,23 +299,25 @@ export default function PlayerCardTemplate({
             fetchPriority={imageFetchPriority}
           />
         </div>
-        <div className="absolute bottom-[106px] left-4 right-4 z-20">
-          <div className="mb-2 flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
-            {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={13} style={{ color: accent }} />}
-          </div>
-          <h3 className="line-clamp-2 break-words font-display text-[23px] font-black uppercase leading-[0.88]" style={{ color: accent, textShadow: `0 0 18px ${accent}55` }}>{displayName}</h3>
-          <p className="mt-2 line-clamp-2 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.18em] text-white/60">{role} / {teamName}</p>
-        </div>
-        <div
-          className="absolute bottom-6 left-4 right-4 z-20 grid overflow-hidden rounded-md border bg-black/78"
-          style={{ borderColor: `${accent}70`, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
-        >
-          {stats.map((stat) => (
-            <div key={stat.label} className="border-r border-white/10 px-1 py-2 text-center last:border-r-0">
-              <div className="font-display text-base font-black leading-none text-white">{stat.value}</div>
-              <div className={`mt-1 text-[6px] font-black tracking-widest ${statLabelClass}`}>{stat.label}</div>
+        <div className="absolute bottom-6 left-4 right-4 z-20 flex flex-col gap-1.5">
+          <div>
+            <div className="mb-2 flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
+              {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={13} style={{ color: accent }} />}
             </div>
-          ))}
+            <h3 className="line-clamp-2 break-words font-display text-[23px] font-black uppercase leading-[0.88]" style={{ color: accent, textShadow: `0 0 18px ${accent}55` }}>{displayName}</h3>
+            <p className="mt-1.5 truncate whitespace-nowrap text-[7px] font-bold uppercase leading-none tracking-[0.14em] text-white/60">{athleteSubtitle}</p>
+          </div>
+          <div
+            className="grid overflow-hidden rounded-md border bg-black/78"
+            style={{ borderColor: `${accent}70`, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
+          >
+            {stats.map((stat) => (
+              <div key={stat.label} className="border-r border-white/10 px-1 py-2 text-center last:border-r-0">
+                <div className="font-display text-base font-black leading-none text-white">{stat.value}</div>
+                <div className={`mt-1 text-[6px] font-black tracking-widest ${statLabelClass}`}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="absolute bottom-1.5 left-4 z-20 font-display text-[10px] font-black tracking-widest">
           <span style={{ color: accent }}>{brandFirst}</span>{brandRest}
@@ -352,24 +356,26 @@ export default function PlayerCardTemplate({
         />
       </div>
 
-      <div className="absolute bottom-[132px] left-6 right-5 z-20">
-        <div className="mb-2 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
-          {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={16} style={{ color: accent }} />}
-        </div>
-        <h2 className="max-w-[245px] break-words font-display text-[32px] font-black uppercase leading-[0.86]" style={{ color: accent, textShadow: `0 0 20px ${accent}55` }}>{displayName}</h2>
-        <p className="mt-3 line-clamp-2 max-w-[245px] text-[10px] font-bold uppercase leading-[1.2] tracking-[0.18em] text-white/60">{teamName}</p>
-      </div>
-
-      <div
-        className="absolute bottom-8 left-5 right-5 z-20 grid overflow-hidden rounded-lg border bg-black/78"
-        style={{ borderColor: `${accent}70`, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
-      >
-        {stats.map((stat) => (
-          <div key={stat.label} className="border-r border-white/10 px-1.5 py-2 text-center last:border-r-0">
-            <div className="font-display text-2xl font-black leading-none text-white">{stat.value}</div>
-            <div className={`mt-1 text-[8px] font-black tracking-widest ${statLabelClass}`}>{stat.label}</div>
+      <div className="absolute bottom-8 left-5 right-5 z-20 flex flex-col gap-2">
+        <div>
+          <div className="mb-2 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
+            {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={16} style={{ color: accent }} />}
           </div>
-        ))}
+          <h2 className="max-w-[245px] break-words font-display text-[32px] font-black uppercase leading-[0.86]" style={{ color: accent, textShadow: `0 0 20px ${accent}55` }}>{displayName}</h2>
+          <p className="mt-2 max-w-[245px] truncate whitespace-nowrap text-[9px] font-bold uppercase leading-none tracking-[0.14em] text-white/60">{athleteSubtitle}</p>
+        </div>
+
+        <div
+          className="grid overflow-hidden rounded-lg border bg-black/78"
+          style={{ borderColor: `${accent}70`, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
+        >
+          {stats.map((stat) => (
+            <div key={stat.label} className="border-r border-white/10 px-1.5 py-2 text-center last:border-r-0">
+              <div className="font-display text-2xl font-black leading-none text-white">{stat.value}</div>
+              <div className={`mt-1 text-[8px] font-black tracking-widest ${statLabelClass}`}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="absolute bottom-2 left-5 z-20 font-display text-sm font-black tracking-widest">

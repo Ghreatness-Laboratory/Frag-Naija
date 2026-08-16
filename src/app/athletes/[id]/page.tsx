@@ -8,7 +8,7 @@ import { useGame } from '@/context/GameContext';
 import html2canvas, { elementToSvgDataUrl } from '@/lib/html2canvas';
 import { athleteStatusTone, combatAttributes, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { GAME_CONTENT } from '@/lib/game-content';
-import { GAMES } from '@/lib/games';
+import { formatAthleteSubtitle, getAthleteSubtitleFormat, GAMES } from '@/lib/games';
 import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Achievement = { title?: string; date?: string; description?: string };
@@ -120,6 +120,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
   const achievements = parseObjects<Achievement>(a.achievements);
   const rating = normalizeRating(a.overall_rating, a.rating);
   const footballProfile = isFootballGame(a.game_slug);
+  const playerOnlySubtitle = getAthleteSubtitleFormat(a.game_slug) === 'player_only';
   const profileAttrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);
   const showLoadout = isShooterGame(a.game_slug);
   const sensitivityEntries = (() => {
@@ -131,6 +132,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
     return Object.entries(value);
   })();
   const displayName = a.known_name || a.ign;
+  const athleteSubtitle = formatAthleteSubtitle({ gameSlug: a.game_slug, role: a.role, teamName: team?.name || a.team });
 
   async function handleDownload() {
     const card = document.getElementById('player-card-export');
@@ -168,7 +170,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
           <div className="grid gap-5 lg:grid-cols-[230px_1fr] lg:items-center">
             <PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} variant="featured" className="mx-0" />
             <div className="min-w-0">
-              <div className="mb-2 flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-widest" style={{ background: statusTone.background, color: statusTone.color, borderColor: statusTone.borderColor }}><span style={{ color: statusTone.dotColor }}>●</span>{a.status}</span>{!footballProfile && <span className="fn-label">{a.role || 'Player'}{team?.rank ? ` · rank #${team.rank}` : ''}</span>}</div>
+              <div className="mb-2 flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-widest" style={{ background: statusTone.background, color: statusTone.color, borderColor: statusTone.borderColor }}><span style={{ color: statusTone.dotColor }}>●</span>{a.status}</span><span className="fn-label">{athleteSubtitle}{!playerOnlySubtitle && team?.rank ? ` · rank #${team.rank}` : ''}</span></div>
               <h1 className="font-display text-4xl font-black uppercase text-fn-text">{displayName}</h1>
               <p className="text-xs text-fn-muted">{a.name}{!footballProfile && aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p>
               <div className="mt-5 max-w-sm border border-fn-gborder bg-fn-dark/70 p-3">
