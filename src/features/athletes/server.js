@@ -27,6 +27,7 @@ const ATHLETE_FIELDS = new Set([
   'aggression',
   'photo_url',
   'status',
+  'career_status',
   'bio',
   'known_name',
   'previous_aliases',

@@ -14,7 +14,7 @@ import { ATHLETE_STATUSES, athleteStatusTone, isFcMobileGame, isFootballGame, is
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
 const EMPTY = {
-  name: '', ign: '', team: '', role: '', status: 'Active', bio: '', photo_url: '',
+  name: '', ign: '', team: '', role: '', status: 'Active', career_status: '', bio: '', photo_url: '',
   known_name: '', game_slug: 'pubg-mobile',
   attack: '', defense: '', clutch: '', survival: '', iq: '', aggression: '',
   overall_rating: '', sensitivity_settings: '', control_code: '', perks: '', strengths: '', weaknesses: '',
@@ -222,6 +222,7 @@ function AthletesContent() {
       team:           String(row.team   ?? ''),
       role:           String(row.role   ?? ''),
       status:         String(row.status ?? 'Active'),
+      career_status:  String(row.career_status ?? ''),
       bio:            String(row.bio    ?? ''),
       photo_url:      String(row.photo_url ?? ''),
       attack:         String(row.attack   ?? '0'),
@@ -285,6 +286,7 @@ function AthletesContent() {
         team:           fcMobileGame ? '' : form.team,
         role:           fcMobileGame ? '' : form.role,
         status:         form.status,
+        career_status:  form.career_status || null,
         bio:            form.bio,
         photo_url:      photoUrl ?? form.photo_url,
         is_icon:        form.is_icon,
@@ -454,6 +456,14 @@ function AthletesContent() {
                 </Field>
               </div>
 
+              <Field label="Career Status">
+                <Select value={form.career_status} onChange={f('career_status')}>
+                  <option value="">(none)</option>
+                  <option value="free_agent">Free Agent</option>
+                  <option value="retired">Retired</option>
+                </Select>
+              </Field>
+
               <Field label="Description">
                 <Textarea value={form.bio} onChange={f('bio')} placeholder="Athlete bio / description..." />
               </Field>
@@ -521,13 +531,12 @@ function AthletesContent() {
                 {ATHLETE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
               </Select>
             </Field>
-            <Field label="Overall Rating (auto)">
-              <Input
-                value={calculatedOverallRating ?? ''}
-                readOnly
-                aria-readonly="true"
-                placeholder="N/A until stats are entered"
-              />
+            <Field label="Career Status">
+              <Select value={form.career_status} onChange={f('career_status')}>
+                <option value="">(none)</option>
+                <option value="free_agent">Free Agent</option>
+                <option value="retired">Retired</option>
+              </Select>
             </Field>
           </div>
 
