@@ -8,11 +8,6 @@ import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
 import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
-import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
-import { useGame } from "@/context/GameContext";
-import { getGameContent } from "@/lib/game-content";
-import { GAMES } from "@/lib/games";
-import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 import BrandedLoader from "@/components/common/BrandedLoader";
 
@@ -699,6 +694,7 @@ export default function AthletesPage() {
         </div>
       </div>
     </div>
+      )}
     </AnimatePresence>
   );
 }
