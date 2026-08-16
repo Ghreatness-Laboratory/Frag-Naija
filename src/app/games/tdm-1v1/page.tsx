@@ -10,6 +10,7 @@ import { useGame } from '@/context/GameContext';
 import { GAMES } from '@/lib/games';
 import { calculateDuelOddsFromKd, kdOf } from '@/lib/duel-odds';
 import { DuelSimViewer, type DuelPlayer } from '@/components/common/DuelSimViewer';
+import RouteLoadingScreen from '@/components/common/RouteLoadingScreen';
 
 type Athlete = { id:string; name:string; ign?:string|null; known_name?:string|null; team?:string|null; role?:string|null; status?:string|null; photo_url?:string|null; jersey_number?:number|string|null; overall_rating?:number|string|null; rating?:number|string|null; kills?:number|string|null; attack?:number|null; defense?:number|null; survival?:number|null; clutch?:number|null; iq?:number|null; game_slug?:string|null; is_icon?:boolean|null };
 type Duel = { id:string; odds_a:number|string; odds_b:number|string };
@@ -62,52 +63,6 @@ function RosterTile({ athlete, selected, index, onClick, reduceMotion }: { athle
   );
 }
 
-
-function TdmRouteLoader({ reduceMotion }: { reduceMotion: boolean }) {
-  return (
-    <motion.section
-      key="tdm-loader"
-      initial={reduceMotion ? false : { opacity: 1 }}
-      animate={{ opacity: 1 }}
-      exit={reduceMotion ? undefined : { opacity: 0 }}
-      transition={{ duration: 0.32 }}
-      className="fixed inset-0 z-40 flex min-h-screen items-center justify-center bg-[#080a07] text-fn-text"
-      role="status"
-      aria-live="polite"
-      aria-label="Loading TDM 1V1 athletes"
-    >
-      <div className="relative flex flex-col items-center">
-        <motion.div
-          animate={reduceMotion ? undefined : {
-            textShadow: [
-              '0 0 10px rgba(77,255,110,0.28)',
-              '0 0 24px rgba(77,255,110,0.62)',
-              '0 0 10px rgba(77,255,110,0.28)',
-            ],
-          }}
-          transition={reduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex items-center gap-2"
-        >
-          <span className="font-display text-3xl font-black tracking-widest text-fn-green glow-text sm:text-5xl">FRAG</span>
-          <span className="font-display text-3xl font-black tracking-widest text-fn-text sm:text-5xl">NAIJA</span>
-        </motion.div>
-        <div className="mt-5 h-px w-48 overflow-hidden bg-fn-green/15 sm:w-64">
-          {reduceMotion ? (
-            <span className="block h-full w-full bg-fn-green/80 shadow-[0_0_16px_rgba(77,255,110,0.85)]" />
-          ) : (
-            <motion.span
-              className="block h-full w-1/2 bg-fn-green shadow-[0_0_16px_rgba(77,255,110,0.85)]"
-              initial={{ x: '-100%' }}
-              animate={{ x: ['-100%', '220%'] }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          )}
-        </div>
-        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.35em] text-fn-muted">Loading athletes</p>
-      </div>
-    </motion.section>
-  );
-}
 
 function preloadRosterPortraits(roster: Athlete[]) {
   if (typeof window === 'undefined') return Promise.resolve();
@@ -278,7 +233,7 @@ export default function TdmOneVOnePage() {
       {step === 'grid' ? (
         <AnimatePresence mode="wait">
           {!rosterReady ? (
-            <TdmRouteLoader reduceMotion={reduceMotion} />
+            <RouteLoadingScreen subtitle="LOADING MATCHUP" ariaLabel="Loading TDM 1V1 matchup" reduceMotion={reduceMotion} loaderKey="tdm-loader" />
           ) : (
         <motion.section
           key="tdm-grid"
