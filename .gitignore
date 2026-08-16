@@ -1,39 +1,46 @@
 ```
-# Database migrations and build artifacts
-*.sql
-dist/
-build/
-target/
+# Next.js build outputs
+.next/
+out/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env*
+!.env.example
+
+# Logs
+*.log
+
+# Coverage reports
+coverage/
+*.lcov
+*.profdata
 
 # Dependencies
 node_modules/
-.venv/
-venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-.gradle/
 
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Environment
-.env
-.env.local
-*.env.*
+# Build outputs
+dist/
+build/
+target/
+*.min.js
+*.min.css
 
 # Editors
 .vscode/
 .idea/
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
+*.swp
+*.swo
 
 # OS generated files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Icon?
+apidoc/
 ```
