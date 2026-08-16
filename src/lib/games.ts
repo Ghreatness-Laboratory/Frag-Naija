@@ -6,6 +6,8 @@ export interface GameColors {
   cardBg: string;
 }
 
+export type AthleteSubtitleFormat = 'role_team' | 'player_only';
+
 export interface Game {
   id: string;
   slug: string;
@@ -14,6 +16,7 @@ export interface Game {
   description: string;
   colors: GameColors;
   logo: string;
+  athleteSubtitleFormat: AthleteSubtitleFormat;
   badge?: string;
   available: boolean;
 }
@@ -33,6 +36,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(0, 255, 65, 0.05)',
     },
     logo: '/logos/pubg-mobile.svg',
+    athleteSubtitleFormat: 'role_team',
     badge: 'FEATURED',
     available: true,
   },
@@ -50,6 +54,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(255, 215, 0, 0.05)',
     },
     logo: '/logos/cod-mobile.svg',
+    athleteSubtitleFormat: 'role_team',
     available: true,
   },
   {
@@ -66,6 +71,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(255, 69, 0, 0.05)',
     },
     logo: '/logos/free-fire.svg',
+    athleteSubtitleFormat: 'role_team',
     available: true,
   },
   {
@@ -82,6 +88,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(20, 241, 149, 0.05)',
     },
     logo: '/logos/fc-mobile.svg',
+    athleteSubtitleFormat: 'player_only',
     available: true,
   },
   {
@@ -98,6 +105,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(255, 23, 68, 0.05)',
     },
     logo: '/logos/blood-strike.svg',
+    athleteSubtitleFormat: 'role_team',
     available: true,
   },
   {
@@ -114,6 +122,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(0, 212, 255, 0.05)',
     },
     logo: '/logos/ea-fc-26.svg',
+    athleteSubtitleFormat: 'player_only',
     available: true,
   },
   {
@@ -130,6 +139,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(204, 0, 0, 0.05)',
     },
     logo: '/logos/mortal-kombat.svg',
+    athleteSubtitleFormat: 'role_team',
     available: true,
   },
   {
@@ -146,6 +156,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(33, 150, 243, 0.05)',
     },
     logo: '/logos/efootball.svg',
+    athleteSubtitleFormat: 'player_only',
     available: true,
   },
   {
@@ -162,8 +173,28 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(156, 39, 176, 0.05)',
     },
     logo: '/logos/mobile-legends.svg',
+    athleteSubtitleFormat: 'role_team',
     available: true,
   },
 ];
 
 export const DEFAULT_GAME = GAMES[0];
+
+
+export function getAthleteSubtitleFormat(gameSlug?: string | null): AthleteSubtitleFormat {
+  return GAMES.find((game) => game.slug === String(gameSlug ?? '').toLowerCase())?.athleteSubtitleFormat ?? 'role_team';
+}
+
+export function formatAthleteSubtitle({
+  gameSlug,
+  role,
+  teamName,
+}: {
+  gameSlug?: string | null;
+  role?: string | null;
+  teamName?: string | null;
+}) {
+  const displayRole = role || 'Player';
+  if (getAthleteSubtitleFormat(gameSlug) === 'player_only') return displayRole;
+  return `${displayRole} / ${teamName || 'Free Agent'}`;
+}

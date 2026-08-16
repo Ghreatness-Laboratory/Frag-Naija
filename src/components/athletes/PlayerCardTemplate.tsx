@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { Flag, Shield, Star } from 'lucide-react';
 import { athleteStatusTone, combatAttributes } from '@/lib/athlete-display';
+import { formatAthleteSubtitle } from '@/lib/games';
 
 export type PlayerCardTemplateAthlete = {
   ign: string;
@@ -171,6 +172,7 @@ export default function PlayerCardTemplate({
     : [{ key: 'overall', label: 'OVR', name: 'Overall', value: ratingValue, color: accent }];
   const teamName = team?.name || athlete.team || 'Free Agent';
   const role = athlete.role || 'Player';
+  const athleteSubtitle = formatAthleteSubtitle({ gameSlug: athlete.game_slug, role, teamName });
   const status = athlete.status || 'Active';
   const statusTone = athleteStatusTone(status, accent);
   const brandFirst = brandLabel.slice(0, 4);
@@ -199,7 +201,7 @@ export default function PlayerCardTemplate({
             {isIcon ? 'ICON' : status}
           </div>
           <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: accent, textShadow: `0 0 16px ${accent}55` }}>{displayName}</h3>
-          <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{role} / {teamName}</p>
+          <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{athleteSubtitle}</p>
         </div>
         <div className="absolute right-0 top-[18px] z-30 flex w-[74px] flex-col items-center text-center">
           <div className="font-display text-2xl font-black leading-none" style={{ color: accent, textShadow: `0 0 14px ${accent}66` }}>{ratingValue}</div>
@@ -249,7 +251,7 @@ export default function PlayerCardTemplate({
             </div>
             <h3 className="min-w-0 truncate font-display text-[21px] font-black leading-none tracking-wide text-white">{displayName}</h3>
           </div>
-          <p className="mt-2 truncate text-[14px] font-mono uppercase tracking-[0.26em] text-white/48">{role}</p>
+          <p className="mt-2 truncate text-[14px] font-mono uppercase tracking-[0.26em] text-white/48">{athleteSubtitle}</p>
 
           <div
             className="mt-5 grid gap-2"
