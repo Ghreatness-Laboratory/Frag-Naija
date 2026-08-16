@@ -68,6 +68,7 @@ ALTER TABLE athletes ADD COLUMN IF NOT EXISTS clutch NUMERIC(5,2) DEFAULT 0;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS sensitivity_settings JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS is_icon BOOLEAN DEFAULT false;
 ALTER TABLE athletes ADD COLUMN IF NOT EXISTS control_code TEXT;
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS career_status TEXT CHECK (career_status IN ('free_agent', 'retired'));
 
 ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "athletes_public_read"  ON athletes FOR SELECT USING (true);
