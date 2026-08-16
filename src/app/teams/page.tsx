@@ -1,7 +1,8 @@
 "use client";
-import BrandedLoader from "@/components/common/BrandedLoader";
-import { useState, useEffect, useCallback } from "react";
+import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Trophy, Users, Shield, Star, Flame, Search, ChevronRight } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
@@ -56,12 +57,33 @@ function winRate(wins: number, losses: number) {
   return total === 0 ? 0 : Math.round((wins / total) * 100);
 }
 
+function preloadTeamImages(teams: Team[]) {
+  if (typeof window === "undefined") return Promise.resolve();
+  const urls = teams.flatMap((team) => [team.logo_url, ...(team.players ?? []).map((player) => player.photo_url)]).filter(Boolean) as string[];
+  return Promise.allSettled(
+    urls.map((src) => new Promise<void>((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        if ("decode" in image) {
+          image.decode().then(resolve).catch(resolve);
+        } else {
+          resolve();
+        }
+      };
+      image.onerror = () => resolve();
+      image.src = src;
+    }))
+  ).then(() => undefined);
+}
+
 export default function TeamsPage() {
+  const reduceMotion = Boolean(useReducedMotion());
   const router = useRouter();
   const { selectedGame, isHydrated } = useGame();
   const [apiTeams, setApiTeams] = useState<Team[]>([]);
   const [selected, setSelected] = useState<Team | null>(null);
   const [loading, setLoading]   = useState(true);
+  const [teamsReady, setTeamsReady] = useState(false);
   const [search, setSearch] = useState("");
 
   const activeGame = selectedGame;
@@ -77,22 +99,45 @@ export default function TeamsPage() {
     }
 
     setLoading(true);
-    const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { cache: "no-store" });
-    if (res.ok) setApiTeams(await res.json());
-    setLoading(false);
+    setTeamsReady(false);
+    try {
+      const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { cache: "no-store" });
+      setApiTeams(res.ok ? await res.json() : []);
+    } catch {
+      setApiTeams([]);
+    } finally {
+      setLoading(false);
+    }
   }, [activeGame]);
 
   useEffect(() => { load(); }, [load]);
 
-  const gameContent = isHydrated && activeGame ? getGameContent(activeGame.slug) : null;
-  const apiForGame = activeGame ? apiTeams.filter((t) => (t.game_slug ?? activeGame.slug) === activeGame.slug) : [];
-  const gameTeams: Team[] = apiForGame.length > 0
+  const gameContent = useMemo(() => (isHydrated && activeGame ? getGameContent(activeGame.slug) : null), [isHydrated, activeGame]);
+  const apiForGame = useMemo(() => (activeGame ? apiTeams.filter((t) => (t.game_slug ?? activeGame.slug) === activeGame.slug) : []), [activeGame, apiTeams]);
+  const gameTeams: Team[] = useMemo(() => (apiForGame.length > 0
     ? apiForGame
-    : (gameContent?.teams as Team[] | undefined) ?? [];
+    : (gameContent?.teams as Team[] | undefined) ?? []), [apiForGame, gameContent]);
   const normalizedSearch = search.trim().toLowerCase();
-  const teams = normalizedSearch
+  const teams = useMemo(() => (normalizedSearch
     ? gameTeams.filter((t) => t.name.toLowerCase().includes(normalizedSearch))
-    : gameTeams;
+    : gameTeams), [gameTeams, normalizedSearch]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTeamsReady(false);
+
+    if (loading || !isHydrated) return () => { cancelled = true; };
+
+    const minimumLoaderTime = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 700);
+    });
+
+    Promise.all([preloadTeamImages(gameTeams), minimumLoaderTime]).then(() => {
+      if (!cancelled) setTeamsReady(true);
+    });
+
+    return () => { cancelled = true; };
+  }, [loading, isHydrated, gameTeams]);
 
   useEffect(() => {
     if (teams.length > 0) {
@@ -118,11 +163,16 @@ export default function TeamsPage() {
     );
   }
 
-  if (loading) {
+  if (!teamsReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <BrandedLoader label="Loading" size="sm" />
-      </div>
+      <AnimatePresence mode="wait">
+        <RouteLoadingScreen
+          subtitle="LOADING TEAMS"
+          ariaLabel="Loading teams"
+          reduceMotion={reduceMotion}
+          loaderKey="teams-loader"
+        />
+      </AnimatePresence>
     );
   }
 
@@ -139,7 +189,15 @@ export default function TeamsPage() {
   const achievements = parseArray(t.achievements);
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="teams-content"
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={reduceMotion ? undefined : { opacity: 0 }}
+        transition={{ duration: 0.32 }}
+        className="min-h-screen flex flex-col lg:flex-row"
+      >
       {/* Left: Power Rankings */}
       <aside className="lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-fn-gborder flex-shrink-0">
         <div
@@ -371,6 +429,7 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
-    </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }

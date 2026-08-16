@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import RouteLoadingScreen from '@/components/common/RouteLoadingScreen';
 import { Check, ChevronLeft, Shield, X, Play } from 'lucide-react';
 import { MatchSimViewer, type PlayerDot } from '@/components/common/MatchSimViewer';
 import { MatchResultScreen } from '@/components/common/MatchResultScreen';
@@ -65,18 +66,6 @@ function preloadImages(urls: string[]) {
     image.onerror = () => resolve();
     image.src = src;
   }))).then(() => undefined);
-}
-
-function ModeLoader({ reduceMotion }: { reduceMotion: boolean }) {
-  return <motion.section key="wow-loader" initial={reduceMotion ? false : { opacity: 1 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} transition={{ duration: 0.32 }} className="fixed inset-0 z-40 flex min-h-screen items-center justify-center bg-[#080a07] text-fn-text" role="status" aria-label="Loading WOW Mode 4V4 teams">
-    <div className="flex flex-col items-center">
-      <motion.div animate={reduceMotion ? undefined : { textShadow: ['0 0 10px rgba(77,255,110,.28)', '0 0 24px rgba(77,255,110,.62)', '0 0 10px rgba(77,255,110,.28)'] }} transition={reduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }} className="flex items-center gap-2">
-        <span className="font-display text-3xl font-black tracking-widest text-fn-green glow-text sm:text-5xl">FRAG</span><span className="font-display text-3xl font-black tracking-widest text-fn-text sm:text-5xl">NAIJA</span>
-      </motion.div>
-      <div className="mt-5 h-px w-48 overflow-hidden bg-fn-green/15 sm:w-64">{reduceMotion ? <span className="block h-full w-full bg-fn-green/80" /> : <motion.span className="block h-full w-1/2 bg-fn-green shadow-[0_0_16px_rgba(77,255,110,.85)]" initial={{ x: '-100%' }} animate={{ x: ['-100%', '220%'] }} transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }} />}</div>
-      <p className="mt-4 text-[10px] font-black uppercase tracking-[0.35em] text-fn-muted">Loading teams</p>
-    </div>
-  </motion.section>;
 }
 
 function Slot({ team, label }: { team: Team | null; label: string }) {
@@ -186,7 +175,7 @@ export default function WowFourVFourPage() {
     return (b.players ?? []).filter(p => rosterB.includes(p.id)).map(p => ({ id: p.id, name: displayName(p) }));
   }, [b, rosterB]);
 
-  return <main className="min-h-screen bg-fn-black text-fn-text"><AnimatePresence mode="wait">{!ready ? <ModeLoader reduceMotion={reduceMotion} /> : step === 'grid' ? <motion.section key="grid" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto max-w-7xl px-2 py-4 sm:px-4 lg:px-6">
+  return <main className="min-h-screen bg-fn-black text-fn-text"><AnimatePresence mode="wait">{!ready ? <RouteLoadingScreen subtitle="LOADING MATCHUP" ariaLabel="Loading WOW Mode 4V4 matchup" reduceMotion={reduceMotion} loaderKey="wow-loader" /> : step === 'grid' ? <motion.section key="grid" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto max-w-7xl px-2 py-4 sm:px-4 lg:px-6">
     <Link href="/games" className="mb-3 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-fn-muted hover:text-fn-green"><ChevronLeft size={13} /> Games</Link>
     <div className="mb-3"><p className="fn-label">WOW MODE 4V4</p><h1 className="text-2xl font-black uppercase tracking-widest sm:text-4xl">Select Teams</h1></div>
     <div className="sticky top-14 z-20 mb-3 border border-fn-gborder bg-fn-card/95 p-2 backdrop-blur"><div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2"><Slot team={a} label="Team A" /><div className={`text-sm font-black ${a && b ? 'text-fn-green drop-shadow-[0_0_10px_rgb(77_255_110)]' : 'text-fn-muted'}`}>VS</div><Slot team={b} label="Team B" /></div>{a && b && <button type="button" onClick={() => setStep('reveal')} className="mt-2 w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Confirm Matchup</button>}</div>

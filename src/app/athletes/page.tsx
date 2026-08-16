@@ -9,7 +9,7 @@ import { getGameContent } from "@/lib/game-content";
 import { GAMES } from "@/lib/games";
 import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
-import BrandedLoader from "@/components/common/BrandedLoader";
+import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
 
 type Athlete = {
   id: string;
@@ -307,16 +307,12 @@ export default function AthletesPage() {
   return (
     <AnimatePresence mode="wait">
       {!rosterReady ? (
-        <motion.div
-          key="athletes-loader"
-          initial={reduceMotion ? false : { opacity: 1 }}
-          animate={{ opacity: 1 }}
-          exit={reduceMotion ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.32 }}
-          className="min-h-screen flex items-center justify-center bg-[#080a07]"
-        >
-          <BrandedLoader label="Loading athletes" />
-        </motion.div>
+        <RouteLoadingScreen
+          subtitle="LOADING ATHLETES"
+          ariaLabel="Loading athletes"
+          reduceMotion={reduceMotion}
+          loaderKey="athletes-loader"
+        />
       ) : (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Sidebar roster */}
