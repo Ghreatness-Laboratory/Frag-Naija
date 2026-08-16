@@ -297,12 +297,12 @@ export default function PlayerCardTemplate({
             fetchPriority={imageFetchPriority}
           />
         </div>
-        <div className="absolute bottom-[86px] left-4 right-4 z-20">
+        <div className="absolute bottom-[106px] left-4 right-4 z-20">
           <div className="mb-2 flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
             {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={13} style={{ color: accent }} />}
           </div>
           <h3 className="line-clamp-2 break-words font-display text-[23px] font-black uppercase leading-[0.88]" style={{ color: accent, textShadow: `0 0 18px ${accent}55` }}>{displayName}</h3>
-          <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.18em] text-white/60">{role} / {teamName}</p>
+          <p className="mt-2 line-clamp-2 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.18em] text-white/60">{role} / {teamName}</p>
         </div>
         <div
           className="absolute bottom-6 left-4 right-4 z-20 grid overflow-hidden rounded-md border bg-black/78"
@@ -352,12 +352,12 @@ export default function PlayerCardTemplate({
         />
       </div>
 
-      <div className="absolute bottom-[112px] left-6 right-5 z-20">
+      <div className="absolute bottom-[132px] left-6 right-5 z-20">
         <div className="mb-2 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
           {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={16} style={{ color: accent }} />}
         </div>
         <h2 className="max-w-[245px] break-words font-display text-[32px] font-black uppercase leading-[0.86]" style={{ color: accent, textShadow: `0 0 20px ${accent}55` }}>{displayName}</h2>
-        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{teamName}</p>
+        <p className="mt-3 line-clamp-2 max-w-[245px] text-[10px] font-bold uppercase leading-[1.2] tracking-[0.18em] text-white/60">{teamName}</p>
       </div>
 
       <div
