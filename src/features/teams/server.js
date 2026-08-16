@@ -54,14 +54,22 @@ export async function getTeams({ game_slug } = {}) {
   })), totals);
 }
 
-export async function getTeamById(id) {
-  const { data: team, error } = await supabaseAdmin.from('teams').select('*, organization:organizations(id,name,logo_url)').eq('id', id).single();
+export async function getTeamById(id, game_slug = null) {
+  let query = supabaseAdmin.from('teams').select('*, organization:organizations(id,name,logo_url)').eq('id', id);
+  
+  if (game_slug) query = query.eq('game_slug', game_slug);
+  
+  const { data: team, error } = await query.single();
   if (error) throw error;
 
-  const { data: players, error: playersError } = await supabaseAdmin
+  let playersQuery = supabaseAdmin
     .from('athletes')
     .select('*')
     .eq('team', team.name);
+    
+  if (game_slug) playersQuery = playersQuery.eq('game_slug', game_slug);
+  
+  const { data: players, error: playersError } = await playersQuery;
   if (playersError) throw playersError;
 
   const { data: gallery, error: galleryError } = await supabaseAdmin
