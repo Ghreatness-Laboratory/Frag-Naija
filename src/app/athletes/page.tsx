@@ -6,10 +6,11 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
-import { GAMES } from "@/lib/games";
+import { formatAthleteSubtitle, getAthleteSubtitleFormat, GAMES } from "@/lib/games";
 import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
+import BrandedLoader from "@/components/common/BrandedLoader";
 
 type Athlete = {
   id: string;
@@ -300,6 +301,8 @@ export default function AthletesPage() {
   const achievements = parseObjectArray<{ title: string; date: string }>(a.achievements);
   const performanceHistory = parseObjectArray<{ label: string; value: string; date: string }>(a.performance_history);
   const displayName = a.known_name || a.ign;
+  const playerOnlySubtitle = getAthleteSubtitleFormat(a.game_slug) === "player_only";
+  const athleteSubtitle = formatAthleteSubtitle({ gameSlug: a.game_slug, role: a.role, teamName: a.team });
 
   const attrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);
   const statusTone = athleteStatusTone(a.status, primary);
@@ -494,7 +497,7 @@ export default function AthletesPage() {
                   {a.team && <span className="text-[9px] text-fn-muted font-bold tracking-widest">{a.team}</span>}
                 </div>
                 <h2 className="font-display text-3xl sm:text-4xl font-black uppercase text-fn-text tracking-wide">{displayName}</h2>
-                <p className="text-fn-muted text-[10px] tracking-wider">{a.name}{a.role ? ` · ${a.role}` : ""}</p>
+                <p className="text-fn-muted text-[10px] tracking-wider">{playerOnlySubtitle ? athleteSubtitle : `${a.name}${a.role ? ` · ${a.role}` : ""}`}</p>
                 {previousAliases.length > 0 && (
                   <p className="mt-1 text-[9px] uppercase tracking-widest text-fn-muted">
                     Also known as: <span className="text-fn-text">{previousAliases.join(" · ")}</span>

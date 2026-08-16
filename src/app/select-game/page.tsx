@@ -8,42 +8,31 @@ import { useGame } from '@/context/GameContext';
 
 // ─── Logo component with graceful SVG/image fallback ────────────────────────
 
+const FALLBACK_LOGO = '/logos/_fallback.svg';
+
 function GameLogo({ game, isSelected }: { game: Game; isSelected: boolean }) {
-  const [errored, setErrored] = useState(false);
+  const [logoSrc, setLogoSrc] = useState(game.logo);
+
+  useEffect(() => {
+    setLogoSrc(game.logo);
+  }, [game.logo]);
 
   const style = isSelected
     ? { filter: `drop-shadow(0 0 10px ${game.colors.primary})` }
     : {};
 
-  if (errored) {
-    // Styled text fallback — replace logo files in public/logos/ to remove this
-    return (
-      <div
-        className="flex h-16 w-16 items-center justify-center rounded-sm text-sm font-black sm:h-20 sm:w-20"
-        style={{
-          background: game.colors.cardBg,
-          border: `1px solid ${game.colors.border}`,
-          color: game.colors.primary,
-          fontFamily: 'Impact, Arial Black, sans-serif',
-          letterSpacing: '0.1em',
-        }}
-      >
-        {game.shortName.split(' ')[0].slice(0, 4)}
-      </div>
-    );
-  }
-
   return (
-    /* Using <img> here so SVGs work without next/image domain config.
-       Swap to <Image> from 'next/image' once real PNG logos are in place. */
+    /* Using <img> here so SVGs work without next/image domain config. */
     <img
-      src={game.logo}
+      src={logoSrc}
       alt={`${game.name} logo`}
       width={80}
       height={80}
       className="h-16 w-16 object-contain sm:h-20 sm:w-20"
       style={style}
-      onError={() => setErrored(true)}
+      onError={() => {
+        if (logoSrc !== FALLBACK_LOGO) setLogoSrc(FALLBACK_LOGO);
+      }}
     />
   );
 }
