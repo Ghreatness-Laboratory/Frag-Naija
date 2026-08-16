@@ -3,44 +3,31 @@
 .next/
 out/
 
-# Temporary files
-*.tmp
-*.temp
-.DS_Store
-Thumbs.db
+# Build artifacts
+public/*.js
 
-# Environment variables
-.env*
-!.env.example
-
-# Logs
-*.log
-
-# Coverage reports
-coverage/
-*.lcov
-*.profdata
+# TypeScript
+tsconfig.tsbuildinfo
 
 # Dependencies
 node_modules/
 
-# Build outputs
-dist/
-build/
-target/
-*.min.js
-*.min.css
+# Environment variables
+.env.local
+.env
 
-# Editors
-.vscode/
-.idea/
+# Logs
+*.log
+
+# Temporary files
+*.tmp
 *.swp
-*.swo
 
 # OS generated files
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Icon?
-apidoc/
+
+# Editors
+.vscode/
+.idea/
 ```
