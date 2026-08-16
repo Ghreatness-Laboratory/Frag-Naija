@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const SELECT = '*, tournament:tournaments(id,name,game_slug,tier,prize_pool,currency), team:teams(id,name,game_slug,logo_url)';
+const SELECT = '*, tournament:tournaments(id,name,game_slug,tier,prize_pool,currency), team:teams!tournament_results_team_id_fkey(id,name,game_slug,logo_url)';
 
 export async function getTournamentResults({ game_slug } = {}) {
   const { data, error } = await supabaseAdmin
