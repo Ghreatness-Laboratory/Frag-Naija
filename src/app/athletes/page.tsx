@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -132,36 +132,22 @@ export default function AthletesPage() {
 
     setLoading(true);
     setRosterReady(false);
-    const params = new URLSearchParams({ game_slug: selectedGame.slug, is_icon: rosterMode === "icons" ? "true" : "false" });
-    const res = await fetch(`/api/athletes?${params.toString()}`, { cache: "no-store" });
-    if (res.ok) {
-      const data: Athlete[] = await res.json();
-      setApiAthletes(data);
-    } else {
+
+    try {
+      const params = new URLSearchParams({ game_slug: selectedGame.slug, is_icon: rosterMode === "icons" ? "true" : "false" });
+      const res = await fetch(`/api/athletes?${params.toString()}`, { cache: "no-store" });
+      if (res.ok) {
+        const data: Athlete[] = await res.json();
+        setApiAthletes(data);
+      } else {
+        setApiAthletes([]);
+      }
+    } catch {
+      setApiAthletes([]);
+    } finally {
       setLoading(false);
     }
   }, [selectedGame, rosterMode]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setRosterReady(false);
-
-    if (loading || !isHydrated) return () => { cancelled = true; };
-
-    const minimumLoaderTime = new Promise<void>((resolve) => {
-      window.setTimeout(resolve, 700);
-    });
-
-    const currentRoster = apiAthletes.filter((a) => (a.game_slug ?? selectedGame?.slug) === selectedGame?.slug);
-    Promise.all([preloadRosterPortraits(currentRoster), minimumLoaderTime]).then(() => {
-      if (!cancelled) {
-        setRosterReady(true);
-        setLoading(false);
-      }
-    });
-
-    return () => { cancelled = true; };
-  }, [loading, isHydrated, apiAthletes, selectedGame?.slug]);
 
   useEffect(() => {
     const requestedGame = new URLSearchParams(window.location.search).get("game");
@@ -206,19 +192,36 @@ export default function AthletesPage() {
     setSelected(null);
   }
 
-  const gameContent = isHydrated && selectedGame ? getGameContent(selectedGame.slug) : null;
-  const apiForGame = selectedGame ? apiAthletes.filter((a) => (a.game_slug ?? selectedGame.slug) === selectedGame.slug) : [];
-  const gameAthletes: Athlete[] = apiForGame.length > 0
+  const gameContent = useMemo(() => (isHydrated && selectedGame ? getGameContent(selectedGame.slug) : null), [isHydrated, selectedGame]);
+  const apiForGame = useMemo(() => (selectedGame ? apiAthletes.filter((a) => (a.game_slug ?? selectedGame.slug) === selectedGame.slug) : []), [apiAthletes, selectedGame]);
+  const gameAthletes: Athlete[] = useMemo(() => (apiForGame.length > 0
     ? apiForGame
-    : (gameContent?.athletes as Athlete[] | undefined) ?? [];
+    : (gameContent?.athletes as Athlete[] | undefined) ?? []), [apiForGame, gameContent]);
   const normalizedSearch = search.trim().toLowerCase();
-  const rosterAthletes = gameAthletes.filter((a) => rosterMode === "icons" ? Boolean(a.is_icon) : !a.is_icon);
-  const roleFilteredAthletes = selectedRoles.length
+  const rosterAthletes = useMemo(() => gameAthletes.filter((a) => rosterMode === "icons" ? Boolean(a.is_icon) : !a.is_icon), [gameAthletes, rosterMode]);
+  const roleFilteredAthletes = useMemo(() => (selectedRoles.length
     ? rosterAthletes.filter((a) => a.role && selectedRoles.includes(a.role))
-    : rosterAthletes;
-  const athletes = normalizedSearch
+    : rosterAthletes), [rosterAthletes, selectedRoles]);
+  const athletes = useMemo(() => (normalizedSearch
     ? roleFilteredAthletes.filter((a) => `${a.name} ${a.ign} ${a.known_name ?? ""} ${a.role ?? ""}`.toLowerCase().includes(normalizedSearch))
-    : roleFilteredAthletes;
+    : roleFilteredAthletes), [normalizedSearch, roleFilteredAthletes]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRosterReady(false);
+
+    if (loading || !isHydrated) return () => { cancelled = true; };
+
+    const minimumLoaderTime = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 700);
+    });
+
+    Promise.all([preloadRosterPortraits(rosterAthletes), minimumLoaderTime]).then(() => {
+      if (!cancelled) setRosterReady(true);
+    });
+
+    return () => { cancelled = true; };
+  }, [loading, isHydrated, rosterAthletes]);
 
   // Auto-select first athlete when list loads
   useEffect(() => {
@@ -243,15 +246,7 @@ export default function AthletesPage() {
     );
   }
 
-  if (!rosterReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#080a07]">
-        <BrandedLoader label="Loading athletes" />
-      </div>
-    );
-  }
-
-  if (gameAthletes.length === 0) {
+  if (rosterReady && gameAthletes.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <Shield className="w-12 h-12" style={{ color: primary }} />
@@ -262,7 +257,24 @@ export default function AthletesPage() {
 
   const a = selected ?? athletes[0];
 
-  if (!a) {
+  if (!rosterReady && !a) {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="athletes-loader"
+          initial={reduceMotion ? false : { opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: 0.32 }}
+          className="min-h-screen flex items-center justify-center bg-[#080a07]"
+        >
+          <BrandedLoader label="Loading athletes" />
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  if (rosterReady && !a) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
         <Shield className="w-12 h-12" style={{ color: rosterMode === "icons" ? '#f5c542' : primary }} />
