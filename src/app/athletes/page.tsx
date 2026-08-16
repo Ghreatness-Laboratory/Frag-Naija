@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight, X } from "lucide-react";
-import { AnimatePresence, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
@@ -260,12 +260,16 @@ export default function AthletesPage() {
   if (!rosterReady && !a) {
     return (
       <AnimatePresence mode="wait">
-        <RouteLoadingScreen
-          subtitle="LOADING ATHLETES"
-          ariaLabel="Loading athletes"
-          reduceMotion={reduceMotion}
-          loaderKey="athletes-loader"
-        />
+        <motion.div
+          key="athletes-loader"
+          initial={reduceMotion ? false : { opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: 0.32 }}
+          className="min-h-screen flex items-center justify-center bg-[#080a07]"
+        >
+          <BrandedLoader label="Loading athletes" />
+        </motion.div>
       </AnimatePresence>
     );
   }
