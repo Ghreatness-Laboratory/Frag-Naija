@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Images, Shield, Trophy, Users } from 'lucide-react';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { useGame } from '@/context/GameContext';
-import { DEFAULT_GAME } from '@/lib/games';
+import { DEFAULT_GAME, GAMES } from '@/lib/games';
+import { getGameContent } from '@/lib/game-content';
 import BrandedLoader from '@/components/common/BrandedLoader';
 
 type Athlete = {
@@ -42,6 +43,7 @@ type Team = {
   tournament_results?: { name: string; placement: string; date: string }[] | string | null;
   achievements?: string[] | string | null;
   bio: string | null;
+  game_slug?: string | null;
   players: Athlete[];
   organization?: { id: string; name: string; logo_url: string | null } | null;
   gallery?: { id: string; image_url: string; caption: string | null; sort_order: number | null }[];
@@ -69,18 +71,41 @@ function winRate(w: number, l: number) {
 
 export default function TeamDetail({ params }: { params: { id: string } }) {
   const { selectedGame } = useGame();
-  const activeGame = selectedGame ?? DEFAULT_GAME;
-  const primary = activeGame.colors.primary;
-  const secondary = activeGame.colors.secondary;
+  const contextGame = selectedGame ?? DEFAULT_GAME;
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
+  const activeGame = team?.game_slug ? GAMES.find((game) => game.slug === team.game_slug) ?? contextGame : contextGame;
+  const primary = activeGame.colors.primary;
+  const secondary = activeGame.colors.secondary;
 
   useEffect(() => {
-    fetch(`/api/teams/${params.id}`, { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setTeam)
-      .finally(() => setLoading(false));
-  }, [params.id]);
+    let active = true;
+
+    async function loadTeam() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/teams/${params.id}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (active) setTeam(data);
+          return;
+        }
+      } catch {
+        // Fall through to static game-content fallback below.
+      }
+
+      const fallbackGames = [contextGame, ...GAMES.filter((game) => game.slug !== contextGame.slug)];
+      const fallbackTeam = fallbackGames
+        .flatMap((game) => (getGameContent(game.slug)?.teams ?? []).map((item) => ({ ...item, game_slug: item.game_slug ?? game.slug })))
+        .find((item) => String(item.id) === params.id) as Team | undefined;
+
+      if (active) setTeam(fallbackTeam ?? null);
+    }
+
+    loadTeam().finally(() => { if (active) setLoading(false); });
+
+    return () => { active = false; };
+  }, [params.id, contextGame]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Loading team" /></div>;
   if (!team) {
