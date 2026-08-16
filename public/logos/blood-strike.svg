@@ -1,0 +1,10 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Blood Strike logo placeholder</title>
+  <desc id="desc">Temporary Blood Strike tactical red crosshair badge used until an official app icon asset can be committed.</desc>
+  <rect width="256" height="256" rx="48" fill="#090607"/>
+  <path d="M28 190L70 36h116l42 154-100 42-100-42Z" fill="#FF1744" fill-opacity="0.16" stroke="#FF1744" stroke-width="10" stroke-linejoin="round"/>
+  <circle cx="128" cy="121" r="58" stroke="#FF1744" stroke-width="9"/>
+  <path d="M128 48v38M128 156v38M55 121h38M163 121h38" stroke="#FFB000" stroke-width="9" stroke-linecap="round"/>
+  <path d="M104 151l18-65h42l-14 37h24l-51 61 12-33h-31Z" fill="#FFB000" stroke="#FF1744" stroke-width="5" stroke-linejoin="round"/>
+  <text x="128" y="222" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="22" font-weight="900" letter-spacing="1" fill="#FF1744">BLOOD STRIKE</text>
+</svg>

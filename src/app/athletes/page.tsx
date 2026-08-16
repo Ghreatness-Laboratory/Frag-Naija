@@ -10,6 +10,7 @@ import { GAMES } from "@/lib/games";
 import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
+import BrandedLoader from "@/components/common/BrandedLoader";
 
 type Athlete = {
   id: string;
