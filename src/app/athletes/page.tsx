@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame, Search, ChevronRight, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
@@ -67,6 +68,25 @@ function parseObjectArray<T extends Record<string, string>>(val: T[] | string | 
     .filter((item) => Object.values(item).some(Boolean));
 }
 
+function preloadRosterPortraits(roster: Athlete[]) {
+  if (typeof window === 'undefined') return Promise.resolve();
+  const portraits = roster.map((a) => a.photo_url).filter(Boolean) as string[];
+  return Promise.allSettled(
+    portraits.map((src) => new Promise<void>((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        if ('decode' in image) {
+          image.decode().then(resolve).catch(resolve);
+        } else {
+          resolve();
+        }
+      };
+      image.onerror = () => resolve();
+      image.src = src;
+    }))
+  ).then(() => undefined);
+}
+
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
   const pct = Math.min(Math.max(Number(value) || 0, 0), 100);
   return (
@@ -86,10 +106,12 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
 }
 
 export default function AthletesPage() {
+  const reduceMotion = Boolean(useReducedMotion());
   const { selectedGame, setSelectedGame, isHydrated } = useGame();
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [selected, setSelected] = useState<Athlete | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rosterReady, setRosterReady] = useState(false);
   const [search, setSearch] = useState("");
   const [rosterMode, setRosterMode] = useState<"athletes" | "icons">("athletes");
   const [roleOptions, setRoleOptions] = useState<string[]>([]);
@@ -109,14 +131,37 @@ export default function AthletesPage() {
     }
 
     setLoading(true);
+    setRosterReady(false);
     const params = new URLSearchParams({ game_slug: selectedGame.slug, is_icon: rosterMode === "icons" ? "true" : "false" });
     const res = await fetch(`/api/athletes?${params.toString()}`, { cache: "no-store" });
     if (res.ok) {
       const data: Athlete[] = await res.json();
       setApiAthletes(data);
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, [selectedGame, rosterMode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRosterReady(false);
+
+    if (loading || !isHydrated) return () => { cancelled = true; };
+
+    const minimumLoaderTime = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 700);
+    });
+
+    const currentRoster = apiAthletes.filter((a) => (a.game_slug ?? selectedGame?.slug) === selectedGame?.slug);
+    Promise.all([preloadRosterPortraits(currentRoster), minimumLoaderTime]).then(() => {
+      if (!cancelled) {
+        setRosterReady(true);
+        setLoading(false);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [loading, isHydrated, apiAthletes, selectedGame?.slug]);
 
   useEffect(() => {
     const requestedGame = new URLSearchParams(window.location.search).get("game");
@@ -198,9 +243,9 @@ export default function AthletesPage() {
     );
   }
 
-  if (loading) {
+  if (!rosterReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#080a07]">
         <BrandedLoader label="Loading athletes" />
       </div>
     );
@@ -248,6 +293,19 @@ export default function AthletesPage() {
   const statusTone = athleteStatusTone(a.status, primary);
 
   return (
+    <AnimatePresence mode="wait">
+      {!rosterReady ? (
+        <motion.div
+          key="athletes-loader"
+          initial={reduceMotion ? false : { opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: 0.32 }}
+          className="min-h-screen flex items-center justify-center bg-[#080a07]"
+        >
+          <BrandedLoader label="Loading athletes" />
+        </motion.div>
+      ) : (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Sidebar roster */}
       <aside className="lg:w-64 xl:w-72 border-b lg:border-b-0 lg:border-r border-fn-gborder flex-shrink-0">
