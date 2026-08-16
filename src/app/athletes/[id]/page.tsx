@@ -113,6 +113,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
 
   const activeGame = selectedGame ?? GAMES.find((game) => game.slug === a.game_slug);
   const primary = activeGame?.colors.primary ?? 'rgb(var(--fn-green))';
+  const subtitleFormat = activeGame?.subtitleFormat ?? 'role_team';
   const statusTone = athleteStatusTone(a.status, primary);
   const gameName = activeGame?.shortName.toUpperCase() ?? 'ALL GAMES';
   const aliases = parseArray(a.previous_aliases);
@@ -166,7 +167,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
 
         <section className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-6">
           <div className="grid gap-5 lg:grid-cols-[230px_1fr] lg:items-center">
-            <PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} variant="featured" className="mx-0" />
+            <PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} variant="featured" className="mx-0" subtitleFormat={subtitleFormat} />
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-widest" style={{ background: statusTone.background, color: statusTone.color, borderColor: statusTone.borderColor }}><span style={{ color: statusTone.dotColor }}>●</span>{a.status}</span>{!footballProfile && <span className="fn-label">{a.role || 'Player'}{team?.rank ? ` · rank #${team.rank}` : ''}</span>}</div>
               <h1 className="font-display text-4xl font-black uppercase text-fn-text">{displayName}</h1>
@@ -257,7 +258,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
                 </div>
                 <button type="button" onClick={() => setCardOpen(false)} className="fn-btn-ghost inline-flex items-center gap-2" aria-label="Close player card"><X size={16} />Close</button>
               </div>
-              <PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} />
+              <PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} subtitleFormat={subtitleFormat} />
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <button onClick={handleDownload} disabled={downloading} className="fn-btn inline-flex items-center gap-2"><Download size={14} />{downloading ? 'Generating…' : 'Download Player Card'}</button>
                 <button onClick={handlePrint} className="fn-btn-outline inline-flex items-center gap-2"><Printer size={14} />Print Player Card</button>
@@ -267,8 +268,8 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
         )}
       </div>
 
-      <div className="print-card-only"><PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
-      <div id="player-card-export" className="pointer-events-none fixed -left-[10000px] top-0 opacity-100" aria-hidden="true"><PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} /></div>
+      <div className="print-card-only"><PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} subtitleFormat={subtitleFormat} /></div>
+      <div id="player-card-export" className="pointer-events-none fixed -left-[10000px] top-0 opacity-100" aria-hidden="true"><PlayerCardTemplate athlete={a} team={team} rating={rating} primary={primary} gameName={gameName} subtitleFormat={subtitleFormat} /></div>
     </div>
   );
 }

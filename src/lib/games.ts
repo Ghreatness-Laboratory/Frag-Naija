@@ -6,6 +6,8 @@ export interface GameColors {
   cardBg: string;
 }
 
+export type SubtitleFormat = 'role_team' | 'player_only';
+
 export interface Game {
   id: string;
   slug: string;
@@ -16,6 +18,7 @@ export interface Game {
   logo: string;
   badge?: string;
   available: boolean;
+  subtitleFormat?: SubtitleFormat;
 }
 
 export const GAMES: Game[] = [
@@ -83,6 +86,7 @@ export const GAMES: Game[] = [
     },
     logo: '/logos/fc-mobile.svg',
     available: true,
+    subtitleFormat: 'player_only',
   },
   {
     id: 'blood-strike',
@@ -115,6 +119,7 @@ export const GAMES: Game[] = [
     },
     logo: '/logos/ea-fc-26.svg',
     available: true,
+    subtitleFormat: 'player_only',
   },
   {
     id: 'mortal-kombat',
@@ -147,6 +152,7 @@ export const GAMES: Game[] = [
     },
     logo: '/logos/efootball.svg',
     available: true,
+    subtitleFormat: 'player_only',
   },
   {
     id: 'mobile-legends',

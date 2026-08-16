@@ -121,6 +121,7 @@ export default function AthletesPage() {
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
+  const subtitleFormat = selectedGame?.subtitleFormat ?? 'role_team';
   const isFF      = selectedGame?.slug === 'free-fire';
 
   const load = useCallback(async () => {
@@ -427,6 +428,7 @@ export default function AthletesPage() {
                   rank={index + 1}
                   variant={rosterMode === "icons" ? "icon" : "compact"}
                   className={isActive ? '' : 'opacity-80'}
+                  subtitleFormat={subtitleFormat}
                 />
               </button>
               {isActive && (
@@ -474,6 +476,7 @@ export default function AthletesPage() {
                 gameName={selectedGame.shortName.toUpperCase()}
                 variant="featured"
                 className="mx-0"
+                subtitleFormat={subtitleFormat}
               />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
