@@ -43,6 +43,7 @@ const ATHLETE_FIELDS = new Set([
   'control_code',
   'is_icon',
   'fantasy_price',
+  'fantasy_price_manual_override',
   'recent_fantasy_points',
   'total_fantasy_points',
   'fantasy_status',
@@ -179,7 +180,10 @@ export async function getAthleteById(id) {
 export async function createAthlete(body) {
   const { athlete, achievements } = splitAthletePayload(body);
   const calculatedAthlete = applyCalculatedOverallRating(athlete);
-  if (!Number(calculatedAthlete.fantasy_price)) calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
+  calculatedAthlete.fantasy_price_manual_override = Boolean(body.manual_fantasy_price_override);
+  calculatedAthlete.fantasy_price = calculatedAthlete.fantasy_price_manual_override && Number(body.fantasy_price) > 0
+    ? Number(body.fantasy_price)
+    : calculateFantasyBasePrice(calculatedAthlete);
   const { data, error } = await supabaseAdmin.from('athletes').insert([calculatedAthlete]).select().single();
   if (error) throw error;
 
@@ -197,7 +201,10 @@ export async function updateAthlete(id, body) {
   if (existingError) throw existingError;
 
   const calculatedAthlete = applyCalculatedOverallRating({ ...existing, ...athlete });
-  if (!Object.prototype.hasOwnProperty.call(athlete, 'fantasy_price') || !Number(athlete.fantasy_price)) calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
+  calculatedAthlete.fantasy_price_manual_override = Boolean(body.manual_fantasy_price_override);
+  calculatedAthlete.fantasy_price = calculatedAthlete.fantasy_price_manual_override && Number(body.fantasy_price) > 0
+    ? Number(body.fantasy_price)
+    : calculateFantasyBasePrice(calculatedAthlete);
   const { data, error } = await supabaseAdmin
     .from('athletes')
     .update(calculatedAthlete)
