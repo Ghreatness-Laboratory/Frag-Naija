@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Crosshair, ListChecks, Lock, Search, Shield, Sparkles, Star, Trophy, X } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
@@ -55,6 +55,10 @@ export default function FantasyLeaguePage() {
   const [loading, setLoading] = useState(true);
   const [welcomeComplete, setWelcomeComplete] = useState(true);
   const [search, setSearch] = useState("");
+  const [roleOptions, setRoleOptions] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [roleFilterOpen, setRoleFilterOpen] = useState(false);
+  const searchFilterRef = useRef<HTMLDivElement | null>(null);
   const [sort, setSort] = useState<SortKey>("points");
   const [starters, setStarters] = useState<string[]>([]);
   const [bench, setBench] = useState<string[]>([]);
@@ -94,15 +98,36 @@ export default function FantasyLeaguePage() {
   const load = useCallback(async () => { setLoading(true); const started = Date.now(); try { const res = await fetch("/api/athletes?game_slug=pubg-mobile&is_icon=false", { cache: "no-store" }); const data = res.ok ? await res.json() : []; setAthletes(Array.isArray(data) ? data : []); } finally { window.setTimeout(() => setLoading(false), Math.max(0, MIN_LOADER_MS - (Date.now() - started))); } }, []);
   useEffect(() => { if (welcomeComplete) load(); }, [welcomeComplete, load]);
   useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (!searchFilterRef.current?.contains(event.target as Node)) setRoleFilterOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, []);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/athletes?game_slug=pubg-mobile&distinct=roles", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((roles: string[]) => {
+        if (!active) return;
+        setRoleOptions(Array.isArray(roles) ? roles.filter(Boolean) : []);
+        setSelectedRoles((current) => current.filter((role) => roles.includes(role)));
+      })
+      .catch(() => { if (active) setRoleOptions([]); });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
     if (!welcomeComplete || squadLocked) return;
     const hasProgress = starters.length > 0 || bench.length > 0 || Boolean(captain) || Boolean(activeChip);
     if (hasProgress) localStorage.setItem(IN_PROGRESS_SQUAD_KEY, JSON.stringify({ starters, bench, captain, activeChip, chipUsage, updatedAt: new Date().toISOString(), locked: false }));
   }, [activeChip, bench, captain, chipUsage, squadLocked, starters, welcomeComplete]);
   function startFantasy() { localStorage.setItem(WELCOME_KEY, "true"); setWelcomeComplete(true); }
+  function toggleRole(role: string) { setSelectedRoles((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]); }
   const selectedIds = useMemo(() => [...starters, ...bench], [starters, bench]);
   const selectedAthletes = useMemo(() => selectedIds.map((id) => athletes.find((a) => a.id === id)).filter(Boolean) as Athlete[], [selectedIds, athletes]);
   const squadValue = selectedAthletes.reduce((sum, a) => sum + fantasyPrice(a), 0); const remaining = FANTASY_SQUAD_BUDGET - squadValue;
-  const list = useMemo(() => athletes.filter((a) => `${a.name} ${a.ign} ${a.team ?? ""}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => sort === "price-high" ? fantasyPrice(b) - fantasyPrice(a) : sort === "price-low" ? fantasyPrice(a) - fantasyPrice(b) : fantasyPoints(b, "total") - fantasyPoints(a, "total")), [athletes, search, sort]);
+  const roleFilteredAthletes = useMemo(() => (selectedRoles.length ? athletes.filter((a) => a.role && selectedRoles.includes(a.role)) : athletes), [athletes, selectedRoles]);
+  const list = useMemo(() => roleFilteredAthletes.filter((a) => `${a.name} ${a.ign} ${a.team ?? ""} ${a.role ?? ""}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => sort === "price-high" ? fantasyPrice(b) - fantasyPrice(a) : sort === "price-low" ? fantasyPrice(a) - fantasyPrice(b) : fantasyPoints(b, "total") - fantasyPoints(a, "total")), [roleFilteredAthletes, search, sort]);
   function blockIfLocked() { if (canEditSquad) return false; setMessage(lockMessage); return true; }
   function addAthlete(a: Athlete, slot: "starter" | "bench") { setMessage(""); if (blockIfLocked()) return; if (selectedIds.includes(a.id)) return; if (fantasyStatus(a) !== "available") { setMessage(`${a.ign} is unavailable for selection.`); return; } if (squadValue + fantasyPrice(a) > FANTASY_SQUAD_BUDGET) { setMessage("Squad value would exceed your ₦10,000,000 fantasy budget."); return; } const teamLimitMessage = fantasyTeamLimitViolation(selectedAthletes, a); if (teamLimitMessage) { setMessage(teamLimitMessage); return; } if (slot === "starter") { if (starters.length >= 4) { setMessage("Starting 4 is already full."); return; } setStarters((c) => [...c, a.id]); } else { if (bench.length >= 2) { setMessage("Bench is already full."); return; } setBench((c) => [...c, a.id]); } }
   function remove(id: string) { if (blockIfLocked()) return; setStarters((s) => s.filter((x) => x !== id)); setBench((b) => b.filter((x) => x !== id)); if (captain === id) setCaptain(""); }

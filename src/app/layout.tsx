@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Chakra_Petch, Exo_2, Orbitron, Oxanium, Rajdhani, Saira_Condensed, Space_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -8,6 +9,16 @@ import { GameProvider } from "@/context/GameContext";
 import PWARegister from "@/components/PWARegister";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import FontPreviewToggle from "@/components/common/FontPreviewToggle";
+
+
+const chakraPetch = Chakra_Petch({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-chakra", display: "swap" });
+const rajdhani = Rajdhani({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-rajdhani", display: "swap" });
+const exo2 = Exo_2({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-exo2", display: "swap" });
+const orbitron = Orbitron({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"], variable: "--font-orbitron", display: "swap" });
+const oxanium = Oxanium({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-oxanium", display: "swap" });
+const sairaCondensed = Saira_Condensed({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-saira-condensed", display: "swap" });
+const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-space-mono", display: "swap" });
+const fontVariables = [chakraPetch, rajdhani, exo2, orbitron, oxanium, sairaCondensed, spaceMono].map((font) => font.variable).join(" ");
 
 export const metadata: Metadata = {
   title: "Frag Naija — Tactical Command Interface",
@@ -47,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // Get font preview mode from query params or localStorage
   // This allows testing different fonts by adding ?font=rajdhani, ?font=chakra, or ?font=exo2 to URL
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className={`dark ${fontVariables}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
