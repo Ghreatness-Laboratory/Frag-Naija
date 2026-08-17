@@ -39,59 +39,43 @@ function ModeCard({ mode, game, compact = false }: { mode: GameMode; game: Game;
 }
 
 function ModesMenu({ game }: { game: Game }) {
-  const [showUpcoming, setShowUpcoming] = useState(false);
-  const liveModes = game.modes.filter((mode) => mode.status === 'live' && mode.route);
-  const upcomingModes = game.modes.filter((mode) => mode.status !== 'live' || !mode.route);
+  const [open, setOpen] = useState(false);
 
   return (
-    <section className="space-y-4">
-      <div>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="fn-label" style={{ color: game.colors.primary }}>Live now</p>
-            <h2 className="text-sm font-black uppercase tracking-widest text-fn-text">Playable modes</h2>
-          </div>
-          <span className="border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-fn-green">{liveModes.length} active</span>
+    <section className="border border-fn-gborder bg-fn-card/80">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-controls={`${game.slug}-virtual-games-panel`}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-fn-green/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green"
+      >
+        <div>
+          <p className="fn-label" style={{ color: game.colors.primary }}>Choose Mode</p>
+          <h2 className="mt-1 text-sm font-black uppercase tracking-widest text-fn-text">Virtual Games</h2>
+          <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">{game.modes.length} scoped modes · collapsed by default</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {liveModes.map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
-        </div>
-      </div>
-
-      {upcomingModes.length > 0 && (
-        <div className="border border-fn-gborder bg-fn-card/80">
-          <button
-            type="button"
-            onClick={() => setShowUpcoming((open) => !open)}
-            aria-expanded={showUpcoming}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green"
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex h-9 w-9 items-center justify-center border border-fn-gborder bg-fn-black text-fn-green">
+          <ChevronDown size={16} />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id={`${game.slug}-virtual-games-panel`}
+            key="virtual-games-modes"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: 'easeInOut' }}
+            className="overflow-hidden border-t border-fn-gborder"
           >
-            <div>
-              <p className="fn-label" style={{ color: game.colors.primary }}>{showUpcoming ? 'Hide upcoming modes' : 'Show upcoming modes'}</p>
-              <p className="mt-1 text-[11px] uppercase tracking-widest text-fn-muted">{upcomingModes.length} locked / coming soon</p>
+            <div className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
+              {game.modes.map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
             </div>
-            <motion.span animate={{ rotate: showUpcoming ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex h-9 w-9 items-center justify-center border border-fn-gborder bg-fn-black text-fn-green">
-              <ChevronDown size={16} />
-            </motion.span>
-          </button>
-          <AnimatePresence initial={false}>
-            {showUpcoming && (
-              <motion.div
-                key="upcoming-modes"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.24, ease: 'easeInOut' }}
-                className="overflow-hidden border-t border-fn-gborder"
-              >
-                <div className="grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {upcomingModes.map((mode) => <ModeCard key={mode.key} mode={mode} game={game} compact />)}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

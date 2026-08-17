@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
+  ChevronDown,
   ChevronRight,
   Gamepad2,
   Lock,
@@ -43,6 +44,36 @@ function ModeCard({ mode, game }: { mode: GameMode; game: Game }) {
   return ready ? <Link href={mode.route!} className={className} style={style} aria-label={`Open ${mode.label} mode`}>{content}</Link> : <button type="button" disabled className={className}>{content}</button>;
 }
 
+function VirtualGamesAccordion({ game }: { game: Game }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-8 border border-fn-gborder bg-fn-card/80">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-controls={`${game.slug}-virtual-games-panel`}
+        className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-fn-green/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green"
+      >
+        <span>
+          <span className="fn-label" style={{ color: game.colors.primary }}>Choose Mode</span>
+          <span className="mt-1 block text-sm font-black uppercase tracking-widest text-fn-text">Virtual Games</span>
+          <span className="mt-1 block text-[10px] uppercase tracking-widest text-fn-muted">{game.modes.length} scoped modes · collapsed by default</span>
+        </span>
+        <span className="flex h-9 w-9 items-center justify-center border border-fn-gborder bg-fn-black text-fn-green transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <ChevronDown size={16} />
+        </span>
+      </button>
+      {open && (
+        <div id={`${game.slug}-virtual-games-panel`} className="grid gap-3 border-t border-fn-gborder p-3 sm:grid-cols-2 lg:grid-cols-3">
+          {game.modes.map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GenericHub({ game }: { game: Game }) {
   const links = [
     ['Athletes', '/athletes'], ['Teams', '/teams'], ['Tournaments', '/tournaments'],
@@ -60,14 +91,7 @@ function GenericHub({ game }: { game: Game }) {
         <p className="mt-2 max-w-xl text-xs leading-relaxed text-fn-muted">
           You are now browsing the {game.name} space. The sections below use the selected game context and only show records tagged with <span style={{ color: game.colors.primary }}>{game.slug}</span>.
         </p>
-        {game.hasModeMenu && (
-          <div className="mt-8">
-            <p className="fn-label" style={{ color: game.colors.primary }}>Virtual Games · Choose Mode</p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {game.modes.map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
-            </div>
-          </div>
-        )}
+        {game.hasModeMenu && <VirtualGamesAccordion game={game} />}
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {links.map(([label, href]) => (
             <Link key={href} href={href} className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark p-4 text-xs font-bold uppercase tracking-widest text-fn-text hover:border-fn-green/40">
