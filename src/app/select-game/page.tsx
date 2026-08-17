@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, Shield, Zap } from 'lucide-react';
+import { ChevronRight, Lock, Shield, Zap } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
 import { useGame } from '@/context/GameContext';
 
@@ -120,11 +120,29 @@ function GameCard({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+type AuthUser = { id?: string; email?: string; username?: string } | null;
+
+function useAuthGate() {
+  const [user, setUser] = useState<AuthUser | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/me', { cache: 'no-store', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => { if (active) setUser(payload ?? null); })
+      .catch(() => { if (active) setUser(null); });
+    return () => { active = false; };
+  }, []);
+
+  return { user, loading: user === undefined };
+}
+
 export default function SelectGamePage() {
   const router = useRouter();
   const { selectedGame, setSelectedGame, isHydrated } = useGame();
   const [picked, setPicked] = useState<Game | null>(null);
   const [allGamesPicked, setAllGamesPicked] = useState(true);
+  const { user, loading: authLoading } = useAuthGate();
 
   // Pre-select All Games for first-time/neutral visitors, or the stored active game when present.
   useEffect(() => {
@@ -144,6 +162,7 @@ export default function SelectGamePage() {
       router.push('/');
       return;
     }
+    if (!user) return;
     if (!picked) return;
     setSelectedGame(picked);       // → writes localStorage + sets fn-game cookie
     router.push(`/${picked.slug}`);
@@ -234,8 +253,14 @@ export default function SelectGamePage() {
             </h1>
           </div>
           <p className="mb-10 max-w-md text-center text-[11px] font-mono leading-relaxed text-fn-muted">
-            Choose All Games for the neutral combined dashboard, or pick a single title for game-scoped content.
+            Choose All Games for the neutral combined dashboard, or log in before picking a single title for game-scoped content.
           </p>
+
+          {!authLoading && !user && (
+            <div className="mb-6 flex max-w-xl items-center gap-3 rounded-sm border border-fn-yellow/30 bg-fn-yellow/10 px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-fn-yellow">
+              <Lock size={14} /> Individual game spaces require login. Select All Games, or <a href="/login" className="underline underline-offset-4">login first</a>.
+            </div>
+          )}
 
           {/* ── Game grid ── */}
           <div className="mb-10 grid w-full max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
@@ -254,7 +279,7 @@ export default function SelectGamePage() {
                 key={game.id}
                 game={game}
                 isSelected={!allGamesPicked && picked?.id === game.id}
-                onSelect={(game) => { setPicked(game); setAllGamesPicked(false); }}
+                onSelect={(game) => { if (!user) return; setPicked(game); setAllGamesPicked(false); }}
               />
             ))}
           </div>
@@ -281,7 +306,7 @@ export default function SelectGamePage() {
             className="flex items-center gap-2.5 rounded-sm px-10 py-3.5 font-display text-sm font-black uppercase tracking-[0.2em] transition-all duration-300 active:scale-95"
             style={btnStyle}
           >
-            {allGamesPicked ? 'Enter All Games Dashboard' : picked ? `Enter as ${picked.shortName} Player` : 'Select a Game First'}
+            {allGamesPicked ? 'Enter All Games Dashboard' : !user ? 'Login Required for Game Spaces' : picked ? `Enter as ${picked.shortName} Player` : 'Select a Game First'}
             <ChevronRight size={15} />
           </button>
 
