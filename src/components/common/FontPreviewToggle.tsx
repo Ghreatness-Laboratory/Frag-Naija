@@ -9,11 +9,23 @@ type FontOption = {
   weights: string;
 };
 
+function fontPreviewFamily(fontId: string) {
+  if (fontId === "default") return undefined;
+  if (fontId === "legacy") return "var(--font-space-mono-family)";
+  return `var(--font-${fontId})`;
+}
+
 const FONT_OPTIONS: FontOption[] = [
   {
     id: "default",
-    name: "Current (Default)",
-    description: "Bebas Neue + Space Mono — Original site fonts",
+    name: "Chakra Petch (Default)",
+    description: "Site-wide default for body, UI labels, headings, and display text",
+    weights: "400/500/600/700",
+  },
+  {
+    id: "legacy",
+    name: "Legacy Mono",
+    description: "Previous mono-style baseline retained for comparison",
     weights: "400/700",
   },
   {
@@ -32,6 +44,24 @@ const FONT_OPTIONS: FontOption[] = [
     id: "exo2",
     name: "Exo 2",
     description: "Geometric with technical edge, versatile for display and body",
+    weights: "400/500/600/700/800",
+  },
+  {
+    id: "orbitron",
+    name: "Orbitron",
+    description: "Futuristic scoreboard style for high-impact esports screens",
+    weights: "400/500/600/700/800/900",
+  },
+  {
+    id: "oxanium",
+    name: "Oxanium",
+    description: "Squared sci-fi shapes with strong readability for dense UI",
+    weights: "400/500/600/700/800",
+  },
+  {
+    id: "saira-condensed",
+    name: "Saira Condensed",
+    description: "Condensed competitive look that preserves space in admin tables",
     weights: "400/500/600/700/800",
   },
 ];
@@ -55,16 +85,24 @@ export default function FontPreviewToggle() {
     if (fontId === "default") {
       localStorage.removeItem("fn-font-preview");
       document.documentElement.classList.remove(
+        "font-preview-legacy",
         "font-preview-rajdhani",
         "font-preview-chakra",
-        "font-preview-exo2"
+        "font-preview-exo2",
+        "font-preview-orbitron",
+        "font-preview-oxanium",
+        "font-preview-saira-condensed"
       );
     } else {
       localStorage.setItem("fn-font-preview", fontId);
       document.documentElement.classList.remove(
+        "font-preview-legacy",
         "font-preview-rajdhani",
         "font-preview-chakra",
-        "font-preview-exo2"
+        "font-preview-exo2",
+        "font-preview-orbitron",
+        "font-preview-oxanium",
+        "font-preview-saira-condensed"
       );
       document.documentElement.classList.add(`font-preview-${fontId}`);
     }
@@ -93,14 +131,14 @@ export default function FontPreviewToggle() {
       {/* Modal overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-fn-black/80 px-4 py-6 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-fn-black/80 px-4 py-6 backdrop-blur-sm sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="font-preview-title"
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="relative w-full max-w-lg overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-5 shadow-2xl"
+            className="relative my-auto max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-sm border border-fn-gborder bg-fn-card p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top accent line */}
@@ -152,11 +190,7 @@ export default function FontPreviewToggle() {
                             className={`text-[11px] font-black uppercase tracking-widest ${
                               isActive ? "text-fn-green" : "text-fn-text"
                             }`}
-                            style={
-                              font.id !== "default"
-                                ? { fontFamily: `var(--font-${font.id})` }
-                                : {}
-                            }
+                            style={fontPreviewFamily(font.id) ? { fontFamily: fontPreviewFamily(font.id) } : {}}
                           >
                             {font.name}
                           </span>
@@ -176,11 +210,7 @@ export default function FontPreviewToggle() {
                       {/* Preview sample */}
                       <div
                         className="hidden sm:block text-right"
-                        style={
-                          font.id !== "default"
-                            ? { fontFamily: `var(--font-${font.id})` }
-                            : {}
-                        }
+                        style={fontPreviewFamily(font.id) ? { fontFamily: fontPreviewFamily(font.id) } : {}}
                       >
                         <span className="text-[10px] font-bold uppercase text-fn-muted">ESPORTS</span>
                       </div>
@@ -227,7 +257,7 @@ export default function FontPreviewToggle() {
                   onClick={() => setFont("default")}
                   className="text-[9px] font-bold uppercase tracking-widest text-fn-muted hover:text-fn-red transition-colors"
                 >
-                  ← Reset to original fonts
+                  ← Reset to Chakra Petch default
                 </button>
               </div>
             )}
