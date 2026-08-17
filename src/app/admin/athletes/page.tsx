@@ -313,7 +313,7 @@ function AthletesContent() {
         previous_teams: fcMobileGame ? [] : cleanObjectList(form.previous_teams),
         achievements: fcMobileGame ? [] : cleanObjectList(form.achievements),
         performance_history: fcMobileGame ? [] : cleanObjectList(form.performance_history),
-        fantasy_price: Number(form.fantasy_price) || 750000,
+        ...(Number(form.fantasy_price) > 0 ? { fantasy_price: Number(form.fantasy_price) } : {}),
         recent_fantasy_points: Number(form.recent_fantasy_points) || 0,
         total_fantasy_points: Number(form.total_fantasy_points) || 0,
         fantasy_status: form.fantasy_status || 'available',
@@ -632,8 +632,9 @@ function AthletesContent() {
 
 
           <div className="grid grid-cols-2 gap-3 rounded border border-fn-green/20 bg-fn-green/5 p-3">
-            <Field label="Fantasy Price">
-              <Input type="number" min="0" value={form.fantasy_price} onChange={f('fantasy_price')} placeholder="750000" />
+            <Field label="Fantasy Price (auto from rating)">
+              <Input type="number" min="0" value={form.fantasy_price} onChange={f('fantasy_price')} placeholder="Auto-calculated on save" />
+              <p className="mt-1 text-[10px] leading-relaxed text-fn-muted">Leave blank for the rating-tiered auto price. Typing a value is an intentional manual override unless rating stats change.</p>
             </Field>
             <Field label="Fantasy Status">
               <Select value={form.fantasy_status} onChange={f('fantasy_status')}>
