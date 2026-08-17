@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
+import { calculateFantasyBasePrice } from '@/lib/fantasy-pricing';
 
 function applyCalculatedOverallRating(athlete) {
   return {
@@ -178,6 +179,7 @@ export async function getAthleteById(id) {
 export async function createAthlete(body) {
   const { athlete, achievements } = splitAthletePayload(body);
   const calculatedAthlete = applyCalculatedOverallRating(athlete);
+  if (!Number(calculatedAthlete.fantasy_price)) calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
   const { data, error } = await supabaseAdmin.from('athletes').insert([calculatedAthlete]).select().single();
   if (error) throw error;
 
@@ -195,6 +197,7 @@ export async function updateAthlete(id, body) {
   if (existingError) throw existingError;
 
   const calculatedAthlete = applyCalculatedOverallRating({ ...existing, ...athlete });
+  if (!Object.prototype.hasOwnProperty.call(athlete, 'fantasy_price') || !Number(athlete.fantasy_price)) calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
   const { data, error } = await supabaseAdmin
     .from('athletes')
     .update(calculatedAthlete)
