@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Trophy, Users, Shield, Star, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent, type DummyTeam } from "@/lib/game-content";
@@ -137,9 +138,9 @@ export default function TeamsPage() {
             const wr = winRate(team.wins, team.losses);
             const rankColor = rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : rank === 3 ? secondary : 'rgb(var(--fn-muted))';
             return (
-              <button
+              <Link
                 key={team.id}
-                onClick={() => setSelected(team)}
+                href={`/teams/${team.id}`}
                 className="w-full flex items-center gap-3 px-4 py-3 border-b border-fn-gborder/50 transition-all text-left"
                 style={isActive
                   ? { background: `${primary}10`, borderLeft: `2px solid ${primary}` }
@@ -172,7 +173,7 @@ export default function TeamsPage() {
                   <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{wr}%</div>
                   <div className="fn-label text-[7px]">WIN</div>
                 </div>
-              </button>
+              </Link>
             );
           })}
         </div>

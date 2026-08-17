@@ -2,13 +2,13 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity } from "lucide-react";
+import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Medal, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, Shield } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 
 type Athlete = {
-  id: string; name: string; ign: string; role: string | null;
-  rating: number; kills: number; assists: number; winrate: number;
+  id: string; name: string; ign: string; role: string | null; team?: string | null;
+  rating?: number; overall_rating?: number; kills: number; assists: number; winrate: number;
   photo_url: string | null; status: string;
 };
 
@@ -22,6 +22,20 @@ type Transfer = {
   id: string; from_team: string | null; to_team: string | null;
   fee: number | null; status: string; date: string | null;
   athletes: { id: string; name: string; ign: string } | null;
+};
+
+type Team = {
+  id: string; name: string; logo_url: string | null; region: string | null;
+  wins: number; losses: number; kills: number; rank: number | null; strength: number | null;
+  players?: Athlete[];
+};
+
+type Tournament = {
+  id: string; name: string; game: string | null; start_date: string | null; status: string; region: string | null; prize_pool: number | null; currency: string | null;
+};
+
+type ShopItem = {
+  id: string; name: string; description: string | null; price: number; currency: string | null; image_url: string | null; category: string | null; featured: boolean;
 };
 
 const TICKER_ITEMS: Record<string, string[]> = {
@@ -44,6 +58,13 @@ const TICKER_ITEMS: Record<string, string[]> = {
 const reveal = {
   hidden: { opacity: 0, y: 22 },
   visible: { opacity: 1, y: 0 },
+};
+
+const cardStagger = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.08 },
+  },
 };
 
 function parseStat(value: string) {
@@ -117,7 +138,7 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
   const col = rankColors[rank] ?? "rgb(var(--fn-muted))";
   return (
     <motion.div variants={reveal} whileHover={{ y: -6, rotateX: 2 }} className="flex-shrink-0">
-    <Link href="/athletes" className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
+    <Link href={`/athletes/${athlete.id}`} className="group relative block bg-fn-card border border-fn-gborder transition-all rounded-sm overflow-hidden w-40 sm:w-48"
       onMouseEnter={e => (e.currentTarget.style.borderColor = `${primary}50`)}
       onMouseLeave={e => (e.currentTarget.style.borderColor = '')}
     >
@@ -146,7 +167,7 @@ function AthleteCard({ athlete, rank, primary }: { athlete: Athlete; rank: numbe
           {[
             { v: String(athlete.kills),   l: "KLS" },
             { v: `${athlete.winrate}%`,   l: "WR"  },
-            { v: String(Number(athlete.rating).toFixed(1)), l: "RTG" },
+            { v: String(Number(athlete.rating ?? athlete.overall_rating ?? 0).toFixed(1)), l: "RTG" },
           ].map(({ v, l }) => (
             <div key={l} className="text-center">
               <div className="text-[10px] font-bold text-fn-text">{v}</div>
@@ -207,6 +228,9 @@ export default function HomePage() {
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
+  const [apiTeams, setApiTeams] = useState<Team[]>([]);
+  const [apiTournaments, setApiTournaments] = useState<Tournament[]>([]);
+  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
 
   const primary   = selectedGame.colors.primary;
   const secondary = selectedGame.colors.secondary;
@@ -225,10 +249,16 @@ export default function HomePage() {
       fetch("/api/athletes").then((r) => r.ok ? r.json() : []),
       fetch("/api/wagers/active").then((r) => r.ok ? r.json() : []),
       fetch("/api/transfers").then((r) => r.ok ? r.json() : []),
-    ]).then(([a, w, t]) => {
-      setApiAthletes(a.slice(0, 6));
-      setWagers(w.slice(0, 3));
-      setApiTransfers(t.slice(0, 4));
+      fetch("/api/teams").then((r) => r.ok ? r.json() : []),
+      fetch("/api/tournaments").then((r) => r.ok ? r.json() : []),
+      fetch("/api/shop/products?featured=true").then((r) => r.ok ? r.json() : []),
+    ]).then(([a, w, t, teams, tournaments, products]) => {
+      setApiAthletes(Array.isArray(a) ? a.slice(0, 6) : []);
+      setWagers(Array.isArray(w) ? w.slice(0, 3) : []);
+      setApiTransfers(Array.isArray(t) ? t.slice(0, 4) : []);
+      setApiTeams(Array.isArray(teams) ? teams.slice(0, 4) : []);
+      setApiTournaments(Array.isArray(tournaments) ? tournaments.slice(0, 3) : []);
+      setShopItems(Array.isArray(products) ? products.slice(0, 4) : []);
     });
   }, []);
 
@@ -248,6 +278,12 @@ export default function HomePage() {
       winrate: a.winrate,
     })) as Athlete[];
   })();
+
+  const teams: Team[] = apiTeams.slice(0, 4);
+
+  const tournaments: Tournament[] = apiTournaments
+    .filter(t => t.status === "Upcoming" || t.status === "Live")
+    .slice(0, 3);
 
   // Transfers: fall back to game-specific dummies
   const transfers: Transfer[] = apiTransfers.length > 0
@@ -270,6 +306,7 @@ export default function HomePage() {
       {/* Live ticker */}
       <div className="border-b border-fn-gborder px-4 py-1.5 flex items-center gap-3 overflow-hidden"
         style={{ background: `${primary}08` }}
+      >
         <span className="text-[8px] font-bold tracking-widest uppercase flex-shrink-0 flex items-center gap-1.5"
           style={{ color: primary }}>
           <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: primary }} />
@@ -320,7 +357,7 @@ export default function HomePage() {
             <Gamepad2 size={12} style={{ color: primary }} />
             <span className="w-6 h-px inline-block" style={{ background: primary }} />
             NIGERIA&apos;S PREMIERE ESPORTS PLATFORM
-          </motion.p>
+          </p>
           <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">FRAG</span>
             <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl tracking-tight"
@@ -356,7 +393,7 @@ export default function HomePage() {
             >
               <Crosshair size={13} /> SCOUT ATHLETES <ChevronRight size={13} />
             </Link>
-          </div>
+          </motion.div>
         </motion.div>
 
         <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }} className="flex flex-wrap gap-2 mt-10 max-w-2xl relative">
@@ -421,7 +458,7 @@ export default function HomePage() {
         ) : (
           <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
             {gameAthletes.map((a, i) => (
-              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} reduceMotion={!!reduceMotion} />
+              <AthleteCard key={a.id} athlete={a} rank={i} primary={primary} />
             ))}
           </motion.div>
         )}
@@ -452,6 +489,91 @@ export default function HomePage() {
           </motion.div>
         )}
       </motion.section>
+
+      {/* Shop Preview */}
+      {shopItems.length > 0 && (
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="fn-label mb-1 flex items-center gap-1.5"><ShoppingBag size={9} style={{ color: primary }} /> GEAR DROP</p>
+            <h2 className="font-display text-2xl font-black uppercase text-fn-text">SHOP</h2>
+          </div>
+          <Link href="/shop" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW SHOP <ChevronRight size={11} /></Link>
+        </div>
+        <motion.div variants={cardStagger} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {shopItems.map((item) => (
+            <motion.article key={item.id} variants={reveal} className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">
+              <div className="flex h-32 items-center justify-center bg-fn-card2">
+                {item.image_url ? <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag size={28} style={{ color: primary }} />}
+              </div>
+              <div className="p-3">
+                <p className="fn-label mb-1">{item.category || "Merch"}</p>
+                <h3 className="text-xs font-bold uppercase text-fn-text">{item.name}</h3>
+                <p className="mt-2 font-display text-lg font-black" style={{ color: primary }}>{item.currency === "NGN" || !item.currency ? "₦" : `${item.currency} `}{Number(item.price || 0).toLocaleString()}</p>
+              </div>
+            </motion.article>
+          ))}
+        </motion.div>
+      </motion.section>
+      )}
+
+      {/* Events Preview */}
+      {tournaments.length > 0 && (
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder" style={{ background: `${primary}04` }}>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="fn-label mb-1 flex items-center gap-1.5"><CalendarDays size={9} style={{ color: primary }} /> EVENTS</p>
+            <h2 className="font-display text-2xl font-black uppercase text-fn-text">TOURNAMENTS</h2>
+          </div>
+          <Link href="/tournaments" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL EVENTS <ChevronRight size={11} /></Link>
+        </div>
+        <motion.div variants={cardStagger} className="grid gap-3 md:grid-cols-3">
+          {tournaments.map((event) => (
+            <motion.article key={event.id} variants={reveal} className="rounded-sm border border-fn-gborder bg-fn-card p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 border" style={{ color: primary, borderColor: `${primary}35`, background: `${primary}10` }}>{event.status}</span>
+                <span className="fn-label">{event.start_date ? new Date(event.start_date).toLocaleDateString("en-NG", { day: "numeric", month: "short" }) : "TBA"}</span>
+              </div>
+              <h3 className="text-sm font-bold uppercase text-fn-text">{event.name}</h3>
+              <p className="fn-label mt-2">{event.game || selectedGame.name} • {event.region || "Nigeria"}</p>
+            </motion.article>
+          ))}
+        </motion.div>
+      </motion.section>
+      )}
+
+      {/* Teams Preview */}
+      {teams.length > 0 && (
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="fn-label mb-1 flex items-center gap-1.5"><Shield size={9} style={{ color: primary }} /> POWER RANKINGS</p>
+            <h2 className="font-display text-2xl font-black uppercase text-fn-text">TEAMS</h2>
+          </div>
+          <Link href="/teams" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL TEAMS <ChevronRight size={11} /></Link>
+        </div>
+        <motion.div variants={cardStagger} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {teams.map((team) => (
+            <motion.div key={team.id} variants={reveal}>
+              <Link href={`/teams/${team.id}`} className="block rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-sm border bg-fn-card2" style={{ borderColor: `${primary}35` }}>
+                    {team.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <span className="font-display text-lg font-black" style={{ color: primary }}>{team.name[0]}</span>}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold uppercase text-fn-text">{team.name}</h3>
+                    <p className="fn-label">Rank #{team.rank ?? "—"}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  {[{ l: "W", v: team.wins }, { l: "KLS", v: team.kills }, { l: "PWR", v: team.strength ?? 0 }].map((s) => <div key={s.l}><div className="text-xs font-bold text-fn-text">{s.v}</div><div className="fn-label text-[7px]">{s.l}</div></div>)}
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.section>
+      )}
 
       {/* Transfer Activity */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">

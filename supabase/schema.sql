@@ -250,3 +250,25 @@ ON CONFLICT (key) DO NOTHING;
 -- Bucket: athletes  (public)
 -- Bucket: teams     (public)
 -- Bucket: highlights (public)
+
+-- ─── SHOP PRODUCTS ───────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS shop_products (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name        TEXT NOT NULL,
+  description TEXT,
+  price       NUMERIC(12,2) DEFAULT 0,
+  currency    TEXT DEFAULT 'NGN',
+  image_url   TEXT,
+  category    TEXT DEFAULT 'Merch',
+  featured    BOOLEAN DEFAULT false,
+  status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Draft', 'Archived')),
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE shop_products ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "shop_products_public_read" ON shop_products FOR SELECT USING (status = 'Active');
+CREATE POLICY "shop_products_admin_write" ON shop_products FOR ALL USING (false);
+
+-- Fantasy League computed price storage (optional cache; UI recalculates from rating)
+ALTER TABLE athletes ADD COLUMN IF NOT EXISTS fantasy_price INT;

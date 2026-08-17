@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Shield, Target, Crosshair, Zap, Star, TrendingUp, TrendingDown, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
@@ -199,9 +200,9 @@ export default function AthletesPage() {
             const isActive = (selected?.id ?? athletes[0].id) === athlete.id;
             const r = computeRating(athlete);
             return (
-              <button
+              <Link
                 key={athlete.id}
-                onClick={() => setSelected(athlete)}
+                href={`/athletes/${athlete.id}`}
                 className="w-full flex items-center gap-3 px-4 py-3 border-b border-fn-gborder/50 transition-all text-left"
                 style={isActive
                   ? { background: `${primary}10`, borderLeft: `2px solid ${primary}` }
@@ -225,7 +226,7 @@ export default function AthletesPage() {
                   <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{r}</div>
                   <div className="fn-label text-[7px]">OVR</div>
                 </div>
-              </button>
+              </Link>
             );
           })}
         </div>
