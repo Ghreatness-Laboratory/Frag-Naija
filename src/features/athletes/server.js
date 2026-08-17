@@ -179,7 +179,7 @@ export async function getAthleteById(id) {
 export async function createAthlete(body) {
   const { athlete, achievements } = splitAthletePayload(body);
   const calculatedAthlete = applyCalculatedOverallRating(athlete);
-  if (!Number(calculatedAthlete.fantasy_price)) calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
+  calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
   const { data, error } = await supabaseAdmin.from('athletes').insert([calculatedAthlete]).select().single();
   if (error) throw error;
 
@@ -197,7 +197,9 @@ export async function updateAthlete(id, body) {
   if (existingError) throw existingError;
 
   const calculatedAthlete = applyCalculatedOverallRating({ ...existing, ...athlete });
-  if (!Object.prototype.hasOwnProperty.call(athlete, 'fantasy_price') || !Number(athlete.fantasy_price)) calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
+  const ratingChanged = ['rating', 'overall_rating', 'kills', 'assists', 'damage', 'winrate', 'attack', 'defense', 'survival', 'iq', 'clutch', 'aggression', 'game_slug'].some((field) => Object.prototype.hasOwnProperty.call(athlete, field));
+  const manualPriceProvided = Object.prototype.hasOwnProperty.call(athlete, 'fantasy_price') && Number(athlete.fantasy_price) > 0;
+  if (ratingChanged || !manualPriceProvided) calculatedAthlete.fantasy_price = calculateFantasyBasePrice(calculatedAthlete);
   const { data, error } = await supabaseAdmin
     .from('athletes')
     .update(calculatedAthlete)
