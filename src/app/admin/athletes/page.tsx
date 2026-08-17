@@ -12,6 +12,7 @@ import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { DEFAULT_GAME, GAMES } from '@/lib/games';
 import { ATHLETE_STATUSES, athleteStatusTone, isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
+import { calculateFantasyBasePrice } from '@/lib/fantasy-pricing';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', career_status: '', bio: '', photo_url: '',
@@ -24,6 +25,7 @@ const EMPTY = {
   performance_history: [{ label: '', value: '', date: '' }],
   is_icon: false,
   fantasy_price: '',
+  manual_fantasy_price_override: false,
   recent_fantasy_points: '',
   total_fantasy_points: '',
   fantasy_status: 'available',
@@ -247,6 +249,7 @@ function AthletesContent() {
       performance_history: objectList(row.performance_history, { label: '', value: '', date: '' }),
       is_icon: Boolean(row.is_icon),
       fantasy_price: String(row.fantasy_price ?? ''),
+      manual_fantasy_price_override: Boolean(row.fantasy_price_manual_override),
       recent_fantasy_points: String(row.recent_fantasy_points ?? '0'),
       total_fantasy_points: String(row.total_fantasy_points ?? '0'),
       fantasy_status: String(row.fantasy_status ?? 'available'),
@@ -313,7 +316,8 @@ function AthletesContent() {
         previous_teams: fcMobileGame ? [] : cleanObjectList(form.previous_teams),
         achievements: fcMobileGame ? [] : cleanObjectList(form.achievements),
         performance_history: fcMobileGame ? [] : cleanObjectList(form.performance_history),
-        fantasy_price: Number(form.fantasy_price) || 750000,
+        manual_fantasy_price_override: form.manual_fantasy_price_override,
+        ...(form.manual_fantasy_price_override ? { fantasy_price: Number(form.fantasy_price) || undefined } : {}),
         recent_fantasy_points: Number(form.recent_fantasy_points) || 0,
         total_fantasy_points: Number(form.total_fantasy_points) || 0,
         fantasy_status: form.fantasy_status || 'available',
@@ -354,6 +358,7 @@ function AthletesContent() {
   const calculatedOverallRating = calculateAthleteOverallRating(form, form.game_slug);
   const formGame = GAMES.find((game) => game.slug === form.game_slug) ?? activeGame ?? DEFAULT_GAME;
   const previewRating = calculatedOverallRating ?? normalizeRating(form.overall_rating);
+  const calculatedFantasyPrice = calculateFantasyBasePrice({ ...form, overall_rating: previewRating });
   const previewAthlete = {
     ign: form.ign || 'Player',
     known_name: form.known_name || form.ign || 'Player',
@@ -632,9 +637,13 @@ function AthletesContent() {
 
 
           <div className="grid grid-cols-2 gap-3 rounded border border-fn-green/20 bg-fn-green/5 p-3">
-            <Field label="Fantasy Price">
-              <Input type="number" min="0" value={form.fantasy_price} onChange={f('fantasy_price')} placeholder="750000" />
+            <Field label={form.manual_fantasy_price_override ? "Fantasy Price Override" : "Fantasy Price (auto)"}>
+              <Input type="number" min="0" value={form.manual_fantasy_price_override ? form.fantasy_price : calculatedFantasyPrice} onChange={f('fantasy_price')} readOnly={!form.manual_fantasy_price_override} aria-readonly={!form.manual_fantasy_price_override} placeholder="Auto from rating" />
             </Field>
+            <label className="flex items-center gap-2 rounded border border-fn-yellow/30 bg-fn-yellow/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-fn-yellow">
+              <input type="checkbox" checked={form.manual_fantasy_price_override} onChange={(event) => setForm((prev) => ({ ...prev, manual_fantasy_price_override: event.target.checked }))} className="h-4 w-4 accent-fn-yellow" />
+              Manual fantasy price override
+            </label>
             <Field label="Fantasy Status">
               <Select value={form.fantasy_status} onChange={f('fantasy_status')}>
                 <option value="available">Available</option>
