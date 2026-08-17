@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, Home, Menu, Search, Shield, Target, Ticket, User, X } from "lucide-react";
+import { ChevronRight, Home, Menu, Search, Shield, Sparkles, Target, Ticket, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const WAGER_COUNT_EVENT = "fn-wager-count";
@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { label: "Wager", href: "/wager", icon: Target, match: (path: string) => path.startsWith("/wager") },
 ] as const;
 
-const PENDING_MENU_ITEMS = ["Virtual", "Casino", "Fantasy League"];
+const PENDING_MENU_ITEMS = ["Virtual", "Casino"];
 
 function readWagerCount() {
   if (typeof window === "undefined") return 0;
@@ -118,6 +118,9 @@ export default function BottomNav() {
               <Link href="/games" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
                 <span>Games</span><ChevronRight size={12} />
               </Link>
+              <Link href="/fantasy-league" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
+                <span className="flex items-center gap-2"><Sparkles size={12} /> Fantasy League</span><ChevronRight size={12} />
+              </Link>
               {PENDING_MENU_ITEMS.map((item) => (
                 <button
                   key={item}
@@ -159,7 +162,7 @@ export default function BottomNav() {
             )}
 
             <p className="mt-2 text-[8px] leading-relaxed text-fn-muted">
-              Games is live with TDM 1V1. Virtual, Casino, and Fantasy League remain placeholders until their destinations are confirmed.
+              Games, TDM 1V1, WOW Mode, and Fantasy League are live. Virtual and Casino remain placeholders until their destinations are confirmed.
             </p>
           </section>
         </div>

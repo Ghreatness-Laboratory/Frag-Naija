@@ -41,6 +41,10 @@ const ATHLETE_FIELDS = new Set([
   'sensitivity_settings',
   'control_code',
   'is_icon',
+  'fantasy_price',
+  'recent_fantasy_points',
+  'total_fantasy_points',
+  'fantasy_status',
 ]);
 
 function normalizeAchievements(value) {

@@ -23,6 +23,10 @@ const EMPTY = {
   achievements: [{ title: '', date: '' }],
   performance_history: [{ label: '', value: '', date: '' }],
   is_icon: false,
+  fantasy_price: '',
+  recent_fantasy_points: '',
+  total_fantasy_points: '',
+  fantasy_status: 'available',
 };
 const FC_MOBILE_GAME = GAMES.find((game) => isFcMobileGame(game.slug));
 
@@ -242,6 +246,10 @@ function AthletesContent() {
       achievements: objectList(row.achievements, { title: '', date: '' }),
       performance_history: objectList(row.performance_history, { label: '', value: '', date: '' }),
       is_icon: Boolean(row.is_icon),
+      fantasy_price: String(row.fantasy_price ?? ''),
+      recent_fantasy_points: String(row.recent_fantasy_points ?? '0'),
+      total_fantasy_points: String(row.total_fantasy_points ?? '0'),
+      fantasy_status: String(row.fantasy_status ?? 'available'),
     });
     setPhotoFile(null);
     setError('');
@@ -305,6 +313,10 @@ function AthletesContent() {
         previous_teams: fcMobileGame ? [] : cleanObjectList(form.previous_teams),
         achievements: fcMobileGame ? [] : cleanObjectList(form.achievements),
         performance_history: fcMobileGame ? [] : cleanObjectList(form.performance_history),
+        fantasy_price: Number(form.fantasy_price) || 750000,
+        recent_fantasy_points: Number(form.recent_fantasy_points) || 0,
+        total_fantasy_points: Number(form.total_fantasy_points) || 0,
+        fantasy_status: form.fantasy_status || 'available',
       };
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
@@ -403,6 +415,8 @@ function AthletesContent() {
           { key: 'game_slug',      label: 'Game' },
           { key: 'role',           label: 'Role' },
           { key: 'overall_rating', label: 'OVR' },
+          { key: 'fantasy_price', label: 'Fantasy ₦', render: (r) => r.fantasy_price ? `₦${Number(r.fantasy_price).toLocaleString()}` : '—' },
+          { key: 'fantasy_status', label: 'Fantasy', render: (r) => <span className="text-xs uppercase text-fn-green">{String(r.fantasy_status ?? 'available')}</span> },
           { key: 'is_icon', label: 'Icon', render: (r) => r.is_icon ? <span className="rounded border border-fn-yellow/40 bg-fn-yellow/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-fn-yellow">ICON</span> : <span className="text-fn-muted text-xs">—</span> },
           {
             key: 'status',
@@ -615,6 +629,27 @@ function AthletesContent() {
             </Field>
           </div>
           </>}
+
+
+          <div className="grid grid-cols-2 gap-3 rounded border border-fn-green/20 bg-fn-green/5 p-3">
+            <Field label="Fantasy Price">
+              <Input type="number" min="0" value={form.fantasy_price} onChange={f('fantasy_price')} placeholder="750000" />
+            </Field>
+            <Field label="Fantasy Status">
+              <Select value={form.fantasy_status} onChange={f('fantasy_status')}>
+                <option value="available">Available</option>
+                <option value="injured">Injured</option>
+                <option value="suspended">Suspended</option>
+                <option value="inactive">Inactive</option>
+              </Select>
+            </Field>
+            <Field label="Recent Fantasy Points">
+              <Input type="number" value={form.recent_fantasy_points} onChange={f('recent_fantasy_points')} placeholder="0" />
+            </Field>
+            <Field label="Total Fantasy Points">
+              <Input type="number" value={form.total_fantasy_points} onChange={f('total_fantasy_points')} placeholder="0" />
+            </Field>
+          </div>
 
           <Field label="Bio">
             <Textarea value={form.bio} onChange={f('bio')} placeholder="Player description..." />

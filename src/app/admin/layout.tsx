@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Shield, ArrowLeftRight,
   Trophy, Swords, Film, LogOut, ChevronRight, Banknote, ArrowUpCircle,
-  Newspaper, Star, TrendingUp, Building2, ShoppingBag, MessageCircle,
+  Newspaper, Star, TrendingUp, Building2, ShoppingBag, MessageCircle, Sparkles,
 } from 'lucide-react';
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
   { href: '/admin/tournaments',    label: 'Tournaments', icon: Trophy },
   { href: '/admin/tournament-results', label: 'Tournament Results', icon: Trophy },
   { href: '/admin/wagers',         label: 'Wagers',      icon: Swords },
+  { href: '/admin/fantasy',        label: 'Fantasy',     icon: Sparkles },
   { href: '/admin/duels',          label: 'TDM Duels',   icon: Swords },
   { href: '/admin/highlights',     label: 'Highlights',  icon: Film },
   { href: '/admin/news',           label: 'News',        icon: Newspaper },
