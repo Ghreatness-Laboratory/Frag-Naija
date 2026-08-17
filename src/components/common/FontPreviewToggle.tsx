@@ -12,8 +12,14 @@ type FontOption = {
 const FONT_OPTIONS: FontOption[] = [
   {
     id: "default",
-    name: "Current (Default)",
-    description: "Bebas Neue + Space Mono — Original site fonts",
+    name: "Chakra Petch (Default)",
+    description: "Site-wide default for body, UI labels, headings, and display text",
+    weights: "400/500/600/700",
+  },
+  {
+    id: "legacy",
+    name: "Legacy Mono",
+    description: "Previous mono-style baseline retained for comparison",
     weights: "400/700",
   },
   {
@@ -32,6 +38,24 @@ const FONT_OPTIONS: FontOption[] = [
     id: "exo2",
     name: "Exo 2",
     description: "Geometric with technical edge, versatile for display and body",
+    weights: "400/500/600/700/800",
+  },
+  {
+    id: "orbitron",
+    name: "Orbitron",
+    description: "Futuristic scoreboard style for high-impact esports screens",
+    weights: "400/500/600/700/800/900",
+  },
+  {
+    id: "oxanium",
+    name: "Oxanium",
+    description: "Squared sci-fi shapes with strong readability for dense UI",
+    weights: "400/500/600/700/800",
+  },
+  {
+    id: "saira-condensed",
+    name: "Saira Condensed",
+    description: "Condensed competitive look that preserves space in admin tables",
     weights: "400/500/600/700/800",
   },
 ];
@@ -55,16 +79,24 @@ export default function FontPreviewToggle() {
     if (fontId === "default") {
       localStorage.removeItem("fn-font-preview");
       document.documentElement.classList.remove(
+        "font-preview-legacy",
         "font-preview-rajdhani",
         "font-preview-chakra",
-        "font-preview-exo2"
+        "font-preview-exo2",
+        "font-preview-orbitron",
+        "font-preview-oxanium",
+        "font-preview-saira-condensed"
       );
     } else {
       localStorage.setItem("fn-font-preview", fontId);
       document.documentElement.classList.remove(
+        "font-preview-legacy",
         "font-preview-rajdhani",
         "font-preview-chakra",
-        "font-preview-exo2"
+        "font-preview-exo2",
+        "font-preview-orbitron",
+        "font-preview-oxanium",
+        "font-preview-saira-condensed"
       );
       document.documentElement.classList.add(`font-preview-${fontId}`);
     }
