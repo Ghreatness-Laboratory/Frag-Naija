@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   BarChart2,
@@ -1162,7 +1162,7 @@ const WAGER_RULES = [
   "Wager responsibly. Set limits and only stake what you can afford to lose.",
 ];
 
-function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
+function WagerTermsModal({ onAccept, onDecline }: { onAccept: () => void; onDecline: () => void }) {
   const [checked, setChecked] = useState(false);
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
@@ -1215,7 +1215,14 @@ function WagerTermsModal({ onAccept }: { onAccept: () => void }) {
           <p className="text-[9px] text-fn-muted flex-1">Predict responsibly. Never wager more than you can afford to lose.</p>
         </div>
 
-        <div className="px-5 pb-5">
+        <div className="grid gap-2 px-5 pb-5 sm:grid-cols-[1fr_1.3fr]">
+          <button
+            type="button"
+            onClick={onDecline}
+            className="rounded-sm border border-fn-gborder px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-fn-muted transition-colors hover:border-fn-red/50 hover:text-fn-red"
+          >
+            Decline
+          </button>
           <button
             onClick={() => { if (checked) onAccept(); }}
             disabled={!checked}
@@ -1492,7 +1499,9 @@ function WagerPageContent() {
   const [selectedGameSlug, setSelectedGameSlug] = useState("all");
   const [selectedMatch, setSelectedMatch] = useState("all");
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const router = useRouter();
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
   const [slipSelections, setSlipSelections] = useState<SlipSelection[]>([]);
   const [slipStake, setSlipStake] = useState("");
   const [latestTicket, setLatestTicket] = useState<PlacedTicket | null>(null);
@@ -1503,14 +1512,7 @@ function WagerPageContent() {
   const [signupBonusMessage, setSignupBonusMessage] = useState<string | null>(null);
   const [signupBonusToast, setSignupBonusToast] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (localStorage.getItem(WAGER_TERMS_KEY)) setTermsAccepted(true);
-  }, []);
 
-  function acceptTerms() {
-    localStorage.setItem(WAGER_TERMS_KEY, "1");
-    setTermsAccepted(true);
-  }
   const [selectedBet, setSelectedBet] = useState<CurrentUserWager | null>(null);
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
@@ -1531,6 +1533,7 @@ function WagerPageContent() {
   const { data: predictorsData } = usePredictors();
   const { data: featuredData } = useFeatured();
   const currentUser = me as CurrentUser;
+  const termsStorageKey = `${WAGER_TERMS_KEY}:${currentUser?.email || "guest"}`;
   const liveWagers = useMemo(() => (Array.isArray(wagers) ? wagers : []) as CurrentMarket[], [wagers]);
   const currentUserWagers = (Array.isArray(myWagers) ? myWagers : []) as CurrentUserWager[];
   const walletTxList = (Array.isArray(walletTransactions) ? walletTransactions : []) as WalletTransaction[];
@@ -1549,6 +1552,28 @@ function WagerPageContent() {
   const displayedMarkets = showAll ? allMarkets : allMarkets.slice(0, 4);
   const walletBalance = Number(currentUser?.wallet?.balance ?? 0);
   const username = getUsername(currentUser);
+  useEffect(() => {
+    if (meLoading) return;
+    const acceptedLegacyTerms = localStorage.getItem(WAGER_TERMS_KEY) === "1";
+    const acceptedUserTerms = localStorage.getItem(termsStorageKey) === "1";
+    setTermsAccepted(acceptedLegacyTerms || acceptedUserTerms);
+    setTermsChecked(true);
+  }, [meLoading, termsStorageKey]);
+
+  function acceptTerms() {
+    localStorage.setItem(termsStorageKey, "1");
+    localStorage.removeItem(WAGER_TERMS_KEY);
+    setTermsAccepted(true);
+  }
+
+  function declineTerms() {
+    setTermsAccepted(false);
+    setTermsChecked(true);
+    if (window.history.length > 1) router.back();
+    else router.push("/");
+  }
+
+  const showTermsModal = termsChecked && !termsAccepted;
   const showSignupBonusPrompt = Boolean(
     termsAccepted &&
       currentUser?.email &&
@@ -1666,7 +1691,7 @@ function WagerPageContent() {
 
   return (
     <div className="min-h-screen">
-      {!termsAccepted && <WagerTermsModal onAccept={acceptTerms} />}
+      {showTermsModal && <WagerTermsModal onAccept={acceptTerms} onDecline={declineTerms} />}
       {showSignupBonusPrompt && (
         <SignupBonusModal
           amount={Number(signupBonus?.amount ?? 500)}
