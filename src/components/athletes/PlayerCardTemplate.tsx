@@ -195,28 +195,30 @@ export default function PlayerCardTemplate({
             fetchPriority={imageFetchPriority}
           />
         </div>
-        <div className="absolute left-[92px] right-[88px] top-3 z-20 min-w-0">
-          <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={isIcon ? { color: accent } : { color: statusTone.color }}>
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: isIcon ? accent : statusTone.dotColor }} />
-            {isIcon ? 'ICON' : status}
+        <div className="absolute bottom-3 left-[92px] right-[74px] top-3 z-20 flex min-w-0 flex-col gap-1.5">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest" style={isIcon ? { color: accent } : { color: statusTone.color }}>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: isIcon ? accent : statusTone.dotColor }} />
+              {isIcon ? 'ICON' : status}
+            </div>
+            <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: accent, textShadow: `0 0 16px ${accent}55` }}>{displayName}</h3>
+            <p className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap text-[7px] font-bold uppercase leading-none tracking-[0.12em] text-white/60">{athleteSubtitle}</p>
           </div>
-          <h3 className="truncate font-display text-lg font-black uppercase leading-none" style={{ color: accent, textShadow: `0 0 16px ${accent}55` }}>{displayName}</h3>
-          <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-white/60">{athleteSubtitle}</p>
+          <div
+            className="grid overflow-hidden rounded-sm border bg-black/75 shadow-[inset_0_0_18px_rgba(0,255,85,0.08)]"
+            style={{ borderColor: `${accent}60`, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
+          >
+            {stats.map((stat) => (
+              <div key={stat.label} className="border-r border-white/10 px-1 py-1.5 text-center last:border-r-0">
+                <div className="font-display text-sm font-black leading-none text-white">{stat.value}</div>
+                <div className={`mt-0.5 text-[6px] font-black tracking-widest ${statLabelClass}`}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="absolute right-0 top-[18px] z-30 flex w-[74px] flex-col items-center text-center">
           <div className="font-display text-2xl font-black leading-none" style={{ color: accent, textShadow: `0 0 14px ${accent}66` }}>{ratingValue}</div>
           <div className="mt-0.5 text-[7px] font-black uppercase tracking-widest text-white/45">/100</div>
-        </div>
-        <div
-          className="absolute bottom-3 left-[92px] right-[74px] z-20 grid overflow-hidden rounded-sm border bg-black/75 shadow-[inset_0_0_18px_rgba(0,255,85,0.08)]"
-          style={{ borderColor: `${accent}60`, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
-        >
-          {stats.map((stat) => (
-            <div key={stat.label} className="border-r border-white/10 px-1 py-1.5 text-center last:border-r-0">
-              <div className="font-display text-sm font-black leading-none text-white">{stat.value}</div>
-              <div className={`mt-0.5 text-[6px] font-black tracking-widest ${statLabelClass}`}>{stat.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     );
