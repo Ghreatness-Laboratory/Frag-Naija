@@ -166,7 +166,7 @@ export function MatchResultScreen({
         onClick={onReturnHome}
         className="w-full max-w-md bg-fn-green px-6 py-4 text-sm font-black uppercase tracking-widest text-fn-black hover:brightness-110"
       >
-        Return to Games
+        Return to Virtual Games
       </motion.button>
     </motion.div>
   );

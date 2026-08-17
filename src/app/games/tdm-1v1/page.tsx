@@ -244,7 +244,7 @@ export default function TdmOneVOnePage() {
           className="mx-auto max-w-7xl px-2 py-4 sm:px-4 lg:px-6"
         >
           <Link href="/games" className="mb-3 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-fn-muted hover:text-fn-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-fn-green">
-            <ChevronLeft size={13} /> Games
+            <ChevronLeft size={13} /> Virtual Games
           </Link>
           <div className="mb-3">
             <p className="fn-label">TDM 1V1</p>

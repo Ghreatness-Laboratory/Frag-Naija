@@ -116,7 +116,7 @@ export default function BottomNav() {
 
             <div className="grid gap-1.5">
               <Link href="/select-game" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
-                <span>All Games</span><ChevronRight size={12} />
+                <span>Virtual Games</span><ChevronRight size={12} />
               </Link>
               <Link href="/fantasy-league" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
                 <span className="flex items-center gap-2"><Sparkles size={12} /> Fantasy League</span><ChevronRight size={12} />
@@ -162,7 +162,7 @@ export default function BottomNav() {
             )}
 
             <p className="mt-2 text-[8px] leading-relaxed text-fn-muted">
-              All Games opens game selection. Individual game spaces require login; modes and roadmap cards are scoped to the active game.
+              Virtual Games opens game selection. Individual game spaces require login; modes and roadmap cards are scoped to the active game.
             </p>
           </section>
         </div>
