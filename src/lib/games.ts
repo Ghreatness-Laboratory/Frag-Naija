@@ -8,6 +8,17 @@ export interface GameColors {
 
 export type AthleteSubtitleFormat = 'role_team' | 'player_only';
 
+export type GameModeVariant = 'Teams' | 'Players' | 'Custom Players' | 'Player';
+export type GameModeStatus = 'live' | 'locked-tbd';
+
+export interface GameMode {
+  key: string;
+  label: string;
+  variant?: GameModeVariant;
+  status: GameModeStatus;
+  route?: string;
+}
+
 export interface Game {
   id: string;
   slug: string;
@@ -19,6 +30,8 @@ export interface Game {
   athleteSubtitleFormat: AthleteSubtitleFormat;
   badge?: string;
   available: boolean;
+  modes: GameMode[];
+  hasModeMenu: boolean;
 }
 
 export const GAMES: Game[] = [
@@ -39,6 +52,17 @@ export const GAMES: Game[] = [
     athleteSubtitleFormat: 'role_team',
     badge: 'FEATURED',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'tdm_1v1', label: 'TDM 1V1', variant: 'Players', status: 'live', route: '/games/tdm-1v1' },
+      { key: 'wow_team_4v4', label: 'WOW MODE Team 4v4', variant: 'Teams', status: 'live', route: '/games/wow-4v4' },
+      { key: 'wow_team_3v3', label: 'WOW MODE Team 3v3', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'wow_team_2v3', label: 'WOW MODE Team 2v3', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'wow_player_4v4', label: 'WOW MODE Player 4v4', variant: 'Players', status: 'locked-tbd' },
+      { key: 'wow_player_2v2', label: 'WOW MODE Player 2v2', variant: 'Players', status: 'locked-tbd' },
+      { key: 'wow_player_3v3', label: 'WOW MODE Player 3v3', variant: 'Players', status: 'locked-tbd' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'live', route: '/fantasy-league' },
+    ],
   },
   {
     id: 'cod-mobile',
@@ -56,6 +80,13 @@ export const GAMES: Game[] = [
     logo: '/logos/cod-mobile.svg',
     athleteSubtitleFormat: 'role_team',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'team_tdm_4v4_teams', label: 'Team TDM 4v4 — Teams', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'tdm_4v4_players', label: 'TDM 4v4 — Players', variant: 'Players', status: 'locked-tbd' },
+      { key: 'tdm_1v1', label: 'TDM 1v1', variant: 'Players', status: 'live', route: '/games/tdm-1v1' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
+    ],
   },
   {
     id: 'free-fire',
@@ -73,6 +104,15 @@ export const GAMES: Game[] = [
     logo: '/logos/free-fire.svg',
     athleteSubtitleFormat: 'role_team',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'clash_squad_4v4_teams', label: 'Clash Squad 4v4 — Teams', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'clash_squad_4v4_players', label: 'Clash Squad 4v4 — Players', variant: 'Players', status: 'locked-tbd' },
+      { key: 'clash_squad_2v2_teams', label: 'Clash Squad 2v2 — Teams', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'clash_squad_2v2_players', label: 'Clash Squad 2v2 — Players', variant: 'Players', status: 'locked-tbd' },
+      { key: 'tdm_1v1', label: 'TDM 1v1', variant: 'Players', status: 'live', route: '/games/tdm-1v1' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
+    ],
   },
   {
     id: 'fc-mobile',
@@ -90,6 +130,10 @@ export const GAMES: Game[] = [
     logo: '/logos/fc-mobile.svg',
     athleteSubtitleFormat: 'player_only',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'virtual_match_1v1', label: 'Virtual Match 1v1', variant: 'Player', status: 'locked-tbd' },
+    ],
   },
   {
     id: 'blood-strike',
@@ -107,6 +151,13 @@ export const GAMES: Game[] = [
     logo: '/logos/blood-strike.svg',
     athleteSubtitleFormat: 'role_team',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'blood_strike_squad_4v4_teams', label: 'Squad Strike 4v4 — Teams', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'blood_strike_squad_4v4_players', label: 'Squad Strike 4v4 — Players', variant: 'Players', status: 'locked-tbd' },
+      { key: 'tdm_1v1', label: 'TDM 1v1', variant: 'Players', status: 'live', route: '/games/tdm-1v1' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
+    ],
   },
   {
     id: 'ea-fc-26',
@@ -124,6 +175,10 @@ export const GAMES: Game[] = [
     logo: '/logos/ea-fc-26.svg',
     athleteSubtitleFormat: 'player_only',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'virtual_match_1v1', label: 'Virtual Match 1v1', variant: 'Player', status: 'locked-tbd' },
+    ],
   },
   {
     id: 'mortal-kombat',
@@ -139,8 +194,10 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(204, 0, 0, 0.05)',
     },
     logo: '/logos/mortal-kombat.svg',
-    athleteSubtitleFormat: 'role_team',
+    athleteSubtitleFormat: 'player_only',
     available: true,
+    hasModeMenu: false,
+    modes: [],
   },
   {
     id: 'efootball',
@@ -158,6 +215,10 @@ export const GAMES: Game[] = [
     logo: '/logos/efootball.svg',
     athleteSubtitleFormat: 'player_only',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'virtual_match_1v1', label: 'Virtual Match 1v1', variant: 'Player', status: 'locked-tbd' },
+    ],
   },
   {
     id: 'mobile-legends',
@@ -175,6 +236,12 @@ export const GAMES: Game[] = [
     logo: '/logos/mobile-legends.svg',
     athleteSubtitleFormat: 'role_team',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'competitive_team_5v5_teams', label: 'Competitive Team 5v5 — Teams', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'competitive_players_5v5_custom', label: 'Competitive Players 5v5 — Custom Players', variant: 'Custom Players', status: 'locked-tbd' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
+    ],
   },
 ];
 
