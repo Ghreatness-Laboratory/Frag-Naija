@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 const MATCH_SELECT = `*, tournament:tournaments(id,name,game_slug,status), notification:notifications(id,title,message,url,created_at)`;
+const OPEN_TOURNAMENT_STATUSES = new Set(['upcoming', 'live']);
+const OPEN_MATCH_STATUSES = new Set(['scheduled', 'upcoming', 'live']);
 
 function base64Url(value) {
   return Buffer.from(value).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -46,7 +48,14 @@ export async function listGamingAlerts({ userId, tournamentId, gameSlug } = {}) 
   if (gameSlug) query = query.eq('game_slug', gameSlug);
   const { data, error } = await query;
   if (error) throw error;
-  const matchIds = (data || []).map((row) => row.id).filter(Boolean);
+  const rows = data || [];
+  const sourceIds = rows.filter((row) => row.source_type === 'tournament_match' && row.source_id).map((row) => row.source_id);
+  let sourceMatches = new Map();
+  if (sourceIds.length) {
+    const { data: matches } = await supabaseAdmin.from('tournament_matches').select('id,title,status,starts_at,game_slug,tournament_id').in('id', sourceIds);
+    sourceMatches = new Map((matches || []).map((match) => [match.id, match]));
+  }
+  const matchIds = rows.map((row) => row.id).filter(Boolean);
   const notificationIds = (data || []).map((row) => row.notification?.[0]?.id || row.notification?.id).filter(Boolean);
   let read = new Set();
   let subscribed = new Set();
@@ -58,9 +67,10 @@ export async function listGamingAlerts({ userId, tournamentId, gameSlug } = {}) 
     const { data: subs } = await supabaseAdmin.from('match_notification_subscriptions').select('match_result_id').eq('user_id', userId).in('match_result_id', matchIds);
     subscribed = new Set((subs || []).map((r) => r.match_result_id));
   }
-  return (data || []).map((row) => {
+  return rows.map((row) => {
     const notification = Array.isArray(row.notification) ? row.notification[0] : row.notification;
-    return { ...row, notification, unread: Boolean(userId && notification?.id && !read.has(notification.id)), subscribed: subscribed.has(row.id) };
+    const source_match = sourceMatches.get(row.source_id) || null;
+    return { ...row, source_match, notification, unread: Boolean(userId && notification?.id && !read.has(notification.id)), subscribed: subscribed.has(row.id) };
   });
 }
 
@@ -98,6 +108,30 @@ export async function registerFcmToken(userId, token) {
 
 export async function setMatchNotificationSubscription(userId, matchResultId, subscribed) {
   if (subscribed) {
+    const { data: matchResult, error: matchError } = await supabaseAdmin
+      .from('match_results')
+      .select('id,source_id,source_type,tournament:tournaments(id,status)')
+      .eq('id', matchResultId)
+      .single();
+    if (matchError || !matchResult) throw new Error('Match result not found.');
+
+    const tournamentStatus = String(matchResult.tournament?.status || '').toLowerCase();
+    if (!OPEN_TOURNAMENT_STATUSES.has(tournamentStatus)) {
+      throw new Error('Match alerts can only be enabled for upcoming or live tournaments.');
+    }
+
+    if (matchResult.source_type === 'tournament_match' && matchResult.source_id) {
+      const { data: sourceMatch, error: sourceError } = await supabaseAdmin
+        .from('tournament_matches')
+        .select('status')
+        .eq('id', matchResult.source_id)
+        .maybeSingle();
+      if (sourceError) throw sourceError;
+      const matchStatus = String(sourceMatch?.status || '').toLowerCase();
+      if (sourceMatch && !OPEN_MATCH_STATUSES.has(matchStatus)) {
+        throw new Error('Match alerts can only be enabled for upcoming or live matches.');
+      }
+    }
     const { data, error } = await supabaseAdmin.from('match_notification_subscriptions').upsert({ user_id: userId, match_result_id: matchResultId }, { onConflict: 'user_id,match_result_id' }).select('*').single();
     if (error) throw error;
     return { subscribed: true, row: data };
