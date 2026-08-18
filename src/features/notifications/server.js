@@ -107,8 +107,39 @@ export async function listGamingAlerts({ userId, tournamentId, gameSlug } = {}) 
 }
 
 
+export async function listGamingNotifications({ userId, tournamentId, gameSlug } = {}) {
+  let query = supabaseAdmin
+    .from('notifications')
+    .select('id,type,title,message,url,tournament_id,game_slug,metadata,created_at,tournament:tournaments(id,name,game_slug,status)')
+    .in('type', ['match_live', 'match_result', 'match_update'])
+    .order('created_at', { ascending: false })
+    .limit(80);
+  if (tournamentId) query = query.eq('tournament_id', tournamentId);
+  if (gameSlug) query = query.eq('game_slug', gameSlug);
+  const { data, error } = await query;
+  if (error) throw error;
+  const ids = (data || []).map((row) => row.id);
+  let read = new Set();
+  if (userId && ids.length) {
+    const { data: reads } = await supabaseAdmin.from('notification_reads').select('notification_id').eq('user_id', userId).in('notification_id', ids);
+    read = new Set((reads || []).map((row) => row.notification_id));
+  }
+  return (data || []).map((row) => ({ ...row, unread: Boolean(userId && !read.has(row.id)) }));
+}
+
+
 export async function upsertTournamentMatchState(payload) {
   const tournament = await getTournamentForMatchResult(payload.tournament_id || null);
+  let previousMatch = null;
+  if (payload.source_id) {
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('tournament_matches')
+      .select('id,status,live_events')
+      .eq('id', payload.source_id)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    previousMatch = existing || null;
+  }
   const status = String(payload.status || 'upcoming').toLowerCase();
   const normalizedStatus = status === 'scheduled' ? 'upcoming' : status === 'completed' ? 'finished' : status;
   if (!['upcoming', 'live', 'finished'].includes(normalizedStatus)) throw new Error('Match status must be upcoming, live, or finished.');
@@ -130,6 +161,13 @@ export async function upsertTournamentMatchState(payload) {
     },
     updated_at: new Date().toISOString(),
   };
+  const liveEvent = payload.stat_type || payload.actor ? {
+    round: Number(payload.event_round || payload.current_round || 0) || null,
+    stat_type: String(payload.stat_type || 'update').trim(),
+    actor: String(payload.actor || payload.team_a || payload.team_b || 'Admin update').trim(),
+    timestamp: payload.event_timestamp || new Date().toISOString(),
+  } : null;
+  if (liveEvent) body.live_events = [...(Array.isArray(previousMatch?.live_events) ? previousMatch.live_events : []), liveEvent];
   if (!body.title) throw new Error('match_title is required');
 
   if (payload.source_id) {
@@ -138,19 +176,22 @@ export async function upsertTournamentMatchState(payload) {
       .update(body)
       .eq('id', payload.source_id)
       .eq('tournament_id', tournament.id)
-      .select('id,tournament_id,title,game_slug,status,starts_at,team_a,team_b,live_state')
+      .select('id,tournament_id,title,game_slug,status,starts_at,team_a,team_b,live_state,live_events')
       .single();
     if (error) throw error;
-    return { tournament, match: data };
+    const wentLive = normalizeTrackerStatus(previousMatch?.status) !== 'live' && normalizedStatus === 'live';
+    const push = wentLive ? await createMatchLiveAlert({ tournament, match: data }).catch((error) => ({ sent: 0, attempted: 0, error: error.message })) : null;
+    return { tournament, match: data, liveEvent, push };
   }
 
   const { data, error } = await supabaseAdmin
     .from('tournament_matches')
     .insert(body)
-    .select('id,tournament_id,title,game_slug,status,starts_at,team_a,team_b,live_state')
+    .select('id,tournament_id,title,game_slug,status,starts_at,team_a,team_b,live_state,live_events')
     .single();
   if (error) throw error;
-  return { tournament, match: data };
+  const push = normalizedStatus === 'live' ? await createMatchLiveAlert({ tournament, match: data }).catch((error) => ({ sent: 0, attempted: 0, error: error.message })) : null;
+  return { tournament, match: data, liveEvent, push };
 }
 
 export async function listGamingTracker({ userId, tournamentId, gameSlug, status } = {}) {
@@ -173,6 +214,11 @@ export async function listGamingTracker({ userId, tournamentId, gameSlug, status
   const { data: results } = matchIds.length ? await supabaseAdmin.from('match_results').select('*').eq('source_type', 'tournament_match').in('source_id', matchIds) : { data: [] };
   const resultByMatch = new Map((results || []).map((result) => [result.source_id, result]));
   let subscribed = new Set();
+  let tournamentSubscribed = new Set();
+  if (userId && tournamentIds.length) {
+    const { data: tournamentSubs } = await supabaseAdmin.from('tournament_notification_subscriptions').select('tournament_id').eq('user_id', userId).in('tournament_id', tournamentIds);
+    tournamentSubscribed = new Set((tournamentSubs || []).map((row) => row.tournament_id));
+  }
   if (userId && matchIds.length) {
     const resultIds = (results || []).map((result) => result.id);
     const { data: subsByMatch } = await supabaseAdmin.from('match_notification_subscriptions').select('match_result_id,tournament_match_id').eq('user_id', userId).or(`tournament_match_id.in.(${matchIds.join(',')})${resultIds.length ? `,match_result_id.in.(${resultIds.join(',')})` : ''}`);
@@ -180,7 +226,7 @@ export async function listGamingTracker({ userId, tournamentId, gameSlug, status
   }
   const tournamentById = new Map((tournaments || []).map((item) => [item.id, item]));
   return {
-    tournaments: (tournaments || []).map((tournament) => ({ ...tournament, display_status: deriveTournamentDisplayStatus(tournament) })),
+    tournaments: (tournaments || []).map((tournament) => ({ ...tournament, display_status: deriveTournamentDisplayStatus(tournament), subscribed: tournamentSubscribed.has(tournament.id) })),
     matches: (matches || []).map((match) => {
       const result = resultByMatch.get(match.id) || null;
       return { ...match, display_status: deriveMatchDisplayStatus(match), tournament: tournamentById.get(match.tournament_id), result, subscribed: subscribed.has(match.id) || (result ? subscribed.has(result.id) : false) };
@@ -190,7 +236,7 @@ export async function listGamingTracker({ userId, tournamentId, gameSlug, status
 
 export async function getUnreadCount(userId) {
   if (!userId) return 0;
-  const { data: notifications, error } = await supabaseAdmin.from('notifications').select('id').eq('type', 'match_result');
+  const { data: notifications, error } = await supabaseAdmin.from('notifications').select('id').in('type', ['match_result', 'match_live', 'match_update']);
   if (error || !notifications?.length) return 0;
   const ids = notifications.map((row) => row.id);
   const { data: reads } = await supabaseAdmin.from('notification_reads').select('notification_id').eq('user_id', userId).in('notification_id', ids);
@@ -222,6 +268,22 @@ export async function registerFcmToken(userId, token) {
 
 export async function setMatchNotificationSubscription(userId, matchResultId, subscribed, tournamentMatchId = null) {
   if (subscribed) {
+    if (tournamentMatchId && !matchResultId) {
+      const { data: sourceMatch, error: sourceError } = await supabaseAdmin
+        .from('tournament_matches')
+        .select('id,status,tournament:tournaments(id,status)')
+        .eq('id', tournamentMatchId)
+        .single();
+      if (sourceError || !sourceMatch) throw new Error('Tournament match not found.');
+      const tournamentStatus = String(sourceMatch.tournament?.status || '').toLowerCase();
+      const matchStatus = String(sourceMatch.status || '').toLowerCase();
+      if (!OPEN_TOURNAMENT_STATUSES.has(tournamentStatus)) throw new Error('Match alerts can only be enabled for upcoming or live tournaments.');
+      if (!OPEN_MATCH_STATUSES.has(matchStatus)) throw new Error('Match alerts can only be enabled for upcoming or live matches.');
+      const { data, error } = await supabaseAdmin.from('match_notification_subscriptions').upsert({ user_id: userId, tournament_match_id: tournamentMatchId }, { onConflict: 'user_id,tournament_match_id' }).select('*').single();
+      if (error) throw error;
+      return { subscribed: true, row: data };
+    }
+
     const { data: matchResult, error: matchError } = await supabaseAdmin
       .from('match_results')
       .select('id,source_id,source_type,tournament:tournaments(id,status)')
@@ -230,9 +292,7 @@ export async function setMatchNotificationSubscription(userId, matchResultId, su
     if (matchError || !matchResult) throw new Error('Match result not found.');
 
     const tournamentStatus = String(matchResult.tournament?.status || '').toLowerCase();
-    if (!OPEN_TOURNAMENT_STATUSES.has(tournamentStatus)) {
-      throw new Error('Match alerts can only be enabled for upcoming or live tournaments.');
-    }
+    if (!OPEN_TOURNAMENT_STATUSES.has(tournamentStatus)) throw new Error('Match alerts can only be enabled for upcoming or live tournaments.');
 
     if (matchResult.source_type === 'tournament_match' && matchResult.source_id) {
       const { data: sourceMatch, error: sourceError } = await supabaseAdmin
@@ -242,9 +302,7 @@ export async function setMatchNotificationSubscription(userId, matchResultId, su
         .maybeSingle();
       if (sourceError) throw sourceError;
       const matchStatus = String(sourceMatch?.status || '').toLowerCase();
-      if (sourceMatch && !OPEN_MATCH_STATUSES.has(matchStatus)) {
-        throw new Error('Match alerts can only be enabled for upcoming or live matches.');
-      }
+      if (sourceMatch && !OPEN_MATCH_STATUSES.has(matchStatus)) throw new Error('Match alerts can only be enabled for upcoming or live matches.');
     }
     const { data, error } = await supabaseAdmin.from('match_notification_subscriptions').upsert({ user_id: userId, match_result_id: matchResultId }, { onConflict: 'user_id,match_result_id' }).select('*').single();
     if (error) throw error;
@@ -253,6 +311,23 @@ export async function setMatchNotificationSubscription(userId, matchResultId, su
   let deleteQuery = supabaseAdmin.from('match_notification_subscriptions').delete().eq('user_id', userId);
   deleteQuery = tournamentMatchId && !matchResultId ? deleteQuery.eq('tournament_match_id', tournamentMatchId) : deleteQuery.eq('match_result_id', matchResultId);
   const { error } = await deleteQuery;
+  if (error) throw error;
+  return { subscribed: false };
+}
+
+export async function setTournamentNotificationSubscription(userId, tournamentId, subscribed) {
+  if (!userId) throw new Error('Not authenticated');
+  if (!tournamentId) throw new Error('tournament_id is required');
+  if (subscribed) {
+    const { data, error } = await supabaseAdmin
+      .from('tournament_notification_subscriptions')
+      .upsert({ user_id: userId, tournament_id: tournamentId }, { onConflict: 'user_id,tournament_id' })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return { subscribed: true, row: data };
+  }
+  const { error } = await supabaseAdmin.from('tournament_notification_subscriptions').delete().eq('user_id', userId).eq('tournament_id', tournamentId);
   if (error) throw error;
   return { subscribed: false };
 }
@@ -308,12 +383,59 @@ export async function createMatchResultAlert(payload) {
   if (nerr) throw nerr;
   let push = null;
   try {
-    push = await sendFcmToEligibleUsers({ title, body: message, url, matchResultId: matchResult.id });
+    push = await sendFcmToEligibleUsers({ title, body: message, url, matchResultId: matchResult.id, tournamentId: matchResult.tournament_id, type: 'match_result' });
   } catch (error) {
     push = { sent: 0, attempted: 0, error: error.message };
     console.error('Gaming Alerts FCM dispatch failed after result save:', error);
   }
   return { matchResult, notification, push };
+}
+
+
+async function createMatchLiveAlert({ tournament, match }) {
+  const title = `${match.title} is live now`;
+  const message = `${match.title} just went live in ${tournament.name}.`;
+  const url = `/gaming-alerts?tournament=${tournament.id}&status=live`;
+  const { data: notification, error } = await supabaseAdmin.from('notifications').insert({
+    type: 'match_live',
+    tournament_id: tournament.id,
+    game_slug: match.game_slug || tournament.game_slug,
+    title,
+    message,
+    url,
+    metadata: { tournament_match_id: match.id, match_title: match.title },
+  }).select('*').single();
+  if (error) throw error;
+  const push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: tournament.id, type: 'match_live' });
+  return { notification, push };
+}
+
+export async function createManualMatchUpdateNotification(payload) {
+  const matchId = payload.tournament_match_id || payload.source_id;
+  if (!matchId) throw new Error('tournament_match_id is required');
+  const { data: match, error: matchError } = await supabaseAdmin
+    .from('tournament_matches')
+    .select('id,title,game_slug,tournament_id,tournament:tournaments(id,name,game_slug,status)')
+    .eq('id', matchId)
+    .single();
+  if (matchError || !match) throw new Error('Tournament match not found.');
+  const preset = String(payload.preset || '').trim();
+  const custom = String(payload.message || payload.body || '').trim();
+  const title = String(payload.title || preset || 'Match update').trim();
+  const message = custom || `${title} for ${match.title}.`;
+  const url = `/gaming-alerts?tournament=${match.tournament_id}`;
+  const { data: notification, error } = await supabaseAdmin.from('notifications').insert({
+    type: 'match_update',
+    tournament_id: match.tournament_id,
+    game_slug: match.game_slug || match.tournament?.game_slug,
+    title,
+    message,
+    url,
+    metadata: { tournament_match_id: match.id, match_title: match.title, preset },
+  }).select('*').single();
+  if (error) throw error;
+  const push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: match.tournament_id, tournamentMatchId: match.id, type: 'match_update' });
+  return { notification, push };
 }
 
 
@@ -324,20 +446,23 @@ export async function deleteMatchResultAlert(matchResultId) {
   return Array.isArray(data) ? data[0] : data;
 }
 
-export async function sendFcmToEligibleUsers({ title, body, url, matchResultId }) {
+export async function sendFcmToEligibleUsers({ title, body, url, matchResultId, tournamentId, tournamentMatchId, type = 'match_result' }) {
   const account = readFirebaseServiceAccount();
   const { data: tokens } = await supabaseAdmin.from('fcm_tokens').select('token,user_id');
   const userIds = Array.from(new Set((tokens || []).map((row) => row.user_id)));
   const { data: settings } = userIds.length ? await supabaseAdmin.from('notification_settings').select('user_id,match_results_enabled').in('user_id', userIds) : { data: [] };
   const disabled = new Set((settings || []).filter((row) => row.match_results_enabled === false).map((row) => row.user_id));
   const { data: resultRow } = matchResultId ? await supabaseAdmin.from('match_results').select('source_id').eq('id', matchResultId).maybeSingle() : { data: null };
-  const { data: subs } = matchResultId && userIds.length ? await supabaseAdmin.from('match_notification_subscriptions').select('user_id').in('user_id', userIds).or(`match_result_id.eq.${matchResultId}${resultRow?.source_id ? `,tournament_match_id.eq.${resultRow.source_id}` : ''}`) : { data: [] };
+  const sourceMatchId = tournamentMatchId || resultRow?.source_id;
+  const { data: subs } = (matchResultId || sourceMatchId) && userIds.length ? await supabaseAdmin.from('match_notification_subscriptions').select('user_id').in('user_id', userIds).or(`${matchResultId ? `match_result_id.eq.${matchResultId}` : ''}${matchResultId && sourceMatchId ? ',' : ''}${sourceMatchId ? `tournament_match_id.eq.${sourceMatchId}` : ''}`) : { data: [] };
+  const { data: tournamentSubs } = tournamentId && userIds.length ? await supabaseAdmin.from('tournament_notification_subscriptions').select('user_id').in('user_id', userIds).eq('tournament_id', tournamentId) : { data: [] };
   const matchSubscribers = new Set((subs || []).map((row) => row.user_id));
-  const eligible = (tokens || []).filter((row) => !disabled.has(row.user_id) || matchSubscribers.has(row.user_id));
+  const tournamentSubscribers = new Set((tournamentSubs || []).map((row) => row.user_id));
+  const eligible = (tokens || []).filter((row) => !disabled.has(row.user_id) || matchSubscribers.has(row.user_id) || tournamentSubscribers.has(row.user_id));
   const accessToken = await getFirebaseAccessToken();
   const endpoint = `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`;
   const results = await Promise.all(eligible.map(async (row) => {
-    const res = await fetch(endpoint, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: { token: row.token, notification: { title, body }, webpush: { notification: { icon: '/icons/icon.svg', badge: '/icons/icon.svg', tag: matchResultId || 'fn-gaming-alert' }, fcm_options: { link: url } }, data: { url, matchResultId: matchResultId || '' } } }) });
+    const res = await fetch(endpoint, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: { token: row.token, notification: { title, body }, webpush: { notification: { icon: '/icons/icon.svg', badge: '/icons/icon.svg', tag: matchResultId || 'fn-gaming-alert' }, fcm_options: { link: url } }, data: { url, matchResultId: matchResultId || '', tournamentId: tournamentId || '', tournamentMatchId: tournamentMatchId || '', type } } }) });
     return { ok: res.ok, status: res.status, user_id: row.user_id };
   }));
   return { sent: results.filter((r) => r.ok).length, attempted: eligible.length };
