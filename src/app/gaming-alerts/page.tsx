@@ -13,6 +13,7 @@ export default function GamingAlertsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [matches, setMatches] = useState<TrackerMatch[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [notifications, setNotifications] = useState<GamingNotification[]>([]);
   const [tournament, setTournament] = useState('');
   const [game, setGame] = useState('');
   const [status, setStatus] = useState('');
@@ -29,7 +30,8 @@ export default function GamingAlertsPage() {
     setTournaments(data.tournaments || []);
     setMatches(data.matches || []);
     setAlerts(data.alerts || []);
-    const ids = (data.alerts || []).map((a: Alert) => a.notification?.id).filter(Boolean);
+    setNotifications(data.notifications || []);
+    const ids = [...(data.alerts || []).map((a: Alert) => a.notification?.id), ...(data.notifications || []).map((item: GamingNotification) => item.id)].filter(Boolean);
     if (ids.length) await fetch('/api/notifications/read', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).catch(() => null);
   }, [tournament, game, status]);
 
@@ -62,6 +64,10 @@ export default function GamingAlertsPage() {
     if (!query) return alerts;
     return alerts.filter((alert) => [alert.match_title, alert.tournament?.name, alert.winner_name, alert.mvp_name, alert.game_slug, gameLabel(alert.game_slug)].filter(Boolean).join(' ').toLowerCase().includes(query));
   }, [alerts, query]);
+  const visibleNotifications = useMemo(() => {
+    if (!query) return notifications;
+    return notifications.filter((item) => [item.title, item.message, item.tournament?.name, item.game_slug, item.type].filter(Boolean).join(' ').toLowerCase().includes(query));
+  }, [notifications, query]);
 
   async function toggleMatchResults(enabled: boolean) {
     setSettings((current) => ({ ...current, match_results_enabled: enabled }));

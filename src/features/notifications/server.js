@@ -107,6 +107,27 @@ export async function listGamingAlerts({ userId, tournamentId, gameSlug } = {}) 
 }
 
 
+export async function listGamingNotifications({ userId, tournamentId, gameSlug } = {}) {
+  let query = supabaseAdmin
+    .from('notifications')
+    .select('id,type,title,message,url,tournament_id,game_slug,metadata,created_at,tournament:tournaments(id,name,game_slug,status)')
+    .in('type', ['match_live', 'match_result', 'match_update'])
+    .order('created_at', { ascending: false })
+    .limit(80);
+  if (tournamentId) query = query.eq('tournament_id', tournamentId);
+  if (gameSlug) query = query.eq('game_slug', gameSlug);
+  const { data, error } = await query;
+  if (error) throw error;
+  const ids = (data || []).map((row) => row.id);
+  let read = new Set();
+  if (userId && ids.length) {
+    const { data: reads } = await supabaseAdmin.from('notification_reads').select('notification_id').eq('user_id', userId).in('notification_id', ids);
+    read = new Set((reads || []).map((row) => row.notification_id));
+  }
+  return (data || []).map((row) => ({ ...row, unread: Boolean(userId && !read.has(row.id)) }));
+}
+
+
 export async function upsertTournamentMatchState(payload) {
   const tournament = await getTournamentForMatchResult(payload.tournament_id || null);
   let previousMatch = null;

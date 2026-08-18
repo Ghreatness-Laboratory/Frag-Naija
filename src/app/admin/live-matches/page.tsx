@@ -40,6 +40,20 @@ export default function AdminLiveMatchesPage() {
     });
   }
 
+  async function sendUpdate() {
+    if (!selected) return;
+    setMessage(''); setError('');
+    try {
+      const res = await fetch('/api/admin/match-notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tournament_match_id: selected.id, preset: notice.preset, title: notice.preset, message: notice.message }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Unable to notify subscribers.');
+      setMessage(`Subscriber update sent for ${selected.title}.`);
+      setNotice({ preset: 'Lineups Available', message: '' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to notify subscribers.');
+    }
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!selected) return;
