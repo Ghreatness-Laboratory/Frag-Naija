@@ -15,7 +15,7 @@ export async function POST(request) {
   if (unauthorized) return unauthorized;
   try {
     const body = await request.json().catch(() => ({}));
-    for (const key of ['tournament_id', 'source_id', 'match_title', 'winner_name', 'mvp_name', 'placement_3_name', 'placement_4_name']) {
+    for (const key of ['tournament_id', 'match_title', 'winner_name', 'mvp_name', 'placement_3_name', 'placement_4_name']) {
       if (!String(body[key] || '').trim()) return NextResponse.json({ error: `${key} is required` }, { status: 400 });
     }
     const result = await createMatchResultAlert({ ...body, source_type: 'tournament_match' });
