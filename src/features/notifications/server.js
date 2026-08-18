@@ -233,7 +233,7 @@ export async function setMatchNotificationSubscription(userId, matchResultId, su
 
 export async function markNotificationsRead(userId, ids) {
   if (!userId || !ids?.length) return { ok: true };
-  const rows = ids.map((notification_id) => ({ notification_id, user_id }));
+  const rows = ids.map((notification_id) => ({ notification_id, user_id: userId }));
   const { error } = await supabaseAdmin.from('notification_reads').upsert(rows, { onConflict: 'notification_id,user_id' });
   if (error) throw error;
   return { ok: true };
@@ -248,26 +248,6 @@ async function getTournamentForMatchResult(tournamentId) {
     .single();
   if (error || !tournament) throw new Error('Selected tournament was not found.');
   return tournament;
-}
-
-async function createTournamentMatchFromResult(tournament, payload) {
-  const title = String(payload.match_title || '').trim();
-  if (!title) throw new Error('match_title is required');
-  const { data, error } = await supabaseAdmin
-    .from('tournament_matches')
-    .insert({
-      tournament_id: tournament.id,
-      game_slug: tournament.game_slug || 'pubg-mobile',
-      title,
-      team_a: payload.team_a || null,
-      team_b: payload.team_b || null,
-      starts_at: payload.starts_at || null,
-      status: 'completed',
-    })
-    .select('id,tournament_id,title,game_slug')
-    .single();
-  if (error) throw error;
-  return data;
 }
 
 async function createTournamentMatchFromResult(tournament, payload) {
