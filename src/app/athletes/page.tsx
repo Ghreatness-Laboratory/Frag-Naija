@@ -11,6 +11,7 @@ import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
 import BrandedLoader from "@/components/common/BrandedLoader";
+import { LoginGate, useAuthGate } from "@/components/common/LoginGate";
 
 type Athlete = {
   id: string;
@@ -109,6 +110,7 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
 export default function AthletesPage() {
   const reduceMotion = Boolean(useReducedMotion());
   const { selectedGame, setSelectedGame, isHydrated } = useGame();
+  const { user, loading: authLoading } = useAuthGate();
   const [apiAthletes, setApiAthletes] = useState<Athlete[]>([]);
   const [selected, setSelected] = useState<Athlete | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,6 +127,12 @@ export default function AthletesPage() {
   const isFF      = selectedGame?.slug === 'free-fire';
 
   const load = useCallback(async () => {
+    if (authLoading || !user) {
+      setApiAthletes([]);
+      setLoading(false);
+      return;
+    }
+
     if (!selectedGame) {
       setApiAthletes([]);
       setLoading(false);
@@ -148,7 +156,7 @@ export default function AthletesPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedGame, rosterMode]);
+  }, [authLoading, selectedGame, rosterMode, user]);
 
   useEffect(() => {
     const requestedGame = new URLSearchParams(window.location.search).get("game");
@@ -168,7 +176,7 @@ export default function AthletesPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedGame) {
+    if (authLoading || !user || !selectedGame) {
       setRoleOptions([]);
       setSelectedRoles([]);
       return;
@@ -186,7 +194,7 @@ export default function AthletesPage() {
       .catch(() => { if (active) setRoleOptions([]); });
 
     return () => { active = false; };
-  }, [selectedGame]);
+  }, [authLoading, selectedGame, user]);
 
   function toggleRole(role: string) {
     setSelectedRoles((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]);
@@ -229,6 +237,19 @@ export default function AthletesPage() {
     if (athletes.length > 0 && (!selected || !athletes.find((athlete) => athlete.id === selected.id))) setSelected(athletes[0]);
     if (athletes.length === 0 && selected) setSelected(null);
   }, [athletes, selected, selectedGame?.slug, normalizedSearch, rosterMode]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#080a07]">
+        <BrandedLoader label="Checking athlete access" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    const nextPath = typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/athletes";
+    return <LoginGate heading="Login to scout athletes" message="Athlete rosters, stats, cards, and profile data are game content and stay hidden until you log in." next={nextPath} />;
+  }
 
   if (!selectedGame) {
     return (
