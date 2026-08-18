@@ -10,6 +10,7 @@ import { athleteStatusTone, combatAttributes, isFootballGame, isShooterGame, nor
 import { GAME_CONTENT } from '@/lib/game-content';
 import { formatAthleteSubtitle, getAthleteSubtitleFormat, GAMES } from '@/lib/games';
 import BrandedLoader from '@/components/common/BrandedLoader';
+import { LoginGate, useAuthGate } from '@/components/common/LoginGate';
 
 type Achievement = { title?: string; date?: string; description?: string };
 type Team = { id: string; name: string; logo_url: string | null; rank: number | null; game_slug?: string | null };
@@ -70,6 +71,7 @@ function achievementSummary(achievement: Achievement, displayName: string) {
 
 export default function AthleteDetail({ params }: { params: { id: string } }) {
   const { selectedGame } = useGame();
+  const { user, loading: authLoading } = useAuthGate();
   const [a, setA] = useState<Athlete | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +79,11 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
   const [cardOpen, setCardOpen] = useState(false);
 
   useEffect(() => {
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
+
     Promise.all([
       fetch(`/api/athletes/${params.id}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
       fetch('/api/teams', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])),
@@ -104,11 +111,12 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
       } as Athlete : null));
       setTeams(Array.isArray(teamData) && teamData.length ? teamData : fallbackTeams);
     }).finally(() => setLoading(false));
-  }, [params.id]);
+  }, [authLoading, params.id, user]);
 
   const team = useMemo(() => teams.find((t) => t.name === a?.team) ?? null, [a?.team, teams]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Loading athlete" /></div>;
+  if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Checking athlete access" /></div>;
+  if (!user) return <LoginGate heading="Login to view athlete profile" message="Athlete cards, stats, achievements, loadouts, and profile details are hidden until you log in." next={`/athletes/${params.id}`} />;
   if (!a) return <div className="min-h-screen p-8"><p className="text-fn-muted">Athlete not found.</p><Link href="/athletes" className="text-fn-green">Back to roster</Link></div>;
 
   const activeGame = selectedGame ?? GAMES.find((game) => game.slug === a.game_slug);

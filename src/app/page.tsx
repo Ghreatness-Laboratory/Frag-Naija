@@ -8,6 +8,7 @@ import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
+import { useAuthGate } from "@/components/common/LoginGate";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -195,7 +196,7 @@ function StatCounter({ value, label, icon: Icon, color }: { value: string; label
   );
 }
 
-function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolean; onClose: () => void; onSelect: (gameSlug: string) => void; primary: string }) {
+function GameSelectionModal({ open, onClose, onSelect, primary, requiresLogin }: { open: boolean; onClose: () => void; onSelect: (gameSlug: string) => void; primary: string; requiresLogin: boolean }) {
   if (!open) return null;
 
   return (
@@ -203,7 +204,7 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
       <motion.div
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="relative w-full max-w-md overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-5 shadow-2xl"
+        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-sm border border-fn-gborder bg-fn-card p-5 shadow-2xl"
       >
         <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${primary}, transparent)` }} />
         <button
@@ -216,8 +217,13 @@ function GameSelectionModal({ open, onClose, onSelect, primary }: { open: boolea
         </button>
         <p className="fn-label mb-2 flex items-center gap-1.5"><Crosshair size={10} style={{ color: primary }} /> SCOUTING TARGET</p>
         <h2 id="scout-game-title" className="font-display text-2xl font-black uppercase text-fn-text">Choose a game</h2>
-        <p className="mt-2 text-xs leading-relaxed text-fn-muted">Select which game roster you want to scout. You’ll be taken to that game’s dedicated athletes page.</p>
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <p className="mt-2 text-xs leading-relaxed text-fn-muted">Select which game roster you want to scout. Login is checked before any athlete roster or profile content can render.</p>
+        {requiresLogin && (
+          <div className="mt-4 rounded-sm border border-fn-yellow/30 bg-fn-yellow/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-yellow">
+            Login required after game selection — no athlete data is shown before sign in.
+          </div>
+        )}
+        <div className="mt-5 grid min-h-0 gap-2 overflow-y-auto overscroll-contain pr-1 pb-1 sm:grid-cols-2 [-webkit-overflow-scrolling:touch]">
           {GAMES.filter((game) => game.available).map((game) => (
             <button
               key={game.slug}
@@ -352,6 +358,7 @@ function FeaturedAthletes({
 export default function HomePage() {
   const router = useRouter();
   const { selectedGame, isHydrated } = useGame();
+  const { user, loading: authLoading } = useAuthGate();
   const [ticker, setTicker]       = useState(0);
   const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
@@ -379,7 +386,12 @@ export default function HomePage() {
 
   const handleScoutGameSelect = (gameSlug: string) => {
     setIsScoutPromptOpen(false);
-    router.push(`/athletes?game=${gameSlug}`);
+    const athletePath = `/athletes?game=${encodeURIComponent(gameSlug)}`;
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent(athletePath)}`);
+      return;
+    }
+    router.push(athletePath);
   };
 
   useEffect(() => {
@@ -435,13 +447,14 @@ export default function HomePage() {
   }, [selectedGame]);
   const athleteSource = allAthletes.length || featuredAthleteIds.length ? allAthletes : fallbackAthletes;
   const teamSource = allTeams.length || featuredTeamIds.length ? allTeams : fallbackTeamCards;
-  const gameAthletes: Athlete[] = useMemo(() => selectedGame
+  const gameAthletes: Athlete[] = useMemo(() => (!user ? [] : selectedGame
     ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6)), [allAthletes, athleteSource, featuredAthleteIds, selectedGame]);
+    : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6))), [allAthletes, athleteSource, featuredAthleteIds, selectedGame, user]);
   const iconAthletes: Athlete[] = useMemo(() => {
+    if (!user) return [];
     const icons = (athleteSource as Athlete[]).filter((athlete) => Boolean(athlete.is_icon));
     return selectedGame ? icons.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6) : icons.slice(0, 6);
-  }, [athleteSource, selectedGame]);
+  }, [athleteSource, selectedGame, user]);
   const standardGameAthletes: Athlete[] = useMemo(() => {
     const standardAthletes = gameAthletes.filter((athlete) => !athlete.is_icon);
     return standardAthletes.length > 0 ? standardAthletes : gameAthletes;
@@ -479,6 +492,7 @@ export default function HomePage() {
         onClose={() => setIsScoutPromptOpen(false)}
         onSelect={handleScoutGameSelect}
         primary={primary}
+        requiresLogin={!authLoading && !user}
       />
       {/* Live ticker */}
       <div className="border-b border-fn-gborder px-4 py-1.5 flex items-center gap-3 overflow-hidden"
