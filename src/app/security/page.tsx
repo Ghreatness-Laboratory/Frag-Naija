@@ -27,6 +27,7 @@ export default function SecurityPage() {
   const [error, setError]         = useState('');
   const [busy, setBusy]           = useState(false);
   const [copied, setCopied]       = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({ match_results_enabled: true });
 
   useEffect(() => {
     let active = true;
@@ -34,6 +35,7 @@ export default function SecurityPage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (active) { setUser(d); setLoading(false); } })
       .catch(() => { if (active) setLoading(false); });
+    fetch('/api/notifications/settings', { credentials: 'include' }).then(r => r.json()).then(d => setNotificationSettings({ match_results_enabled: d.match_results_enabled !== false })).catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -155,6 +157,28 @@ export default function SecurityPage() {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
           )}
+        </div>
+
+
+        {/* Notifications settings */}
+        <div className="bg-fn-card border border-fn-gborder rounded-lg p-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-fn-muted text-xs uppercase tracking-widest mb-1">Notifications</p>
+            <p className="text-fn-text text-sm font-bold">Match-result alerts</p>
+            <p className="mt-1 text-xs text-fn-muted">Controls in-app Gaming Alerts and FCM push notifications for winner + MVP results.</p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-fn-green">
+            <input
+              type="checkbox"
+              checked={notificationSettings.match_results_enabled}
+              onChange={async (event) => {
+                const enabled = event.target.checked;
+                setNotificationSettings({ match_results_enabled: enabled });
+                await fetch('/api/notifications/settings', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ match_results_enabled: enabled }) }).catch(() => null);
+              }}
+            />
+            On
+          </label>
         </div>
 
         {/* 2FA card */}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { checkAdmin } from '@/features/shared/server/adminAuth';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { createMatchResultAlert } from '@/features/notifications/server';
 
 function badRequest(message, details = {}) {
   return NextResponse.json({ error: message, ...details }, { status: 400 });
@@ -44,7 +45,7 @@ export async function POST(request, { params }) {
 
   const { data: match, error: matchError } = await supabaseAdmin
     .from('fantasy_matches')
-    .select('id, gameweek_id')
+    .select('id, gameweek_id, game_slug, title, team_a, team_b, status')
     .eq('id', matchId)
     .single();
   if (matchError || !match) return NextResponse.json({ error: 'Fantasy match not found.' }, { status: 404 });
@@ -97,5 +98,25 @@ export async function POST(request, { params }) {
     .eq('match_id', match.id)
     .order('created_at');
 
-  return NextResponse.json({ rows: savedRows || [], stats_last_edited_at: now });
+  let alert = null;
+  if (finalize && match.status !== 'finalized') {
+    const winnerRow = (savedRows || []).find((row) => row.match_win);
+    const mvpRow = (savedRows || []).find((row) => row.mvp);
+    if (winnerRow && mvpRow) {
+      alert = await createMatchResultAlert({
+        source_type: 'fantasy_match',
+        source_id: match.id,
+        game_slug: match.game_slug,
+        match_title: match.title,
+        winner_name: winnerRow.athletes?.team || winnerRow.athletes?.known_name || winnerRow.athletes?.ign || winnerRow.athletes?.name || 'Winner',
+        winner_ref_type: winnerRow.athletes?.team ? 'team' : 'athlete',
+        winner_ref_id: winnerRow.athlete_id,
+        mvp_name: mvpRow.athletes?.known_name || mvpRow.athletes?.ign || mvpRow.athletes?.name || 'MVP',
+        mvp_athlete_id: mvpRow.athlete_id,
+        finalized_at: now,
+      });
+    }
+  }
+
+  return NextResponse.json({ rows: savedRows || [], stats_last_edited_at: now, alert });
 }
