@@ -9,6 +9,10 @@ export async function POST(request) {
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   const { match_result_id, subscribed } = await request.json().catch(() => ({}));
   if (!match_result_id) return NextResponse.json({ error: 'match_result_id is required' }, { status: 400 });
-  const result = await setMatchNotificationSubscription(user.id, match_result_id, subscribed !== false);
-  return NextResponse.json(result);
+  try {
+    const result = await setMatchNotificationSubscription(user.id, match_result_id, subscribed !== false);
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json({ error: error.message || 'Unable to update match alert subscription.' }, { status: 400 });
+  }
 }
