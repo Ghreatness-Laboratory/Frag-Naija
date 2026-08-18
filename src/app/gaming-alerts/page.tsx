@@ -6,10 +6,11 @@ import { GAMES } from '@/lib/games';
 
 type Alert = { id: string; game_slug: string; match_title: string; winner_name: string; mvp_name: string; placement_3_name?: string | null; placement_4_name?: string | null; finalized_at: string; unread: boolean; subscribed?: boolean; tournament?: { id: string; name: string; status: string; game_slug: string }; source_match?: { id: string; title: string; status: string; starts_at?: string | null } | null; notification?: { id: string; title: string; message: string; url: string } };
 type Tournament = { id: string; name: string; game_slug: string; status: string };
+type TrackerMatch = { id: string; tournament_id: string; title: string; team_a?: string | null; team_b?: string | null; starts_at?: string | null; status: string; display_status: string; live_state?: Record<string, string>; subscribed?: boolean; tournament?: Tournament; result?: Alert | null };
 
 export default function GamingAlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [matches, setMatches] = useState<TrackerMatch[]>([]);
   const [tournament, setTournament] = useState('');
   const [game, setGame] = useState('');
   const [search, setSearch] = useState('');
@@ -19,12 +20,13 @@ export default function GamingAlertsPage() {
     const qs = new URLSearchParams();
     if (tournament) qs.set('tournament', tournament);
     if (game) qs.set('game', game);
+    if (status) qs.set('status', status);
     const data = await fetch(`/api/notifications?${qs}`, { credentials: 'include' }).then((r) => r.json());
-    setAlerts(data.alerts || []);
     setTournaments(data.tournaments || []);
+    setMatches(data.matches || []);
     const ids = (data.alerts || []).map((a: Alert) => a.notification?.id).filter(Boolean);
     if (ids.length) await fetch('/api/notifications/read', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).catch(() => null);
-  }, [tournament, game]);
+  }, [tournament, game, status]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { fetch('/api/notifications/settings', { credentials: 'include' }).then((r) => r.json()).then(setSettings).catch(() => {}); }, []);
@@ -62,9 +64,9 @@ export default function GamingAlertsPage() {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ match_result_id: alert.id, subscribed: next }),
+      body: JSON.stringify({ tournament_match_id: match.id, match_result_id: match.result?.id, subscribed: next }),
     }).catch(() => null);
-    if (!res?.ok) setAlerts((current) => current.map((item) => item.id === alert.id ? { ...item, subscribed: !next } : item));
+    if (!res?.ok) setMatches((current) => current.map((item) => item.id === match.id ? { ...item, subscribed: !next } : item));
     if (next && 'Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
   }
 

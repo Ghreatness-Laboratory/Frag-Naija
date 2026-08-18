@@ -80,6 +80,88 @@ export async function listGamingAlerts({ userId, tournamentId, gameSlug } = {}) 
   });
 }
 
+
+export async function upsertTournamentMatchState(payload) {
+  const tournament = await getTournamentForMatchResult(payload.tournament_id || null);
+  const status = String(payload.status || 'upcoming').toLowerCase();
+  const normalizedStatus = status === 'scheduled' ? 'upcoming' : status === 'completed' ? 'finished' : status;
+  if (!['upcoming', 'live', 'finished'].includes(normalizedStatus)) throw new Error('Match status must be upcoming, live, or finished.');
+  const body = {
+    tournament_id: tournament.id,
+    game_slug: tournament.game_slug || 'pubg-mobile',
+    title: String(payload.match_title || payload.title || '').trim(),
+    team_a: payload.team_a || null,
+    team_b: payload.team_b || null,
+    starts_at: payload.starts_at || null,
+    status: normalizedStatus === 'finished' ? 'completed' : normalizedStatus === 'upcoming' ? 'scheduled' : normalizedStatus,
+    live_state: {
+      score_a: payload.score_a || '',
+      score_b: payload.score_b || '',
+      current_round: payload.current_round || '',
+      current_map: payload.current_map || '',
+      elapsed: payload.elapsed || '',
+      notes: payload.live_notes || payload.notes || '',
+    },
+    updated_at: new Date().toISOString(),
+  };
+  if (!body.title) throw new Error('match_title is required');
+
+  if (payload.source_id) {
+    const { data, error } = await supabaseAdmin
+      .from('tournament_matches')
+      .update(body)
+      .eq('id', payload.source_id)
+      .eq('tournament_id', tournament.id)
+      .select('id,tournament_id,title,game_slug,status,starts_at,team_a,team_b,live_state')
+      .single();
+    if (error) throw error;
+    return { tournament, match: data };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('tournament_matches')
+    .insert(body)
+    .select('id,tournament_id,title,game_slug,status,starts_at,team_a,team_b,live_state')
+    .single();
+  if (error) throw error;
+  return { tournament, match: data };
+}
+
+export async function listGamingTracker({ userId, tournamentId, gameSlug, status } = {}) {
+  let tournamentsQuery = supabaseAdmin.from('tournaments').select('*').order('start_date', { ascending: false });
+  if (tournamentId) tournamentsQuery = tournamentsQuery.eq('id', tournamentId);
+  if (gameSlug) tournamentsQuery = tournamentsQuery.eq('game_slug', gameSlug);
+  const { data: tournaments, error: tournamentError } = await tournamentsQuery;
+  if (tournamentError) throw tournamentError;
+  const tournamentIds = (tournaments || []).map((item) => item.id);
+  if (!tournamentIds.length) return { tournaments: [], matches: [] };
+
+  let matchesQuery = supabaseAdmin.from('tournament_matches').select('*').in('tournament_id', tournamentIds).order('starts_at', { ascending: true, nullsFirst: false });
+  if (status) {
+    const normalized = status === 'finished' ? 'completed' : status;
+    matchesQuery = matchesQuery.eq('status', normalized);
+  }
+  const { data: matches, error: matchError } = await matchesQuery;
+  if (matchError) throw matchError;
+  const matchIds = (matches || []).map((match) => match.id);
+  const { data: results } = matchIds.length ? await supabaseAdmin.from('match_results').select('*').eq('source_type', 'tournament_match').in('source_id', matchIds) : { data: [] };
+  const resultByMatch = new Map((results || []).map((result) => [result.source_id, result]));
+  let subscribed = new Set();
+  if (userId && matchIds.length) {
+    const resultIds = (results || []).map((result) => result.id);
+    const { data: subsByMatch } = await supabaseAdmin.from('match_notification_subscriptions').select('match_result_id,tournament_match_id').eq('user_id', userId).or(`tournament_match_id.in.(${matchIds.join(',')})${resultIds.length ? `,match_result_id.in.(${resultIds.join(',')})` : ''}`);
+    subscribed = new Set((subsByMatch || []).flatMap((row) => [row.match_result_id, row.tournament_match_id].filter(Boolean)));
+  }
+  const tournamentById = new Map((tournaments || []).map((item) => [item.id, item]));
+  return {
+    tournaments: tournaments || [],
+    matches: (matches || []).map((match) => {
+      const result = resultByMatch.get(match.id) || null;
+      return { ...match, display_status: match.status === 'completed' ? 'finished' : match.status === 'scheduled' ? 'upcoming' : match.status, tournament: tournamentById.get(match.tournament_id), result, subscribed: subscribed.has(match.id) || (result ? subscribed.has(result.id) : false) };
+    }),
+  };
+}
+
 export async function getUnreadCount(userId) {
   if (!userId) return 0;
   const { data: notifications, error } = await supabaseAdmin.from('notifications').select('id').eq('type', 'match_result');
@@ -112,7 +194,7 @@ export async function registerFcmToken(userId, token) {
   return data;
 }
 
-export async function setMatchNotificationSubscription(userId, matchResultId, subscribed) {
+export async function setMatchNotificationSubscription(userId, matchResultId, subscribed, tournamentMatchId = null) {
   if (subscribed) {
     const { data: matchResult, error: matchError } = await supabaseAdmin
       .from('match_results')
@@ -142,7 +224,9 @@ export async function setMatchNotificationSubscription(userId, matchResultId, su
     if (error) throw error;
     return { subscribed: true, row: data };
   }
-  const { error } = await supabaseAdmin.from('match_notification_subscriptions').delete().eq('user_id', userId).eq('match_result_id', matchResultId);
+  let deleteQuery = supabaseAdmin.from('match_notification_subscriptions').delete().eq('user_id', userId);
+  deleteQuery = tournamentMatchId && !matchResultId ? deleteQuery.eq('tournament_match_id', tournamentMatchId) : deleteQuery.eq('match_result_id', matchResultId);
+  const { error } = await deleteQuery;
   if (error) throw error;
   return { subscribed: false };
 }
@@ -186,6 +270,12 @@ async function createTournamentMatchFromResult(tournament, payload) {
   return data;
 }
 
+async function createTournamentMatchFromResult(tournament, payload) {
+  const existing = await upsertTournamentMatchState({ ...payload, tournament_id: tournament.id, status: 'finished' });
+  return existing.match;
+}
+
+
 export async function createMatchResultAlert(payload) {
   const now = new Date().toISOString();
   const source_type = payload.source_type || 'tournament_match';
@@ -226,7 +316,8 @@ export async function sendFcmToEligibleUsers({ title, body, url, matchResultId }
   const userIds = Array.from(new Set((tokens || []).map((row) => row.user_id)));
   const { data: settings } = userIds.length ? await supabaseAdmin.from('notification_settings').select('user_id,match_results_enabled').in('user_id', userIds) : { data: [] };
   const disabled = new Set((settings || []).filter((row) => row.match_results_enabled === false).map((row) => row.user_id));
-  const { data: subs } = matchResultId && userIds.length ? await supabaseAdmin.from('match_notification_subscriptions').select('user_id').eq('match_result_id', matchResultId).in('user_id', userIds) : { data: [] };
+  const { data: resultRow } = matchResultId ? await supabaseAdmin.from('match_results').select('source_id').eq('id', matchResultId).maybeSingle() : { data: null };
+  const { data: subs } = matchResultId && userIds.length ? await supabaseAdmin.from('match_notification_subscriptions').select('user_id').in('user_id', userIds).or(`match_result_id.eq.${matchResultId}${resultRow?.source_id ? `,tournament_match_id.eq.${resultRow.source_id}` : ''}`) : { data: [] };
   const matchSubscribers = new Set((subs || []).map((row) => row.user_id));
   const eligible = (tokens || []).filter((row) => !disabled.has(row.user_id) || matchSubscribers.has(row.user_id));
   const accessToken = await getFirebaseAccessToken();
