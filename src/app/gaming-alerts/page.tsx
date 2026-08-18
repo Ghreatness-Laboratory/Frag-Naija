@@ -11,8 +11,10 @@ type TrackerMatch = { id: string; tournament_id: string; title: string; team_a?:
 export default function GamingAlertsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [matches, setMatches] = useState<TrackerMatch[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [tournament, setTournament] = useState('');
   const [game, setGame] = useState('');
+  const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [settings, setSettings] = useState({ match_results_enabled: true, authenticated: false });
 
@@ -24,6 +26,7 @@ export default function GamingAlertsPage() {
     const data = await fetch(`/api/notifications?${qs}`, { credentials: 'include' }).then((r) => r.json());
     setTournaments(data.tournaments || []);
     setMatches(data.matches || []);
+    setAlerts(data.alerts || []);
     const ids = (data.alerts || []).map((a: Alert) => a.notification?.id).filter(Boolean);
     if (ids.length) await fetch('/api/notifications/read', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).catch(() => null);
   }, [tournament, game, status]);
@@ -64,9 +67,9 @@ export default function GamingAlertsPage() {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tournament_match_id: match.id, match_result_id: match.result?.id, subscribed: next }),
+      body: JSON.stringify({ tournament_match_id: alert.source_match?.id, match_result_id: alert.id, subscribed: next }),
     }).catch(() => null);
-    if (!res?.ok) setMatches((current) => current.map((item) => item.id === match.id ? { ...item, subscribed: !next } : item));
+    if (!res?.ok) setAlerts((current) => current.map((item) => item.id === alert.id ? { ...item, subscribed: !next } : item));
     if (next && 'Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
   }
 
@@ -96,7 +99,13 @@ export default function GamingAlertsPage() {
       <section className="mt-8">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2"><Bell size={16} className="text-fn-green" /><h2 className="font-display text-lg font-black uppercase tracking-widest">Match Result Feed</h2></div>
-          <div className="flex flex-wrap items-center gap-2 text-xs"><div className="relative"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fn-muted" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search matches / tournaments" className="w-64 border border-fn-gborder bg-fn-black py-2 pl-8 pr-3 text-fn-text placeholder:text-fn-muted focus:border-fn-green focus:outline-none" /></div><Filter size={13} className="text-fn-muted" /><select value={tournament} onChange={(e) => setTournament(e.target.value)} className="border border-fn-gborder bg-fn-black px-3 py-2 uppercase tracking-widest text-fn-text"><option value="">All tournaments</option>{tournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select><select value={game} onChange={(e) => setGame(e.target.value)} className="border border-fn-gborder bg-fn-black px-3 py-2 uppercase tracking-widest text-fn-text"><option value="">ALL GAMES</option>{games.map((g) => <option key={g} value={g}>{gameLabel(g)}</option>)}</select></div>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="relative"><Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fn-muted" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search matches / tournaments" className="w-64 border border-fn-gborder bg-fn-black py-2 pl-8 pr-3 text-fn-text placeholder:text-fn-muted focus:border-fn-green focus:outline-none" /></div>
+            <Filter size={13} className="text-fn-muted" />
+            <select value={tournament} onChange={(e) => setTournament(e.target.value)} className="border border-fn-gborder bg-fn-black px-3 py-2 uppercase tracking-widest text-fn-text"><option value="">All tournaments</option>{tournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
+            <select value={game} onChange={(e) => setGame(e.target.value)} className="border border-fn-gborder bg-fn-black px-3 py-2 uppercase tracking-widest text-fn-text"><option value="">ALL GAMES</option>{games.map((g) => <option key={g} value={g}>{gameLabel(g)}</option>)}</select>
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="border border-fn-gborder bg-fn-black px-3 py-2 uppercase tracking-widest text-fn-text"><option value="">ALL STATUS</option><option value="live">Live</option><option value="upcoming">Upcoming</option><option value="finished">Finished</option></select>
+          </div>
         </div>
         <div className="space-y-3">
           {visibleAlerts.map((alert) => <article id={`alert-${alert.id}`} key={alert.id} className="border border-fn-gborder bg-fn-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="fn-label text-fn-green">{alert.tournament?.name || alert.game_slug}</p><h3 className="mt-1 text-lg font-black uppercase tracking-widest text-fn-text">{alert.winner_name} won</h3><p className="mt-1 text-sm text-fn-muted">MVP: <span className="font-bold text-fn-green">{alert.mvp_name}</span> · {alert.match_title}</p><dl className="mt-3 grid gap-2 text-xs text-fn-muted sm:grid-cols-4"><div><dt className="fn-label">Result</dt><dd className="font-bold text-fn-text">{alert.winner_name}</dd></div><div><dt className="fn-label">MVP</dt><dd className="font-bold text-fn-text">{alert.mvp_name}</dd></div><div><dt className="fn-label">3rd place</dt><dd className="font-bold text-fn-text">{alert.placement_3_name || '—'}</dd></div><div><dt className="fn-label">4th place</dt><dd className="font-bold text-fn-text">{alert.placement_4_name || '—'}</dd></div></dl></div><div className="flex items-center gap-2"><button type="button" onClick={() => toggleMatchSubscription(alert)} disabled={!settings.authenticated || !isMatchToggleable(alert)} aria-pressed={Boolean(alert.subscribed)} aria-label={!isMatchToggleable(alert) ? `Match alerts are closed for ${alert.match_title}` : alert.subscribed ? `Disable match alerts for ${alert.match_title}` : `Enable match alerts for ${alert.match_title}`} title={!isMatchToggleable(alert) ? 'Match alerts are closed for finished matches' : settings.authenticated ? 'Toggle alerts for this match' : 'Log in to follow this match'} className={`inline-flex h-9 w-9 items-center justify-center rounded-sm border transition-all disabled:cursor-not-allowed ${!isMatchToggleable(alert) ? 'border-fn-gborder/60 bg-fn-dark/60 text-fn-muted/40 opacity-60 grayscale' : alert.subscribed ? 'border-fn-green/60 bg-fn-green/10 text-fn-green shadow-[0_0_18px_rgba(57,255,20,0.18)]' : 'border-fn-gborder bg-fn-black text-fn-muted hover:border-fn-green/40 hover:text-fn-green'}`}><Bell size={16} fill={alert.subscribed ? 'currentColor' : 'none'} /></button><time className="text-[10px] uppercase tracking-widest text-fn-muted">{new Date(alert.finalized_at).toLocaleString()}</time></div></div></article>)}
