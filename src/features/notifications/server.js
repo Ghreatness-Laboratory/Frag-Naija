@@ -236,7 +236,7 @@ export async function listGamingTracker({ userId, tournamentId, gameSlug, status
 
 export async function getUnreadCount(userId) {
   if (!userId) return 0;
-  const { data: notifications, error } = await supabaseAdmin.from('notifications').select('id').in('type', ['match_result', 'match_live']);
+  const { data: notifications, error } = await supabaseAdmin.from('notifications').select('id').in('type', ['match_result', 'match_live', 'match_update']);
   if (error || !notifications?.length) return 0;
   const ids = notifications.map((row) => row.id);
   const { data: reads } = await supabaseAdmin.from('notification_reads').select('notification_id').eq('user_id', userId).in('notification_id', ids);
@@ -407,6 +407,38 @@ async function createMatchLiveAlert({ tournament, match }) {
   }).select('*').single();
   if (error) throw error;
   const push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: tournament.id, type: 'match_live' });
+  return { notification, push };
+}
+
+export async function createManualMatchUpdateNotification(payload) {
+  const matchId = payload.tournament_match_id || payload.source_id;
+  if (!matchId) throw new Error('tournament_match_id is required');
+  const { data: match, error } = await supabaseAdmin
+    .from('tournament_matches')
+    .select('id,tournament_id,title,game_slug,tournament:tournaments(id,name,game_slug,status)')
+    .eq('id', matchId)
+    .single();
+  if (error || !match) throw new Error('Tournament match not found.');
+  const title = String(payload.title || payload.preset || 'Match update').trim();
+  const message = String(payload.message || `${title} for ${match.title}.`).trim();
+  const url = `/gaming-alerts?tournament=${match.tournament_id}`;
+  const { data: notification, error: notificationError } = await supabaseAdmin.from('notifications').insert({
+    type: 'match_update',
+    tournament_id: match.tournament_id,
+    game_slug: match.game_slug || match.tournament?.game_slug,
+    title,
+    message,
+    url,
+    metadata: { tournament_match_id: match.id, match_title: match.title, preset: payload.preset || title },
+  }).select('*').single();
+  if (notificationError) throw notificationError;
+  let push = null;
+  try {
+    push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: match.tournament_id, type: 'match_update' });
+  } catch (error) {
+    push = { sent: 0, attempted: 0, error: error.message };
+    console.error('Gaming Alerts FCM dispatch failed after manual update:', error);
+  }
   return { notification, push };
 }
 
