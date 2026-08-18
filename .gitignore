@@ -1,20 +1,15 @@
 ```
-# Next.js build outputs
+# Next.js build artifacts
 .next/
 out/
-
-# Build artifacts
-public/*.js
-
-# TypeScript
-tsconfig.tsbuildinfo
 
 # Dependencies
 node_modules/
 
 # Environment variables
-.env.local
 .env
+.env.local
+.env.*
 
 # Logs
 *.log
@@ -23,11 +18,14 @@ node_modules/
 *.tmp
 *.swp
 
+# Editor directories
+.vscode/
+.idea/
+
 # OS generated files
 .DS_Store
 Thumbs.db
 
-# Editors
-.vscode/
-.idea/
+# Coverage directory used by tools like istanbul
+coverage/
 ```

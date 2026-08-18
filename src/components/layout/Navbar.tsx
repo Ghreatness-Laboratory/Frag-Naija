@@ -105,7 +105,7 @@ export default function Navbar() {
   return (
     <>
       <DisclaimerModal />
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-fn-dark border-b border-fn-gborder flex items-center px-3 sm:px-6">
+      <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-fn-dark border-b border-fn-gborder flex items-center px-3 sm:px-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}>
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-1.5 border-0 outline-none ring-0 focus:outline-none focus-visible:outline-none sm:mr-6 [&_span]:border-none [&_span]:outline-none">
           <span className="font-display text-lg sm:text-xl font-black text-fn-green tracking-widest glow-text">FRAG</span>
