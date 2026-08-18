@@ -5,6 +5,32 @@ const MATCH_SELECT = `*, tournament:tournaments(id,name,game_slug,status), notif
 const OPEN_TOURNAMENT_STATUSES = new Set(['upcoming', 'live']);
 const OPEN_MATCH_STATUSES = new Set(['scheduled', 'upcoming', 'live']);
 
+function normalizeTrackerStatus(value) {
+  const status = String(value || '').toLowerCase();
+  if (status === 'completed' || status === 'finished') return 'finished';
+  if (status === 'live') return 'live';
+  return 'upcoming';
+}
+
+function deriveTournamentDisplayStatus(tournament) {
+  const stored = normalizeTrackerStatus(tournament?.status);
+  if (stored === 'live' || stored === 'finished') return stored;
+  const startDate = tournament?.start_date ? new Date(tournament.start_date) : null;
+  const endDate = tournament?.end_date ? new Date(tournament.end_date) : null;
+  const now = Date.now();
+  if (endDate && !Number.isNaN(endDate.getTime()) && endDate.getTime() < now) return 'finished';
+  if (startDate && !Number.isNaN(startDate.getTime()) && startDate.getTime() <= now) return 'live';
+  return 'upcoming';
+}
+
+function deriveMatchDisplayStatus(match) {
+  const stored = normalizeTrackerStatus(match?.status);
+  if (stored === 'live' || stored === 'finished') return stored;
+  const startsAt = match?.starts_at ? new Date(match.starts_at) : null;
+  if (startsAt && !Number.isNaN(startsAt.getTime()) && startsAt.getTime() <= Date.now()) return 'live';
+  return 'upcoming';
+}
+
 function base64Url(value) {
   return Buffer.from(value).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
@@ -39,7 +65,7 @@ export async function listTournamentMatches({ tournamentId } = {}) {
   if (tournamentId) query = query.eq('tournament_id', tournamentId);
   const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  return (data || []).map((match) => ({ ...match, display_status: deriveMatchDisplayStatus(match) }));
 }
 
 export async function listGamingAlerts({ userId, tournamentId, gameSlug } = {}) {
@@ -154,10 +180,10 @@ export async function listGamingTracker({ userId, tournamentId, gameSlug, status
   }
   const tournamentById = new Map((tournaments || []).map((item) => [item.id, item]));
   return {
-    tournaments: tournaments || [],
+    tournaments: (tournaments || []).map((tournament) => ({ ...tournament, display_status: deriveTournamentDisplayStatus(tournament) })),
     matches: (matches || []).map((match) => {
       const result = resultByMatch.get(match.id) || null;
-      return { ...match, display_status: match.status === 'completed' ? 'finished' : match.status === 'scheduled' ? 'upcoming' : match.status, tournament: tournamentById.get(match.tournament_id), result, subscribed: subscribed.has(match.id) || (result ? subscribed.has(result.id) : false) };
+      return { ...match, display_status: deriveMatchDisplayStatus(match), tournament: tournamentById.get(match.tournament_id), result, subscribed: subscribed.has(match.id) || (result ? subscribed.has(result.id) : false) };
     }),
   };
 }
