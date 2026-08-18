@@ -6,6 +6,8 @@ import { usePWAInstallPrompt } from './usePWAInstallPrompt';
 export default function PWAInstallButton({ className = '' }: { className?: string }) {
   const { install, installable } = usePWAInstallPrompt();
 
+  if (!installable) return null;
+
   return (
     <button
       type="button"
