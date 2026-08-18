@@ -316,6 +316,14 @@ export async function createMatchResultAlert(payload) {
   return { matchResult, notification, push };
 }
 
+
+export async function deleteMatchResultAlert(matchResultId) {
+  if (!matchResultId) throw new Error('match result id is required');
+  const { data, error } = await supabaseAdmin.rpc('admin_delete_match_result_alert', { p_match_result_id: matchResultId });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
 export async function sendFcmToEligibleUsers({ title, body, url, matchResultId }) {
   const account = readFirebaseServiceAccount();
   const { data: tokens } = await supabaseAdmin.from('fcm_tokens').select('token,user_id');
