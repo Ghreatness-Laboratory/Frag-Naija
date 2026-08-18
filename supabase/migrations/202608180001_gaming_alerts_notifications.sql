@@ -56,15 +56,25 @@ CREATE TABLE IF NOT EXISTS public.fcm_tokens (
 CREATE INDEX IF NOT EXISTS notifications_created_at_idx ON public.notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS notifications_type_idx ON public.notifications(type);
 CREATE INDEX IF NOT EXISTS match_results_finalized_at_idx ON public.match_results(finalized_at DESC);
+CREATE TABLE IF NOT EXISTS public.match_notification_subscriptions (
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  match_result_id UUID NOT NULL REFERENCES public.match_results(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, match_result_id)
+);
+
 CREATE INDEX IF NOT EXISTS fcm_tokens_user_id_idx ON public.fcm_tokens(user_id);
+CREATE INDEX IF NOT EXISTS match_notification_subscriptions_match_idx ON public.match_notification_subscriptions(match_result_id);
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_reads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fcm_tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.match_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.match_notification_subscriptions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "notifications_public_read" ON public.notifications FOR SELECT USING (true);
 CREATE POLICY "match_results_public_read" ON public.match_results FOR SELECT USING (true);
 CREATE POLICY "notification_reads_user_read" ON public.notification_reads FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "notification_settings_user_read" ON public.notification_settings FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "match_notification_subscriptions_user_read" ON public.match_notification_subscriptions FOR SELECT USING (auth.uid() = user_id);

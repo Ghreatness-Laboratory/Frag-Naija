@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { firebaseConfig } from '@/lib/firebaseConfig';
 
 type FirebaseCompat = { apps: unknown[]; initializeApp: (config: Record<string, unknown>) => void; messaging: () => { getToken: (options: { vapidKey: string; serviceWorkerRegistration: ServiceWorkerRegistration }) => Promise<string> } };
 declare global { interface Window { firebase?: FirebaseCompat } }
@@ -20,14 +21,13 @@ function loadScript(src: string) {
 export default function FCMRegistrar() {
   useEffect(() => {
     async function register() {
-      const configText = process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
       const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-      if (!configText || !vapidKey || !('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!vapidKey || !('Notification' in window) || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return;
       await loadScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js');
       await loadScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js');
       const firebase = window.firebase;
       if (!firebase) return;
-      if (!firebase.apps.length) firebase.initializeApp(JSON.parse(configText));
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
       const messaging = firebase.messaging();
       const registration = await navigator.serviceWorker.ready;
       const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: registration }).catch(() => '');
