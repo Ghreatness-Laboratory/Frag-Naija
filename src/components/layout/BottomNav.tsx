@@ -91,15 +91,6 @@ export default function BottomNav() {
     router.push(`/wager?code=${encodeURIComponent(code)}`);
   }
 
-  function handleInstallApp() {
-    if (installMode === "native") {
-      installPWA();
-      return;
-    }
-
-    if (installMode) setInstallFallbackOpen(true);
-  }
-
   function navItemClass(isActive: boolean) {
     return `relative flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-sm px-1 py-1 text-[9px] font-black uppercase tracking-[0.08em] transition-colors ${
       isActive ? "text-fn-green" : "text-fn-muted hover:text-fn-green"
@@ -187,8 +178,6 @@ export default function BottomNav() {
           </section>
         </div>
       )}
-
-      {installFallbackOpen && installMode && installMode !== "native" && <PWAInstallFallbackDialog mode={installMode} onClose={() => setInstallFallbackOpen(false)} />}
 
       <nav
         aria-label="Primary mobile navigation"
