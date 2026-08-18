@@ -103,18 +103,23 @@ export async function POST(request, { params }) {
     const winnerRow = (savedRows || []).find((row) => row.match_win);
     const mvpRow = (savedRows || []).find((row) => row.mvp);
     if (winnerRow && mvpRow) {
-      alert = await createMatchResultAlert({
-        source_type: 'fantasy_match',
-        source_id: match.id,
-        game_slug: match.game_slug,
-        match_title: match.title,
-        winner_name: winnerRow.athletes?.team || winnerRow.athletes?.known_name || winnerRow.athletes?.ign || winnerRow.athletes?.name || 'Winner',
-        winner_ref_type: winnerRow.athletes?.team ? 'team' : 'athlete',
-        winner_ref_id: winnerRow.athlete_id,
-        mvp_name: mvpRow.athletes?.known_name || mvpRow.athletes?.ign || mvpRow.athletes?.name || 'MVP',
-        mvp_athlete_id: mvpRow.athlete_id,
-        finalized_at: now,
-      });
+      try {
+        alert = await createMatchResultAlert({
+          source_type: 'fantasy_match',
+          source_id: match.id,
+          game_slug: match.game_slug,
+          match_title: match.title,
+          winner_name: winnerRow.athletes?.team || winnerRow.athletes?.known_name || winnerRow.athletes?.ign || winnerRow.athletes?.name || 'Winner',
+          winner_ref_type: winnerRow.athletes?.team ? 'team' : 'athlete',
+          winner_ref_id: winnerRow.athlete_id,
+          mvp_name: mvpRow.athletes?.known_name || mvpRow.athletes?.ign || mvpRow.athletes?.name || 'MVP',
+          mvp_athlete_id: mvpRow.athlete_id,
+          finalized_at: now,
+        });
+      } catch (error) {
+        console.error('Fantasy stat save completed, but Gaming Alerts result linkage failed:', error);
+        alert = { error: error.message };
+      }
     }
   }
 
