@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2 } from "lucide-react";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2, Bell } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGame } from "@/context/GameContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
 import PWAInstallButton from "@/components/PWAInstallButton";
+import { useNotifications } from "@/components/notifications/NotificationsProvider";
 
 const navLinks = [
   { label: "Home",            href: "/" },
@@ -87,6 +88,7 @@ export default function Navbar() {
   const router          = useRouter();
   const { user, isAdmin } = useAuthState();
   const { selectedGame, isHydrated } = useGame();
+  const { unreadCount } = useNotifications();
 
   const displayName = user?.username || user?.email?.split("@")[0];
 
@@ -146,6 +148,18 @@ export default function Navbar() {
             ⚡ WAGER
           </Link>
           <ThemeToggle />
+          <Link
+            href="/gaming-alerts"
+            aria-label="Open FragNaija Gaming Alerts"
+            className={`relative flex h-8 w-8 items-center justify-center border rounded-sm transition-all ${
+              path === "/gaming-alerts"
+                ? "border-fn-green/40 bg-fn-green/10 text-fn-green"
+                : "border-fn-gborder text-fn-muted hover:border-fn-green/50 hover:text-fn-green"
+            }`}
+          >
+            <Bell size={13} />
+            {unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-fn-black bg-fn-red px-1 text-[8px] font-black leading-none text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+          </Link>
 
           {!user && (
             <Link href="/login" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-3 py-1.5 text-[10px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
@@ -207,6 +221,7 @@ export default function Navbar() {
           </Link>
           <PWAInstallButton className="px-2 py-1 text-[8px]" />
           <ThemeToggle />
+          <Link href="/gaming-alerts" aria-label="Open FragNaija Gaming Alerts" className="relative flex h-8 w-8 items-center justify-center border border-fn-gborder text-fn-muted hover:text-fn-green"><Bell size={14} />{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-fn-red px-1 text-[8px] font-black text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}</Link>
           {!user && (
             <Link href="/login" className="inline-flex h-8 max-w-[72px] shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-2.5 py-1 text-[9px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
               Login

@@ -9,6 +9,8 @@ import { GameProvider } from "@/context/GameContext";
 import PWARegister from "@/components/PWARegister";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import FontPreviewToggle from "@/components/common/FontPreviewToggle";
+import NotificationsProvider from "@/components/notifications/NotificationsProvider";
+import FCMRegistrar from "@/components/notifications/FCMRegistrar";
 
 
 const chakraPetch = Chakra_Petch({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-chakra", display: "swap" });
@@ -70,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-fn-black text-fn-text font-sans antialiased">
         <ThemeProvider>
           <GameProvider>
+            <NotificationsProvider>
             <Navbar />
             <div className="flex min-h-screen pt-14">
               <main className="flex-1 overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
@@ -80,7 +83,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <BottomNav />
             <PWARegister />
             <PWAInstallPrompt />
+            <FCMRegistrar />
             <FontPreviewToggle />
+            </NotificationsProvider>
           </GameProvider>
         </ThemeProvider>
       </body>

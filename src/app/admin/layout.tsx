@@ -16,6 +16,7 @@ const NAV = [
   { href: '/admin/transfers',      label: 'Transfers',   icon: ArrowLeftRight },
   { href: '/admin/tournaments',    label: 'Tournaments', icon: Trophy },
   { href: '/admin/tournament-results', label: 'Tournament Results', icon: Trophy },
+  { href: '/admin/match-results', label: 'Match Results', icon: Swords },
   { href: '/admin/wagers',         label: 'Wagers',      icon: Swords },
   { href: '/admin/fantasy',        label: 'Fantasy League', icon: Sparkles },
   { href: '/admin/duels',          label: 'TDM Duels',   icon: Swords },
