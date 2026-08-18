@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, Home, Menu, Search, Shield, Sparkles, Target, Ticket, User, X } from "lucide-react";
+import { ChevronRight, Download, Home, Menu, Search, Shield, Sparkles, Target, Ticket, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePWAInstallPrompt } from "@/components/usePWAInstallPrompt";
 
 const WAGER_COUNT_EVENT = "fn-wager-count";
 const WAGER_COUNT_KEY = "fn-wager-count";
@@ -47,6 +48,7 @@ export default function BottomNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loadCodeOpen, setLoadCodeOpen] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
+  const { install: installPWA, installable: pwaInstallable } = usePWAInstallPrompt();
 
   useEffect(() => {
     setWagerCount(readWagerCount());
@@ -121,6 +123,15 @@ export default function BottomNav() {
               <Link href="/fantasy-league" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
                 <span className="flex items-center gap-2"><Sparkles size={12} /> Fantasy League</span><ChevronRight size={12} />
               </Link>
+              {pwaInstallable && (
+                <button
+                  type="button"
+                  onClick={installPWA}
+                  className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20"
+                >
+                  <span className="flex items-center gap-2"><Download size={12} /> Install App</span><ChevronRight size={12} />
+                </button>
+              )}
               {PENDING_MENU_ITEMS.map((item) => (
                 <button
                   key={item}
