@@ -8,7 +8,6 @@ type Alert = { id: string; game_slug: string; match_title: string; winner_name: 
 type Tournament = { id: string; name: string; game_slug: string; status: string; display_status?: string; subscribed?: boolean };
 type LiveEvent = { round?: number | null; stat_type?: string; actor?: string; timestamp?: string };
 type TrackerMatch = { id: string; tournament_id: string; game_slug: string; title: string; team_a?: string | null; team_b?: string | null; starts_at?: string | null; status: string; display_status: string; live_state?: Record<string, string>; live_events?: LiveEvent[]; subscribed?: boolean; tournament?: Tournament; result?: Alert | null };
-type GamingNotification = { id: string; type: string; title: string; message: string; url: string; created_at: string; game_slug?: string | null; unread?: boolean; tournament?: Tournament | null };
 
 export default function GamingAlertsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -142,14 +141,6 @@ export default function GamingAlertsPage() {
         </div>
       </section>
 
-
-      <section className="mt-8">
-        <div className="mb-3 flex items-center gap-2"><Bell size={16} className="text-fn-green" /><h2 className="font-display text-lg font-black uppercase tracking-widest">Gaming Alerts Feed</h2></div>
-        <div className="space-y-3">
-          {visibleNotifications.map((item) => <article key={item.id} className="border border-fn-gborder bg-fn-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="fn-label text-fn-green">{item.tournament?.name || item.game_slug || item.type}</p><h3 className="mt-1 text-base font-black uppercase tracking-widest text-fn-text">{item.title}</h3><p className="mt-1 text-sm text-fn-muted">{item.message}</p></div><time className="text-[10px] uppercase tracking-widest text-fn-muted">{new Date(item.created_at).toLocaleString()}</time></div></article>)}
-          {!visibleNotifications.length && <p className="border border-fn-gborder bg-fn-card p-4 text-xs text-fn-muted">No Gaming Alerts notifications match these filters yet.</p>}
-        </div>
-      </section>
 
       <section className="mt-8">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
