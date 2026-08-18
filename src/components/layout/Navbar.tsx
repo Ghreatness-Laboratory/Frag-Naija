@@ -105,7 +105,7 @@ export default function Navbar() {
   return (
     <>
       <DisclaimerModal />
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-fn-dark border-b border-fn-gborder flex items-center px-3 sm:px-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}>
+      <nav className="fixed left-0 right-0 top-0 z-50 flex min-h-14 items-center border-b border-fn-gborder bg-fn-dark px-3 sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(3.5rem + env(safe-area-inset-top))' }}>
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-1.5 border-0 outline-none ring-0 focus:outline-none focus-visible:outline-none sm:mr-6 [&_span]:border-none [&_span]:outline-none">
           <span className="font-display text-lg sm:text-xl font-black text-fn-green tracking-widest glow-text">FRAG</span>
@@ -244,7 +244,7 @@ export default function Navbar() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="absolute top-14 right-0 bottom-0 w-72 bg-fn-dark border-l border-fn-gborder flex flex-col animate-slide-u"
+            className="absolute right-0 bottom-0 w-72 bg-fn-dark border-l border-fn-gborder flex flex-col animate-slide-u" style={{ top: 'calc(3.5rem + env(safe-area-inset-top))' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-fn-gborder">

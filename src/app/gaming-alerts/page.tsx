@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, Filter, Search, Trophy } from 'lucide-react';
+import { Bell, ChevronDown, Filter, Search, Trophy } from 'lucide-react';
 import { GAMES } from '@/lib/games';
 
 type Alert = { id: string; game_slug: string; match_title: string; winner_name: string; mvp_name: string; placement_3_name?: string | null; placement_4_name?: string | null; finalized_at: string; unread: boolean; subscribed?: boolean; tournament?: { id: string; name: string; status: string; game_slug: string }; source_match?: { id: string; title: string; status: string; starts_at?: string | null } | null; notification?: { id: string; title: string; message: string; url: string } };
-type Tournament = { id: string; name: string; game_slug: string; status: string; display_status?: string };
-type TrackerMatch = { id: string; tournament_id: string; game_slug: string; title: string; team_a?: string | null; team_b?: string | null; starts_at?: string | null; status: string; display_status: string; live_state?: Record<string, string>; subscribed?: boolean; tournament?: Tournament; result?: Alert | null };
+type Tournament = { id: string; name: string; game_slug: string; status: string; display_status?: string; subscribed?: boolean };
+type LiveEvent = { round?: number | null; stat_type?: string; actor?: string; timestamp?: string };
+type TrackerMatch = { id: string; tournament_id: string; game_slug: string; title: string; team_a?: string | null; team_b?: string | null; starts_at?: string | null; status: string; display_status: string; live_state?: Record<string, string>; live_events?: LiveEvent[]; subscribed?: boolean; tournament?: Tournament; result?: Alert | null };
 
 export default function GamingAlertsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -17,6 +18,7 @@ export default function GamingAlertsPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [settings, setSettings] = useState({ match_results_enabled: true, authenticated: false });
+  const [liveOpen, setLiveOpen] = useState(false);
 
   const load = useCallback(async () => {
     const qs = new URLSearchParams();
@@ -32,6 +34,7 @@ export default function GamingAlertsPage() {
   }, [tournament, game, status]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { const timer = window.setInterval(load, 15000); return () => window.clearInterval(timer); }, [load]);
   useEffect(() => { fetch('/api/notifications/settings', { credentials: 'include' }).then((r) => r.json()).then(setSettings).catch(() => {}); }, []);
 
   const games = useMemo(() => Array.from(new Set([...tournaments.map((t) => t.game_slug), ...matches.map((m) => m.game_slug || m.tournament?.game_slug || ''), ...alerts.map((a) => a.game_slug)].filter(Boolean))), [tournaments, matches, alerts]);
@@ -45,13 +48,16 @@ export default function GamingAlertsPage() {
   };
   const query = search.trim().toLowerCase();
   const visibleTournaments = useMemo(() => {
-    if (!query) return tournaments;
-    return tournaments.filter((item) => `${item.name} ${item.game_slug} ${gameLabel(item.game_slug)}`.toLowerCase().includes(query));
+    const upcoming = tournaments.filter((item) => (item.display_status || item.status || '').toLowerCase() === 'upcoming');
+    if (!query) return upcoming;
+    return upcoming.filter((item) => `${item.name} ${item.game_slug} ${gameLabel(item.game_slug)}`.toLowerCase().includes(query));
   }, [query, tournaments]);
   const visibleMatches = useMemo(() => {
     if (!query) return matches;
     return matches.filter((match) => [match.title, match.team_a, match.team_b, match.tournament?.name, match.game_slug, gameLabel(match.game_slug || match.tournament?.game_slug || '')].filter(Boolean).join(' ').toLowerCase().includes(query));
   }, [matches, query]);
+  const liveMatches = useMemo(() => visibleMatches.filter((match) => match.display_status === 'live'), [visibleMatches]);
+  const upcomingMatches = useMemo(() => visibleMatches.filter((match) => match.display_status !== 'live'), [visibleMatches]);
   const visibleAlerts = useMemo(() => {
     if (!query) return alerts;
     return alerts.filter((alert) => [alert.match_title, alert.tournament?.name, alert.winner_name, alert.mvp_name, alert.game_slug, gameLabel(alert.game_slug)].filter(Boolean).join(' ').toLowerCase().includes(query));
@@ -61,6 +67,20 @@ export default function GamingAlertsPage() {
     setSettings((current) => ({ ...current, match_results_enabled: enabled }));
     await fetch('/api/notifications/settings', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ match_results_enabled: enabled }) }).catch(() => null);
     if (enabled && 'Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+  }
+
+  async function toggleTournamentSubscription(item: Tournament) {
+    if (!settings.authenticated) return;
+    const next = !item.subscribed;
+    setTournaments((current) => current.map((tournament) => tournament.id === item.id ? { ...tournament, subscribed: next } : tournament));
+    const res = await fetch('/api/notifications/tournament-subscriptions', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tournament_id: item.id, subscribed: next }),
+    }).catch(() => null);
+    if (!res?.ok) setTournaments((current) => current.map((tournament) => tournament.id === item.id ? { ...tournament, subscribed: !next } : tournament));
+    if (next && 'Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
   }
 
   async function toggleMatchSubscription(alert: Alert) {
@@ -93,21 +113,28 @@ export default function GamingAlertsPage() {
       </header>
 
       <section className="mt-6">
-        <div className="mb-3 flex items-center gap-2"><Trophy size={16} className="text-fn-green" /><h2 className="font-display text-lg font-black uppercase tracking-widest">Platform Tournaments</h2></div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2"><Trophy size={16} className="text-fn-green" /><h2 className="font-display text-lg font-black uppercase tracking-widest">Platform Tournaments</h2></div>
+          <select value={game} onChange={(e) => setGame(e.target.value)} className="border border-fn-gborder bg-fn-black px-3 py-2 text-xs uppercase tracking-widest text-fn-text"><option value="">ALL GAMES</option>{games.map((g) => <option key={g} value={g}>{gameLabel(g)}</option>)}</select>
+        </div>
         <div className="grid gap-3 md:grid-cols-3">
-          {visibleTournaments.slice(0, 6).map((item) => <article key={item.id} className="border border-fn-gborder bg-fn-card p-4"><p className="text-sm font-black uppercase text-fn-text">{item.name}</p><p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">{gameLabel(item.game_slug)}</p><span className="mt-3 inline-flex border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[9px] font-black uppercase text-fn-green">{(item.display_status || item.status || 'upcoming').toUpperCase()}</span></article>)}
-          {!visibleTournaments.length && <p className="border border-fn-gborder bg-fn-card p-4 text-xs text-fn-muted">No platform tournaments available yet.</p>}
+          {visibleTournaments.map((item) => <article key={item.id} className="border border-fn-gborder bg-fn-card p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-black uppercase text-fn-text">{item.name}</p><p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">{gameLabel(item.game_slug)}</p></div><button type="button" onClick={() => toggleTournamentSubscription(item)} disabled={!settings.authenticated} aria-pressed={Boolean(item.subscribed)} aria-label={item.subscribed ? `Disable tournament alerts for ${item.name}` : `Enable tournament alerts for ${item.name}`} title={settings.authenticated ? 'Toggle alerts for this tournament' : 'Log in to follow this tournament'} className={`inline-flex h-9 w-9 items-center justify-center rounded-sm border transition-all disabled:cursor-not-allowed ${item.subscribed ? 'border-fn-green/60 bg-fn-green/10 text-fn-green shadow-[0_0_18px_rgba(57,255,20,0.18)]' : 'border-fn-gborder bg-fn-black text-fn-muted hover:border-fn-green/40 hover:text-fn-green'}`}><Bell size={16} fill={item.subscribed ? 'currentColor' : 'none'} /></button></div><span className="mt-3 inline-flex border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[9px] font-black uppercase text-fn-green">UPCOMING</span></article>)}
+          {!visibleTournaments.length && <p className="border border-fn-gborder bg-fn-card p-4 text-xs text-fn-muted">No upcoming platform tournaments match these filters.</p>}
         </div>
       </section>
-
 
       <section className="mt-8">
-        <div className="mb-3 flex items-center gap-2"><Bell size={16} className="text-fn-green" /><h2 className="font-display text-lg font-black uppercase tracking-widest">Live / Upcoming Match Tracker</h2></div>
-        <div className="space-y-3">
-          {visibleMatches.map((match) => <article key={match.id} className="border border-fn-gborder bg-fn-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="fn-label text-fn-green">{match.tournament?.name || gameLabel(match.game_slug || '')}</p><h3 className="mt-1 text-base font-black uppercase tracking-widest text-fn-text">{match.title}</h3><p className="mt-1 text-sm text-fn-muted">{[match.team_a, match.team_b].filter(Boolean).join(' vs ') || 'Participants TBA'}</p><p className="mt-2 text-[10px] uppercase tracking-widest text-fn-muted">{match.starts_at ? new Date(match.starts_at).toLocaleString() : 'Schedule TBA'}</p>{match.live_state && Object.values(match.live_state).some(Boolean) && <dl className="mt-3 grid gap-2 text-xs text-fn-muted sm:grid-cols-4"><div><dt className="fn-label">Score</dt><dd className="font-bold text-fn-text">{match.live_state.score_a || '0'} - {match.live_state.score_b || '0'}</dd></div><div><dt className="fn-label">Round</dt><dd className="font-bold text-fn-text">{match.live_state.current_round || '—'}</dd></div><div><dt className="fn-label">Map</dt><dd className="font-bold text-fn-text">{match.live_state.current_map || '—'}</dd></div><div><dt className="fn-label">Progress</dt><dd className="font-bold text-fn-text">{match.live_state.elapsed || '—'}</dd></div></dl>}</div><span className="inline-flex border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[9px] font-black uppercase text-fn-green">{(match.display_status || 'upcoming').toUpperCase()}</span></div></article>)}
-          {!visibleMatches.length && <p className="border border-fn-gborder bg-fn-card p-4 text-xs text-fn-muted">No tournament matches available yet. Newly created tournament fixtures appear here automatically.</p>}
+        <button type="button" onClick={() => setLiveOpen((open) => !open)} aria-expanded={liveOpen} className="flex w-full items-center justify-between border border-fn-green/30 bg-fn-card px-4 py-3 text-left"><span className="flex items-center gap-2 font-display text-lg font-black uppercase tracking-widest text-fn-text"><Bell size={16} className="text-fn-green" />LIVE NOW ({liveMatches.length})</span><ChevronDown size={16} className={`text-fn-green transition-transform ${liveOpen ? 'rotate-180' : ''}`} /></button>
+        {liveOpen && <div className="mt-3 space-y-3">
+          {liveMatches.map((match) => <article key={match.id} className="border border-fn-gborder bg-fn-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="fn-label text-fn-green">{match.tournament?.name || gameLabel(match.game_slug || '')}</p><h3 className="mt-1 text-base font-black uppercase tracking-widest text-fn-text">{match.title}</h3><p className="mt-1 text-sm text-fn-muted">{[match.team_a, match.team_b].filter(Boolean).join(' vs ') || 'Participants TBA'}</p>{match.live_state && Object.values(match.live_state).some(Boolean) && <dl className="mt-3 grid gap-2 text-xs text-fn-muted sm:grid-cols-4"><div><dt className="fn-label">Score</dt><dd className="font-bold text-fn-text">{match.live_state.score_a || '0'} - {match.live_state.score_b || '0'}</dd></div><div><dt className="fn-label">Round</dt><dd className="font-bold text-fn-text">{match.live_state.current_round || '—'}</dd></div><div><dt className="fn-label">Map</dt><dd className="font-bold text-fn-text">{match.live_state.current_map || '—'}</dd></div><div><dt className="fn-label">Progress</dt><dd className="font-bold text-fn-text">{match.live_state.elapsed || '—'}</dd></div></dl>}{match.live_events?.length ? <ol className="mt-3 space-y-1 border-t border-fn-gborder pt-3 text-[10px] uppercase tracking-widest text-fn-muted">{match.live_events.slice(-3).map((event, index) => <li key={`${match.id}-${event.timestamp}-${index}`}>R{event.round || '—'} · {event.stat_type || 'update'} · {event.actor || 'Admin'} · {event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : ''}</li>)}</ol> : null}</div><span className="inline-flex border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[9px] font-black uppercase text-fn-green">LIVE</span></div></article>)}
+          {!liveMatches.length && <p className="border border-fn-gborder bg-fn-card p-4 text-xs text-fn-muted">No live tournament matches right now.</p>}
+        </div>}
+        <div className="mt-4 space-y-3">
+          {upcomingMatches.map((match) => <article key={match.id} className="border border-fn-gborder bg-fn-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="fn-label text-fn-green">{match.tournament?.name || gameLabel(match.game_slug || '')}</p><h3 className="mt-1 text-base font-black uppercase tracking-widest text-fn-text">{match.title}</h3><p className="mt-1 text-sm text-fn-muted">{[match.team_a, match.team_b].filter(Boolean).join(' vs ') || 'Participants TBA'}</p><p className="mt-2 text-[10px] uppercase tracking-widest text-fn-muted">{match.starts_at ? new Date(match.starts_at).toLocaleString() : 'Schedule TBA'}</p></div><span className="inline-flex border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[9px] font-black uppercase text-fn-green">{(match.display_status || 'upcoming').toUpperCase()}</span></div></article>)}
+          {!upcomingMatches.length && !liveMatches.length && <p className="border border-fn-gborder bg-fn-card p-4 text-xs text-fn-muted">No tournament matches available yet. Newly created tournament fixtures appear here automatically.</p>}
         </div>
       </section>
+
 
       <section className="mt-8">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

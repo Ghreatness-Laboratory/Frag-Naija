@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <GameProvider>
             <NotificationsProvider>
             <Navbar />
-            <div className="flex min-h-screen pt-14" style={{ paddingTop: 'max(env(safe-area-inset-top), 3.5rem)' }}>
+            <div className="flex min-h-screen" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
               <main className="flex-1 overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
                 {children}
               </main>
