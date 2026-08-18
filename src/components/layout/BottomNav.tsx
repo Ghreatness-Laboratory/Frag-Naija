@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Download, Home, Menu, Search, Shield, Sparkles, Target, Ticket, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import PWAInstallFallbackDialog from "@/components/PWAInstallFallbackDialog";
 import { usePWAInstallPrompt } from "@/components/usePWAInstallPrompt";
 
 const WAGER_COUNT_EVENT = "fn-wager-count";
@@ -49,8 +48,7 @@ export default function BottomNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loadCodeOpen, setLoadCodeOpen] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
-  const [installFallbackOpen, setInstallFallbackOpen] = useState(false);
-  const { install: installPWA, installMode, installable: pwaInstallable } = usePWAInstallPrompt();
+  const { install: installPWA, installable: pwaInstallable } = usePWAInstallPrompt();
 
   useEffect(() => {
     setWagerCount(readWagerCount());
@@ -137,7 +135,7 @@ export default function BottomNav() {
               {pwaInstallable && (
                 <button
                   type="button"
-                  onClick={handleInstallApp}
+                  onClick={installPWA}
                   className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20"
                 >
                   <span className="flex items-center gap-2"><Download size={12} /> Install App</span><ChevronRight size={12} />
