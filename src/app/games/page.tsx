@@ -3,31 +3,12 @@
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Gamepad2, Lock, Search, User } from 'lucide-react';
+import { ChevronDown, Gamepad2, Lock, Search } from 'lucide-react';
 import { GAMES, type Game, type GameMode } from '@/lib/games';
 import { useGame } from '@/context/GameContext';
+import { LoginGate, useAuthGate } from '@/components/common/LoginGate';
 
-type AuthUser = { id?: string; email?: string; username?: string } | null;
 type Athlete = { id: string; name?: string | null; ign?: string | null; known_name?: string | null; role?: string | null; status?: string | null; game_slug?: string | null };
-
-function useAuthGate() {
-  const [user, setUser] = useState<AuthUser | undefined>(undefined);
-
-  useEffect(() => {
-    let active = true;
-    fetch('/api/auth/me', { cache: 'no-store', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => { if (active) setUser(payload ?? null); })
-      .catch(() => { if (active) setUser(null); });
-    return () => { active = false; };
-  }, []);
-
-  return { user, loading: user === undefined };
-}
-
-function LoginGate() {
-  return <main className="min-h-screen bg-fn-black px-4 py-16 text-fn-text"><section className="mx-auto max-w-xl border border-fn-green/30 bg-fn-card p-6 text-center"><User className="mx-auto text-fn-green" size={28} /><p className="fn-label mt-4 text-fn-green">Login Required</p><h1 className="mt-2 font-display text-3xl font-black uppercase tracking-widest">Select a game first</h1><p className="mt-3 text-xs leading-relaxed text-fn-muted">Log in to open any individual game space from Virtual Games. This uses the existing Supabase session checked by /api/auth/me, the same authenticated session source used by wallet and wager actions.</p><Link href="/login" className="mt-5 inline-flex bg-fn-green px-5 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Login / Sign Up</Link></section></main>;
-}
 
 function ModeCard({ mode, game, compact = false }: { mode: GameMode; game: Game; compact?: boolean }) {
   const ready = mode.status === 'live' && Boolean(mode.route);
@@ -104,7 +85,7 @@ export default function GamesPage() {
   const activeGame = selectedGame ?? GAMES[0];
 
   if (!isHydrated || loading) return <main className="min-h-screen bg-fn-black px-4 py-16 text-fn-muted">Checking game access…</main>;
-  if (!user) return <LoginGate />;
+  if (!user) return <LoginGate heading="Select a game first" message="Log in to open any individual game space from Virtual Games. Modes, athletes, teams, fantasy, and related records stay hidden until your session is verified." next="/games" />;
 
   return <main className="min-h-screen bg-fn-black px-4 py-8 text-fn-text"><div className="mx-auto max-w-5xl space-y-6"><div><p className="fn-label" style={{ color: activeGame.colors.primary }}>Virtual Games · {activeGame.name}</p><h1 className="text-2xl font-black uppercase tracking-widest">{activeGame.hasModeMenu ? 'Choose Mode' : 'Roster'}</h1><p className="mt-2 text-xs text-fn-muted">Virtual game modes are scoped to the active game context. Switch games from the game picker to see another title&apos;s modes.</p></div>{activeGame.hasModeMenu ? <ModesMenu game={activeGame} /> : <MortalKombatListing game={activeGame} />}</div></main>;
 }
