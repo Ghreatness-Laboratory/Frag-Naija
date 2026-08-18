@@ -251,26 +251,6 @@ async function getTournamentForMatchResult(tournamentId) {
 }
 
 async function createTournamentMatchFromResult(tournament, payload) {
-  const title = String(payload.match_title || '').trim();
-  if (!title) throw new Error('match_title is required');
-  const { data, error } = await supabaseAdmin
-    .from('tournament_matches')
-    .insert({
-      tournament_id: tournament.id,
-      game_slug: tournament.game_slug || 'pubg-mobile',
-      title,
-      team_a: payload.team_a || null,
-      team_b: payload.team_b || null,
-      starts_at: payload.starts_at || null,
-      status: 'completed',
-    })
-    .select('id,tournament_id,title,game_slug')
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-async function createTournamentMatchFromResult(tournament, payload) {
   const existing = await upsertTournamentMatchState({ ...payload, tournament_id: tournament.id, status: 'finished' });
   return existing.match;
 }
