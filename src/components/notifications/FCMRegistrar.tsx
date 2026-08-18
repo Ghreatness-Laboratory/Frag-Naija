@@ -1,12 +1,9 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
-import { firebaseConfig, firebaseVapidKey } from '@/lib/firebaseConfig';
+import { useEffect } from 'react';
 
-type FirebaseCompat = { apps: unknown[]; initializeApp: (config: typeof firebaseConfig) => void; messaging: () => { getToken: (options: { vapidKey: string; serviceWorkerRegistration: ServiceWorkerRegistration }) => Promise<string> } };
+type FirebaseCompat = { apps: unknown[]; initializeApp: (config: Record<string, unknown>) => void; messaging: () => { getToken: (options: { vapidKey: string; serviceWorkerRegistration: ServiceWorkerRegistration }) => Promise<string> } };
 declare global { interface Window { firebase?: FirebaseCompat } }
-
-const FCM_REFRESH_EVENT = 'fn-refresh-fcm-token';
 
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
@@ -20,33 +17,23 @@ function loadScript(src: string) {
   });
 }
 
-async function ensureFirebase() {
-  await loadScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js');
-  await loadScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js');
-  const firebase = window.firebase;
-  if (!firebase) return null;
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  return firebase;
-}
-
 export default function FCMRegistrar() {
-  const registerToken = useCallback(async () => {
-    if (!firebaseVapidKey || !('Notification' in window) || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return;
-    const firebase = await ensureFirebase();
-    if (!firebase) return;
-    const messagingRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-    const token = await firebase.messaging().getToken({ vapidKey: firebaseVapidKey, serviceWorkerRegistration: messagingRegistration }).catch(() => '');
-    if (token) await fetch('/api/notifications/register-token', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
-  }, []);
-
   useEffect(() => {
-    registerToken().catch(() => {});
-    const refresh = () => registerToken().catch(() => {});
-    window.addEventListener(FCM_REFRESH_EVENT, refresh);
-    navigator.serviceWorker?.addEventListener?.('controllerchange', refresh);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
-    return () => window.removeEventListener(FCM_REFRESH_EVENT, refresh);
-  }, [registerToken]);
-
+    async function register() {
+      const configText = process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
+      const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+      if (!configText || !vapidKey || !('Notification' in window) || Notification.permission !== 'granted') return;
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js');
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js');
+      const firebase = window.firebase;
+      if (!firebase) return;
+      if (!firebase.apps.length) firebase.initializeApp(JSON.parse(configText));
+      const messaging = firebase.messaging();
+      const registration = await navigator.serviceWorker.ready;
+      const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: registration }).catch(() => '');
+      if (token) await fetch('/api/notifications/register-token', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+    }
+    register().catch(() => {});
+  }, []);
   return null;
 }

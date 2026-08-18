@@ -25,14 +25,14 @@ export default function GamingAlertsPage() {
   }, [tournament, game]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { fetch('/api/notifications/settings', { credentials: 'include' }).then((r) => r.json()).then(async (data) => { setSettings(data); if (data.authenticated && data.match_results_enabled !== false && 'Notification' in window && Notification.permission === 'default') { const permission = await Notification.requestPermission(); if (permission === 'granted') window.dispatchEvent(new Event('fn-refresh-fcm-token')); } }).catch(() => {}); }, []);
+  useEffect(() => { fetch('/api/notifications/settings', { credentials: 'include' }).then((r) => r.json()).then(setSettings).catch(() => {}); }, []);
 
   const games = useMemo(() => Array.from(new Set(tournaments.map((t) => t.game_slug).concat(alerts.map((a) => a.game_slug)).filter(Boolean))), [tournaments, alerts]);
 
   async function toggleMatchResults(enabled: boolean) {
     setSettings((current) => ({ ...current, match_results_enabled: enabled }));
     await fetch('/api/notifications/settings', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ match_results_enabled: enabled }) }).catch(() => null);
-    if (enabled && 'Notification' in window) { const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission; if (permission === 'granted') window.dispatchEvent(new Event('fn-refresh-fcm-token')); }
+    if (enabled && 'Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
   }
 
   return (

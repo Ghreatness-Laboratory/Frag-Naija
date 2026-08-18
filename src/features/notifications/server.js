@@ -83,46 +83,13 @@ export async function createMatchResultAlert(payload) {
   return { matchResult, notification };
 }
 
-
-async function getFirebaseAccessToken() {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!raw) return '';
-  const { createSign } = await import('crypto');
-  const account = JSON.parse(raw);
-  const now = Math.floor(Date.now() / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const claim = Buffer.from(JSON.stringify({
-    iss: account.client_email,
-    scope: 'https://www.googleapis.com/auth/firebase.messaging',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  })).toString('base64url');
-  const signature = createSign('RSA-SHA256').update(`${header}.${claim}`).sign(account.private_key, 'base64url');
-  const assertion = `${header}.${claim}.${signature}`;
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion }),
-  });
-  if (!response.ok) return '';
-  const data = await response.json();
-  return data.access_token || '';
-}
-
 export async function sendFcmToEligibleUsers({ title, body, url }) {
-  const projectId = process.env.FIREBASE_PROJECT_ID || 'frag-naija-21727';
-  const accessToken = await getFirebaseAccessToken();
-  if (!accessToken) return { skipped: 'Missing FIREBASE_SERVICE_ACCOUNT_JSON' };
+  if (!process.env.FCM_SERVER_KEY) return { skipped: 'Missing FCM_SERVER_KEY' };
   const { data: tokens } = await supabaseAdmin.from('fcm_tokens').select('token,user_id');
   const userIds = Array.from(new Set((tokens || []).map((row) => row.user_id)));
   const { data: settings } = userIds.length ? await supabaseAdmin.from('notification_settings').select('user_id,match_results_enabled').in('user_id', userIds) : { data: [] };
   const disabled = new Set((settings || []).filter((row) => row.match_results_enabled === false).map((row) => row.user_id));
   const eligible = (tokens || []).filter((row) => !disabled.has(row.user_id));
-  await Promise.all(eligible.map((row) => fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: { token: row.token, notification: { title, body }, webpush: { fcm_options: { link: url }, notification: { icon: '/icons/icon.svg', badge: '/icons/icon.svg', tag: 'fn-gaming-alert' } }, data: { title, body, url } } }),
-  }).catch(() => null)));
+  await Promise.all(eligible.map((row) => fetch('https://fcm.googleapis.com/fcm/send', { method: 'POST', headers: { Authorization: `key=${process.env.FCM_SERVER_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ to: row.token, notification: { title, body, icon: '/icons/icon.svg' }, data: { url } }) }).catch(() => null)));
   return { sent: eligible.length };
 }
