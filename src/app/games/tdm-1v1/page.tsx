@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Check, ChevronLeft, Shield, X, Play } from 'lucide-react';
+import { Brain, Check, ChevronLeft, Shield, X, Play, Zap } from 'lucide-react';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { useAthletes } from '@/lib/hooks';
 import { useGame } from '@/context/GameContext';
 import { GAMES } from '@/lib/games';
 import { calculateDuelOddsFromKd, kdOf } from '@/lib/duel-odds';
 import { DuelSimViewer, type DuelPlayer } from '@/components/common/DuelSimViewer';
+import { DuelResultScreen } from '@/components/common/DuelResultScreen';
 import RouteLoadingScreen from '@/components/common/RouteLoadingScreen';
 
 type Athlete = { id:string; name:string; ign?:string|null; known_name?:string|null; team?:string|null; role?:string|null; status?:string|null; photo_url?:string|null; jersey_number?:number|string|null; overall_rating?:number|string|null; rating?:number|string|null; kills?:number|string|null; attack?:number|null; defense?:number|null; survival?:number|null; clutch?:number|null; iq?:number|null; game_slug?:string|null; is_icon?:boolean|null };
