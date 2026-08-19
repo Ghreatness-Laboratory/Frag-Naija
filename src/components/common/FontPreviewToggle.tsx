@@ -117,11 +117,11 @@ export default function FontPreviewToggle() {
 
   return (
     <>
-      {/* Floating toggle button */}
+      {/* Floating toggle button - positioned ABOVE chatbot FAB with clear spacing */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-sm border border-fn-green/40 bg-fn-black/90 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-green transition-all hover:bg-fn-green/20 md:bottom-6"
+        className="fixed bottom-[calc(18rem+env(safe-area-inset-bottom))] right-4 z-50 flex items-center gap-2 rounded-sm border border-fn-green/40 bg-fn-black/90 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-green transition-all hover:bg-fn-green/20 md:bottom-6"
         aria-label="Toggle font preview"
       >
         <Type size={14} />

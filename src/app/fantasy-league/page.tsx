@@ -17,7 +17,7 @@ const QUICK_BUTTON_POSITION_KEY = "fn-pubg-fantasy-squad-shortcut-position";
 const QUICK_BUTTON_SIZE = 64;
 const QUICK_BUTTON_MARGIN = 16;
 const QUICK_BUTTON_TOP_SAFE = 80;
-const QUICK_BUTTON_BOTTOM_SAFE = 96;
+const QUICK_BUTTON_BOTTOM_SAFE = 160;
 const QUICK_BUTTON_DRAG_THRESHOLD = 8;
 
 type Athlete = { id: string; name: string; ign: string; known_name?: string | null; team: string | null; role: string | null; status: string; photo_url: string | null; game_slug?: string | null; overall_rating?: number; attack?: number; defense?: number; clutch?: number; survival?: number; iq?: number; kills?: number; assists?: number; fantasy_price?: number | string | null; recent_fantasy_points?: number | string | null; total_fantasy_points?: number | string | null; fantasy_status?: string | null; };
