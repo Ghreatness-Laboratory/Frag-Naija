@@ -8,10 +8,12 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title ?? 'Frag Naija', {
       body:    data.body  ?? 'You have a new update.',
-      icon:    '/icons/icon.svg',
-      badge:   '/icons/icon.svg',
-      tag:     data.tag   ?? 'fn-notification',
-      data:    { url: data.url ?? '/' },
+      icon:    data.icon  ?? '/logo-icon.jpeg',
+      badge:   data.badge ?? '/icons/icon.svg',
+      tag:     data.tag   ?? data.tournamentMatchId ?? data.matchResultId ?? 'fn-notification',
+      renotify: true,
+      actions: data.tournamentMatchId || data.matchResultId ? [{ action: 'mute-match', title: 'Mute this match' }] : [],
+      data:    { url: data.url ?? '/', tournamentMatchId: data.tournamentMatchId ?? '', matchResultId: data.matchResultId ?? '' },
       vibrate: [200, 100, 200],
     })
   );
@@ -19,6 +21,16 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  if (event.action === 'mute-match') {
+    const { tournamentMatchId, matchResultId } = event.notification.data ?? {};
+    event.waitUntil(fetch('/api/notifications/match-subscriptions', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tournament_match_id: tournamentMatchId || null, match_result_id: matchResultId || null, subscribed: false }),
+    }).catch(() => null));
+    return;
+  }
   const target = event.notification.data?.url ?? '/';
   event.waitUntil(
     clients
