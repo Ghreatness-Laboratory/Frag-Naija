@@ -1,13 +1,11 @@
 ```
-# Next.js build output
+# Next.js build artifacts
 .next/
-
-# Production build files
-public/*.js
+out/
 
 # Environment variables
 .env.local
-.env.*
+.env
 
 # Dependencies
 node_modules/
@@ -15,9 +13,8 @@ node_modules/
 # Logs
 *.log
 
-# Editor files
-.vscode/
-.idea/
+# Temporary files
+*.tmp
 *.swp
 *.swo
 
@@ -25,18 +22,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# Build outputs
-dist/
-build/
-target/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-venv/
-.venv/
-.env
+# Cache directories
+.nyc_output/
+coverage/
+*.lcov
 ```
