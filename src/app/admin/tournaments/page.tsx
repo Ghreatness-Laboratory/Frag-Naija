@@ -72,8 +72,9 @@ function TournamentsContent() {
       const url    = editing ? `/api/tournaments/${editing.id}` : '/api/tournaments';
       const method = editing ? 'PUT' : 'POST';
       const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data   = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const text   = await res.text();
+      const data   = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
       setOpen(false); load();
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Save failed'); }
     finally { setSaving(false); }
