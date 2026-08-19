@@ -5,13 +5,10 @@ export async function getTournaments({ status, game_slug } = {}) {
     .from('tournaments')
     .select('*')
     .order('start_date', { ascending: false });
-
   if (status) query = query.eq('status', status);
   if (game_slug) query = query.eq('game_slug', game_slug);
-
   const { data, error } = await query;
   if (error) throw error;
-
   return data;
 }
 
@@ -22,7 +19,6 @@ export async function getTournamentById(id) {
     .eq('id', id)
     .single();
   if (error) throw error;
-
   return data;
 }
 
@@ -33,7 +29,17 @@ export async function createTournament(body) {
     .select()
     .single();
   if (error) throw error;
+  return data;
+}
 
+export async function updateTournament(id, body) {
+  const { data, error } = await supabaseAdmin
+    .from('tournaments')
+    .update(body)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
   return data;
 }
 
@@ -45,7 +51,6 @@ export async function updateTournamentStatus(id, status) {
     .select()
     .single();
   if (error) throw error;
-
   return data;
 }
 
