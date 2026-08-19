@@ -1,42 +1,48 @@
 'use client';
 
 import { Bot, Send, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
-// Chatbot dismiss state key
-const CHATBOT_DISMISSED_KEY = 'fn-chatbot-dismissed';
+const LONG_PRESS_DURATION = 600; // ms
 
 export default function SupportChatbot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: 'Hi! I can help with FragNaija navigation, games, rankings, Fantasy League, Wager Zone, wallet basics, and account support. Chats may be logged for quality review.' }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const { dismissed, handleDismiss, handleReenable, mounted } = useFloatingIconDismiss('chatbot');
+  
+  // Long-press detection
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressing = useRef(false);
 
-  // Load dismissed state on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const wasDismissed = localStorage.getItem(CHATBOT_DISMISSED_KEY) === 'true';
-      setDismissed(wasDismissed);
+  const handlePressStart = useCallback(() => {
+    isLongPressing.current = false;
+    pressTimerRef.current = setTimeout(() => {
+      isLongPressing.current = true;
+      handleDismiss();
+    }, LONG_PRESS_DURATION);
+  }, [handleDismiss]);
+
+  const handlePressEnd = useCallback(() => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
     }
   }, []);
 
-  // Dismiss chatbot (long-press or explicit dismiss)
-  const handleDismiss = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(CHATBOT_DISMISSED_KEY, 'true');
-      setDismissed(true);
-    }
+  // Dismiss chatbot (explicit dismiss via context menu)
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleDismiss();
   };
 
-  // Re-enable chatbot (for testing/session reset)
-  const handleReenable = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(CHATBOT_DISMISSED_KEY);
-      setDismissed(false);
-    }
+  // Re-enable chatbot (for session reset)
+  const handleReenableClick = () => {
+    handleReenable();
   };
 
   async function send() {
@@ -55,9 +61,18 @@ export default function SupportChatbot() {
     }
   }
 
-  // If dismissed, don't render anything (or render a small re-enable button)
+  // If dismissed and not open, show small re-open tab
   if (dismissed && !open) {
-    return null;
+    return (
+      <button
+        onClick={handleReenableClick}
+        className="fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[250] flex h-8 w-8 items-center justify-center rounded-full border border-fn-green/40 bg-fn-black/90 text-fn-green opacity-70 transition-opacity hover:opacity-100"
+        aria-label="Re-enable support chat"
+        title="Re-enable support chat"
+      >
+        <Bot size={14} />
+      </button>
+    );
   }
 
   return (
@@ -73,28 +88,20 @@ export default function SupportChatbot() {
       {/* Chatbot FAB - positioned above bottom nav with clear spacing */}
       <button 
         onClick={() => setOpen((v) => !v)} 
-        onContextMenu={(e) => { e.preventDefault(); handleDismiss(); }}
-        className="fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[250] flex h-14 w-14 items-center justify-center rounded-full bg-fn-green text-fn-black shadow-[0_0_28px_rgba(77,255,110,.35)] ring-4 ring-fn-black/80 group" 
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePressStart}
+        onPointerUp={handlePressEnd}
+        onPointerLeave={handlePressEnd}
+        className="fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[250] flex h-14 w-14 items-center justify-center rounded-full bg-fn-green text-fn-black shadow-[0_0_28px_rgba(77,255,110,.35)] ring-4 ring-fn-black/80 group touch-none" 
         aria-label="Open support chat"
-        title="Right-click or long-press to dismiss"
+        title="Long-press or right-click to dismiss"
       >
         <Bot size={26} />
         {/* Long-press hint appears on hover */}
         <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-fn-black/90 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-fn-green opacity-0 transition-opacity group-hover:opacity-100">
-          Right-click to dismiss
+          Long-press to dismiss
         </span>
       </button>
-      {/* Small re-enable button when dismissed (optional, appears in corner) */}
-      {dismissed && !open && (
-        <button
-          onClick={handleReenable}
-          className="fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[250] flex h-10 w-10 items-center justify-center rounded-full border border-fn-green/40 bg-fn-black/80 text-fn-green text-[9px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100"
-          aria-label="Re-enable support chat"
-          title="Re-enable support chat"
-        >
-          <Bot size={18} />
-        </button>
-      )}
     </>
   );
 }

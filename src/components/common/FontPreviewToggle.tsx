@@ -1,6 +1,7 @@
-"use client";
+'use client';
 import { useState, useEffect } from "react";
 import { Type, X, Check } from "lucide-react";
+import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
 
 type FontOption = {
   id: string;
@@ -70,6 +71,7 @@ export default function FontPreviewToggle() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentFont, setCurrentFont] = useState<string>("default");
   const [selectedFont, setSelectedFont] = useState<string | null>(null);
+  const { dismissed, handleDismiss, handleReenable, mounted } = useFloatingIconDismiss('font-toggle');
 
   useEffect(() => {
     const saved = localStorage.getItem("fn-font-preview");
@@ -115,14 +117,31 @@ export default function FontPreviewToggle() {
 
   const hasSelectedCandidate = selectedFont !== null && selectedFont !== "default";
 
+  // If dismissed and not open, show small re-open tab
+  if (dismissed && !isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={handleReenable}
+        className="fixed bottom-[calc(18rem+env(safe-area-inset-bottom))] right-4 z-50 flex h-8 w-8 items-center justify-center rounded-sm border border-fn-green/40 bg-fn-black/90 text-fn-green opacity-70 transition-opacity hover:opacity-100"
+        aria-label="Re-enable font preview"
+        title="Re-enable font preview"
+      >
+        <Type size={14} />
+      </button>
+    );
+  }
+
   return (
     <>
       {/* Floating toggle button - positioned ABOVE chatbot FAB with clear spacing */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
+        onContextMenu={(e) => { e.preventDefault(); handleDismiss(); }}
         className="fixed bottom-[calc(18rem+env(safe-area-inset-bottom))] right-4 z-50 flex items-center gap-2 rounded-sm border border-fn-green/40 bg-fn-black/90 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-green transition-all hover:bg-fn-green/20 md:bottom-6"
         aria-label="Toggle font preview"
+        title="Right-click to dismiss"
       >
         <Type size={14} />
         <span className="hidden sm:inline">Preview Fonts</span>

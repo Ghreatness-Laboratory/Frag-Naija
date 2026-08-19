@@ -7,6 +7,7 @@ import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
 import { FANTASY_SQUAD_BUDGET, calculateFantasyBasePrice, fantasyTeamLimitViolation } from "@/lib/fantasy-pricing";
+import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
 
 const WELCOME_KEY = "fn-fantasy-welcome-complete";
 const MIN_LOADER_MS = 700;
@@ -19,6 +20,7 @@ const QUICK_BUTTON_MARGIN = 16;
 const QUICK_BUTTON_TOP_SAFE = 80;
 const QUICK_BUTTON_BOTTOM_SAFE = 160;
 const QUICK_BUTTON_DRAG_THRESHOLD = 8;
+const LONG_PRESS_DURATION = 600; // ms
 
 type Athlete = { id: string; name: string; ign: string; known_name?: string | null; team: string | null; role: string | null; status: string; photo_url: string | null; game_slug?: string | null; overall_rating?: number; attack?: number; defense?: number; clutch?: number; survival?: number; iq?: number; kills?: number; assists?: number; fantasy_price?: number | string | null; recent_fantasy_points?: number | string | null; total_fantasy_points?: number | string | null; fantasy_status?: string | null; };
 type SortKey = "points" | "price-high" | "price-low";
@@ -93,6 +95,27 @@ export default function FantasyLeaguePage() {
   const [activeChip, setActiveChip] = useState("");
   const [chipUsage, setChipUsage] = useState<Record<string, number>>({});
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
+  
+  // Fantasy FAB dismiss state
+  const { dismissed: fabDismissed, handleDismiss: handleFabDismiss, handleReenable: handleFabReenable } = useFloatingIconDismiss('fantasy-fab');
+  
+  // Long-press detection for Fantasy FAB
+  const fabPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleFabPressStart = useCallback(() => {
+    quickButtonDragged.current = false;
+    if (fabPressTimerRef.current) clearTimeout(fabPressTimerRef.current);
+    fabPressTimerRef.current = setTimeout(() => {
+      handleFabDismiss();
+    }, LONG_PRESS_DURATION);
+  }, [handleFabDismiss]);
+  
+  const handleFabPressEnd = useCallback(() => {
+    if (fabPressTimerRef.current) {
+      clearTimeout(fabPressTimerRef.current);
+      fabPressTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     setQuickButtonPosition(() => {
