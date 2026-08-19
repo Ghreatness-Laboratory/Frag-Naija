@@ -17,21 +17,39 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
 };
 
 export async function getHomepageSettings() {
-  const { data, error } = await supabaseAdmin.from('homepage_settings').select('*').single();
-  if (error || !data) return DEFAULT_HOMEPAGE_SETTINGS;
-  return { ...DEFAULT_HOMEPAGE_SETTINGS, ...data };
+  const { data, error } = await supabaseAdmin
+    .from('homepage_settings')
+    .select('key, value');
+  
+  if (error || !data) {
+    return DEFAULT_HOMEPAGE_SETTINGS;
+  }
+  
+  // Pivot array of {key, value} rows into flat object
+  const settings = Object.fromEntries(data.map(row => [row.key, row.value]));
+  
+  return { ...DEFAULT_HOMEPAGE_SETTINGS, ...settings };
 }
 
 export async function updateHomepageSettings(settings) {
-  const { data: existing } = await supabaseAdmin.from('homepage_settings').select('id').single();
-
-  const payload = { ...settings, updated_at: new Date().toISOString() };
-
-  if (existing?.id) {
-    const { error } = await supabaseAdmin.from('homepage_settings').update(payload).eq('id', existing.id);
-    if (error) throw error;
-  } else {
-    const { error } = await supabaseAdmin.from('homepage_settings').insert(payload);
-    if (error) throw error;
+  const entries = Object.entries(settings);
+  const timestamp = new Date().toISOString();
+  
+  for (const [key, value] of entries) {
+    // Skip keys that aren't valid homepage_settings keys
+    if (!(key in DEFAULT_HOMEPAGE_SETTINGS)) {
+      continue;
+    }
+    
+    const payload = { key, value, updated_at: timestamp };
+    
+    // Upsert by key (onConflict handles insert vs update)
+    const { error } = await supabaseAdmin
+      .from('homepage_settings')
+      .upsert(payload, { onConflict: 'key' });
+    
+    if (error) {
+      throw new Error(`Failed to save ${key}: ${error.message}`);
+    }
   }
 }

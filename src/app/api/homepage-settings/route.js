@@ -19,6 +19,18 @@ export async function GET() {
 export async function PUT(request) {
   const authErr = await checkAdmin();
   if (authErr) return authErr;
-  try { await updateHomepageSettings(await request.json()); return NextResponse.json({ ok: true }); }
-  catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }); }
+  
+  try {
+    const body = await request.json();
+    await updateHomepageSettings(body);
+    return NextResponse.json({ 
+      ok: true, 
+      message: 'Homepage settings saved successfully' 
+    });
+  } catch (e) {
+    console.error('Failed to save homepage settings:', e);
+    return NextResponse.json({ 
+      error: e.message || 'Failed to save settings' 
+    }, { status: 500 });
+  }
 }
