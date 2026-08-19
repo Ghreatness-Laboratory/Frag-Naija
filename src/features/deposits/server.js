@@ -4,50 +4,27 @@ import { getSetting } from '@/features/settings/server';
 const DEFAULT_FEE_PERCENT = 10;
 
 export async function processDeposit({ reference, userId, amountPaid }) {
-  // Deduplication — never credit the same reference twice
   const { data: existing } = await supabaseAdmin
     .from('transactions')
     .select('id')
     .eq('reference', reference)
-    .single();
-
+    .maybeSingle();
   if (existing) return { duplicate: true };
 
   const feePercent = Number(await getSetting('platform_fee_percent')) || DEFAULT_FEE_PERCENT;
-  const fee           = (amountPaid * feePercent) / 100;
+  const fee = (amountPaid * feePercent) / 100;
   const amountCredited = amountPaid - fee;
 
-  // Record transaction first
-  const { error: txError } = await supabaseAdmin.from('transactions').insert([{
-    user_id:         userId,
-    reference,
-    type:            'deposit',
-    amount_paid:     amountPaid,
-    fee,
-    amount_credited: amountCredited,
-    status:          'completed',
-  }]);
-  if (txError) throw txError;
+  const { data: transaction, error } = await supabaseAdmin.rpc('process_wallet_deposit', {
+    p_user_id: userId,
+    p_reference: reference,
+    p_amount_paid: amountPaid,
+    p_fee: fee,
+    p_amount_credited: amountCredited,
+  });
+  if (error) throw error;
 
-  // Credit wallet (create if missing)
-  const { data: wallet } = await supabaseAdmin
-    .from('wallets')
-    .select('balance')
-    .eq('user_id', userId)
-    .single();
-
-  if (wallet) {
-    await supabaseAdmin
-      .from('wallets')
-      .update({ balance: Number(wallet.balance) + amountCredited, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
-  } else {
-    await supabaseAdmin
-      .from('wallets')
-      .insert([{ user_id: userId, balance: amountCredited, total_won: 0, total_lost: 0 }]);
-  }
-
-  return { ok: true, amountCredited, fee };
+  return { ok: true, amountCredited, fee, transaction };
 }
 
 export async function getUserTransactions(userId) {
@@ -75,35 +52,15 @@ export async function getAllTransactions({ page = 1, limit = 100 } = {}) {
 
 export async function manualWalletAdjustment({ userId, amount, type, note }) {
   const reference = `ADMIN_${type.toUpperCase()}_${Date.now()}`;
+  const { data, error } = await supabaseAdmin.rpc('admin_wallet_adjustment', {
+    p_user_id: userId,
+    p_reference: reference,
+    p_type: type,
+    p_amount: amount,
+    p_note: note || null,
+  });
+  if (error) throw error;
 
-  const { data: wallet } = await supabaseAdmin
-    .from('wallets')
-    .select('balance')
-    .eq('user_id', userId)
-    .single();
-
-  if (!wallet) throw new Error('Wallet not found for this user');
-
-  const delta      = type === 'credit' ? amount : -amount;
-  const newBalance = Number(wallet.balance) + delta;
-  if (newBalance < 0) throw new Error('Debit would result in a negative balance');
-
-  await supabaseAdmin
-    .from('wallets')
-    .update({ balance: newBalance, updated_at: new Date().toISOString() })
-    .eq('user_id', userId);
-
-  const { error: txError } = await supabaseAdmin.from('transactions').insert([{
-    user_id:         userId,
-    reference,
-    type,
-    amount_paid:     amount,
-    fee:             0,
-    amount_credited: delta,
-    status:          'completed',
-    note,
-  }]);
-  if (txError) throw txError;
-
-  return { ok: true, newBalance };
+  const result = Array.isArray(data) ? data[0] : data;
+  return { ok: true, newBalance: Number(result?.new_balance ?? 0), transactionId: result?.transaction_id ?? null };
 }

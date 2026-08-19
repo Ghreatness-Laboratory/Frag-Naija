@@ -103,15 +103,6 @@ export async function POST(request) {
         .single();
 
       if (wallet && Number(wallet.balance) >= Number(amount)) {
-        // Deduct from wallet
-        await supabaseAdmin
-          .from('wallets')
-          .update({
-            balance:    Number(wallet.balance) - numericAmount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user_id);
-
         const reference = generateReference(resolvedSelections.length > 1 ? 'FNA' : 'FNW');
         for (let index = 0; index < resolvedSelections.length; index += 1) {
           const item = resolvedSelections[index];
@@ -123,6 +114,7 @@ export async function POST(request) {
             amount: index === 0 ? numericAmount : 0,
             potential: index === 0 ? potential : 0,
             reference: index === 0 ? reference : `${reference}-${index + 1}`,
+            paidFromWallet: true,
           });
         }
 
