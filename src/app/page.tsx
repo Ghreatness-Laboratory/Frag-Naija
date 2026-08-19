@@ -343,7 +343,7 @@ function FeaturedAthletes({
         </button>
       </div>
       {athletes.length === 0 ? (
-        <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet — add them from the admin panel.'}</p>
+        <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet.'}</p>
       ) : (
         <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
           {athletes.map((athlete, index) => (
@@ -447,9 +447,9 @@ export default function HomePage() {
   }, [selectedGame]);
   const athleteSource = allAthletes.length || featuredAthleteIds.length ? allAthletes : fallbackAthletes;
   const teamSource = allTeams.length || featuredTeamIds.length ? allTeams : fallbackTeamCards;
-  const gameAthletes: Athlete[] = useMemo(() => (!user ? [] : selectedGame
+  const gameAthletes: Athlete[] = useMemo(() => (selectedGame
     ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : (featuredAthleteIds.length && allAthletes.length ? pickByIds(allAthletes, featuredAthleteIds) : athleteSource.slice(0, 6))), [allAthletes, athleteSource, featuredAthleteIds, selectedGame, user]);
+    : athleteSource.slice(0, 6)), [athleteSource, selectedGame]);
   const iconAthletes: Athlete[] = useMemo(() => {
     if (!user) return [];
     const icons = (athleteSource as Athlete[]).filter((athlete) => Boolean(athlete.is_icon));
