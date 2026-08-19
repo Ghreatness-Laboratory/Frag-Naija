@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Check, ChevronLeft, Shield, X, Play } from 'lucide-react';
+import { Check, ChevronLeft, Shield, X, Play, Zap } from 'lucide-react';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { useAthletes } from '@/lib/hooks';
 import { useGame } from '@/context/GameContext';
