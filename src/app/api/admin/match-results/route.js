@@ -23,9 +23,6 @@ export async function POST(request) {
       const result = await upsertTournamentMatchState(body);
       return NextResponse.json({ saved: true, ...result }, { status: body.source_id ? 200 : 201 });
     }
-    for (const key of ['winner_name', 'mvp_name', 'placement_3_name', 'placement_4_name']) {
-      if (!String(body[key] || '').trim()) return NextResponse.json({ error: `${key} is required when finishing a match` }, { status: 400 });
-    }
     const result = await createMatchResultAlert({ ...body, source_type: 'tournament_match' });
     return NextResponse.json(result, { status: result.duplicate ? 200 : 201 });
   } catch (error) {

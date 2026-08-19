@@ -364,22 +364,34 @@ export async function createMatchResultAlert(payload) {
   const tournament = await getTournamentForMatchResult(tournament_id);
   const sourceMatch = await createTournamentMatchFromResult(tournament, payload);
   const source_id = sourceMatch.id;
+  const resultPayload = {
+    source_type, source_id, tournament_id, game_slug: tournament.game_slug || sourceMatch.game_slug || 'pubg-mobile', match_title: sourceMatch.title,
+    winner_name: String(payload.winner_name || '').trim() || null, winner_ref_type: payload.winner_ref_type || 'custom', winner_ref_id: payload.winner_ref_id || null,
+    mvp_name: String(payload.mvp_name || '').trim() || null, mvp_athlete_id: payload.mvp_athlete_id || null,
+    placement_3_name: String(payload.placement_3_name || '').trim() || null, placement_4_name: String(payload.placement_4_name || '').trim() || null,
+    finalized_at: payload.finalized_at || now, alerted_at: now,
+  };
+  let duplicate = false;
+  let existingId = null;
   if (source_id) {
     const { data: existing } = await supabaseAdmin.from('match_results').select('id').eq('source_type', source_type).eq('source_id', source_id).maybeSingle();
-    if (existing) return { duplicate: true, matchResult: existing };
+    existingId = existing?.id || null;
   }
-  const { data: matchResult, error } = await supabaseAdmin.from('match_results').insert({
-    source_type, source_id, tournament_id, game_slug: tournament.game_slug || sourceMatch.game_slug || 'pubg-mobile', match_title: sourceMatch.title,
-    winner_name: payload.winner_name, winner_ref_type: payload.winner_ref_type || 'custom', winner_ref_id: payload.winner_ref_id || null,
-    mvp_name: payload.mvp_name, mvp_athlete_id: payload.mvp_athlete_id || null,
-    placement_3_name: payload.placement_3_name || null, placement_4_name: payload.placement_4_name || null,
-    finalized_at: payload.finalized_at || now, alerted_at: now,
-  }).select('*, tournament:tournaments(id,name,game_slug,status)').single();
+  const query = existingId
+    ? supabaseAdmin.from('match_results').update(resultPayload).eq('id', existingId)
+    : supabaseAdmin.from('match_results').insert(resultPayload);
+  const { data: matchResult, error } = await query.select('*, tournament:tournaments(id,name,game_slug,status)').single();
   if (error) throw error;
-  const title = `${matchResult.winner_name} won! MVP: ${matchResult.mvp_name} 🏆`;
+  duplicate = Boolean(existingId);
+  const resultParts = [matchResult.winner_name ? `${matchResult.winner_name} won` : 'Result finalized', matchResult.mvp_name ? `MVP: ${matchResult.mvp_name}` : null].filter(Boolean);
+  const title = `${resultParts.join(' — ')} 🏆`;
   const message = `${matchResult.match_title} result finalized for ${matchResult.tournament?.name || 'the selected tournament'}.`;
   const url = `/gaming-alerts?alert=${matchResult.id}`;
-  const { data: notification, error: nerr } = await supabaseAdmin.from('notifications').insert({ type: 'match_result', match_result_id: matchResult.id, tournament_id: matchResult.tournament_id, game_slug: matchResult.game_slug, title, message, url, metadata: { winner_name: matchResult.winner_name, mvp_name: matchResult.mvp_name, placement_3_name: matchResult.placement_3_name, placement_4_name: matchResult.placement_4_name } }).select('*').single();
+  const notificationPayload = { type: 'match_result', match_result_id: matchResult.id, tournament_id: matchResult.tournament_id, game_slug: matchResult.game_slug, title, message, url, metadata: { winner_name: matchResult.winner_name, mvp_name: matchResult.mvp_name, placement_3_name: matchResult.placement_3_name, placement_4_name: matchResult.placement_4_name } };
+  const notificationQuery = duplicate
+    ? supabaseAdmin.from('notifications').update(notificationPayload).eq('match_result_id', matchResult.id).eq('type', 'match_result')
+    : supabaseAdmin.from('notifications').insert(notificationPayload);
+  const { data: notification, error: nerr } = await notificationQuery.select('*').single();
   if (nerr) throw nerr;
   let push = null;
   try {
@@ -388,7 +400,7 @@ export async function createMatchResultAlert(payload) {
     push = { sent: 0, attempted: 0, error: error.message };
     console.error('Gaming Alerts FCM dispatch failed after result save:', error);
   }
-  return { matchResult, notification, push };
+  return { duplicate, matchResult, notification, push };
 }
 
 

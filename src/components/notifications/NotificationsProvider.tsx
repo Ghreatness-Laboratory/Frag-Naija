@@ -17,7 +17,7 @@ export default function NotificationsProvider({ children }: { children: React.Re
     setUnreadCount(data.unreadCount || 0);
     const newest = data.alerts?.[0];
     if (showToast && newest?.notification?.id && lastIdRef.current && newest.notification.id !== lastIdRef.current) {
-      setToast({ title: `${newest.winner_name} WON — MVP: ${newest.mvp_name}`, body: newest.match_title, url: newest.notification.url || '/gaming-alerts' });
+      setToast({ title: [newest.winner_name ? `${newest.winner_name} WON` : 'Result finalized', newest.mvp_name ? `MVP: ${newest.mvp_name}` : null].filter(Boolean).join(' — '), body: newest.match_title, url: newest.notification.url || '/gaming-alerts' });
       window.setTimeout(() => setToast(null), 5200);
     }
     if (newest?.notification?.id) lastIdRef.current = newest.notification.id;
