@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -16,28 +16,45 @@ function isStandaloneDisplayMode() {
   );
 }
 
+function isIOS() {
+  if (typeof navigator === 'undefined') return false;
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function isUnsupportedInstallBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('firefox') || ua.includes('opera mini') || ua.includes('opr/');
+}
+
 export function usePWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [installable, setInstallable] = useState(false);
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const [deferredPromptReady, setDeferredPromptReady] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (isStandaloneDisplayMode() || !('serviceWorker' in navigator)) return;
+    setHydrated(true);
+    setIsStandalone(isStandaloneDisplayMode());
 
     const standaloneQuery = window.matchMedia('(display-mode: standalone)');
 
     const hideInstallAction = () => {
-      setDeferredPrompt(null);
-      setInstallable(false);
+      deferredPromptRef.current = null;
+      setDeferredPromptReady(false);
+      setIsStandalone(true);
     };
 
     const handleDisplayModeChange = (event: MediaQueryListEvent) => {
       if (event.matches) hideInstallAction();
+      else setIsStandalone(isStandaloneDisplayMode());
     };
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-      setInstallable(true);
+      deferredPromptRef.current = event as BeforeInstallPromptEvent;
+      setDeferredPromptReady(true);
+      setIsStandalone(false);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -52,13 +69,36 @@ export function usePWAInstallPrompt() {
   }, []);
 
   async function install() {
-    if (!deferredPrompt) return;
+    if (isStandaloneDisplayMode()) {
+      setIsStandalone(true);
+      return { status: 'installed' as const, message: 'FragNaija is already installed.' };
+    }
 
-    await deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    setInstallable(false);
+    const prompt = deferredPromptRef.current;
+    if (prompt) {
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      deferredPromptRef.current = null;
+      setDeferredPromptReady(false);
+      return { status: choice.outcome as 'accepted' | 'dismissed', message: choice.outcome === 'accepted' ? 'Install started.' : 'Install dismissed.' };
+    }
+
+    if (isIOS()) {
+      return { status: 'manual' as const, message: 'On iPhone or iPad, tap Share, then Add to Home Screen.' };
+    }
+
+    if (isUnsupportedInstallBrowser()) {
+      return { status: 'unsupported' as const, message: "Your browser doesn't support direct app installation. Switch to Chrome, Edge, or Safari to install FragNaija." };
+    }
+
+    return { status: 'waiting' as const, message: 'Install support is still loading. If no prompt appears, use Chrome or Edge and try again.' };
   }
 
-  return { install, installable };
+  return {
+    install,
+    deferredPromptReady,
+    installable: hydrated ? !isStandalone : true,
+    isStandalone,
+    hydrated,
+  };
 }

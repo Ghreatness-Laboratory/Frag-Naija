@@ -11,6 +11,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import FontPreviewToggle from "@/components/common/FontPreviewToggle";
 import NotificationsProvider from "@/components/notifications/NotificationsProvider";
 import FCMRegistrar from "@/components/notifications/FCMRegistrar";
+import SupportChatbot from "@/components/support/SupportChatbot";
 
 
 const chakraPetch = Chakra_Petch({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-chakra", display: "swap" });
@@ -99,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <PWAInstallPrompt />
             <FCMRegistrar />
             <FontPreviewToggle />
+            <SupportChatbot />
             </NotificationsProvider>
           </GameProvider>
         </ThemeProvider>

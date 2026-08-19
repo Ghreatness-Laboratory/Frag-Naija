@@ -49,6 +49,7 @@ export default function BottomNav() {
   const [loadCodeOpen, setLoadCodeOpen] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
   const { install: installPWA, installable: pwaInstallable } = usePWAInstallPrompt();
+  const [installMessage, setInstallMessage] = useState("");
 
   useEffect(() => {
     setWagerCount(readWagerCount());
@@ -132,11 +133,14 @@ export default function BottomNav() {
               {pwaInstallable && (
                 <button
                   type="button"
-                  onClick={installPWA}
+                  onClick={async () => { const result = await installPWA(); setInstallMessage(result.message); }}
                   className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20"
                 >
                   <span className="flex items-center gap-2"><Download size={12} /> Install App</span><ChevronRight size={12} />
                 </button>
+              )}
+              {installMessage && (
+                <p className="rounded-sm border border-fn-gborder bg-fn-black/80 px-3 py-2 text-[9px] leading-relaxed text-fn-muted">{installMessage}</p>
               )}
               {PENDING_MENU_ITEMS.map((item) => (
                 <button
