@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Frag Naija — Tactical Command Interface',
+    name: 'Frag Naija — Everything Esports. One Platform.',
     short_name: 'Frag Naija',
     description: "Nigeria's premier esports platform. Compete, wager, and dominate.",
     start_url: '/',
