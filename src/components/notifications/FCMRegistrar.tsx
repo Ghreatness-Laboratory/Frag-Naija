@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import { firebaseConfig } from '@/lib/firebaseConfig';
 
 type FirebaseCompat = { apps: unknown[]; initializeApp: (config: Record<string, unknown>) => void; messaging: () => { getToken: (options: { vapidKey: string; serviceWorkerRegistration: ServiceWorkerRegistration }) => Promise<string> } };
+
+const FCM_SERVICE_WORKER_URL = '/firebase-messaging-sw.js';
+const FCM_SERVICE_WORKER_SCOPE = '/firebase-cloud-messaging-push-scope';
 declare global { interface Window { firebase?: FirebaseCompat } }
 
 function loadScript(src: string) {
@@ -29,7 +32,11 @@ export default function FCMRegistrar() {
       if (!firebase) return;
       if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
       const messaging = firebase.messaging();
-      const registration = await navigator.serviceWorker.ready;
+      // Register Firebase Messaging with its own narrow scope so it does not
+      // replace the app's offline PWA worker registered at /sw.js with scope /.
+      const registration = await navigator.serviceWorker.register(FCM_SERVICE_WORKER_URL, {
+        scope: FCM_SERVICE_WORKER_SCOPE,
+      });
       const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: registration }).catch(() => '');
       if (token) await fetch('/api/notifications/register-token', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
     }
