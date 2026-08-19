@@ -39,7 +39,7 @@ export const GAMES: Game[] = [
     id: 'pubg-mobile',
     slug: 'pubg-mobile',
     name: 'PUBG Mobile',
-    shortName: 'PUBG',
+    shortName: 'PUBG Mobile',
     description: 'Battle Royale — 100 players, one survivor.',
     colors: {
       primary:   '#00FF41',           // matrix / terminal green
