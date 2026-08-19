@@ -398,10 +398,10 @@ export async function createMatchResultAlert(payload) {
   const { data: matchResult, error } = await query.select('*, tournament:tournaments(id,name,game_slug,status)').single();
   if (error) throw error;
   duplicate = Boolean(existingId);
-  const title = formatMatchNotificationTitle(sourceMatch, matchResult.tournament);
-  const resultSummary = matchResult.winner_name ? `Match ended — ${matchResult.winner_name} won.` : 'Match ended — result finalized.';
-  const message = [resultSummary, matchResult.mvp_name ? `MVP: ${matchResult.mvp_name}.` : null].filter(Boolean).join(' ');
-  const url = matchNotificationUrl(matchResult.tournament_id, source_id);
+  const resultParts = [matchResult.winner_name ? `${matchResult.winner_name} won` : 'Result finalized', matchResult.mvp_name ? `MVP: ${matchResult.mvp_name}` : null].filter(Boolean);
+  const title = `${resultParts.join(' — ')} 🏆`;
+  const message = `${matchResult.match_title} result finalized for ${matchResult.tournament?.name || 'the selected tournament'}.`;
+  const url = `/gaming-alerts?alert=${matchResult.id}`;
   const notificationPayload = { type: 'match_result', match_result_id: matchResult.id, tournament_id: matchResult.tournament_id, game_slug: matchResult.game_slug, title, message, url, metadata: { winner_name: matchResult.winner_name, mvp_name: matchResult.mvp_name, placement_3_name: matchResult.placement_3_name, placement_4_name: matchResult.placement_4_name } };
   const notificationQuery = duplicate
     ? supabaseAdmin.from('notifications').update(notificationPayload).eq('match_result_id', matchResult.id).eq('type', 'match_result')
