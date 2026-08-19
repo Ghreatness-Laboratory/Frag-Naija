@@ -21,7 +21,7 @@ export default function Footer() {
               <span className="font-display text-base font-black text-fn-text tracking-widest">NAIJA</span>
             </div>
             <p className="text-[9px] text-fn-muted tracking-wider uppercase">
-              © {year} FragNaija. Everything Esports. One Platform. All Rights Reserved.
+              © {year} FragNaija. Everything Esports - One Platform. All Rights Reserved.
             </p>
             <p className="mt-1 text-[9px] text-fn-muted tracking-wider uppercase">
               A Frag Africa product.

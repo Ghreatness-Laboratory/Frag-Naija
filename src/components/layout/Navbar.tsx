@@ -6,7 +6,6 @@ import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldC
 import { useTheme } from "@/components/ThemeProvider";
 import { useGame } from "@/context/GameContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
-import PWAInstallButton from "@/components/PWAInstallButton";
 import { useNotifications } from "@/components/notifications/NotificationsProvider";
 
 const navLinks = [
@@ -136,7 +135,6 @@ export default function Navbar() {
 
         {/* Desktop: actions */}
         <div className="hidden lg:flex items-center gap-2 ml-auto">
-          <PWAInstallButton />
           <Link
             href="/wager"
             className={`px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all rounded-sm ${
@@ -219,7 +217,6 @@ export default function Navbar() {
           <Link href="/wager" className="text-fn-amber text-[9px] font-bold tracking-widest uppercase border border-fn-amber/30 px-2.5 py-1 rounded-sm">
             ⚡
           </Link>
-          <PWAInstallButton className="px-2 py-1 text-[8px]" />
           <ThemeToggle />
           <Link href="/gaming-alerts" aria-label="Open FragNaija Gaming Alerts" className="relative flex h-8 w-8 items-center justify-center border border-fn-gborder text-fn-muted hover:text-fn-green"><Bell size={14} />{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-fn-red px-1 text-[8px] font-black text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}</Link>
           {!user && (

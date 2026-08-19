@@ -1,144 +1,135 @@
 "use client";
+
 import BrandedLoader from "@/components/common/BrandedLoader";
-import { useState, useEffect, useCallback } from "react";
-import { Newspaper, Clock, User, ChevronRight } from "lucide-react";
+import { useAuthGate } from "@/components/common/LoginGate";
+import { ArrowUpRight, Clock, Eye, Heart, MessageCircle, Newspaper, User } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 type NewsItem = {
   id: string;
   title: string;
-  content: string;
+  excerpt: string;
   image_url: string | null;
   author: string | null;
-  published: boolean;
+  published_at: string | null;
   created_at: string;
+  pinned?: boolean;
+  like_count: number;
+  view_count: number;
+  comment_count: number;
 };
 
-function formatDate(val: string) {
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return val;
-  return new Intl.DateTimeFormat("en-NG", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(d);
+function formatDate(value?: string | null) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "Date TBA";
+  return new Intl.DateTimeFormat("en-NG", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
+function imageFor(article: NewsItem) {
+  return article.image_url || "/logo-icon.jpeg";
+}
+
+function LoginTeaser({ next }: { next: string }) {
+  return (
+    <div className="mt-4 border border-fn-green/30 bg-fn-green/10 p-3 text-xs text-fn-muted">
+      Full article access, likes, and comments require login. <Link href={`/login?next=${encodeURIComponent(next)}`} className="font-black uppercase tracking-widest text-fn-green">Login to continue</Link>
+    </div>
+  );
 }
 
 export default function NewsPage() {
+  const { user, loading: authLoading } = useAuthGate();
   const [articles, setArticles] = useState<NewsItem[]>([]);
-  const [selected, setSelected] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    let active = true;
     setLoading(true);
-    const res = await fetch("/api/news", { cache: "no-store" });
-    if (res.ok) {
-      const data: NewsItem[] = await res.json();
-      setArticles(Array.isArray(data) ? data : []);
-      if (data.length > 0) setSelected(data[0]);
-    }
-    setLoading(false);
+    fetch("/api/news", { cache: "no-store", credentials: "include" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => { if (active) setArticles(Array.isArray(data) ? data : []); })
+      .catch(() => { if (active) setArticles([]); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const lead = useMemo(() => articles[0] ?? null, [articles]);
+  const rest = useMemo(() => articles.slice(1), [articles]);
 
-  if (loading) {
+  if (loading || authLoading) {
+    return <div className="flex min-h-screen items-center justify-center bg-fn-black"><BrandedLoader label="Loading news" size="sm" /></div>;
+  }
+
+  if (!lead) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-fn-black">
-        <BrandedLoader label="Loading" size="sm" />
-      </div>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-fn-black px-4 text-center">
+        <Newspaper className="h-12 w-12 text-fn-muted" />
+        <p className="text-sm uppercase tracking-widest text-fn-muted">No news published yet</p>
+      </main>
     );
   }
 
-  if (articles.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-fn-black gap-4">
-        <Newspaper className="w-12 h-12 text-fn-muted" />
-        <p className="text-fn-muted text-sm uppercase tracking-widest">No news published yet</p>
-      </div>
-    );
-  }
+  const canRead = Boolean(user);
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left: Article list */}
-      <aside className="lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-fn-gborder flex-shrink-0">
-        <div className="p-4 border-b border-fn-gborder">
-          <div className="fn-label mb-0.5 flex items-center gap-1.5">
-            <Newspaper size={9} className="text-fn-green" /> INTEL FEED
+    <main className="min-h-screen bg-fn-black px-3 py-5 pb-28 text-fn-text sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-fn-gborder pb-4">
+          <div>
+            <p className="fn-label flex items-center gap-2 text-fn-green"><Newspaper size={12} /> FragNaija Magazine</p>
+            <h1 className="mt-1 font-display text-3xl font-black uppercase tracking-widest sm:text-5xl">News</h1>
+            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-fn-muted">Lead stories, tournament context, roster movement, and Nigerian esports culture in one signal-green feed.</p>
           </div>
-          <h1 className="font-display text-xl font-black uppercase text-fn-text">NEWS</h1>
+          {!canRead && <Link href="/login?next=/news" className="fn-btn px-4 py-2 text-xs">Login for full stories</Link>}
         </div>
 
-        <div className="overflow-y-auto max-h-[50vh] lg:max-h-none lg:h-[calc(100vh-10rem)]">
-          {articles.map((article) => {
-            const isActive = selected?.id === article.id;
-            return (
-              <button
-                key={article.id}
-                onClick={() => setSelected(article)}
-                className={`w-full flex items-start gap-3 px-4 py-3 border-b border-fn-gborder/50 transition-all text-left ${
-                  isActive
-                    ? "bg-fn-green/10 border-l-2 border-l-fn-green"
-                    : "hover:bg-fn-card/50 border-l-2 border-l-transparent"
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-bold text-fn-text leading-snug line-clamp-2">
-                    {article.title}
-                  </div>
-                  <div className="fn-label mt-1 flex items-center gap-1">
-                    <Clock size={7} /> {formatDate(article.created_at)}
-                  </div>
-                </div>
-                <ChevronRight
-                  size={12}
-                  className={
-                    isActive
-                      ? "text-fn-green flex-shrink-0 mt-0.5"
-                      : "text-fn-muted flex-shrink-0 mt-0.5"
-                  }
-                />
-              </button>
-            );
-          })}
-        </div>
-      </aside>
-
-      {/* Right: Article detail */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        {selected && (
-          <div className="max-w-3xl">
-            {selected.image_url && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={selected.image_url}
-                alt={selected.title}
-                className="w-full h-48 sm:h-64 object-cover rounded-sm border border-fn-gborder mb-4"
-              />
-            )}
-            <div className="bg-fn-card border border-fn-gborder rounded-sm p-4 sm:p-6">
-              <h2 className="font-display text-2xl sm:text-3xl font-black uppercase text-fn-text tracking-wide mb-3">
-                {selected.title}
-              </h2>
-              <div className="flex flex-wrap items-center gap-3 fn-label mb-4 pb-4 border-b border-fn-gborder">
-                {selected.author && (
-                  <span className="flex items-center gap-1">
-                    <User size={9} /> {selected.author}
-                  </span>
-                )}
-                <span className="flex items-center gap-1">
-                  <Clock size={9} /> {formatDate(selected.created_at)}
-                </span>
-              </div>
-              <div className="text-fn-muted text-[12px] leading-relaxed whitespace-pre-wrap">
-                {selected.content}
-              </div>
+        <article className="grid overflow-hidden border border-fn-green/30 bg-fn-card lg:grid-cols-[1.15fr_.85fr]">
+          <div className="relative min-h-[260px] border-b border-fn-gborder lg:border-b-0 lg:border-r">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imageFor(lead)} alt={lead.title} className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-fn-black via-fn-black/45 to-transparent" />
+            <div className="absolute left-4 top-4 border border-fn-green/40 bg-fn-black/80 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-green">Lead Story</div>
+          </div>
+          <div className="p-5 sm:p-7">
+            <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-widest text-fn-muted">
+              <span className="flex items-center gap-1"><User size={11} /> {lead.author || "FragNaija Desk"}</span>
+              <span className="flex items-center gap-1"><Clock size={11} /> {formatDate(lead.published_at || lead.created_at)}</span>
             </div>
+            <h2 className="mt-4 font-display text-3xl font-black uppercase leading-tight tracking-widest text-fn-text">{lead.title}</h2>
+            <p className="mt-4 text-sm leading-relaxed text-fn-muted">{lead.excerpt}</p>
+            <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest text-fn-muted">
+              <span className="border border-fn-gborder px-2 py-1"><Heart size={11} className="mr-1 inline" />{lead.like_count}</span>
+              <span className="border border-fn-gborder px-2 py-1"><MessageCircle size={11} className="mr-1 inline" />{lead.comment_count}</span>
+              <span className="border border-fn-gborder px-2 py-1"><Eye size={11} className="mr-1 inline" />{lead.view_count}</span>
+            </div>
+            {canRead ? <Link href={`/news/${lead.id}`} className="mt-6 inline-flex items-center gap-2 bg-fn-green px-5 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Read feature <ArrowUpRight size={14} /></Link> : <LoginTeaser next={`/news/${lead.id}`} />}
           </div>
-        )}
-      </div>
-    </div>
+        </article>
+
+        <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {rest.map((article) => (
+            <article key={article.id} className="border border-fn-gborder bg-fn-card">
+              <div className="relative h-40 border-b border-fn-gborder">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageFor(article)} alt={article.title} className="h-full w-full object-cover" />
+              </div>
+              <div className="p-4">
+                <p className="fn-label text-fn-green">{formatDate(article.published_at || article.created_at)}</p>
+                <h3 className="mt-2 line-clamp-2 font-display text-xl font-black uppercase tracking-widest">{article.title}</h3>
+                <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-fn-muted">{article.excerpt}</p>
+                <div className="mt-4 flex items-center justify-between gap-2 border-t border-fn-gborder pt-3">
+                  <div className="flex gap-2 text-[9px] uppercase tracking-widest text-fn-muted">
+                    <span><Heart size={10} className="mr-1 inline" />{article.like_count}</span>
+                    <span><MessageCircle size={10} className="mr-1 inline" />{article.comment_count}</span>
+                  </div>
+                  {canRead ? <Link href={`/news/${article.id}`} className="text-[10px] font-black uppercase tracking-widest text-fn-green">Read</Link> : <Link href={`/login?next=${encodeURIComponent(`/news/${article.id}`)}`} className="text-[10px] font-black uppercase tracking-widest text-fn-green">Login</Link>}
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      </section>
+    </main>
   );
 }
