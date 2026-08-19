@@ -24,7 +24,7 @@ const nextConfig = {
       },
       {
         source: '/api/homepage-data',
-        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' }],
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0, must-revalidate' }],
       },
     ];
   },
@@ -41,14 +41,11 @@ export default withPWA({
 
   runtimeCaching: [
     {
-      // Homepage shell data changes infrequently and should be instant on back/forward navigation.
+      // Homepage data drives admin-curated featured athletes/teams; always fetch
+      // it from the network so admin changes are visible immediately.
       urlPattern: /^\/api\/homepage-data/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'fn-homepage-data-v1',
-        expiration: { maxEntries: 8, maxAgeSeconds: 300 },
-        cacheableResponse: { statuses: [0, 200] },
-      },
+      handler: 'NetworkOnly',
+      options: {},
     },
     {
       // API routes — keep live/account data uncached unless explicitly handled above.
