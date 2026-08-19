@@ -4,7 +4,7 @@ import { checkAdmin } from '@/features/shared/server/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_BUCKETS = ['athletes', 'teams', 'highlights', 'team-members', 'shop-items'];
+const ALLOWED_BUCKETS = ['athletes', 'teams', 'highlights', 'team-members', 'shop-items', 'news', 'custom-wager-evidence'];
 const MAX_SIZE_MB = 10;
 
 export async function POST(request) {

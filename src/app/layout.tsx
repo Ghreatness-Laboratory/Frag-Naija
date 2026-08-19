@@ -11,6 +11,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import FontPreviewToggle from "@/components/common/FontPreviewToggle";
 import NotificationsProvider from "@/components/notifications/NotificationsProvider";
 import FCMRegistrar from "@/components/notifications/FCMRegistrar";
+import SupportChatbot from "@/components/support/SupportChatbot";
 
 
 const chakraPetch = Chakra_Petch({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-chakra", display: "swap" });
@@ -23,8 +24,22 @@ const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], varia
 const fontVariables = [chakraPetch, rajdhani, exo2, orbitron, oxanium, sairaCondensed, spaceMono].map((font) => font.variable).join(" ");
 
 export const metadata: Metadata = {
-  title: "Frag Naija — Everything Esports. One Platform.",
-  description: "Nigeria's premier esports platform. Compete, wager, and dominate.",
+  title: {
+    default: "Frag Naija - Everything Esports - One Platform",
+    template: "%s - FragNaija",
+  },
+  description: "Nigeria's premier esports platform. Everything Esports - One Platform.",
+  openGraph: {
+    title: "Frag Naija - Everything Esports - One Platform",
+    description: "Nigeria's premier esports platform. Everything Esports - One Platform.",
+    siteName: "FragNaija",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Frag Naija - Everything Esports - One Platform",
+    description: "Nigeria's premier esports platform. Everything Esports - One Platform.",
+  },
   applicationName: "Frag Naija",
   keywords: ["esports", "Nigeria", "PUBG Mobile", "gaming", "wager", "tournaments"],
   authors: [{ name: "Frag Naija" }],
@@ -85,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <PWAInstallPrompt />
             <FCMRegistrar />
             <FontPreviewToggle />
+            <SupportChatbot />
             </NotificationsProvider>
           </GameProvider>
         </ThemeProvider>
