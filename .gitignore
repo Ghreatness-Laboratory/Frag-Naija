@@ -1,31 +1,71 @@
-```
-# Next.js build artifacts
-.next/
-out/
-
+```gitignore
 # Dependencies
 node_modules/
+.pnpm-store/
+.yarn/
+.yarn-cache/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.nuxt/
+public/dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.python-version
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Environment variables
 .env
 .env.local
 .env.*
+!.env.example
 
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.swp
-
-# Editor directories
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS generated files
+# OS
 .DS_Store
 Thumbs.db
 
-# Coverage directory used by tools like istanbul
+# Testing
 coverage/
+.nyc_output/
+istanbul/
+.mocha/
+.jest/
+
+# Cache
+.cache/
+.turbo/
+.vercel/
+.netlify/
+
+# Database
+*.db
+*.db-journal
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
 ```

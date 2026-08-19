@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   title: "Frag Naija — Tactical Command Interface",
   description: "Nigeria's premier esports platform. Compete, wager, and dominate.",
   applicationName: "Frag Naija",
-  keywords: ["esports", "Nigeria", "PUBG", "gaming", "wager", "tournaments"],
+  keywords: ["esports", "Nigeria", "PUBG Mobile", "gaming", "wager", "tournaments"],
   authors: [{ name: "Frag Naija" }],
   appleWebApp: {
     capable: true,
