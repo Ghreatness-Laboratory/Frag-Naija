@@ -51,13 +51,21 @@ export async function listCustomWagers(userId, { admin = false } = {}) {
 
 export async function createCustomWager(userId, body) {
   const stake = Number(body.stake_amount);
-  const min = await settingNumber('custom_wager_min_stake', 100);
-  const max = await settingNumber('custom_wager_max_stake', 100000);
+  const min = await settingNumber('custom_wager_min_stake', 500);
+  const max = await settingNumber('custom_wager_max_stake', 5000000);
   if (!body.opponent_id || body.opponent_id === userId) throw new Error('Choose an opponent');
   if (!String(body.terms || '').trim()) throw new Error('Terms are required');
-  if (!Number.isFinite(stake) || stake < min || stake > max) throw new Error(`Stake must be between ₦${min} and ₦${max}`);
+  if (!body.game_slug) throw new Error('Game selection is required');
+  if (!Number.isFinite(stake) || stake < min || stake > max) throw new Error(`Stake must be between ₦${min.toLocaleString()} and ₦${max.toLocaleString()}`);
   const fee = await settingNumber('custom_wager_fee_percent', 10);
-  const { data, error } = await supabaseAdmin.from('custom_wagers').insert([{ creator_id: userId, opponent_id: body.opponent_id, terms: String(body.terms).trim(), stake_amount: stake, platform_fee_percent: fee }]).select().single();
+  const { data, error } = await supabaseAdmin.from('custom_wagers').insert([{ 
+    creator_id: userId, 
+    opponent_id: body.opponent_id, 
+    terms: String(body.terms).trim(), 
+    stake_amount: stake, 
+    platform_fee_percent: fee,
+    game_slug: body.game_slug 
+  }]).select().single();
   if (error) throw error;
   return data;
 }
@@ -80,6 +88,10 @@ export async function actOnCustomWager(userId, id, action, body = {}) {
   }
   if (action === 'claim') {
     const updates = { updated_at: new Date().toISOString(), ...(isCreator ? { creator_claim: body.winner_id } : { opponent_claim: body.winner_id }) };
+    // Include proof_of_win_url if provided
+    if (body.proof_of_win_url) {
+      updates.proof_of_win_url = body.proof_of_win_url;
+    }
     const otherClaim = isCreator ? wager.opponent_claim : wager.creator_claim;
     if (otherClaim && otherClaim === body.winner_id) {
       const payout = Number(wager.stake_amount) * 2 * (1 - Number(wager.platform_fee_percent) / 100);
