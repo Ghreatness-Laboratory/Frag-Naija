@@ -7,8 +7,10 @@ type Tournament = { id: string; name: string; game_slug: string; status?: string
 type MatchResult = {
   id: string;
   match_title: string;
-  winner_name: string;
-  mvp_name: string;
+  winner_name?: string | null;
+  mvp_name?: string | null;
+  placement_3_name?: string | null;
+  placement_4_name?: string | null;
   finalized_at: string;
   source_id?: string | null;
   tournament?: { id: string; name: string; game_slug: string; status: string } | null;
@@ -57,7 +59,7 @@ export default function AdminMatchResultsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Unable to finalize result.');
       const pushWarning = data.push?.error ? ` Push failed separately: ${data.push.error}` : '';
-      setMessage(`Result finalized for ${data.matchResult?.winner_name || form.winner_name}.${pushWarning}`);
+      setMessage(`Result finalized for ${data.matchResult?.match_title || form.match_title || 'selected match'}.${pushWarning}`);
       setForm((current) => ({ ...EMPTY_FORM, tournament_id: current.tournament_id }));
       await loadResults();
     } catch (err) {
@@ -98,10 +100,10 @@ export default function AdminMatchResultsPage() {
         <label className="block"><span className="fn-label">Match date</span><input type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
         <label className="block"><span className="fn-label">Participant / Team A</span><input value={form.team_a} onChange={(e) => setForm({ ...form, team_a: e.target.value })} placeholder="Tribe Warriors" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
         <label className="block"><span className="fn-label">Participant / Team B</span><input value={form.team_b} onChange={(e) => setForm({ ...form, team_b: e.target.value })} placeholder="Lagos Titans" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
-        <label className="block"><span className="fn-label">Winner</span><input required value={form.winner_name} onChange={(e) => setForm({ ...form, winner_name: e.target.value })} placeholder="Tribe Warriors" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
-        <label className="block"><span className="fn-label">MVP</span><input required value={form.mvp_name} onChange={(e) => setForm({ ...form, mvp_name: e.target.value })} placeholder="PlayerName" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
-        <label className="block"><span className="fn-label">3rd place</span><input required value={form.placement_3_name} onChange={(e) => setForm({ ...form, placement_3_name: e.target.value })} placeholder="3rd-place team/player" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
-        <label className="block"><span className="fn-label">4th place</span><input required value={form.placement_4_name} onChange={(e) => setForm({ ...form, placement_4_name: e.target.value })} placeholder="4th-place team/player" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">Winner (optional)</span><input value={form.winner_name} onChange={(e) => setForm({ ...form, winner_name: e.target.value })} placeholder="Tribe Warriors" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">MVP (optional)</span><input value={form.mvp_name} onChange={(e) => setForm({ ...form, mvp_name: e.target.value })} placeholder="PlayerName" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">2nd place (optional)</span><input value={form.placement_3_name} onChange={(e) => setForm({ ...form, placement_3_name: e.target.value })} placeholder="2nd-place team/player" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">3rd place (optional)</span><input value={form.placement_4_name} onChange={(e) => setForm({ ...form, placement_4_name: e.target.value })} placeholder="3rd-place team/player" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
         <button disabled={saving} className="inline-flex items-center justify-center gap-2 bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"><Save size={14} /> {saving ? 'Finalizing result…' : 'Finalize result'}</button>
       </form>
 
@@ -125,7 +127,7 @@ export default function AdminMatchResultsPage() {
                 <div>
                   <p className="fn-label text-fn-green">{result.tournament?.name || result.tournament?.game_slug || 'Tournament result'}</p>
                   <h3 className="mt-1 text-sm font-black uppercase tracking-widest text-fn-text">{result.match_title}</h3>
-                  <p className="mt-1 text-xs text-fn-muted">Winner: <span className="text-fn-green">{result.winner_name}</span> · MVP: {result.mvp_name}</p>
+                  <p className="mt-1 text-xs text-fn-muted">Winner: <span className="text-fn-green">{result.winner_name || 'TBA'}</span>{result.mvp_name ? ` · MVP: ${result.mvp_name}` : ''}</p>
                   <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">Match status: {result.source_match?.status || 'completed'} · Finalized {new Date(result.finalized_at).toLocaleString()}</p>
                 </div>
                 <button

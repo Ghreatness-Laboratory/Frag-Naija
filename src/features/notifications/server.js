@@ -128,6 +128,21 @@ export async function listGamingNotifications({ userId, tournamentId, gameSlug }
 }
 
 
+
+function formatMatchNotificationTitle(match, tournament) {
+  const teamA = String(match?.team_a || '').trim();
+  const teamB = String(match?.team_b || '').trim();
+  if (teamA && teamB) return `${teamA} vs ${teamB}`;
+  return String(match?.title || tournament?.name || 'FragNaija match update').trim();
+}
+
+function matchNotificationUrl(tournamentId, matchId) {
+  const qs = new URLSearchParams();
+  if (tournamentId) qs.set('tournament', tournamentId);
+  if (matchId) qs.set('match', matchId);
+  return `/gaming-alerts?${qs.toString()}`;
+}
+
 export async function upsertTournamentMatchState(payload) {
   const tournament = await getTournamentForMatchResult(payload.tournament_id || null);
   let previousMatch = null;
@@ -364,38 +379,50 @@ export async function createMatchResultAlert(payload) {
   const tournament = await getTournamentForMatchResult(tournament_id);
   const sourceMatch = await createTournamentMatchFromResult(tournament, payload);
   const source_id = sourceMatch.id;
+  const resultPayload = {
+    source_type, source_id, tournament_id, game_slug: tournament.game_slug || sourceMatch.game_slug || 'pubg-mobile', match_title: sourceMatch.title,
+    winner_name: String(payload.winner_name || '').trim() || null, winner_ref_type: payload.winner_ref_type || 'custom', winner_ref_id: payload.winner_ref_id || null,
+    mvp_name: String(payload.mvp_name || '').trim() || null, mvp_athlete_id: payload.mvp_athlete_id || null,
+    placement_3_name: String(payload.placement_3_name || '').trim() || null, placement_4_name: String(payload.placement_4_name || '').trim() || null,
+    finalized_at: payload.finalized_at || now, alerted_at: now,
+  };
+  let duplicate = false;
+  let existingId = null;
   if (source_id) {
     const { data: existing } = await supabaseAdmin.from('match_results').select('id').eq('source_type', source_type).eq('source_id', source_id).maybeSingle();
-    if (existing) return { duplicate: true, matchResult: existing };
+    existingId = existing?.id || null;
   }
-  const { data: matchResult, error } = await supabaseAdmin.from('match_results').insert({
-    source_type, source_id, tournament_id, game_slug: tournament.game_slug || sourceMatch.game_slug || 'pubg-mobile', match_title: sourceMatch.title,
-    winner_name: payload.winner_name, winner_ref_type: payload.winner_ref_type || 'custom', winner_ref_id: payload.winner_ref_id || null,
-    mvp_name: payload.mvp_name, mvp_athlete_id: payload.mvp_athlete_id || null,
-    placement_3_name: payload.placement_3_name || null, placement_4_name: payload.placement_4_name || null,
-    finalized_at: payload.finalized_at || now, alerted_at: now,
-  }).select('*, tournament:tournaments(id,name,game_slug,status)').single();
+  const query = existingId
+    ? supabaseAdmin.from('match_results').update(resultPayload).eq('id', existingId)
+    : supabaseAdmin.from('match_results').insert(resultPayload);
+  const { data: matchResult, error } = await query.select('*, tournament:tournaments(id,name,game_slug,status)').single();
   if (error) throw error;
-  const title = `${matchResult.winner_name} won! MVP: ${matchResult.mvp_name} 🏆`;
-  const message = `${matchResult.match_title} result finalized for ${matchResult.tournament?.name || 'the selected tournament'}.`;
-  const url = `/gaming-alerts?alert=${matchResult.id}`;
-  const { data: notification, error: nerr } = await supabaseAdmin.from('notifications').insert({ type: 'match_result', match_result_id: matchResult.id, tournament_id: matchResult.tournament_id, game_slug: matchResult.game_slug, title, message, url, metadata: { winner_name: matchResult.winner_name, mvp_name: matchResult.mvp_name, placement_3_name: matchResult.placement_3_name, placement_4_name: matchResult.placement_4_name } }).select('*').single();
+  duplicate = Boolean(existingId);
+  const title = formatMatchNotificationTitle(sourceMatch, matchResult.tournament);
+  const resultSummary = matchResult.winner_name ? `Match ended — ${matchResult.winner_name} won.` : 'Match ended — result finalized.';
+  const message = [resultSummary, matchResult.mvp_name ? `MVP: ${matchResult.mvp_name}.` : null].filter(Boolean).join(' ');
+  const url = matchNotificationUrl(matchResult.tournament_id, source_id);
+  const notificationPayload = { type: 'match_result', match_result_id: matchResult.id, tournament_id: matchResult.tournament_id, game_slug: matchResult.game_slug, title, message, url, metadata: { winner_name: matchResult.winner_name, mvp_name: matchResult.mvp_name, placement_3_name: matchResult.placement_3_name, placement_4_name: matchResult.placement_4_name } };
+  const notificationQuery = duplicate
+    ? supabaseAdmin.from('notifications').update(notificationPayload).eq('match_result_id', matchResult.id).eq('type', 'match_result')
+    : supabaseAdmin.from('notifications').insert(notificationPayload);
+  const { data: notification, error: nerr } = await notificationQuery.select('*').single();
   if (nerr) throw nerr;
   let push = null;
   try {
-    push = await sendFcmToEligibleUsers({ title, body: message, url, matchResultId: matchResult.id, tournamentId: matchResult.tournament_id, type: 'match_result' });
+    push = await sendFcmToEligibleUsers({ title, body: message, url, matchResultId: matchResult.id, tournamentId: matchResult.tournament_id, tournamentMatchId: source_id, type: 'match_result' });
   } catch (error) {
     push = { sent: 0, attempted: 0, error: error.message };
     console.error('Gaming Alerts FCM dispatch failed after result save:', error);
   }
-  return { matchResult, notification, push };
+  return { duplicate, matchResult, notification, push };
 }
 
 
 async function createMatchLiveAlert({ tournament, match }) {
-  const title = `${match.title} is live now`;
-  const message = `${match.title} just went live in ${tournament.name}.`;
-  const url = `/gaming-alerts?tournament=${tournament.id}&status=live`;
+  const title = formatMatchNotificationTitle(match, tournament);
+  const message = 'Match started.';
+  const url = matchNotificationUrl(tournament.id, match.id);
   const { data: notification, error } = await supabaseAdmin.from('notifications').insert({
     type: 'match_live',
     tournament_id: tournament.id,
@@ -403,10 +430,10 @@ async function createMatchLiveAlert({ tournament, match }) {
     title,
     message,
     url,
-    metadata: { tournament_match_id: match.id, match_title: match.title },
+    metadata: { tournament_match_id: match.id, match_title: match.title, event: message },
   }).select('*').single();
   if (error) throw error;
-  const push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: tournament.id, type: 'match_live' });
+  const push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: tournament.id, tournamentMatchId: match.id, type: 'match_live' });
   return { notification, push };
 }
 
@@ -415,13 +442,14 @@ export async function createManualMatchUpdateNotification(payload) {
   if (!matchId) throw new Error('tournament_match_id is required');
   const { data: match, error } = await supabaseAdmin
     .from('tournament_matches')
-    .select('id,tournament_id,title,game_slug,tournament:tournaments(id,name,game_slug,status)')
+    .select('id,tournament_id,title,game_slug,team_a,team_b,tournament:tournaments(id,name,game_slug,status)')
     .eq('id', matchId)
     .single();
   if (error || !match) throw new Error('Tournament match not found.');
-  const title = String(payload.title || payload.preset || 'Match update').trim();
-  const message = String(payload.message || `${title} for ${match.title}.`).trim();
-  const url = `/gaming-alerts?tournament=${match.tournament_id}`;
+  const eventTitle = String(payload.title || payload.preset || 'Match update').trim();
+  const title = formatMatchNotificationTitle(match, match.tournament);
+  const message = String(payload.message || `${eventTitle}.`).trim();
+  const url = matchNotificationUrl(match.tournament_id, match.id);
   const { data: notification, error: notificationError } = await supabaseAdmin.from('notifications').insert({
     type: 'match_update',
     tournament_id: match.tournament_id,
@@ -429,12 +457,12 @@ export async function createManualMatchUpdateNotification(payload) {
     title,
     message,
     url,
-    metadata: { tournament_match_id: match.id, match_title: match.title, preset: payload.preset || title },
+    metadata: { tournament_match_id: match.id, match_title: match.title, preset: payload.preset || eventTitle, event: message },
   }).select('*').single();
   if (notificationError) throw notificationError;
   let push = null;
   try {
-    push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: match.tournament_id, type: 'match_update' });
+    push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: match.tournament_id, tournamentMatchId: match.id, type: 'match_update' });
   } catch (error) {
     push = { sent: 0, attempted: 0, error: error.message };
     console.error('Gaming Alerts FCM dispatch failed after manual update:', error);
@@ -449,7 +477,7 @@ export async function deleteMatchResultAlert(matchResultId) {
   return Array.isArray(data) ? data[0] : data;
 }
 
-export async function sendFcmToEligibleUsers({ title, body, url, matchResultId, tournamentId, type = 'match_result' }) {
+export async function sendFcmToEligibleUsers({ title, body, url, matchResultId, tournamentId, tournamentMatchId, type = 'match_result' }) {
   const account = readFirebaseServiceAccount();
   const { data: tokens } = await supabaseAdmin.from('fcm_tokens').select('token,user_id');
   const userIds = Array.from(new Set((tokens || []).map((row) => row.user_id)));
@@ -464,7 +492,7 @@ export async function sendFcmToEligibleUsers({ title, body, url, matchResultId, 
   const accessToken = await getFirebaseAccessToken();
   const endpoint = `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`;
   const results = await Promise.all(eligible.map(async (row) => {
-    const res = await fetch(endpoint, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: { token: row.token, notification: { title, body }, webpush: { notification: { icon: '/icons/icon.svg', badge: '/icons/icon.svg', tag: matchResultId || 'fn-gaming-alert' }, fcm_options: { link: url } }, data: { url, matchResultId: matchResultId || '', tournamentId: tournamentId || '', type } } }) });
+    const res = await fetch(endpoint, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: { token: row.token, notification: { title, body }, webpush: { notification: { title, body, icon: '/logo-icon.jpeg', badge: '/icons/icon.svg', tag: tournamentMatchId || matchResultId || tournamentId || 'fn-gaming-alert', renotify: true, actions: tournamentMatchId || matchResultId ? [{ action: 'mute-match', title: 'Mute this match' }] : [] }, fcm_options: { link: url } }, data: { url, matchResultId: matchResultId || '', tournamentId: tournamentId || '', tournamentMatchId: tournamentMatchId || '', type } } }) });
     return { ok: res.ok, status: res.status, user_id: row.user_id };
   }));
   return { sent: results.filter((r) => r.ok).length, attempted: eligible.length };

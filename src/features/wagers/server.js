@@ -256,13 +256,8 @@ export async function settleWager(id, outcome) {
         .single();
 
       if (loserWallet) {
-        await supabaseAdmin
-          .from('wallets')
-          .update({
-            total_lost: Number(loserWallet.total_lost) + Number(bet.amount),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', bet.user_id);
+        const { error: lossError } = await supabaseAdmin.rpc('record_wager_loss', { p_user_id: bet.user_id, p_amount: Number(bet.amount) });
+        if (lossError) throw lossError;
       }
 
       losers += 1;
@@ -282,35 +277,15 @@ export async function settleWager(id, outcome) {
 
     const payout = Math.min(Number(bet.amount) * Number(odds), maxPayoutNgn);
 
-    const { data: wallet } = await supabaseAdmin
-      .from('wallets')
-      .select('balance, total_won')
-      .eq('user_id', bet.user_id)
-      .single();
-
-    if (wallet) {
-      await supabaseAdmin
-        .from('wallets')
-        .update({
-          balance:    Number(wallet.balance)   + payout,
-          total_won:  Number(wallet.total_won) + payout,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', bet.user_id);
-    }
-
     if (bet.user_id) {
-      await supabaseAdmin
-        .from('wallet_transactions')
-        .insert([{
-          user_id:     bet.user_id,
-          wager_id:    id,
-          bet_id:      bet.id,
-          type:        'Payout',
-          amount:      payout,
-          currency:    'NGN',
-          description: `Wager payout — ${outcome} wins (${Number(odds).toFixed(2)}x)`,
-        }]);
+      const { error: payoutError } = await supabaseAdmin.rpc('credit_wager_payout', {
+        p_user_id: bet.user_id,
+        p_wager_id: id,
+        p_bet_id: bet.id,
+        p_payout: payout,
+        p_description: `Wager payout — ${outcome} wins (${Number(odds).toFixed(2)}x)`,
+      });
+      if (payoutError) throw payoutError;
     }
 
     winners += 1;
@@ -338,30 +313,14 @@ export async function cancelWager(id) {
 
     if (!bet.user_id) continue;
 
-    const { data: wallet } = await supabaseAdmin
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', bet.user_id)
-      .single();
-
-    if (wallet) {
-      await supabaseAdmin
-        .from('wallets')
-        .update({ balance: Number(wallet.balance) + Number(bet.amount), updated_at: new Date().toISOString() })
-        .eq('user_id', bet.user_id);
-    }
-
-    await supabaseAdmin
-      .from('wallet_transactions')
-      .insert([{
-        user_id:     bet.user_id,
-        wager_id:    id,
-        bet_id:      bet.id,
-        type:        'Refund',
-        amount:      Number(bet.amount),
-        currency:    'NGN',
-        description: `Wager cancelled — stake refunded`,
-      }]);
+    const { error: refundError } = await supabaseAdmin.rpc('refund_wager_stake', {
+      p_user_id: bet.user_id,
+      p_wager_id: id,
+      p_bet_id: bet.id,
+      p_amount: Number(bet.amount),
+      p_description: 'Wager cancelled — stake refunded',
+    });
+    if (refundError) throw refundError;
   }
 
   return { cancelled: true, refunded: bets.length };
@@ -378,7 +337,21 @@ export async function deleteWager(id) {
   if (error) throw error;
 }
 
-export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference }) {
+export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference, paidFromWallet = false }) {
+  if (paidFromWallet) {
+    const { data, error } = await supabaseAdmin.rpc('place_wager_from_wallet', {
+      p_user_id: user_id,
+      p_wager_id: wager_id,
+      p_email: email,
+      p_selection: selection,
+      p_amount: Number(amount),
+      p_potential: Number(potential),
+      p_reference: reference,
+    });
+    if (error) throw error;
+    return data;
+  }
+
   const { data: existing } = await supabaseAdmin
     .from('wager_bets')
     .select('id')
@@ -398,7 +371,7 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
 
   await supabaseAdmin.rpc('increment_wager_pool', { wager_id, amount });
 
-  if (user_id) {
+  if (user_id && Number(amount) > 0) {
     await supabaseAdmin
       .from('wallet_transactions')
       .insert([{
