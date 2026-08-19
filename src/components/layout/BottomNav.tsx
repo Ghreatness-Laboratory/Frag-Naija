@@ -130,9 +130,6 @@ export default function BottomNav() {
               <Link href="/news" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
                 <span className="flex items-center gap-2"><Newspaper size={12} /> News</span><ChevronRight size={12} />
               </Link>
-              <Link href="/custom-wager" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
-                <span className="flex items-center gap-2"><Target size={12} /> Custom Wager</span><ChevronRight size={12} />
-              </Link>
               {pwaInstallable && (
                 <button
                   type="button"
