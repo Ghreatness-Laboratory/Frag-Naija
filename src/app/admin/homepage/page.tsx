@@ -86,6 +86,7 @@ export default function AdminHomepagePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -100,17 +101,68 @@ export default function AdminHomepagePage() {
   }, []);
 
   async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault(); setSaving(true); setError('');
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    
     try {
-      const res = await fetch('/api/homepage-settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
+      const res = await fetch('/api/homepage-settings', { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(settings) 
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
-    } catch (err) { setError(err instanceof Error ? err.message : 'Save failed'); }
-    finally { setSaving(false); }
+      
+      // Show success message
+      setSuccess(data.message || 'Homepage settings saved successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) { 
+      setError(err instanceof Error ? err.message : 'Save failed'); 
+    } finally { 
+      setSaving(false); 
+    }
   }
 
   const featuredAthleteIds = parseIds(settings.featured_athlete_ids);
   const featuredTeamIds = parseIds(settings.featured_team_ids);
 
-  return <div className="max-w-4xl p-8"><h1 className="text-xl font-bold uppercase tracking-widest text-fn-text">Homepage / General Dashboard</h1><p className="mt-1 text-xs text-fn-muted">Edit the neutral ALL GAMES landing page. Featured athletes and teams below drive the cross-game homepage mix.</p>{loading ? <div className="mt-6 flex justify-center"><BrandedLoader label="Loading homepage settings" /></div> : <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-sm border border-fn-gborder bg-fn-card p-5"><FeaturedPicker label="Featured Athletes" ids={featuredAthleteIds} options={athletes} emptyText="No featured athletes selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_athlete_ids: ids.join(',') }))} /><FeaturedPicker label="Featured Teams" ids={featuredTeamIds} options={teams} emptyText="No featured teams selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_team_ids: ids.join(',') }))} />{TEXT_FIELDS.map(([key, label]) => <Field key={key} label={label}>{key.includes('body') || key.includes('tagline') ? <Textarea value={settings[key] ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, [key]: event.target.value }))} /> : <Input value={settings[key] ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, [key]: event.target.value }))} />}</Field>)}{error && <p className="rounded border border-fn-red/20 bg-fn-red/10 px-3 py-2 text-xs text-fn-red">{error}</p>}<button type="submit" disabled={saving} className="fn-btn inline-flex items-center gap-2"><Save size={14} />{saving ? 'Saving…' : 'Save Homepage'}</button></form>}</div>;
+  return (
+    <div className="max-w-4xl p-8">
+      <h1 className="text-xl font-bold uppercase tracking-widest text-fn-text">Homepage / General Dashboard</h1>
+      <p className="mt-1 text-xs text-fn-muted">Edit the neutral ALL GAMES landing page. Featured athletes and teams below drive the cross-game homepage mix.</p>
+      {loading ? (
+        <div className="mt-6 flex justify-center">
+          <BrandedLoader label="Loading homepage settings" />
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-sm border border-fn-gborder bg-fn-card p-5">
+          <FeaturedPicker label="Featured Athletes" ids={featuredAthleteIds} options={athletes} emptyText="No featured athletes selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_athlete_ids: ids.join(',') }))} />
+          <FeaturedPicker label="Featured Teams" ids={featuredTeamIds} options={teams} emptyText="No featured teams selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_team_ids: ids.join(',') }))} />
+          {TEXT_FIELDS.map(([key, label]) => (
+            <Field key={key} label={label}>
+              {key.includes('body') || key.includes('tagline') ? (
+                <Textarea value={settings[key] ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, [key]: event.target.value }))} />
+              ) : (
+                <Input value={settings[key] ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, [key]: event.target.value }))} />
+              )}
+            </Field>
+          ))}
+          {error && (
+            <p className="rounded border border-fn-red/20 bg-fn-red/10 px-3 py-2 text-xs text-fn-red">{error}</p>
+          )}
+          {success && (
+            <p className="rounded border border-fn-green/20 bg-fn-green/10 px-3 py-2 text-xs text-fn-green">{success}</p>
+          )}
+          <button type="submit" disabled={saving} className="fn-btn inline-flex items-center gap-2">
+            <Save size={14} />
+            {saving ? 'Saving…' : 'Save Homepage'}
+          </button>
+        </form>
+      )}
+    </div>
+  );
 }
