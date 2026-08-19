@@ -40,8 +40,21 @@ async function readTable(query, fallback = []) {
 export async function GET() {
   try {
     const settings = await getHomepageSettings();
-    const featuredAthleteIds = parseFeaturedIds(settings.featured_athlete_ids);
+    const homepageFeaturedAthleteIds = parseFeaturedIds(settings.featured_athlete_ids);
     const featuredTeamIds = parseFeaturedIds(settings.featured_team_ids);
+
+    const activeFeatured = await readTable(
+      supabaseAdmin
+        .from('featured')
+        .select('type,ref_id,priority,is_active')
+        .eq('is_active', true)
+        .order('priority', { ascending: true })
+    );
+    const activeFeaturedAthleteIds = activeFeatured
+      .filter((item) => String(item.type ?? '').toLowerCase() === 'athlete')
+      .map((item) => String(item.ref_id ?? '').trim())
+      .filter(Boolean);
+    const featuredAthleteIds = activeFeaturedAthleteIds.length ? activeFeaturedAthleteIds : homepageFeaturedAthleteIds;
 
     let athleteQuery = supabaseAdmin
       .from('athletes')
