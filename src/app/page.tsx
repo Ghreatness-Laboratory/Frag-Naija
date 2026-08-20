@@ -326,32 +326,38 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
     ['ATT', athlete.attack], ['DEF', athlete.defense], ['SUR', athlete.survival], ['CLT', athlete.clutch], ['IQ', athlete.iq],
   ] as const;
 
+  // Filter stats based on game type - football games only show ATT/DEF/IQ
+  const isFootball = ['efootball', 'fc-mobile', 'ea-fc-26'].includes(athlete.game_slug ?? '');
+  const displayStats = isFootball 
+    ? stats.filter(([label]) => ['ATT', 'DEF', 'IQ'].includes(label))
+    : stats;
+
   return (
-    <motion.article variants={reveal} className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-[0_20px_70px_rgba(0,0,0,0.28)] transition-all hover:-translate-y-1 hover:border-fn-green/40">
+    <motion.article variants={reveal} className="group flex-shrink-0 w-[220px] overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-[0_20px_70px_rgba(0,0,0,0.28)] transition-all hover:-translate-y-1 hover:border-fn-green/40">
       <Link href={`/athletes/${athlete.id}`} className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
-        <div className="relative aspect-[4/5] overflow-hidden bg-fn-dark">
+        <div className="relative h-44 overflow-hidden bg-fn-dark">
           {athlete.photo_url ? (
-            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" />
+            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={220} height={176} />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(77,255,110,.16),transparent_62%)] text-fn-green"><ShieldCheck size={42} /></div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-fn-black/55 via-transparent to-fn-black/18" />
-          <span className="absolute left-3 top-3 rounded-sm border px-3 py-1 text-xs font-black uppercase tracking-widest" style={{ background: `${rankColor}22`, borderColor: `${rankColor}66`, color: rankColor }}>#{Number(item.sort_order ?? index) + 1}</span>
-          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-sm border px-2.5 py-1 text-[9px] font-black uppercase tracking-widest" style={{ background: tone.background, borderColor: tone.borderColor, color: tone.color }}><span style={{ color: tone.dotColor }}>●</span>{athlete.status || 'Active'}</span>
+          <span className="absolute left-2 top-2 rounded-sm border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest" style={{ background: `${rankColor}22`, borderColor: `${rankColor}66`, color: rankColor }}>#{Number(item.sort_order ?? index) + 1}</span>
+          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[8px] font-black uppercase tracking-widest" style={{ background: tone.background, borderColor: tone.borderColor, color: tone.color }}><span style={{ color: tone.dotColor }}>●</span>{athlete.status || 'Active'}</span>
         </div>
-        <div className="bg-fn-card p-4">
+        <div className="bg-fn-card p-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-fn-green/30 bg-fn-green/10 text-fn-green"><Medal size={16} /></span>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-fn-green/30 bg-fn-green/10 text-fn-green"><Medal size={12} /></span>
             <div className="min-w-0">
-              <h3 className="truncate font-display text-xl font-black uppercase tracking-wider text-fn-text">{name}</h3>
-              <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-[0.22em] text-fn-muted">{athlete.role || 'Athlete'}</p>
+              <h3 className="truncate font-display text-sm font-black uppercase tracking-wider text-fn-text">{name}</h3>
+              <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.22em] text-fn-muted">{athlete.role || 'Athlete'}</p>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-5 gap-1 rounded-sm border border-fn-gborder bg-fn-black/55 p-2 text-center">
-            {stats.map(([label, value]) => (
-              <div key={label} className="min-w-0 px-1">
-                <div className="font-display text-lg font-black leading-none text-fn-text sm:text-xl">{clampStat(value)}</div>
-                <div className="mt-1 truncate text-[8px] font-black uppercase tracking-widest text-fn-muted">{label}</div>
+          <div className={`mt-3 grid gap-1 rounded-sm border border-fn-gborder bg-fn-black/55 p-1.5 text-center ${displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
+            {displayStats.map(([label, value]) => (
+              <div key={label} className="min-w-0 px-0.5">
+                <div className="font-display text-base font-black leading-none text-fn-text sm:text-lg">{clampStat(value)}</div>
+                <div className="mt-0.5 truncate text-[7px] font-black uppercase tracking-widest text-fn-muted">{label}</div>
               </div>
             ))}
           </div>
@@ -372,9 +378,9 @@ function FeaturedAthletes({ athletes, selectedGame, primary, secondary, showFire
         <button type="button" onClick={onViewAll} className="electric-button flex shrink-0 items-center gap-1 rounded-sm border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL <ChevronRight size={11} /></button>
       </div>
       {athletes.length === 0 ? <p className="border border-dashed border-fn-gborder bg-fn-card/60 p-5 text-xs font-bold uppercase tracking-widest text-fn-muted">{selectedGame ? `No ${selectedGame.shortName} featured athletes have been added yet.` : 'No featured athletes have been added yet.'}</p> : (
-        <motion.div variants={cardStagger} className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <CarouselRail>
           {athletes.map((item, index) => <FeaturedAthleteCard key={item.id} item={item} index={index} primary={primary} secondary={secondary} />)}
-        </motion.div>
+        </CarouselRail>
       )}
     </motion.section>
   );
