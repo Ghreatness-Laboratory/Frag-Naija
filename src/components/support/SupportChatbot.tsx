@@ -3,10 +3,12 @@
 import { Bot, Send, X } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
+import { useDraggablePosition } from '@/hooks/useDraggablePosition';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
 const LONG_PRESS_DURATION = 600; // ms
+const CHATBOT_FAB_SIZE = 56; // 14 * 4 = 56px
 
 export default function SupportChatbot() {
   const [open, setOpen] = useState(false);
@@ -15,6 +17,18 @@ export default function SupportChatbot() {
   const [loading, setLoading] = useState(false);
   const { dismissed, handleDismiss, handleReenable } = useFloatingIconDismiss('chatbot');
   
+  // Draggable position hook
+  const { 
+    position, 
+    isDragging, 
+    handlers: dragHandlers, 
+    wasDragged, 
+    resetDraggedState,
+    style 
+  } = useDraggablePosition('fn-chatbot-position', {
+    iconSize: CHATBOT_FAB_SIZE,
+  });
+
   // Long-press detection
   const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressing = useRef(false);
@@ -43,6 +57,15 @@ export default function SupportChatbot() {
   // Re-enable chatbot (for session reset)
   const handleReenableClick = () => {
     handleReenable();
+  };
+
+  // Handle click - distinguish tap from drag
+  const handleClick = () => {
+    if (wasDragged()) {
+      resetDraggedState();
+      return;
+    }
+    setOpen((v) => !v);
   };
 
   async function send() {
@@ -91,22 +114,34 @@ export default function SupportChatbot() {
         </div>
         <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2 border-t border-fn-gborder p-2"><input value={input} onChange={(e) => setInput(e.target.value)} className="min-w-0 flex-1 border border-fn-gborder bg-fn-black px-3 py-2 text-xs outline-none focus:border-fn-green" placeholder="Ask FragNaija support" /><button className="bg-fn-green px-3 text-fn-black"><Send size={15} /></button></form>
       </section>}
-      {/* Chatbot FAB - positioned above bottom nav with clear spacing */}
+      {/* Chatbot FAB - draggable */}
       <button 
-        onClick={() => setOpen((v) => !v)} 
+        onClick={handleClick}
         onContextMenu={handleContextMenu}
-        onPointerDown={handlePressStart}
-        onPointerUp={handlePressEnd}
-        onPointerLeave={handlePressEnd}
-        className="fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[250] flex h-14 w-14 items-center justify-center rounded-full bg-fn-green text-fn-black shadow-[0_0_28px_rgba(77,255,110,.35)] ring-4 ring-fn-black/80 group touch-none" 
+        onPointerDown={(e) => {
+          handlePressStart();
+          dragHandlers.onPointerDown(e);
+        }}
+        onPointerMove={dragHandlers.onPointerMove}
+        onPointerUp={(e) => {
+          handlePressEnd();
+          dragHandlers.onPointerUp(e);
+        }}
+        onPointerLeave={(e) => {
+          handlePressEnd();
+          dragHandlers.onPointerLeave(e);
+        }}
+        onPointerCancel={dragHandlers.onPointerCancel}
+        style={style}
+        className={`fixed z-[250] flex h-14 w-14 items-center justify-center rounded-full bg-fn-green text-fn-black shadow-[0_0_28px_rgba(77,255,110,.35)] ring-4 ring-fn-black/80 group touch-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} 
         aria-label="Open support chat"
-        title="Long-press or right-click to dismiss"
+        title="Drag to move, long-press to dismiss"
       >
         <Bot size={26} />
         {/* Long-press hint appears on hover */}
-        <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-fn-black/90 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-fn-green opacity-0 transition-opacity group-hover:opacity-100">
-          Long-press to dismiss
-        </span>
+        {!isDragging && <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-fn-black/90 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-fn-green opacity-0 transition-opacity group-hover:opacity-100">
+          Drag to move · Long-press to dismiss
+        </span>}
       </button>
     </>
   );
