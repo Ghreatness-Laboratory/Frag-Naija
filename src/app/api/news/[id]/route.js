@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
     if (adminPreview) {
       const authErr = await checkAdmin();
       if (authErr) return authErr;
-      return NextResponse.json(await getNewsById(params.id));
+      return NextResponse.json(await getNewsById(params.id, { admin: true }));
     }
 
     const user = await getCurrentUser();
