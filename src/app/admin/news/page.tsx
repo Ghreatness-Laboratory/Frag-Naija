@@ -5,8 +5,10 @@ import { Plus, Upload } from 'lucide-react';
 import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
 import { Field, Input, Textarea, SubmitBtn } from '@/components/admin/Field';
+import { GAMES } from '@/lib/games';
 
-const EMPTY = { title: '', excerpt: '', content: '', image_url: '', author: '', published_at: '', published: false, pinned: false, like_count: 0, view_count: 0 };
+const CATEGORIES = ['Trending', 'Hot', 'Gossip', 'Transfer News'];
+const EMPTY = { title: '', excerpt: '', content: '', image_url: '', author: '', published_at: '', published: false, pinned: false, category: '', game_slug: '', like_count: 0, view_count: 0 };
 
 type FormState = typeof EMPTY;
 
@@ -51,6 +53,8 @@ export default function AdminNewsPage() {
       published_at: row.published_at ? new Date(String(row.published_at)).toISOString().slice(0, 16) : '',
       published:    Boolean(row.published),
       pinned:       Boolean(row.pinned),
+      category:     String(row.category     ?? ''),
+      game_slug:    String(row.game_slug    ?? ''),
       like_count:   Number(row.like_count   ?? 0),
       view_count:   Number(row.view_count   ?? 0),
     });
@@ -135,6 +139,20 @@ export default function AdminNewsPage() {
           <Field label="Featured Image URL"><Input value={form.image_url} onChange={f('image_url')} placeholder="https://..." /></Field>
           <Field label="Short Excerpt"><Textarea value={form.excerpt} onChange={f('excerpt')} placeholder="Magazine teaser shown on the landing page" /></Field>
           <Field label="Body Content" required><Textarea value={form.content} onChange={f('content')} placeholder="Article body. Markdown-style spacing is preserved." required /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Category">
+              <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} className="w-full border border-fn-gborder bg-fn-black px-3 py-2 text-fn-text focus:border-fn-green focus:outline-none">
+                <option value="">Uncategorized</option>
+                {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </Field>
+            <Field label="Game">
+              <select value={form.game_slug} onChange={(e) => setForm((p) => ({ ...p, game_slug: e.target.value }))} className="w-full border border-fn-gborder bg-fn-black px-3 py-2 text-fn-text focus:border-fn-green focus:outline-none">
+                <option value="">General / All Games</option>
+                {GAMES.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
+              </select>
+            </Field>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Displayed Likes"><Input type="number" min="0" value={form.like_count} onChange={f('like_count')} /></Field>
             <Field label="Displayed Views"><Input type="number" min="0" value={form.view_count} onChange={f('view_count')} /></Field>
