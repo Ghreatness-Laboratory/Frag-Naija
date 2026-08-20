@@ -322,6 +322,9 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
   const name = featuredAthleteName(athlete);
   const tone = athleteStatusTone(athlete.status, primary);
   const rankColor = index === 1 ? secondary : primary;
+  const game = GAMES.find((candidate) => candidate.slug === athlete.game_slug);
+  const gameLabel = game?.shortName ?? athlete.game_slug?.replace(/-/g, ' ') ?? 'Game';
+  const gameColor = game?.colors.primary ?? primary;
   const stats = [
     ['ATT', athlete.attack], ['DEF', athlete.defense], ['SUR', athlete.survival], ['CLT', athlete.clutch], ['IQ', athlete.iq],
   ] as const;
@@ -333,31 +336,32 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
     : stats;
 
   return (
-    <motion.article variants={reveal} className="group flex-shrink-0 w-[220px] overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-[0_20px_70px_rgba(0,0,0,0.28)] transition-all hover:-translate-y-1 hover:border-fn-green/40">
+    <motion.article variants={reveal} className="group w-[38vw] min-w-[132px] max-w-[152px] flex-shrink-0 snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-[0_16px_46px_rgba(0,0,0,0.26)] transition-all hover:-translate-y-1 hover:border-fn-green/40 sm:w-[176px] sm:max-w-[176px]">
       <Link href={`/athletes/${athlete.id}`} className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
-        <div className="relative h-44 overflow-hidden bg-fn-dark">
+        <div className="relative h-28 overflow-hidden bg-fn-dark sm:h-32">
           {athlete.photo_url ? (
-            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={220} height={176} />
+            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={152} height={112} />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(77,255,110,.16),transparent_62%)] text-fn-green"><ShieldCheck size={42} /></div>
+            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(77,255,110,.16),transparent_62%)] text-fn-green"><ShieldCheck size={32} /></div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-fn-black/55 via-transparent to-fn-black/18" />
-          <span className="absolute left-2 top-2 rounded-sm border px-2 py-0.5 text-[10px] font-black uppercase tracking-widest" style={{ background: `${rankColor}22`, borderColor: `${rankColor}66`, color: rankColor }}>#{Number(item.sort_order ?? index) + 1}</span>
-          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[8px] font-black uppercase tracking-widest" style={{ background: tone.background, borderColor: tone.borderColor, color: tone.color }}><span style={{ color: tone.dotColor }}>●</span>{athlete.status || 'Active'}</span>
+          <span className="absolute left-1.5 top-1.5 rounded-sm border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest" style={{ background: `${rankColor}22`, borderColor: `${rankColor}66`, color: rankColor }}>#{Number(item.sort_order ?? index) + 1}</span>
+          <span className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider" style={{ background: tone.background, borderColor: tone.borderColor, color: tone.color }}><span style={{ color: tone.dotColor }}>●</span>{athlete.status || 'Active'}</span>
+          <span className="absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)] truncate rounded-sm border px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider" style={{ background: `${gameColor}18`, borderColor: `${gameColor}55`, color: gameColor }}>{gameLabel}</span>
         </div>
-        <div className="bg-fn-card p-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-fn-green/30 bg-fn-green/10 text-fn-green"><Medal size={12} /></span>
+        <div className="bg-fn-card p-2">
+          <div className="flex items-center gap-1.5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-fn-green/30 bg-fn-green/10 text-fn-green"><Medal size={10} /></span>
             <div className="min-w-0">
-              <h3 className="truncate font-display text-sm font-black uppercase tracking-wider text-fn-text">{name}</h3>
-              <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.22em] text-fn-muted">{athlete.role || 'Athlete'}</p>
+              <h3 className="truncate font-display text-[12px] font-black uppercase leading-tight tracking-wider text-fn-text">{name}</h3>
+              <p className="mt-0.5 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-fn-muted">{athlete.role || 'Athlete'}</p>
             </div>
           </div>
-          <div className={`mt-3 grid gap-1 rounded-sm border border-fn-gborder bg-fn-black/55 p-1.5 text-center ${displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
+          <div className={`mt-2 grid gap-0.5 rounded-sm border border-fn-gborder bg-fn-black/55 p-1 text-center ${displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
             {displayStats.map(([label, value]) => (
-              <div key={label} className="min-w-0 px-0.5">
-                <div className="font-display text-base font-black leading-none text-fn-text sm:text-lg">{clampStat(value)}</div>
-                <div className="mt-0.5 truncate text-[7px] font-black uppercase tracking-widest text-fn-muted">{label}</div>
+              <div key={label} className="min-w-0 px-px">
+                <div className="font-display text-[13px] font-black leading-none text-fn-text sm:text-sm">{clampStat(value)}</div>
+                <div className="mt-0.5 truncate text-[6px] font-black uppercase leading-none tracking-[0.12em] text-fn-muted sm:text-[7px]">{label}</div>
               </div>
             ))}
           </div>
