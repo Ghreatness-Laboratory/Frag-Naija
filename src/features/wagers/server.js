@@ -373,7 +373,6 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
     .single();
   if (error) throw error;
 
-  await supabaseAdmin.rpc('increment_wager_pool', { wager_id, amount });
   if (user_id) await qualifyReferralForWagerBet(user_id, data.id).catch(() => {});
 
   if (user_id && Number(amount) > 0) {

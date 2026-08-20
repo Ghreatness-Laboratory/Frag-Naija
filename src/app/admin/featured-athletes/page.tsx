@@ -1,6 +1,5 @@
 'use client';
 
-import OptimizedImage from '../../../components/common/OptimizedImage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Plus, Search, Trash2 } from 'lucide-react';
 
@@ -86,7 +85,7 @@ export default function AdminFeaturedAthletesPage() {
         {loading ? <p className="text-xs text-fn-muted">Loading featured athletes…</p> : featured.length === 0 ? <p className="border border-dashed border-fn-gborder bg-fn-card p-5 text-xs text-fn-muted">No featured athletes yet. Search above to add the first card.</p> : featured.map((item, index) => (
           <div key={item.id} className="flex items-center gap-3 border border-fn-gborder bg-fn-card p-3">
             <span className="font-display text-lg font-black text-fn-green">#{index + 1}</span>
-            <div className="h-12 w-12 shrink-0 overflow-hidden bg-fn-dark">{item.athlete?.photo_url ? <OptimizedImage src={item.athlete.photo_url} alt="" className="h-full w-full object-cover" /> : null}</div>
+            <div className="h-12 w-12 shrink-0 overflow-hidden bg-fn-dark">{item.athlete?.photo_url ? <img src={item.athlete.photo_url} alt="" className="h-full w-full object-cover" /> : null}</div>
             <div className="min-w-0 flex-1"><p className="truncate text-sm font-black uppercase text-fn-text">{athleteName(item.athlete)}</p><p className="text-[10px] uppercase tracking-widest text-fn-muted">{item.athlete?.role || 'Athlete'} · {item.athlete?.status || 'Active'}</p></div>
             <button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="border border-fn-gborder p-2 text-fn-muted hover:text-fn-green disabled:opacity-30"><ArrowUp size={14} /></button>
             <button type="button" onClick={() => move(index, 1)} disabled={index === featured.length - 1} className="border border-fn-gborder p-2 text-fn-muted hover:text-fn-green disabled:opacity-30"><ArrowDown size={14} /></button>

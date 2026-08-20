@@ -4,13 +4,6 @@ import withPWA from 'next-pwa';
 const nextConfig = {
   eslint:     { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
-  images: {
-    formats: ['image/avif', 'image/webp'],
-    remotePatterns: [
-      { protocol: 'https', hostname: '**' },
-      { protocol: 'http', hostname: '**' },
-    ],
-  },
 
   async headers() {
     return [
