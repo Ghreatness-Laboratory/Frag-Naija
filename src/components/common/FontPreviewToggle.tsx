@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Type, X, Check } from "lucide-react";
 import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
+import { useDraggablePosition } from '@/hooks/useDraggablePosition';
 
 type FontOption = {
   id: string;
@@ -67,11 +68,25 @@ const FONT_OPTIONS: FontOption[] = [
   },
 ];
 
+const FONT_TOGGLE_SIZE = 48; // Approximate size of the toggle button
+
 export default function FontPreviewToggle() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentFont, setCurrentFont] = useState<string>("default");
   const [selectedFont, setSelectedFont] = useState<string | null>(null);
   const { dismissed, handleDismiss, handleReenable, mounted } = useFloatingIconDismiss('font-toggle');
+  
+  // Draggable position hook
+  const { 
+    position, 
+    isDragging, 
+    handlers: dragHandlers, 
+    wasDragged, 
+    resetDraggedState,
+    style 
+  } = useDraggablePosition('fn-font-toggle-position', {
+    iconSize: FONT_TOGGLE_SIZE,
+  });
 
   useEffect(() => {
     const saved = localStorage.getItem("fn-font-preview");
@@ -115,6 +130,15 @@ export default function FontPreviewToggle() {
     setIsOpen(false);
   };
 
+  // Handle click - distinguish tap from drag
+  const handleClick = () => {
+    if (wasDragged()) {
+      resetDraggedState();
+      return;
+    }
+    setIsOpen(true);
+  };
+
   const hasSelectedCandidate = selectedFont !== null && selectedFont !== "default";
 
   // If dismissed and not open, show small re-open tab
@@ -134,14 +158,20 @@ export default function FontPreviewToggle() {
 
   return (
     <>
-      {/* Floating toggle button - positioned ABOVE chatbot FAB with clear spacing */}
+      {/* Floating toggle button - draggable */}
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={handleClick}
         onContextMenu={(e) => { e.preventDefault(); handleDismiss(); }}
-        className="fixed bottom-[calc(18rem+env(safe-area-inset-bottom))] right-4 z-50 flex items-center gap-2 rounded-sm border border-fn-green/40 bg-fn-black/90 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-green transition-all hover:bg-fn-green/20 md:bottom-6"
+        onPointerDown={dragHandlers.onPointerDown}
+        onPointerMove={dragHandlers.onPointerMove}
+        onPointerUp={dragHandlers.onPointerUp}
+        onPointerLeave={dragHandlers.onPointerLeave}
+        onPointerCancel={dragHandlers.onPointerCancel}
+        style={style}
+        className={`fixed z-50 flex items-center gap-2 rounded-sm border border-fn-green/40 bg-fn-black/90 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-fn-green transition-all hover:bg-fn-green/20 touch-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         aria-label="Toggle font preview"
-        title="Right-click to dismiss"
+        title="Drag to move, right-click to dismiss"
       >
         <Type size={14} />
         <span className="hidden sm:inline">Preview Fonts</span>
