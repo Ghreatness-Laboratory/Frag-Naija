@@ -1,4 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { assertUserAtLeast } from '@/features/userProfile.server';
+import { qualifyReferralForWagerBet } from '@/features/offers.server';
 import { getSetting } from '@/features/settings/server';
 import {
   createTransferRecipient,
@@ -338,6 +340,7 @@ export async function deleteWager(id) {
 }
 
 export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference, paidFromWallet = false }) {
+  if (user_id) await assertUserAtLeast(user_id, 18);
   if (paidFromWallet) {
     const { data, error } = await supabaseAdmin.rpc('place_wager_from_wallet', {
       p_user_id: user_id,
@@ -349,6 +352,7 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
       p_reference: reference,
     });
     if (error) throw error;
+    if (user_id && data) await qualifyReferralForWagerBet(user_id, Array.isArray(data) ? data[0]?.id : data.id).catch(() => {});
     return data;
   }
 
@@ -370,6 +374,7 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
   if (error) throw error;
 
   await supabaseAdmin.rpc('increment_wager_pool', { wager_id, amount });
+  if (user_id) await qualifyReferralForWagerBet(user_id, data.id).catch(() => {});
 
   if (user_id && Number(amount) > 0) {
     await supabaseAdmin

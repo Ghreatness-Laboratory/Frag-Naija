@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, User, UserPlus, Gamepad2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, UserPlus, Gamepad2, CalendarDays, Gift } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
 
 function GamePickCard({ game, selected, onSelect }: { game: Game; selected: boolean; onSelect: () => void }) {
@@ -60,8 +60,9 @@ function safeNextPath(value: string | null) {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const nextPath = typeof window === 'undefined' ? '/' : safeNextPath(new URLSearchParams(window.location.search).get('next'));
-  const [form, setForm]       = useState({ email: '', username: '', password: '', confirm: '' });
+  const params = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search);
+  const nextPath = safeNextPath(params?.get('next') || null);
+  const [form, setForm]       = useState({ email: '', username: '', date_of_birth: '', referral_code: params?.get('ref') || '', password: '', confirm: '' });
   const [show, setShow]       = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
@@ -79,6 +80,12 @@ export default function RegisterPage() {
 
     if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!form.date_of_birth) { setError('Date of birth is required'); return; }
+    const dob = new Date(`${form.date_of_birth}T00:00:00Z`);
+    const today = new Date();
+    let age = today.getUTCFullYear() - dob.getUTCFullYear();
+    if (today.getUTCMonth() < dob.getUTCMonth() || (today.getUTCMonth() === dob.getUTCMonth() && today.getUTCDate() < dob.getUTCDate())) age -= 1;
+    if (!Number.isFinite(age) || age < 16) { setError('You must be at least 16 years old to create a FragNaija account.'); return; }
 
     setLoading(true);
     try {
@@ -89,6 +96,8 @@ export default function RegisterPage() {
           email:    form.email,
           password: form.password,
           username: form.username || undefined,
+          date_of_birth: form.date_of_birth,
+          referral_code: form.referral_code || undefined,
           preferred_game_slug: pickedGame?.slug || undefined,
         }),
       });
@@ -188,6 +197,26 @@ export default function RegisterPage() {
                   className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
                   placeholder="FragKing99" autoComplete="username"
                 />
+              </div>
+            </div>
+
+
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Date of Birth</label>
+              <div className="relative">
+                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
+                <input type="date" value={form.date_of_birth} onChange={set('date_of_birth')} className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors" required />
+              </div>
+              <p className="mt-1 text-[10px] text-fn-muted">You must be 16+ to create an account and 18+ for wagering.</p>
+            </div>
+
+            {/* Referral Code */}
+            <div>
+              <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Referral Code <span className="text-fn-muted/50 normal-case tracking-normal">(optional)</span></label>
+              <div className="relative">
+                <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
+                <input type="text" value={form.referral_code} onChange={set('referral_code')} className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm uppercase focus:outline-none focus:border-fn-green transition-colors" placeholder="FRAGCODE" />
               </div>
             </div>
 

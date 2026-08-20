@@ -15,7 +15,7 @@ export default function SupportChatbot() {
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: 'Hi! I can help with FragNaija navigation, games, rankings, Fantasy League, Wager Zone, wallet basics, and account support. Chats may be logged for quality review.' }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const { dismissed, handleDismiss, handleReenable, mounted } = useFloatingIconDismiss('chatbot');
+  const { dismissed, handleDismiss, handleReenable } = useFloatingIconDismiss('chatbot');
   
   // Draggable position hook
   const { 
@@ -83,6 +83,12 @@ export default function SupportChatbot() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    const openSupport = () => { handleReenable(); setOpen(true); };
+    window.addEventListener('fn-open-support-chat', openSupport);
+    return () => window.removeEventListener('fn-open-support-chat', openSupport);
+  }, [handleReenable]);
 
   // If dismissed and not open, show small re-open tab
   if (dismissed && !open) {

@@ -18,8 +18,11 @@ export default function CustomWagerPage(){
  const [msg,setMsg]=useState('');
  const [proofFile, setProofFile] = useState<File | null>(null);
  const [uploading, setUploading] = useState(false);
+ const [ageBlocked, setAgeBlocked] = useState(false);
 
  async function load(){ 
+   const me=await fetch('/api/auth/me',{credentials:'include'});
+   if(me.ok){ const user=await me.json(); const dob=user.date_of_birth; if(!dob){ setAgeBlocked(true); return; } const d=new Date(`${dob}T00:00:00Z`); const now=new Date(); let age=now.getUTCFullYear()-d.getUTCFullYear(); if(now.getUTCMonth()<d.getUTCMonth()||(now.getUTCMonth()===d.getUTCMonth()&&now.getUTCDate()<d.getUTCDate())) age-=1; if(!Number.isFinite(age)||age<18){ setAgeBlocked(true); return; }}
    const r=await fetch('/api/custom-wagers',{credentials:'include'}); 
    if(r.status===401){setMsg('Login required.');return;} 
    if(r.ok)setRows(await r.json()); 
@@ -70,7 +73,7 @@ export default function CustomWagerPage(){
          setUploading(false);
          return;
        }
-     } catch (err) {
+     } catch {
        setMsg('Failed to upload proof image');
        setUploading(false);
        return;
@@ -118,6 +121,7 @@ export default function CustomWagerPage(){
    return GAMES.find(g => g.slug === slug)?.name || slug;
  }
 
+ if(ageBlocked) return <main className="min-h-screen bg-fn-black px-4 py-12 text-fn-text"><section className="mx-auto max-w-xl border border-fn-yellow/40 bg-fn-card p-6 text-center"><p className="fn-label text-fn-yellow">18+ Required</p><h1 className="mt-2 text-2xl font-black uppercase tracking-widest">Custom Wager Locked</h1><p className="mt-3 text-sm text-fn-muted">You must be 18 or older with a valid date of birth on file to place wagers.</p><Link href="/settings" className="fn-btn mt-5 inline-flex">Update Date of Birth</Link></section></main>;
  return <main className="min-h-screen bg-fn-black px-3 py-5 pb-28 text-fn-text sm:px-6">
    <section className="mx-auto max-w-5xl">
      <p className="fn-label text-fn-green"><Swords size={12} className="mr-1 inline"/>Custom Wager Escrow</p>

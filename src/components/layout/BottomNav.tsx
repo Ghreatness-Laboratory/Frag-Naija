@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, Download, Home, Menu, Search, Shield, Sparkles, Swords, Target, Ticket, User, X, Bell, Newspaper } from "lucide-react";
+import { ChevronRight, Download, Home, Menu, Search, Shield, Sparkles, Swords, Target, Ticket, User, X, Bell, Newspaper, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePWAInstallPrompt } from "@/components/usePWAInstallPrompt";
 
@@ -129,6 +129,9 @@ export default function BottomNav() {
               </Link>
               <Link href="/gaming-alerts" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
                 <span className="flex items-center gap-2"><Bell size={12} /> Gaming Alerts</span><ChevronRight size={12} />
+              </Link>
+              <Link href="/settings" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
+                <span className="flex items-center gap-2"><Settings size={12} /> Settings</span><ChevronRight size={12} />
               </Link>
               <Link href="/news" className="flex items-center justify-between rounded-sm border border-fn-green/30 bg-fn-green/10 px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-fn-green hover:bg-fn-green/20">
                 <span className="flex items-center gap-2"><Newspaper size={12} /> News</span><ChevronRight size={12} />

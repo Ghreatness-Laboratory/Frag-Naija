@@ -1,0 +1,39 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { Bot, Gift, Moon, Save, Sun, User } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
+import FontSettingsPanel from '@/components/common/FontSettingsPanel';
+
+type Profile = { username?: string | null; date_of_birth?: string | null; referral_code?: string | null };
+type Preferences = { show_notification_shortcuts?: boolean; match_alerts_enabled?: boolean };
+type Referral = { id: string; referred_display: string; status: string; bonus_amount_ngn: number };
+
+export default function SettingsPage() {
+  const { theme, toggle } = useTheme();
+  const [profile, setProfile] = useState<Profile>({});
+  const [prefs, setPrefs] = useState<Preferences>({ show_notification_shortcuts: true, match_alerts_enabled: true });
+  const [offers, setOffers] = useState<{ referral_code?: string; referrals?: Referral[] }>({});
+  const [promo, setPromo] = useState('');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => { Promise.all([
+    fetch('/api/settings/profile').then(r => r.ok ? r.json() : {}),
+    fetch('/api/settings/preferences').then(r => r.ok ? r.json() : {}),
+    fetch('/api/offers').then(r => r.ok ? r.json() : {}),
+  ]).then(([profileData, prefData, offerData]) => { setProfile(profileData); setPrefs(prefData); setOffers(offerData); }); }, []);
+
+  async function saveProfile() { setMessage(''); const res = await fetch('/api/settings/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) }); const data = await res.json(); setMessage(res.ok ? 'Profile saved.' : data.error || 'Unable to save profile.'); }
+  async function savePrefs(next: Preferences) { setPrefs(next); await fetch('/api/settings/preferences', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) }); }
+  async function redeem() { setMessage(''); const res = await fetch('/api/offers/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: promo }) }); const data = await res.json(); setMessage(res.ok ? 'Promo redeemed and wallet credited.' : data.error || 'Promo failed.'); }
+  const referralUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/register?ref=${offers.referral_code || profile.referral_code || ''}`;
+
+  return <main className="min-h-screen bg-fn-black px-4 py-8 text-fn-text"><div className="mx-auto max-w-3xl space-y-5">
+    <section className="border border-fn-gborder bg-fn-card p-5"><p className="fn-label text-fn-green">Settings</p><h1 className="font-display text-3xl font-black uppercase tracking-widest">Account Command Center</h1></section>
+    {message && <p className="border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-xs text-fn-green">{message}</p>}
+    <section className="border border-fn-gborder bg-fn-card p-5"><p className="fn-label mb-3">Appearance</p><button type="button" onClick={toggle} className="inline-flex items-center gap-2 border border-fn-gborder px-3 py-2 text-xs font-black uppercase tracking-widest text-fn-muted hover:text-fn-green">{theme === 'dark' ? <Sun size={14}/> : <Moon size={14}/>} Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode</button><div className="mt-4"><p className="fn-label mb-2">Font Settings</p><FontSettingsPanel /></div></section>
+    <section className="border border-fn-gborder bg-fn-card p-5"><p className="fn-label mb-3">Notifications</p><label className="flex items-center justify-between gap-4 py-2 text-xs uppercase tracking-widest text-fn-muted"><span>Show notification shortcuts</span><input type="checkbox" checked={prefs.show_notification_shortcuts !== false} onChange={(e) => savePrefs({ ...prefs, show_notification_shortcuts: e.target.checked })} className="accent-fn-green" /></label><label className="flex items-center justify-between gap-4 py-2 text-xs uppercase tracking-widest text-fn-muted"><span>Match alerts</span><input type="checkbox" checked={prefs.match_alerts_enabled !== false} onChange={(e) => savePrefs({ ...prefs, match_alerts_enabled: e.target.checked })} className="accent-fn-green" /></label></section>
+    <section className="border border-fn-gborder bg-fn-card p-5"><p className="fn-label mb-3">Support</p><button type="button" onClick={() => window.dispatchEvent(new Event('fn-open-support-chat'))} className="fn-btn inline-flex items-center gap-2"><Bot size={14}/> Customer Support</button></section>
+    <section className="border border-fn-gborder bg-fn-card p-5"><p className="fn-label mb-3 flex items-center gap-2"><User size={12}/> My Profile</p><div className="grid gap-3 sm:grid-cols-2"><input value={profile.username || ''} onChange={(e) => setProfile({ ...profile, username: e.target.value })} placeholder="Username" className="border border-fn-gborder bg-fn-black px-3 py-2 text-sm outline-none"/><input type="date" value={profile.date_of_birth || ''} onChange={(e) => setProfile({ ...profile, date_of_birth: e.target.value })} className="border border-fn-gborder bg-fn-black px-3 py-2 text-sm outline-none"/></div><button onClick={saveProfile} className="fn-btn mt-3 inline-flex items-center gap-2"><Save size={14}/> Save Profile</button></section>
+    <section className="border border-fn-gborder bg-fn-card p-5"><p className="fn-label mb-3 flex items-center gap-2"><Gift size={12}/> Offers</p><div className="rounded-sm border border-fn-gborder bg-fn-black/60 p-3"><p className="text-xs text-fn-muted">Referral code</p><p className="mt-1 font-display text-xl font-black text-fn-green">{offers.referral_code || profile.referral_code || '—'}</p><p className="mt-1 break-all text-[10px] text-fn-muted">{referralUrl}</p></div><div className="mt-3 flex gap-2"><input value={promo} onChange={(e)=>setPromo(e.target.value)} placeholder="Enter promo code" className="min-w-0 flex-1 border border-fn-gborder bg-fn-black px-3 py-2 text-xs uppercase outline-none"/><button onClick={redeem} className="fn-btn px-3">Redeem</button></div><div className="mt-4 space-y-2">{(offers.referrals || []).map((ref)=><div key={ref.id} className="flex items-center justify-between border border-fn-gborder bg-fn-black/50 px-3 py-2 text-xs"><span>{ref.referred_display}</span><span className={ref.status === 'Qualified' ? 'text-fn-green' : 'text-fn-yellow'}>{ref.status} · ₦{Number(ref.bonus_amount_ngn||0).toLocaleString()}</span></div>)}</div></section>
+  </div></main>;
+}

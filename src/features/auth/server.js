@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { createWallet, getWallet } from '@/features/wagers/server';
+import { createReferral } from '@/features/offers.server';
+import { ensureUserProfile, getUserProfile, resolveReferralCode, validateMinimumAge } from '@/features/userProfile.server';
 
 export function createPublicSupabaseClient() {
   return createClient(
@@ -19,7 +21,9 @@ export async function loginWithPassword({ email, password }) {
   return data;
 }
 
-export async function registerUser({ email, password, username, preferred_game_slug }) {
+export async function registerUser({ email, password, username, preferred_game_slug, date_of_birth, referral_code }) {
+  if (!date_of_birth || !validateMinimumAge(date_of_birth, 16)) throw new Error('You must be at least 16 years old to create a FragNaija account.');
+  const referrerId = await resolveReferralCode(referral_code);
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
@@ -30,6 +34,8 @@ export async function registerUser({ email, password, username, preferred_game_s
 
   try {
     await createWallet(data.user.id, { signupBonusEligible: true });
+    await ensureUserProfile(data.user.id, { username: username || email.split('@')[0], date_of_birth, referred_by: referrerId });
+    if (referrerId) await createReferral(referrerId, data.user.id);
   } catch {
     // Wallet creation is non-fatal during registration.
   }
@@ -65,6 +71,9 @@ export async function getCurrentUser() {
     // Wallet may not exist yet.
   }
 
+  let profile = null;
+  try { profile = await getUserProfile(user.id); } catch {}
+
   // Fetch enrolled MFA factors using user-scoped client
   let factors = [];
   try {
@@ -81,7 +90,9 @@ export async function getCurrentUser() {
   return {
     id:           user.id,
     email:        user.email,
-    username:     user.user_metadata?.username,
+    username:     profile?.username ?? user.user_metadata?.username,
+    date_of_birth: profile?.date_of_birth ?? null,
+    referral_code: profile?.referral_code ?? null,
     preferred_game_slug: user.user_metadata?.preferred_game_slug ?? null,
     provider:     user.app_metadata?.provider ?? 'email',
     totp_enabled: factors.some(f => f.status === 'verified'),

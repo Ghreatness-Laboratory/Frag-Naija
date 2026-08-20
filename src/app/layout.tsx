@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/context/GameContext";
 import PWARegister from "@/components/PWARegister";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
-import FontPreviewToggle from "@/components/common/FontPreviewToggle";
 import NotificationsProvider from "@/components/notifications/NotificationsProvider";
 import FCMRegistrar from "@/components/notifications/FCMRegistrar";
 import SupportChatbot from "@/components/support/SupportChatbot";
@@ -99,7 +98,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <PWARegister />
             <PWAInstallPrompt />
             <FCMRegistrar />
-            <FontPreviewToggle />
             <SupportChatbot />
             </NotificationsProvider>
           </GameProvider>
