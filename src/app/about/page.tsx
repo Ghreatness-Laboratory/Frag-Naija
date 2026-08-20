@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { Building2, ChevronRight } from 'lucide-react';
 import { getCompanyProfile } from '@/features/companyProfile.server';
-import { listStakeholders } from '@/features/stakeholders.server';
-import StakeholderCard, { type Stakeholder } from '@/components/common/StakeholderCard';
 import OptimizedImage from '../../components/common/OptimizedImage';
 
 const blocks = [
