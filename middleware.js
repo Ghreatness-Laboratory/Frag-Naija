@@ -4,15 +4,55 @@ import {
   verifyAdminSessionToken,
 } from '@/features/shared/server/adminSession';
 
+function isComingSoonEnabled() {
+  return String(process.env.SITE_LAUNCH_MODE || '').toLowerCase() === 'coming_soon';
+}
+
+function isStaticOrInternalAsset(pathname) {
+  return (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/logos/') ||
+    pathname.startsWith('/icons/') ||
+    pathname === '/sw.js' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/favicon.ico' ||
+    pathname === '/logo-icon.jpeg'
+  );
+}
+
+function isComingSoonPublicRoute(pathname) {
+  return (
+    pathname.startsWith('/news') ||
+    pathname.startsWith('/coming-soon') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/api/news') ||
+    pathname.startsWith('/api/launch-settings') ||
+    pathname.startsWith('/api/auth/login') ||
+    pathname.startsWith('/api/auth/logout') ||
+    pathname.startsWith('/api/auth/session') ||
+    pathname.startsWith('/api/auth/admin/check')
+  );
+}
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const adminAuth = request.cookies.get(getAdminSessionCookieName())?.value;
+  const isAdmin = await verifyAdminSessionToken(adminAuth);
+
+  // ── 0. Pre-launch coming-soon gate ───────────────────────────────────────
+  if (isComingSoonEnabled() && !isAdmin && !isStaticOrInternalAsset(pathname) && !isComingSoonPublicRoute(pathname)) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'FragNaija is coming soon. Public access is limited to News until launch.' }, { status: 403 });
+    }
+
+    return NextResponse.rewrite(new URL('/coming-soon', request.url));
+  }
 
   // ── 1. Admin route protection ────────────────────────────────────────────
   if (pathname.startsWith('/admin')) {
     if (pathname === '/admin/login') return NextResponse.next();
 
-    const adminAuth = request.cookies.get(getAdminSessionCookieName())?.value;
-    if (!(await verifyAdminSessionToken(adminAuth))) {
+    if (!isAdmin) {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(loginUrl);
@@ -33,7 +73,7 @@ export async function middleware(request) {
     pathname === '/manifest.webmanifest' ||
     pathname === '/favicon.ico';
 
-  if (!isInternal) {
+  if (!isInternal && !isAdmin) {
     const gameSelected = request.cookies.get('fn-game')?.value;
     if (!gameSelected) {
       return NextResponse.redirect(new URL('/select-game', request.url));

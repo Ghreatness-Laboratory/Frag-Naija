@@ -161,7 +161,7 @@ export default function Navbar() {
 
           {!user && (
             <Link href="/login" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-3 py-1.5 text-[10px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
-              Login / Sign Up
+              Admin Login
             </Link>
           )}
 
@@ -366,7 +366,7 @@ export default function Navbar() {
                 </button>
               ) : (
                 <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
-                  Login / Sign Up
+                  Admin Login
                 </Link>
               )}
             </div>

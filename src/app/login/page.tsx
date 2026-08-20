@@ -219,10 +219,7 @@ export default function LoginPage() {
             </button>
 
             <p className="text-center text-fn-muted text-xs">
-              No account?{' '}
-              <Link href={`/register?next=${encodeURIComponent(nextPath)}`} className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">
-                Create one
-              </Link>
+              Public signup is paused until launch. Existing admin accounts can sign in.
             </p>
           </form>
         )}
