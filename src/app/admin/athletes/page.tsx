@@ -1,6 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import OptimizedImage from '../../../components/common/OptimizedImage';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Plus, Upload } from 'lucide-react';
@@ -404,7 +404,7 @@ function AthletesContent() {
             label: 'Photo',
             render: (r) =>
               r.photo_url ? (
-                <OptimizedImage src={String(r.photo_url)} alt="" className="w-8 h-8 rounded-full object-cover" />
+                <img src={String(r.photo_url)} alt="" className="w-8 h-8 rounded-full object-cover" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-fn-card2 border border-fn-gborder" />
               ),

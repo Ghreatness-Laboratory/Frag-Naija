@@ -20,7 +20,8 @@ export async function getFeaturedAthletes() {
     .from('featured_athletes')
     .select(FEATURED_SELECT)
     .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(12);
   if (error) throw error;
   return (data || []).map(normalize);
 }

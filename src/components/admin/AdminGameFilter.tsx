@@ -3,11 +3,12 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { GAMES } from '@/lib/games';
 
-export default function AdminGameFilter({ currentSlug }: { currentSlug: string }) {
+export default function AdminGameFilter({ currentSlug, onChange }: { currentSlug: string; onChange?: (slug: string) => void }) {
   const router     = useRouter();
   const pathname   = usePathname();
 
   function pick(slug: string) {
+    if (onChange) { onChange(slug); return; }
     const params = new URLSearchParams();
     if (slug !== 'all') params.set('game', slug);
     const qs = params.toString();

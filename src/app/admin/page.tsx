@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight, Banknote, LayoutDashboard, Building2, MessageCircle, ShoppingBag, Activity } from 'lucide-react';
+import { Users, Shield, ArrowLeftRight, Trophy, Swords, Film, ChevronRight, Banknote, LayoutDashboard, Building2, MessageCircle, ShoppingBag, Activity, Handshake, Flame } from 'lucide-react';
 import { GAMES } from '@/lib/games';
 
 const SECTIONS = [
@@ -10,12 +10,14 @@ const SECTIONS = [
   { href: '/admin/teams',       icon: Shield,         label: 'Teams',       desc: 'Create and manage esports teams'       },
   { href: '/admin/organizations', icon: Building2,     label: 'Organizations', desc: 'Manage multi-game esports organizations' },
   { href: '/admin/company-profile', icon: Building2, label: 'Company Profile', desc: 'Edit Ghreatness Laboratory About page and logo' },
+  { href: '/admin/stakeholders', icon: Handshake, label: 'Stakeholders', desc: 'Manage public stakeholder people cards' },
   { href: '/admin/transfers',   icon: ArrowLeftRight, label: 'Transfers',   desc: 'Post rumours and confirmed moves'       },
   { href: '/admin/tournaments', icon: Trophy,         label: 'Tournaments', desc: 'Schedule and update tournaments'        },
   { href: '/admin/tournament-results', icon: Trophy, label: 'Tournament Results', desc: 'Record placements and ranking points' },
   { href: '/admin/live-matches', icon: Activity, label: 'Live Match Updates', desc: 'Update scores and progress for existing fixtures' },
   { href: '/admin/match-results', icon: Swords, label: 'Match Results', desc: 'Finalize tournament match results and alert followers' },
-  { href: '/admin/wagers',      icon: Swords,         label: 'Wagers',      desc: 'Create markets, toggle hot, settle'    },
+  { href: '/admin/wagers',      icon: Swords,         label: 'Wagers',      desc: 'Create markets, manual stake pool, settle'    },
+  { href: '/admin/featured-wagers', icon: Flame, label: 'Featured Wagers', desc: 'Choose exact wager cards shown on Home' },
   { href: '/admin/duels',       icon: Swords,         label: 'TDM Duels',   desc: 'Settle TDM 1V1 player duels'    },
   { href: '/admin/highlights',  icon: Film,           label: 'Highlights',  desc: 'Upload clips and Theatre of War vids'  },
   { href: '/admin/communities', icon: MessageCircle, label: 'Communities', desc: 'Manage public WhatsApp and Discord hubs' },

@@ -6,10 +6,30 @@ function cleanText(value) {
   return String(value ?? '').trim();
 }
 
+const PLACEHOLDER_NEWS_PATTERNS = [
+  /blaze['’]?s legacy/i,
+  /ethan\s+["'“”‘’]?blaze/i,
+  /cyber strike/i,
+];
+
+function truncateAtWord(value, maxLength) {
+  const text = cleanText(value).replace(/\s+/g, ' ');
+  if (text.length <= maxLength) return text;
+  const clipped = text.slice(0, maxLength + 1);
+  const boundary = clipped.search(/\s+\S*$/);
+  const safe = boundary > 40 ? clipped.slice(0, boundary) : clipped.slice(0, maxLength);
+  return `${safe.replace(/[\s.,;:!?-]+$/, '')}…`;
+}
+
 function makeExcerpt(content, explicitExcerpt = '') {
   const excerpt = cleanText(explicitExcerpt);
-  if (excerpt) return excerpt.slice(0, 260);
-  return cleanText(content).replace(/\s+/g, ' ').slice(0, 180);
+  if (excerpt) return truncateAtWord(excerpt, 170);
+  return truncateAtWord(content, 155);
+}
+
+function isPlaceholderNews(row) {
+  const haystack = `${row?.title ?? ''} ${row?.excerpt ?? ''} ${row?.content ?? ''}`;
+  return PLACEHOLDER_NEWS_PATTERNS.some((pattern) => pattern.test(haystack));
 }
 
 function normalizeArticle(row, counts = {}, currentUserId = null) {
@@ -66,7 +86,7 @@ export async function getAllNews({ published, includeContent = false, currentUse
   const { data, error } = await query;
   if (error) throw error;
 
-  const rows = data || [];
+  const rows = published === true ? (data || []).filter((row) => !isPlaceholderNews(row)) : (data || []);
   const counts = await getCounts(rows.map((row) => row.id), currentUserId);
   return rows.map((row) => {
     const article = normalizeArticle(row, counts.get(row.id), currentUserId);
@@ -84,13 +104,15 @@ export async function recordNewsView(articleId, userId) {
   if (error) throw error;
 }
 
-export async function getNewsById(id, { currentUserId = null, recordView = false } = {}) {
+export async function getNewsById(id, { currentUserId = null, recordView = false, admin = false } = {}) {
   const { data, error } = await supabaseAdmin
     .from('news')
     .select(ARTICLE_SELECT)
     .eq('id', id)
     .single();
   if (error) throw error;
+  if (!admin && !data.published) throw new Error('Article not found');
+  if (!admin && isPlaceholderNews(data)) throw new Error('Article not found');
 
   if (recordView && currentUserId && data.published) {
     await recordNewsView(id, currentUserId);
@@ -125,7 +147,7 @@ export async function createNews(body) {
 }
 
 export async function updateNews(id, body) {
-  const current = await getNewsById(id);
+  const current = await getNewsById(id, { admin: true });
   const updates = {};
 
   if (body.title !== undefined) updates.title = cleanText(body.title);
