@@ -1,5 +1,4 @@
 "use client";
-import OptimizedImage from '../components/common/OptimizedImage';
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
@@ -345,7 +344,7 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
       <Link href={`/athletes/${athlete.id}`} className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
         <div className="relative h-28 overflow-hidden bg-fn-dark sm:h-32">
           {athlete.photo_url ? (
-            <OptimizedImage src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={152} height={112} />
+            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={152} height={112} />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(77,255,110,.16),transparent_62%)] text-fn-green"><ShieldCheck size={32} /></div>
           )}
@@ -743,7 +742,7 @@ export default function HomePage() {
         {shopItems.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No shop items are published yet.</p> : (
           <motion.div variants={cardStagger}>
             <CarouselRail>
-              {shopItems.map((item) => <Link key={item.id} href="/shop" className="group min-w-[240px] snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <OptimizedImage src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
+              {shopItems.map((item) => <Link key={item.id} href="/shop" className="group min-w-[240px] snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
             </CarouselRail>
           </motion.div>)}
       </motion.section>}
@@ -772,7 +771,7 @@ export default function HomePage() {
         <Link href="/about" className="group flex items-center justify-between gap-4 rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">
-              {companyProfile?.company_logo ? <OptimizedImage src={companyProfile.company_logo} alt={`${companyProfile.company_name ?? 'Ghreatness Laboratory'} logo`} className="h-full w-full object-cover" /> : <Building2 size={18} className="text-fn-green" />}
+              {companyProfile?.company_logo ? <img src={companyProfile.company_logo} alt={`${companyProfile.company_name ?? 'Ghreatness Laboratory'} logo`} className="h-full w-full object-cover" /> : <Building2 size={18} className="text-fn-green" />}
             </div>
             <div>
               <p className="fn-label" style={{ color: primary }}>Powered by</p>

@@ -1,6 +1,5 @@
 "use client";
 
-import OptimizedImage from '../../components/common/OptimizedImage';
 import BrandedLoader from "@/components/common/BrandedLoader";
 import { useAuthGate } from "@/components/common/LoginGate";
 import { ArrowUpRight, Clock, Eye, Heart, MessageCircle, Newspaper, User } from "lucide-react";
@@ -88,7 +87,7 @@ export default function NewsPage() {
         <article className="grid overflow-hidden border border-fn-green/30 bg-fn-card lg:grid-cols-[1.15fr_.85fr]">
           <div className="relative min-h-[260px] border-b border-fn-gborder lg:border-b-0 lg:border-r">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <OptimizedImage src={imageFor(lead)} alt={lead.title} className="absolute inset-0 h-full w-full object-cover" />
+            <img src={imageFor(lead)} alt={lead.title} className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-fn-black via-fn-black/45 to-transparent" />
             <div className="absolute left-4 top-4 border border-fn-green/40 bg-fn-black/80 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-green">Lead Story</div>
           </div>
@@ -113,7 +112,7 @@ export default function NewsPage() {
             <article key={article.id} className="border border-fn-gborder bg-fn-card">
               <div className="relative h-40 border-b border-fn-gborder">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <OptimizedImage src={imageFor(article)} alt={article.title} className="h-full w-full object-cover" />
+                <img src={imageFor(article)} alt={article.title} className="h-full w-full object-cover" />
               </div>
               <div className="p-4">
                 <p className="fn-label text-fn-green">{formatDate(article.published_at || article.created_at)}</p>

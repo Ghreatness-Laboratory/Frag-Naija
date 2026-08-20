@@ -1,5 +1,4 @@
 import { ExternalLink, UserRound } from 'lucide-react';
-import OptimizedImage from './OptimizedImage';
 
 export type Stakeholder = {
   id: string;
@@ -29,7 +28,7 @@ export default function StakeholderCard({ stakeholder, compact = false }: { stak
       <div className="flex items-center gap-3">
         <div className={`${compact ? 'h-12 w-12' : 'h-16 w-16'} flex shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark`}>
           {stakeholder.photo_url ? (
-            <OptimizedImage src={stakeholder.photo_url} alt={stakeholder.name} className="h-full w-full object-cover" />
+            <img src={stakeholder.photo_url} alt={stakeholder.name} className="h-full w-full object-cover" loading="lazy" />
           ) : (
             <UserRound size={compact ? 20 : 26} className="text-fn-green" />
           )}
