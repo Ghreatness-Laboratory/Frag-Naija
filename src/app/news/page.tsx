@@ -106,11 +106,12 @@ export default function NewsPage() {
           {!canRead && <Link href="/login?next=/news" className="fn-btn px-4 py-2 text-xs">Login for full stories</Link>}
         </div>
 
-        <article className="grid overflow-hidden rounded-sm border border-fn-green/25 bg-fn-card shadow-[0_18px_60px_rgba(0,0,0,0.25)] lg:grid-cols-[minmax(0,.95fr)_minmax(0,1.05fr)]">
-          <div className="relative aspect-[16/9] max-h-[48vh] min-h-[190px] border-b border-fn-gborder lg:max-h-[420px] lg:border-b-0 lg:border-r">
-            <CompactNewsImage article={lead} lead />
-            <div className="absolute inset-0 bg-gradient-to-t from-fn-black/60 via-fn-black/12 to-transparent" />
-            <div className="absolute left-3 top-3 border border-fn-green/40 bg-fn-black/80 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-fn-green">Lead Story</div>
+        <article className="grid overflow-hidden border border-fn-green/30 bg-fn-card lg:grid-cols-[1.15fr_.85fr]">
+          <div className="relative min-h-[260px] border-b border-fn-gborder lg:border-b-0 lg:border-r">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imageFor(lead)} alt={lead.title} className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-fn-black via-fn-black/45 to-transparent" />
+            <div className="absolute left-4 top-4 border border-fn-green/40 bg-fn-black/80 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-fn-green">Lead Story</div>
           </div>
           <div className="flex flex-col justify-center p-4 sm:p-5 lg:p-6">
             <div className="flex flex-wrap gap-2 text-[9px] uppercase tracking-widest text-fn-muted">
@@ -129,23 +130,21 @@ export default function NewsPage() {
           </div>
         </article>
 
-        {rest.length > 0 && (
-          <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {rest.map((article) => (
-              <article key={article.id} className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">
-                <div className="relative aspect-[16/9] max-h-40 border-b border-fn-gborder">
-                  <CompactNewsImage article={article} />
-                </div>
-                <div className="p-4">
-                  <p className="fn-label text-fn-green">{formatDate(article.published_at || article.created_at)}</p>
-                  <h3 className="mt-2 line-clamp-2 font-display text-lg font-black uppercase tracking-widest">{article.title}</h3>
-                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-fn-muted">{article.excerpt}</p>
-                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-fn-gborder pt-3">
-                    <div className="flex gap-2 text-[9px] uppercase tracking-widest text-fn-muted">
-                      <span><Heart size={10} className="mr-1 inline" />{article.like_count}</span>
-                      <span><MessageCircle size={10} className="mr-1 inline" />{article.comment_count}</span>
-                    </div>
-                    {canRead ? <Link href={`/news/${article.id}`} className="text-[10px] font-black uppercase tracking-widest text-fn-green">Read</Link> : <Link href={`/login?next=${encodeURIComponent(`/news/${article.id}`)}`} className="text-[10px] font-black uppercase tracking-widest text-fn-green">Login</Link>}
+        <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {rest.map((article) => (
+            <article key={article.id} className="border border-fn-gborder bg-fn-card">
+              <div className="relative h-40 border-b border-fn-gborder">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageFor(article)} alt={article.title} className="h-full w-full object-cover" />
+              </div>
+              <div className="p-4">
+                <p className="fn-label text-fn-green">{formatDate(article.published_at || article.created_at)}</p>
+                <h3 className="mt-2 line-clamp-2 font-display text-xl font-black uppercase tracking-widest">{article.title}</h3>
+                <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-fn-muted">{article.excerpt}</p>
+                <div className="mt-4 flex items-center justify-between gap-2 border-t border-fn-gborder pt-3">
+                  <div className="flex gap-2 text-[9px] uppercase tracking-widest text-fn-muted">
+                    <span><Heart size={10} className="mr-1 inline" />{article.like_count}</span>
+                    <span><MessageCircle size={10} className="mr-1 inline" />{article.comment_count}</span>
                   </div>
                 </div>
               </article>
