@@ -114,6 +114,20 @@ export async function getActiveWagers({ game_slug } = {}) {
   return data;
 }
 
+export async function getFeaturedHomeWagers(limit = 3) {
+  const { data, error } = await supabaseAdmin
+    .from('wagers')
+    .select('id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at,featured_on_home')
+    .eq('status', 'Active')
+    .eq('featured_on_home', true)
+    .gt('closes_at', new Date().toISOString())
+    .order('hot', { ascending: false })
+    .order('closes_at', { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function getWagerById(id) {
   const { data: wager, error } = await supabaseAdmin.from('wagers').select('*').eq('id', id).single();
   if (error) throw error;
@@ -206,6 +220,25 @@ export async function toggleWagerHot(id) {
   const { data, error } = await supabaseAdmin
     .from('wagers')
     .update({ hot: !wager.hot })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+
+  return data;
+}
+
+export async function toggleWagerFeaturedOnHome(id) {
+  const { data: wager, error: wagerError } = await supabaseAdmin
+    .from('wagers')
+    .select('featured_on_home')
+    .eq('id', id)
+    .single();
+  if (wagerError) throw wagerError;
+
+  const { data, error } = await supabaseAdmin
+    .from('wagers')
+    .update({ featured_on_home: !wager.featured_on_home })
     .eq('id', id)
     .select()
     .single();
