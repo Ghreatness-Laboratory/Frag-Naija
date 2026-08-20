@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2, Bell } from "lucide-react";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2, Bell, Settings } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGame } from "@/context/GameContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
@@ -186,6 +186,16 @@ export default function Navbar() {
                 <Wallet size={10} /> Wallet
               </Link>
               <Link
+                href="/settings"
+                className={`flex items-center gap-1 px-2.5 py-1.5 border rounded-sm text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  path === "/settings"
+                    ? "text-fn-green bg-fn-green/10 border-fn-green/30"
+                    : "text-fn-muted border-fn-gborder hover:text-fn-green hover:border-fn-green/30"
+                }`}
+              >
+                <Settings size={10} /> Settings
+              </Link>
+              <Link
                 href="/security"
                 className={`flex items-center gap-1 px-2.5 py-1.5 border rounded-sm text-[10px] font-bold uppercase tracking-wider transition-all ${
                   path === "/security"
@@ -307,6 +317,18 @@ export default function Navbar() {
                     }`}
                   >
                     <span className="flex items-center gap-2"><Wallet size={12} /> Wallet</span>
+                    <ChevronRight size={12} />
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
+                      path === "/settings"
+                        ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
+                        : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2"><Settings size={12} /> Settings</span>
                     <ChevronRight size={12} />
                   </Link>
                   <Link

@@ -45,6 +45,7 @@ type CurrentUser = {
   wallet?: {
     balance?: number | string | null;
   } | null;
+  date_of_birth?: string | null;
 } | null;
 
 type CurrentMarket = Record<string, unknown> & {

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { getSetting } from '@/features/settings/server';
+import { assertUserAtLeast } from '@/features/userProfile.server';
 
 async function settingNumber(key, fallback) {
   const value = Number(await getSetting(key));
@@ -50,6 +51,7 @@ export async function listCustomWagers(userId, { admin = false } = {}) {
 }
 
 export async function createCustomWager(userId, body) {
+  await assertUserAtLeast(userId, 18);
   const stake = Number(body.stake_amount);
   const min = await settingNumber('custom_wager_min_stake', 500);
   const max = await settingNumber('custom_wager_max_stake', 5000000);
@@ -77,6 +79,7 @@ export async function actOnCustomWager(userId, id, action, body = {}) {
   const isOpponent = wager.opponent_id === userId;
   if (!isCreator && !isOpponent) throw new Error('Not your wager');
 
+  if (['accept', 'fund'].includes(action)) await assertUserAtLeast(userId, 18);
   if (action === 'accept') await supabaseAdmin.from('custom_wagers').update({ status: 'funding', updated_at: new Date().toISOString() }).eq('id', id).eq('opponent_id', userId);
   if (action === 'fund') {
     if (wager.status !== 'funding' && wager.status !== 'pending_acceptance') throw new Error('Wager is not fundable');

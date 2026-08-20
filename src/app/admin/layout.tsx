@@ -26,6 +26,8 @@ const NAV = [
   { href: '/admin/support',        label: 'AI Support',  icon: Bot },
   { href: '/admin/predictors',     label: 'Predictors',  icon: Star },
   { href: '/admin/featured',       label: 'Featured',    icon: TrendingUp },
+  { href: '/admin/featured-athletes', label: 'Featured Athletes', icon: Users },
+  { href: '/admin/promo-codes', label: 'Promo Codes', icon: Star },
   { href: '/admin/company-profile', label: 'Company Profile', icon: Building2 },
   { href: '/admin/communities',    label: 'Communities', icon: MessageCircle },
   { href: '/admin/shop',           label: 'Shop',        icon: ShoppingBag },
