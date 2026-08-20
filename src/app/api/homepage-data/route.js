@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { DEFAULT_HOMEPAGE_SETTINGS, getHomepageSettings } from '@/features/homepage/server';
-import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 import { getCompanyProfile } from '@/features/companyProfile.server';
+import { getFeaturedAthletes } from '@/features/featuredAthletes.server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const ATHLETE_FIELDS = 'id,name,ign,role,known_name,team,jersey_number,rating,overall_rating,kills,assists,winrate,attack,defense,survival,iq,clutch,photo_url,status,game_slug,is_icon';
 const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
 const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at';
@@ -24,12 +23,6 @@ function sortByIds(rows, ids) {
   return [...rows].sort((a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER));
 }
 
-function withCalculatedRating(athlete) {
-  return {
-    ...athlete,
-    overall_rating: calculateAthleteOverallRating(athlete, athlete.game_slug),
-  };
-}
 
 async function readTable(query, fallback = []) {
   const { data, error } = await query;
@@ -40,28 +33,7 @@ async function readTable(query, fallback = []) {
 export async function GET() {
   try {
     const settings = await getHomepageSettings();
-    const homepageFeaturedAthleteIds = parseFeaturedIds(settings.featured_athlete_ids);
     const featuredTeamIds = parseFeaturedIds(settings.featured_team_ids);
-
-    const activeFeatured = await readTable(
-      supabaseAdmin
-        .from('featured')
-        .select('type,ref_id,priority,is_active')
-        .eq('is_active', true)
-        .order('priority', { ascending: true })
-    );
-    const activeFeaturedAthleteIds = activeFeatured
-      .filter((item) => String(item.type ?? '').toLowerCase() === 'athlete')
-      .map((item) => String(item.ref_id ?? '').trim())
-      .filter(Boolean);
-    const featuredAthleteIds = activeFeaturedAthleteIds.length ? activeFeaturedAthleteIds : homepageFeaturedAthleteIds;
-
-    let athleteQuery = supabaseAdmin
-      .from('athletes')
-      .select(ATHLETE_FIELDS)
-      .order('overall_rating', { ascending: false })
-      .limit(featuredAthleteIds.length || 6);
-    if (featuredAthleteIds.length) athleteQuery = athleteQuery.in('id', featuredAthleteIds);
 
     let teamQuery = supabaseAdmin
       .from('teams')
@@ -70,8 +42,8 @@ export async function GET() {
       .limit(featuredTeamIds.length || 4);
     if (featuredTeamIds.length) teamQuery = teamQuery.in('id', featuredTeamIds);
 
-    const [athletes, wagers, transfers, shopItems, tournaments, teams, companyProfile] = await Promise.all([
-      readTable(athleteQuery),
+    const [featuredAthletes, wagers, transfers, shopItems, tournaments, teams, companyProfile] = await Promise.all([
+      getFeaturedAthletes(),
       readTable(supabaseAdmin.from('wagers').select(WAGER_FIELDS).eq('status', 'Active').order('hot', { ascending: false }).order('closes_at', { ascending: true }).limit(3)),
       readTable(supabaseAdmin.from('transfers').select(TRANSFER_FIELDS).order('date', { ascending: false }).limit(4)),
       readTable(supabaseAdmin.from('shop_items').select(SHOP_FIELDS).limit(4)),
@@ -81,7 +53,8 @@ export async function GET() {
     ]);
 
     return NextResponse.json({
-      athletes: sortByIds(athletes.map(withCalculatedRating), featuredAthleteIds),
+      featuredAthletes,
+      athletes: featuredAthletes.map((item) => item.athlete).filter(Boolean),
       wagers,
       transfers,
       shopItems,
