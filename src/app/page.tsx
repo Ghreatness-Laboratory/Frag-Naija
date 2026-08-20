@@ -447,9 +447,17 @@ export default function HomePage() {
   }, [selectedGame]);
   const athleteSource = allAthletes.length || featuredAthleteIds.length ? allAthletes : fallbackAthletes;
   const teamSource = allTeams.length || featuredTeamIds.length ? allTeams : fallbackTeamCards;
-  const gameAthletes: Athlete[] = useMemo(() => (selectedGame
-    ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-    : athleteSource.slice(0, 6)), [athleteSource, selectedGame]);
+  const gameAthletes: Athlete[] = useMemo(() => {
+    if (featuredAthleteIds.length && allAthletes.length) {
+      const curated = pickByIds(allAthletes, featuredAthleteIds);
+      return selectedGame
+        ? curated.filter((athlete) => athlete.game_slug === selectedGame.slug)
+        : curated;
+    }
+    return selectedGame
+      ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
+      : athleteSource.slice(0, 6);
+  }, [allAthletes, featuredAthleteIds, athleteSource, selectedGame]);
   const iconAthletes: Athlete[] = useMemo(() => {
     if (!user) return [];
     const icons = (athleteSource as Athlete[]).filter((athlete) => Boolean(athlete.is_icon));
