@@ -48,14 +48,14 @@ export const metadata: Metadata = {
     title: "Frag Naija",
   },
   formatDetection: { telephone: false },
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/logo-icon.jpeg", type: "image/jpeg",    sizes: "512x512" },
-      { url: "/icons/icon.svg", type: "image/svg+xml"                   },
+      { url: "/pwaicon.png", type: "image/png", sizes: "192x192" },
+      { url: "/pwaicon.png", type: "image/png", sizes: "512x512" },
     ],
-    shortcut: "/logo-icon.jpeg",
-    apple:    "/logo-icon.jpeg",
+    shortcut: "/pwaicon.png",
+    apple:    "/pwaicon.png",
   },
 };
 
