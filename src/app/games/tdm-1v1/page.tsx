@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Brain, Check, ChevronLeft, Shield, X, Play, Zap } from 'lucide-react';
-import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
+import { Brain, Check, ChevronLeft, Shield, Play, Zap } from 'lucide-react';
 import { useAthletes } from '@/lib/hooks';
 import { useGame } from '@/context/GameContext';
 import { GAMES } from '@/lib/games';
-import { calculateDuelOddsFromKd, kdOf } from '@/lib/duel-odds';
+import { calculateDuelOddsFromElo, calculateDuelOddsFromKd, eloOf, kdOf } from '@/lib/duel-odds';
 import { DuelSimViewer, type DuelPlayer } from '@/components/common/DuelSimViewer';
 import { DuelResultScreen } from '@/components/common/DuelResultScreen';
 import RouteLoadingScreen from '@/components/common/RouteLoadingScreen';
@@ -19,11 +19,9 @@ type PlacedWager = { id:string; potential_payout:number|string; stake?:number|st
 
 type Step = 'grid' | 'reveal' | 'wager' | 'wagerLocked' | 'matchSim' | 'result';
 
-const SIGNAL = '#4dff6e';
-const EMBER = '#ff5a3c';
 
 function displayName(athlete?: Athlete | null) { return athlete?.known_name || athlete?.ign || athlete?.name || 'Empty Slot'; }
-function ratingOf(athlete?: Athlete | null) { return Number(athlete?.overall_rating ?? athlete?.rating ?? 0); }
+function ratingOf(athlete?: Athlete | null, isChess = false) { return isChess ? eloOf(athlete) : Number(athlete?.overall_rating ?? athlete?.rating ?? 0); }
 function portrait(athlete?: Athlete | null) { return athlete?.photo_url || ''; }
 function getStats(athlete?: Athlete | null) {
   return {
@@ -31,6 +29,50 @@ function getStats(athlete?: Athlete | null) {
     defense: Number(athlete?.defense ?? athlete?.survival ?? 50),
     iq: Number(athlete?.iq ?? athlete?.clutch ?? 50)
   };
+}
+
+
+function RevealMetrics({ athlete, isChess }: { athlete: Athlete; isChess: boolean }) {
+  if (isChess) {
+    return (
+      <div className="w-full max-w-[220px] border border-fn-gborder bg-fn-card/50 p-3 text-center">
+        <p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">Rating</p>
+        <p className="mt-1 font-display text-3xl font-black text-fn-green">{eloOf(athlete)}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid w-full max-w-[220px] grid-cols-3 gap-1.5">
+      <div className="border border-fn-gborder bg-fn-card/50 p-2">
+        <div className="flex items-center gap-1.5"><Zap size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">ATK</p></div>
+        <p className="mt-1 text-lg font-black text-fn-green">{getStats(athlete).attack}</p>
+      </div>
+      <div className="border border-fn-gborder bg-fn-card/50 p-2">
+        <div className="flex items-center gap-1.5"><Shield size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">DEF</p></div>
+        <p className="mt-1 text-lg font-black text-fn-green">{getStats(athlete).defense}</p>
+      </div>
+      <div className="border border-fn-gborder bg-fn-card/50 p-2">
+        <div className="flex items-center gap-1.5"><Brain size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">IQ</p></div>
+        <p className="mt-1 text-lg font-black text-fn-green">{getStats(athlete).iq}</p>
+      </div>
+    </div>
+  );
+}
+
+function ChessMatchProgress({ playerAName, playerBName, onFinish }: { playerAName: string; playerBName: string; onFinish: () => void }) {
+  return (
+    <div className="border border-fn-gborder bg-fn-card p-6 text-center">
+      <p className="fn-label text-fn-green">Chess match in progress</p>
+      <h1 className="mt-2 font-display text-3xl font-black uppercase tracking-widest text-fn-text">{playerAName} vs {playerBName}</h1>
+      <div className="mx-auto mt-6 grid max-w-md grid-cols-2 gap-3 text-left">
+        <div className="border border-fn-gborder bg-fn-black p-4"><p className="fn-label">White clock</p><p className="mt-1 font-display text-2xl font-black text-fn-green">05:00</p></div>
+        <div className="border border-fn-gborder bg-fn-black p-4"><p className="fn-label">Black clock</p><p className="mt-1 font-display text-2xl font-black text-fn-green">05:00</p></div>
+      </div>
+      <p className="mx-auto mt-4 max-w-lg text-xs leading-relaxed text-fn-muted">Board visualization is intentionally out of launch scope. Admin finalization determines the result after the live game completes.</p>
+      <button type="button" onClick={onFinish} className="mt-6 bg-fn-green px-6 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Finalize demo result</button>
+    </div>
+  );
 }
 
 function Slot({ athlete, label }: { athlete: Athlete | null; label: string }) {
@@ -84,29 +126,15 @@ function preloadRosterPortraits(roster: Athlete[]) {
   ).then(() => undefined);
 }
 
-function RevealFighter({ athlete, odds, side, reduceMotion, onPick, picked }: { athlete: Athlete; odds: number; side: 'left' | 'right'; reduceMotion: boolean; onPick: () => void; picked: boolean }) {
-  return (
-    <motion.div
-      initial={reduceMotion ? false : { x: side === 'left' ? '-120%' : '120%', filter: 'blur(14px)', opacity: 0 }}
-      animate={{ x: 0, filter: 'blur(0px)', opacity: 1 }}
-      transition={reduceMotion ? undefined : { duration: 0.55, ease: [0.2, 1.4, 0.4, 1] }}
-      className="flex flex-col items-center gap-3"
-    >
-      <div className="w-full max-w-[260px] aspect-[3/4] border border-fn-gborder bg-fn-card overflow-hidden">
-        {portrait(athlete) ? <img src={portrait(athlete)} alt="" className="h-full w-full object-cover brightness-[.8]" /> : <PlayerCardTemplate athlete={{ ...athlete, ign: athlete.ign || athlete.name }} rating={ratingOf(athlete)} primary={SIGNAL} gameName="TDM 1V1" variant="featured" className="h-full" />}
-      </div>
-      <h2 className="text-center text-xl font-black uppercase tracking-widest text-fn-text">{displayName(athlete)}</h2>
-      <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-fn-muted">K/D {kdOf(athlete).toFixed(2)} · Odds <span className="text-fn-green">{odds.toFixed(2)}x</span></p>
-      <button type="button" onClick={onPick} className={`w-full max-w-[260px] border px-4 py-3 text-xs font-black uppercase tracking-widest focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green ${picked ? 'border-fn-green bg-fn-green text-fn-black' : 'border-fn-gborder bg-fn-card text-fn-text hover:border-fn-green'}`}>Back {displayName(athlete)}</button>
-    </motion.div>
-  );
-}
-
-export default function TdmOneVOnePage() {
+function TdmOneVOneContent() {
   const reduceMotion = Boolean(useReducedMotion());
+  const searchParams = useSearchParams();
   const { selectedGame, isHydrated } = useGame();
   const activeGame = selectedGame ?? GAMES[0];
   const gameSlug = activeGame.slug;
+  const mode = searchParams.get('mode') === 'blitz_1v1' ? 'blitz_1v1' : searchParams.get('mode') === 'rapid_1v1' ? 'rapid_1v1' : gameSlug === 'chess' ? 'rapid_1v1' : 'tdm_1v1';
+  const isChess = gameSlug === 'chess';
+  const modeLabel = isChess ? (mode === 'blitz_1v1' ? 'Blitz 1v1' : 'Rapid 1v1') : 'TDM 1V1';
   const { data: athletes = [], loading } = useAthletes({ game_slug: isHydrated ? gameSlug : '' }) as { data: Athlete[] | null; loading: boolean };
   const roster = useMemo(() => (athletes || []).filter((a) => !a.game_slug || a.game_slug === gameSlug), [athletes, gameSlug]);
   const [p1, setP1] = useState<Athlete | null>(null);
@@ -116,18 +144,16 @@ export default function TdmOneVOnePage() {
   const [picked, setPicked] = useState<'a' | 'b'>('a');
   const [stake, setStake] = useState('');
   const [placed, setPlaced] = useState<PlacedWager | null>(null);
-  const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [rosterReady, setRosterReady] = useState(false);
   const [matchResult, setMatchResult] = useState<{ winner: 'a' | 'b'; kills: number; mvp?: DuelPlayer } | null>(null);
 
-  const previewOdds = p1 && p2 ? calculateDuelOddsFromKd(kdOf(p1), kdOf(p2)) : { odds_a: 0, odds_b: 0 };
+  const previewOdds = p1 && p2 ? (isChess ? calculateDuelOddsFromElo(eloOf(p1), eloOf(p2)) : calculateDuelOddsFromKd(kdOf(p1), kdOf(p2))) : { odds_a: 0, odds_b: 0 };
   const oddsA = Number(duel?.odds_a ?? previewOdds.odds_a);
   const oddsB = Number(duel?.odds_b ?? previewOdds.odds_b);
   const both = Boolean(p1 && p2);
   const pickedOdds = picked === 'a' ? oddsA : oddsB;
-  const pickedAthlete = picked === 'a' ? p1 : p2;
 
   useEffect(() => {
     let cancelled = false;
@@ -163,7 +189,7 @@ export default function TdmOneVOnePage() {
       const res = await fetch('/api/duels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player_a_id: p1.id, player_b_id: p2.id, game_slug: gameSlug }),
+        body: JSON.stringify({ player_a_id: p1.id, player_b_id: p2.id, game_slug: gameSlug, mode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not create duel');
@@ -182,19 +208,6 @@ export default function TdmOneVOnePage() {
     else if (step === 'wager') setStep('reveal');
     else if (step === 'wagerLocked') setStep('wager');
     else if (step === 'matchSim' || step === 'result') setStep('wagerLocked');
-  }
-
-  function fullReset() {
-    setP1(null);
-    setP2(null);
-    setStep('grid');
-    setDuel(null);
-    setPicked('a');
-    setStake('');
-    setPlaced(null);
-    setModal(false);
-    setError('');
-    setMatchResult(null);
   }
 
   function placeWager() {
@@ -234,7 +247,7 @@ export default function TdmOneVOnePage() {
       {step === 'grid' ? (
         <AnimatePresence mode="wait">
           {!rosterReady ? (
-            <RouteLoadingScreen subtitle="LOADING MATCHUP" ariaLabel="Loading TDM 1V1 matchup" reduceMotion={reduceMotion} loaderKey="tdm-loader" />
+            <RouteLoadingScreen subtitle="LOADING MATCHUP" ariaLabel={`Loading ${modeLabel} matchup`} reduceMotion={reduceMotion} loaderKey={isChess ? 'chess-loader' : 'tdm-loader'} />
           ) : (
         <motion.section
           key="tdm-grid"
@@ -248,7 +261,7 @@ export default function TdmOneVOnePage() {
             <ChevronLeft size={13} /> Virtual Games
           </Link>
           <div className="mb-3">
-            <p className="fn-label">TDM 1V1</p>
+            <p className="fn-label">{modeLabel}</p>
             <h1 className="text-2xl font-black uppercase tracking-widest sm:text-4xl">Select Athletes</h1>
           </div>
           <div className="sticky top-14 z-20 mb-3 border border-fn-gborder bg-fn-card/95 p-2 backdrop-blur">
@@ -268,7 +281,7 @@ export default function TdmOneVOnePage() {
                   disabled={saving}
                   className="mt-2 w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green disabled:opacity-60"
                 >
-                  {saving ? 'Confirming...' : 'Confirm Matchup'}
+                  {saving ? 'Confirming...' : `Confirm ${modeLabel} Matchup`}
                 </motion.button>
               )}
             </AnimatePresence>
@@ -321,24 +334,11 @@ export default function TdmOneVOnePage() {
                   <div className="flex h-full items-center justify-center text-fn-green"><Shield size={48} /></div>
                 )}
                 <div className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-sm border-2 border-fn-green bg-fn-black/90">
-                  <span className="text-sm font-black text-fn-green">{ratingOf(p1)}</span>
+                  <span className="text-sm font-black text-fn-green">{ratingOf(p1, isChess)}</span>
                 </div>
               </div>
               <h2 className="text-center text-lg font-black uppercase tracking-wider text-fn-text">{displayName(p1).split(' ').pop() || displayName(p1)}</h2>
-              <div className="grid w-full max-w-[220px] grid-cols-3 gap-1.5">
-                <div className="border border-fn-gborder bg-fn-card/50 p-2">
-                  <div className="flex items-center gap-1.5"><Zap size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">ATK</p></div>
-                  <p className="mt-1 text-lg font-black text-fn-green">{getStats(p1).attack}</p>
-                </div>
-                <div className="border border-fn-gborder bg-fn-card/50 p-2">
-                  <div className="flex items-center gap-1.5"><Shield size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">DEF</p></div>
-                  <p className="mt-1 text-lg font-black text-fn-green">{getStats(p1).defense}</p>
-                </div>
-                <div className="border border-fn-gborder bg-fn-card/50 p-2">
-                  <div className="flex items-center gap-1.5"><Brain size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">IQ</p></div>
-                  <p className="mt-1 text-lg font-black text-fn-green">{getStats(p1).iq}</p>
-                </div>
-              </div>
+              <RevealMetrics athlete={p1} isChess={isChess} />
             </motion.div>
 
             <motion.div
@@ -364,24 +364,11 @@ export default function TdmOneVOnePage() {
                   <div className="flex h-full items-center justify-center text-fn-green"><Shield size={48} /></div>
                 )}
                 <div className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-sm border-2 border-fn-green bg-fn-black/90">
-                  <span className="text-sm font-black text-fn-green">{ratingOf(p2)}</span>
+                  <span className="text-sm font-black text-fn-green">{ratingOf(p2, isChess)}</span>
                 </div>
               </div>
               <h2 className="text-center text-lg font-black uppercase tracking-wider text-fn-text">{displayName(p2).split(' ').pop() || displayName(p2)}</h2>
-              <div className="grid w-full max-w-[220px] grid-cols-3 gap-1.5">
-                <div className="border border-fn-gborder bg-fn-card/50 p-2">
-                  <div className="flex items-center gap-1.5"><Zap size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">ATK</p></div>
-                  <p className="mt-1 text-lg font-black text-fn-green">{getStats(p2).attack}</p>
-                </div>
-                <div className="border border-fn-gborder bg-fn-card/50 p-2">
-                  <div className="flex items-center gap-1.5"><Shield size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">DEF</p></div>
-                  <p className="mt-1 text-lg font-black text-fn-green">{getStats(p2).defense}</p>
-                </div>
-                <div className="border border-fn-gborder bg-fn-card/50 p-2">
-                  <div className="flex items-center gap-1.5"><Brain size={12} className="text-fn-green" /><p className="text-[9px] font-black uppercase tracking-widest text-fn-muted">IQ</p></div>
-                  <p className="mt-1 text-lg font-black text-fn-green">{getStats(p2).iq}</p>
-                </div>
-              </div>
+              <RevealMetrics athlete={p2} isChess={isChess} />
             </motion.div>
           </div>
           <motion.div
@@ -403,7 +390,7 @@ export default function TdmOneVOnePage() {
         <motion.section key="wager" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-8">
           <button type="button" onClick={back} className="mb-6 text-left text-xs font-black uppercase tracking-widest text-fn-text hover:text-fn-green">← Back</button>
           <div className="border border-fn-gborder bg-fn-card p-5">
-            <p className="fn-label">TDM 1V1 DUEL</p>
+            <p className="fn-label">{modeLabel} DUEL</p>
             <h1 className="mt-1 text-xl font-black uppercase tracking-widest">{displayName(p1)} vs {displayName(p2)}</h1>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {[['a', p1, oddsA], ['b', p2, oddsB]].map(([side, athlete, odd]) => (
@@ -480,14 +467,18 @@ export default function TdmOneVOnePage() {
       ) : step === 'matchSim' && p1 && p2 ? (
         <motion.section key="matchSim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-5xl px-4 py-6">
           <button type="button" onClick={back} className="mb-4 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-fn-muted hover:text-fn-green"><ChevronLeft size={13} /> Back</button>
-          <DuelSimViewer
-            playerAName={displayName(p1)}
-            playerBName={displayName(p2)}
-            playerAStats={getStats(p1)}
-            playerBStats={getStats(p2)}
-            onMatchEnd={handleMatchEnd}
-            onSkipToResult={handleSkipToResult}
-          />
+          {isChess ? (
+            <ChessMatchProgress playerAName={displayName(p1)} playerBName={displayName(p2)} onFinish={handleSkipToResult} />
+          ) : (
+            <DuelSimViewer
+              playerAName={displayName(p1)}
+              playerBName={displayName(p2)}
+              playerAStats={getStats(p1)}
+              playerBStats={getStats(p2)}
+              onMatchEnd={handleMatchEnd}
+              onSkipToResult={handleSkipToResult}
+            />
+          )}
         </motion.section>
       ) : step === 'result' && p1 && p2 && matchResult ? (
         <motion.section key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-3xl px-4 py-6">
@@ -505,5 +496,14 @@ export default function TdmOneVOnePage() {
         </motion.section>
       ) : null}
     </main>
+  );
+}
+
+
+export default function TdmOneVOnePage() {
+  return (
+    <Suspense fallback={<RouteLoadingScreen subtitle="LOADING MATCHUP" ariaLabel="Loading 1v1 matchup" reduceMotion={false} loaderKey="one-v-one-loader" />}>
+      <TdmOneVOneContent />
+    </Suspense>
   );
 }

@@ -1,4 +1,5 @@
-export const SHOOTER_GAME_SLUGS = new Set(['pubg-mobile', 'free-fire', 'cod-mobile', 'blood-strike']);
+export const SHOOTER_GAME_SLUGS = new Set(['pubg-mobile', 'free-fire', 'cod-mobile']);
+export const CHESS_GAME_SLUGS = new Set(['chess']);
 export const FOOTBALL_GAME_SLUGS = new Set(['efootball', 'fc-mobile', 'ea-fc-26']);
 
 export function isShooterGame(gameSlug?: string | null) {
@@ -7,6 +8,10 @@ export function isShooterGame(gameSlug?: string | null) {
 
 export function isFootballGame(gameSlug?: string | null) {
   return FOOTBALL_GAME_SLUGS.has(String(gameSlug ?? '').toLowerCase());
+}
+
+export function isChessGame(gameSlug?: string | null) {
+  return CHESS_GAME_SLUGS.has(String(gameSlug ?? '').toLowerCase());
 }
 
 export function isFcMobileGame(gameSlug?: string | null) {

@@ -10,6 +10,11 @@ export function kdOf(athlete?: { kills?: number | string | null; kd?: number | s
   return Math.max(0.1, roundDuelOdds(ratingFallback / 25));
 }
 
+export function eloOf(athlete?: { overall_rating?: number | string | null; rating?: number | string | null } | null) {
+  const rating = Number(athlete?.overall_rating ?? athlete?.rating ?? 1200);
+  return Number.isFinite(rating) && rating > 0 ? Math.round(rating) : 1200;
+}
+
 export function calculateDuelOddsFromKd(kdA: number, kdB: number) {
   const safeA = Math.max(0.1, Number(kdA) || 0.1);
   const safeB = Math.max(0.1, Number(kdB) || 0.1);
@@ -18,5 +23,17 @@ export function calculateDuelOddsFromKd(kdA: number, kdB: number) {
   return {
     odds_a: roundDuelOdds(total / safeA),
     odds_b: roundDuelOdds(total / safeB),
+  };
+}
+
+export function calculateDuelOddsFromElo(eloA: number, eloB: number) {
+  const safeA = Math.max(100, Number(eloA) || 1200);
+  const safeB = Math.max(100, Number(eloB) || 1200);
+  const expectedA = 1 / (1 + 10 ** ((safeB - safeA) / 400));
+  const expectedB = 1 - expectedA;
+
+  return {
+    odds_a: roundDuelOdds(1 / Math.max(0.05, expectedA)),
+    odds_b: roundDuelOdds(1 / Math.max(0.05, expectedB)),
   };
 }

@@ -668,7 +668,7 @@ CREATE POLICY "organization_achievements_admin_write" ON organization_achievemen
 -- ─── GAME SLUG CHECKS ───────────────────────────────────────────────────────
 DO $$
 DECLARE
-  allowed_games text := '''pubg-mobile'', ''free-fire'', ''cod-mobile'', ''ea-fc-26'', ''mortal-kombat'', ''efootball'', ''mobile-legends'', ''fc-mobile'', ''blood-strike''';
+  allowed_games text := '''pubg-mobile'', ''free-fire'', ''cod-mobile'', ''ea-fc-26'', ''mortal-kombat'', ''efootball'', ''mobile-legends'', ''fc-mobile'', ''chess''';
   tbl text;
 BEGIN
   FOREACH tbl IN ARRAY ARRAY['athletes', 'teams', 'tournaments', 'wagers', 'transfers', 'shop_items', 'communities'] LOOP
@@ -697,7 +697,7 @@ CREATE TABLE IF NOT EXISTS team_members (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT team_members_currently_playing_game_slug_check CHECK (
-    currently_playing_game_slug IS NULL OR currently_playing_game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends', 'fc-mobile', 'blood-strike')
+    currently_playing_game_slug IS NULL OR currently_playing_game_slug IN ('pubg-mobile', 'free-fire', 'cod-mobile', 'ea-fc-26', 'mortal-kombat', 'efootball', 'mobile-legends', 'fc-mobile', 'chess')
   )
 );
 
