@@ -1,9 +1,9 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 export const DEFAULT_HOMEPAGE_SETTINGS = {
-  hero_eyebrow: "NIGERIA'S PREMIER ESPORTS PLATFORM",
+  hero_eyebrow: "NIGERIA'S BIGGEST ESPORTS ECOSYSTEM",
   hero_headline: 'FRAG NAIJA',
-  hero_tagline: "The Complete Esports Ecosystem ,Rankings. Tournaments. Fantasy. News. Transfers. Clips. Shop. Communities All connected. All in one.",
+  hero_tagline: "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.",
   stat_players: '1,342+',
   stat_tournaments: '487',
   stat_championships: '213',
