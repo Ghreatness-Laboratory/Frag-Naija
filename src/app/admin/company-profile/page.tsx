@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
+import OptimizedImage from '../../../components/common/OptimizedImage';
 import { useEffect, useState } from 'react';
 import { Building2, Save } from 'lucide-react';
 import BrandedLoader from '@/components/common/BrandedLoader';
@@ -86,7 +86,7 @@ export default function AdminCompanyProfilePage() {
           <h1 className="text-2xl font-black uppercase tracking-widest text-fn-text">Ghreatness Laboratory</h1>
           <p className="mt-2 max-w-2xl text-xs leading-relaxed text-fn-muted">Edit the public company About page and the lower-homepage powered-by credit. Leave the logo empty to show a text-only credit.</p>
         </div>
-        {profile.company_logo ? <img src={profile.company_logo} alt="" className="h-14 w-14 rounded-sm border border-fn-gborder object-cover" /> : null}
+        {profile.company_logo ? <OptimizedImage src={profile.company_logo} alt="" className="h-14 w-14 rounded-sm border border-fn-gborder object-cover" /> : null}
       </div>
 
       <form onSubmit={submit} className="space-y-4 rounded-sm border border-fn-gborder bg-fn-card p-5">
