@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Chess logo placeholder</title>
+  <desc id="desc">Temporary chess knight badge used until an official app icon asset can be committed.</desc>
+  <rect width="256" height="256" rx="40" fill="#08080a"/>
+  <path d="M78 216h104l-9-31H89l-11 31Z" fill="#f5f5dc"/>
+  <path d="M97 184h76c-5-25-21-38-47-49 19-7 34-22 34-46 0-24-18-43-45-43-12 0-25 4-35 13l16 21c7-5 14-7 20-7 10 0 17 7 17 17 0 16-18 27-49 34l-6 25c10 8 16 20 19 35Z" fill="#f5f5dc"/>
+  <circle cx="113" cy="90" r="7" fill="#08080a"/>
+  <path d="M58 215h140" stroke="#8b5cf6" stroke-width="10" stroke-linecap="round"/>
+</svg>

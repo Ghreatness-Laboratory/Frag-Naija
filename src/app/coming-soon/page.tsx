@@ -97,7 +97,7 @@ export default function ComingSoonPage() {
           <Link href="/news" className="inline-flex items-center gap-2 rounded-sm bg-fn-green px-5 py-3 text-xs font-black uppercase tracking-widest text-fn-black transition-transform hover:-translate-y-0.5">
             <Newspaper size={15} /> Enter News
           </Link>
-          <Link href="/login" className="inline-flex items-center gap-2 rounded-sm border border-fn-green/40 px-5 py-3 text-xs font-black uppercase tracking-widest text-fn-green transition-colors hover:bg-fn-green/10">
+          <Link href="/admin/login" className="inline-flex items-center gap-2 rounded-sm border border-fn-green/40 px-5 py-3 text-xs font-black uppercase tracking-widest text-fn-green transition-colors hover:bg-fn-green/10">
             Admin Login
           </Link>
         </div>

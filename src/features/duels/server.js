@@ -1,21 +1,22 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
-import { calculateDuelOddsFromKd, kdOf } from '@/lib/duel-odds';
+import { calculateDuelOddsFromElo, calculateDuelOddsFromKd, eloOf, kdOf } from '@/lib/duel-odds';
 
 export function calculateDuelOdds(playerAKd, playerBKd) {
   return calculateDuelOddsFromKd(playerAKd, playerBKd);
 }
 
-function ratingOf(a) { return kdOf(a); }
-export async function createDuelMatch({ player_a_id, player_b_id, game_slug = 'pubg-mobile' }) {
+function ratingOf(a, gameSlug) { return gameSlug === 'chess' ? eloOf(a) : kdOf(a); }
+export async function createDuelMatch({ player_a_id, player_b_id, game_slug = 'pubg-mobile', mode: requested_mode }) {
   if (!player_a_id || !player_b_id || player_a_id === player_b_id) throw new Error('Select two different athletes');
   const { data: athletes, error } = await supabaseAdmin.from('athletes').select('id,name,ign,overall_rating,rating,kills,game_slug').in('id', [player_a_id, player_b_id]);
   if (error) throw error;
   const a = athletes?.find((x) => x.id === player_a_id); const b = athletes?.find((x) => x.id === player_b_id);
   if (!a || !b) throw new Error('Athlete not found');
   if (game_slug && (a.game_slug !== game_slug || b.game_slug !== game_slug)) throw new Error('Both athletes must belong to the selected game');
-  const player_a_rating = ratingOf(a); const player_b_rating = ratingOf(b);
-  const odds = calculateDuelOdds(player_a_rating, player_b_rating);
-  const { data, error: insertError } = await supabaseAdmin.from('duel_matches').insert([{ game_slug, mode: 'tdm_1v1', player_a_id, player_b_id, player_a_rating, player_b_rating, ...odds }]).select('*, player_a:athletes!duel_matches_player_a_id_fkey(id,name,ign,photo_url), player_b:athletes!duel_matches_player_b_id_fkey(id,name,ign,photo_url)').single();
+  const player_a_rating = ratingOf(a, game_slug); const player_b_rating = ratingOf(b, game_slug);
+  const odds = game_slug === 'chess' ? calculateDuelOddsFromElo(player_a_rating, player_b_rating) : calculateDuelOdds(player_a_rating, player_b_rating);
+  const mode = game_slug === 'chess' ? (requested_mode || 'rapid_1v1') : 'tdm_1v1';
+  const { data, error: insertError } = await supabaseAdmin.from('duel_matches').insert([{ game_slug, mode, player_a_id, player_b_id, player_a_rating, player_b_rating, ...odds }]).select('*, player_a:athletes!duel_matches_player_a_id_fkey(id,name,ign,photo_url), player_b:athletes!duel_matches_player_b_id_fkey(id,name,ign,photo_url)').single();
   if (insertError) throw insertError;
   return data;
 }
@@ -58,7 +59,7 @@ export async function settleDuelMatch(id, winner_id) {
     const { error: payoutError } = await supabaseAdmin.rpc('credit_duel_payout', {
       p_user_id: wager.user_id,
       p_amount: Number(wager.potential_payout),
-      p_description: `TDM 1V1 payout — duel ${id}`,
+      p_description: `1V1 payout — duel ${id}`,
     });
     if (payoutError) throw payoutError;
     winners += 1;

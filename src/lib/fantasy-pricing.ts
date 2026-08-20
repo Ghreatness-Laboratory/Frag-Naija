@@ -4,7 +4,7 @@ export const FANTASY_SQUAD_BUDGET = 10_000_000;
 export const FANTASY_PRICE_ROUNDING = 1_000;
 export const FANTASY_PRICE_NUDGE = 1;
 export const FANTASY_MAX_PLAYERS_PER_TEAM = 3;
-export const FANTASY_TEAM_LIMIT_GAME_SLUGS = ['pubg-mobile', 'codm', 'blood-strike', 'free-fire'] as const;
+export const FANTASY_TEAM_LIMIT_GAME_SLUGS = ['pubg-mobile', 'codm', 'free-fire'] as const;
 
 type FantasyPricingAthlete = {
   id?: string | number | null;

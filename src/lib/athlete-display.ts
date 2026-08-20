@@ -1,6 +1,6 @@
-import { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS } from './game-categories';
+import { isChessGame, isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS } from './game-categories';
 
-export { isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS };
+export { isChessGame, isFcMobileGame, isFootballGame, isShooterGame, SHOOTER_GAME_SLUGS };
 
 
 export const ATHLETE_STATUSES = ['Active', 'Inactive', 'Banned', 'Free Agent', 'Suspended', 'Dead'] as const;
@@ -46,7 +46,16 @@ export function normalizeRating(value: unknown, fallback?: unknown) {
   return Math.max(0, Math.min(100, Math.round(scaled)));
 }
 
+export function chessRating(value: unknown, fallback?: unknown) {
+  const raw = Number(value ?? fallback ?? 1200);
+  return Number.isFinite(raw) ? Math.max(100, Math.round(raw)) : 1200;
+}
+
 export function combatAttributes(athlete: Record<string, unknown>, gameSlug?: string | null) {
+  if (isChessGame(gameSlug ?? String(athlete.game_slug ?? ''))) {
+    return [{ key: 'rating', label: 'Rating', name: 'Rating', value: chessRating(athlete.overall_rating, athlete.rating), color: 'rgb(var(--fn-yellow))' }];
+  }
+
   const attrs = [
     { key: 'attack', label: 'ATT', name: 'Attack', value: clampStat(athlete.attack), color: COMBAT_ATTRIBUTE_COLORS.attack },
     { key: 'defense', label: 'DEF', name: 'Defense', value: clampStat(athlete.defense), color: COMBAT_ATTRIBUTE_COLORS.defense },
