@@ -344,7 +344,7 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
       <Link href={`/athletes/${athlete.id}`} className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
         <div className="relative h-28 overflow-hidden bg-fn-dark sm:h-32">
           {athlete.photo_url ? (
-            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading={index < 3 ? "eager" : "lazy"} fetchPriority={index < 3 ? "high" : "auto"} decoding="async" width={152} height={112} />
+            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={152} height={112} />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(77,255,110,.16),transparent_62%)] text-fn-green"><ShieldCheck size={32} /></div>
           )}
