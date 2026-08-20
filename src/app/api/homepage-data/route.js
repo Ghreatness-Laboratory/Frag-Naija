@@ -3,14 +3,13 @@ import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { DEFAULT_HOMEPAGE_SETTINGS, getHomepageSettings } from '@/features/homepage/server';
 import { getCompanyProfile } from '@/features/companyProfile.server';
 import { getFeaturedAthletes } from '@/features/featuredAthletes.server';
-import { getFeaturedHomeWagers } from '@/features/wagers/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
-const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at,featured_on_home';
+const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at';
 const TRANSFER_FIELDS = 'id,from_team,to_team,fee,status,date,athletes(id,name,ign)';
 const SHOP_FIELDS = 'id,name,price,currency,image_url,category,status,tutorial_video_url';
 
@@ -45,7 +44,7 @@ export async function GET() {
 
     const [featuredAthletes, wagers, transfers, shopItems, tournaments, teams, companyProfile] = await Promise.all([
       getFeaturedAthletes(),
-      getFeaturedHomeWagers(3),
+      readTable(supabaseAdmin.from('wagers').select(WAGER_FIELDS).eq('status', 'Active').order('hot', { ascending: false }).order('closes_at', { ascending: true }).limit(3)),
       readTable(supabaseAdmin.from('transfers').select(TRANSFER_FIELDS).order('date', { ascending: false }).limit(4)),
       readTable(supabaseAdmin.from('shop_items').select(SHOP_FIELDS).limit(4)),
       readTable(supabaseAdmin.from('tournaments').select(TOURNAMENT_FIELDS).in('status', ['Upcoming', 'Live']).order('start_date', { ascending: true }).limit(4)),
