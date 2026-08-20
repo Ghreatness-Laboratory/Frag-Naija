@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
 import { Building2, ChevronRight } from 'lucide-react';
 import { getCompanyProfile } from '@/features/companyProfile.server';
+import OptimizedImage from '../../components/common/OptimizedImage';
 
 const blocks = [
   ['Mission', 'mission'],
@@ -30,7 +30,7 @@ export default async function AboutPage() {
             </div>
             <div className="rounded-sm border border-fn-gborder bg-fn-card p-5">
               <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">
-                {profile.company_logo ? <img src={profile.company_logo} alt={`${profile.company_name} logo`} className="h-full w-full object-cover" /> : <Building2 className="text-fn-green" size={28} />}
+                {profile.company_logo ? <OptimizedImage src={profile.company_logo} alt={`${profile.company_name} logo`} className="h-full w-full object-cover" /> : <Building2 className="text-fn-green" size={28} />}
               </div>
               <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-fn-green">Company</p>
               <h2 className="mt-1 text-xl font-black uppercase tracking-widest text-fn-text">{profile.company_name}</h2>

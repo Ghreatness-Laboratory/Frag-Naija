@@ -1,5 +1,6 @@
 'use client';
 
+import OptimizedImage from '../../components/common/OptimizedImage';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Lock, Shield, Zap } from 'lucide-react';
@@ -22,8 +23,7 @@ function GameLogo({ game, isSelected }: { game: Game; isSelected: boolean }) {
     : {};
 
   return (
-    /* Using <img> here so SVGs work without next/image domain config. */
-    <img
+    <OptimizedImage
       src={logoSrc}
       alt={`${game.name} logo`}
       width={80}

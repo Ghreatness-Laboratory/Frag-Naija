@@ -1,5 +1,6 @@
 'use client';
 
+import OptimizedImage from './OptimizedImage';
 import { motion, useReducedMotion } from 'framer-motion';
 
 type BrandedLoaderProps = {
@@ -43,7 +44,7 @@ export default function BrandedLoader({ label = 'Loading', size = 'md', classNam
         }}
         transition={reduceMotion ? undefined : glowTransition}
       >
-        <img src="/logo-icon.jpeg" alt="" className="h-full w-full object-cover" aria-hidden="true" />
+        <OptimizedImage src="/logo-icon.jpeg" alt="" className="h-full w-full object-cover" aria-hidden="true" />
         <span className="pointer-events-none absolute inset-0 rounded-sm border border-fn-green/25" />
         <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,65,0.12),transparent_62%)] mix-blend-screen" />
         {reduceMotion ? (

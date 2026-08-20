@@ -1,5 +1,6 @@
 'use client';
 
+import OptimizedImage from '../../../components/common/OptimizedImage';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Images, Shield, Trophy, Users } from 'lucide-react';
@@ -128,7 +129,7 @@ export default function TeamDetail({ params }: { params: { id: string } }) {
       <section className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border" style={{ borderColor: primary, background: `${primary}15` }}>
-            {team.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}
+            {team.logo_url ? <OptimizedImage src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}
           </div>
           <div className="flex-1">
             <p className="fn-label">{team.region || 'Nigeria'} · rank #{team.rank ?? '-'}</p>
@@ -169,7 +170,7 @@ export default function TeamDetail({ params }: { params: { id: string } }) {
             {team.gallery.map((item) => (
               <figure key={item.id} className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-black/50">
                 <a href={item.image_url} target="_blank" rel="noreferrer" className="block aspect-video overflow-hidden">
-                  <img src={item.image_url} alt={item.caption || `${team.name} gallery photo`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  <OptimizedImage src={item.image_url} alt={item.caption || `${team.name} gallery photo`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                 </a>
                 {item.caption && <figcaption className="border-t border-fn-gborder px-3 py-2 text-[10px] uppercase tracking-wider text-fn-muted">{item.caption}</figcaption>}
               </figure>
