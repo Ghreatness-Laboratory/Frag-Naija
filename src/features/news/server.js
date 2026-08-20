@@ -104,6 +104,31 @@ export async function recordNewsView(articleId, userId) {
   if (error) throw error;
 }
 
+export async function recordAnonymousNewsView(articleId, sessionId) {
+  // Use a time-debounced approach: only record one view per session per article within 24 hours
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  
+  // Check if this session already viewed this article in the last 24 hours
+  const { data: existing } = await supabaseAdmin
+    .from('news_views')
+    .select('last_viewed_at')
+    .eq('article_id', articleId)
+    .eq('user_id', sessionId)
+    .gte('last_viewed_at', twentyFourHoursAgo)
+    .maybeSingle();
+  
+  if (existing) {
+    // Already viewed recently, skip counting
+    return;
+  }
+  
+  // Record the view with session ID as user_id
+  const { error } = await supabaseAdmin
+    .from('news_views')
+    .insert({ article_id: articleId, user_id: sessionId, last_viewed_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
 export async function getNewsById(id, { currentUserId = null, recordView = false, admin = false } = {}) {
   const { data, error } = await supabaseAdmin
     .from('news')
@@ -197,6 +222,30 @@ export async function toggleNewsLike(articleId, userId) {
   }
 
   return getNewsById(articleId, { currentUserId: userId });
+}
+
+export async function toggleAnonymousNewsLike(articleId, sessionId) {
+  // Check if this session already liked this article
+  const { data: existing, error: lookupError } = await supabaseAdmin
+    .from('news_likes')
+    .select('article_id')
+    .eq('article_id', articleId)
+    .eq('user_id', sessionId)
+    .maybeSingle();
+  if (lookupError) throw lookupError;
+
+  if (existing) {
+    // Unlike: remove the like
+    const { error } = await supabaseAdmin.from('news_likes').delete().eq('article_id', articleId).eq('user_id', sessionId);
+    if (error) throw error;
+  } else {
+    // Like: add the like with session ID as user_id
+    const { error } = await supabaseAdmin.from('news_likes').insert([{ article_id: articleId, user_id: sessionId }]);
+    if (error) throw error;
+  }
+
+  // Return updated article data (without currentUserId since anonymous)
+  return getNewsById(articleId, { currentUserId: null });
 }
 
 export async function getNewsComments(articleId) {
