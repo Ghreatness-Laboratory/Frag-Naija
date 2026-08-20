@@ -13,7 +13,7 @@ const blocks = [
 export const dynamic = 'force-dynamic';
 
 export default async function AboutPage() {
-  const profile = await getCompanyProfile();
+  const [profile, stakeholders] = await Promise.all([getCompanyProfile(), listStakeholders() as Promise<Stakeholder[]>]);
 
   return (
     <main className="min-h-screen bg-fn-black text-fn-text">
@@ -48,6 +48,23 @@ export default async function AboutPage() {
               <p className="mt-3 whitespace-pre-line text-xs leading-6 text-fn-muted">{profile[key]}</p>
             </article>
           ))}
+        </div>
+      </section>
+      <section id="stakeholders" className="border-t border-fn-gborder px-4 py-10 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="fn-label mb-2 text-fn-green">Stakeholders</p>
+              <h2 className="text-2xl font-black uppercase tracking-widest text-fn-text">Key People Behind FragNaija</h2>
+            </div>
+          </div>
+          {stakeholders.length ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {stakeholders.map((stakeholder) => <StakeholderCard key={stakeholder.id} stakeholder={stakeholder} />)}
+            </div>
+          ) : (
+            <div className="rounded-sm border border-fn-gborder bg-fn-card p-5 text-xs text-fn-muted">No stakeholders have been published yet.</div>
+          )}
         </div>
       </section>
     </main>

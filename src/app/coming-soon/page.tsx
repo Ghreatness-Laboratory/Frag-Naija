@@ -1,36 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Newspaper, ShieldCheck, TimerReset } from 'lucide-react';
-
-type LaunchSettings = {
-  launch_countdown_target?: string | null;
-  auto_launch?: boolean;
-};
-
-type Remaining = {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-  complete: boolean;
-};
-
-function fallbackTarget() {
-  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-}
-
-function getRemaining(target: string): Remaining {
-  const delta = Math.max(0, new Date(target).getTime() - Date.now());
-  return {
-    days: Math.floor(delta / 86_400_000),
-    hours: Math.floor((delta % 86_400_000) / 3_600_000),
-    minutes: Math.floor((delta % 3_600_000) / 60_000),
-    seconds: Math.floor((delta % 60_000) / 1000),
-    complete: delta <= 0,
-  };
-}
+import { useLaunchCountdown } from '@/components/common/useLaunchCountdown';
 
 function CountdownCell({ label, value }: { label: string; value: number }) {
   return (
@@ -42,28 +14,7 @@ function CountdownCell({ label, value }: { label: string; value: number }) {
 }
 
 export default function ComingSoonPage() {
-  const [target, setTarget] = useState(fallbackTarget);
-  const [remaining, setRemaining] = useState(() => getRemaining(target));
-
-  useEffect(() => {
-    fetch('/api/launch-settings', { cache: 'no-store' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((settings: LaunchSettings | null) => {
-        if (settings?.launch_countdown_target) setTarget(settings.launch_countdown_target);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    setRemaining(getRemaining(target));
-    const timer = window.setInterval(() => setRemaining(getRemaining(target)), 1000);
-    return () => window.clearInterval(timer);
-  }, [target]);
-
-  const targetLabel = useMemo(() => new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(target)), [target]);
+  const { targetLabel, remaining } = useLaunchCountdown();
 
   return (
     <section className="relative min-h-[calc(100vh-3.5rem)] overflow-hidden bg-fn-black px-4 py-12 text-fn-text sm:px-8 lg:px-12">

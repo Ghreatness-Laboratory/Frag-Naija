@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   BarChart2,
+  Info,
   Bookmark,
   CheckCircle,
   ChevronDown,
@@ -58,6 +59,7 @@ type CurrentUserWager = {
   amount?: number | string | null;
   potential?: number | string | null;
   status?: string | null;
+  wager_id?: string | number | null;
   created_at?: string | null;
   odds?: number | string | null;
   wager?: {
@@ -670,6 +672,26 @@ function getTradeCount(market: Record<string, unknown>) {
   return Number(market.yes_count ?? 0) + Number(market.no_count ?? 0);
 }
 
+function getPoolSplit(market: Record<string, unknown>) {
+  const yesPool = Number(market.yes_pool ?? market.yesPool ?? 0);
+  const noPool = Number(market.no_pool ?? market.noPool ?? 0);
+  if (yesPool > 0 || noPool > 0) return { yesPool, noPool, source: 'actual' as const };
+
+  const total = getPoolAmount(market);
+  const implied = getImpliedSplit(market.yes_odds, market.no_odds);
+  return {
+    yesPool: Math.round(total * (implied.yes / 100)),
+    noPool: Math.max(0, total - Math.round(total * (implied.yes / 100))),
+    source: 'estimated' as const,
+  };
+}
+
+function getUserStakeInMarket(market: Record<string, unknown>, userWagers: CurrentUserWager[]) {
+  return userWagers
+    .filter((wager) => String(wager.wager_id ?? '') === String(market.id ?? ''))
+    .reduce((sum, wager) => sum + Number(wager.amount ?? 0), 0);
+}
+
 function getImpliedSplit(yesOddsRaw: unknown, noOddsRaw: unknown) {
   const yesOdds = Number(yesOddsRaw);
   const noOdds = Number(noOddsRaw);
@@ -756,6 +778,7 @@ function WagerCard({
   onAddToSlip,
   walletBalance,
   onPlaced,
+  userWagers = [],
 }: {
   market: Record<string, unknown>;
   email?: string | null;
@@ -763,12 +786,14 @@ function WagerCard({
   walletBalance: number;
   onAddToSlip: (selection: SlipSelection) => string | null;
   onPlaced?: (ticket?: PlacedTicket) => void;
+  userWagers?: CurrentUserWager[];
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [pickType, setPickType] = useState<"player" | "team" | null>(null);
   const [amount, setAmount] = useState("");
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [poolOpen, setPoolOpen] = useState(false);
   const { placeWager, loading } = usePlaceWager();
 
   const pickOptions: PickOption[] = (Array.isArray(market.options) ? market.options : []) as PickOption[];
@@ -801,6 +826,8 @@ function WagerCard({
         : 0;
 
   const tag = getMarketTag(market);
+  const poolSplit = getPoolSplit(market);
+  const userStake = getUserStakeInMarket(market, userWagers);
   const currentSelection: SlipSelection | null = picked && pickedOdds > 0 ? {
     key: `${String(market.id)}:${picked}`,
     wagerId: market.id as string | number,
@@ -880,11 +907,38 @@ function WagerCard({
           </div>
           <div className="flex items-center gap-2">
             <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} stake pool</span>
+            <button type="button" onClick={() => setPoolOpen(true)} className="inline-flex items-center gap-1 rounded-sm border border-fn-green/25 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-fn-green hover:bg-fn-green/10">
+              <Info size={10} /> View Pool
+            </button>
             <button onClick={() => setSaved((current) => !current)} className="transition-colors">
               <Bookmark size={13} className={saved ? "fill-fn-green text-fn-green" : "text-fn-muted hover:text-fn-text"} />
             </button>
           </div>
         </div>
+
+
+        {poolOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" onClick={() => setPoolOpen(false)}>
+            <div className="w-full max-w-sm rounded-sm border border-fn-green/30 bg-fn-card p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="fn-label text-fn-green">Stake Pool</p>
+                  <h4 className="mt-1 text-sm font-black uppercase tracking-widest text-fn-text">{String(getMarketQuestion(market))}</h4>
+                </div>
+                <button type="button" onClick={() => setPoolOpen(false)} className="text-fn-muted hover:text-fn-text" aria-label="Close pool details"><X size={16} /></button>
+              </div>
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between border-b border-fn-gborder pb-2"><span className="text-fn-muted">Total pool</span><strong className="text-fn-green">{formatCurrency(getPoolAmount(market))}</strong></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3"><p className="fn-label">YES / Side A</p><p className="mt-1 font-black text-fn-text">{formatCurrency(poolSplit.yesPool)}</p></div>
+                  <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3"><p className="fn-label">NO / Side B</p><p className="mt-1 font-black text-fn-text">{formatCurrency(poolSplit.noPool)}</p></div>
+                </div>
+                <div className="flex items-center justify-between border-t border-fn-gborder pt-2"><span className="text-fn-muted">Your stake in this pool</span><strong className="text-fn-text">{formatCurrency(userStake)}</strong></div>
+                {poolSplit.source === 'estimated' && <p className="text-[10px] leading-relaxed text-fn-muted">Side split is estimated from displayed odds until per-side pool columns are available from the API.</p>}
+              </div>
+            </div>
+          </div>
+        )}
 
         <h3 className="mb-1 text-sm font-bold leading-snug text-fn-text sm:text-base">
           {String(getMarketQuestion(market))}
@@ -1864,6 +1918,7 @@ function WagerPageContent() {
                 walletBalance={walletBalance}
                 onAddToSlip={addToSlip}
                 onPlaced={refreshAfterPlacement}
+                userWagers={currentUserWagers}
               />
             ))}
 

@@ -18,6 +18,7 @@ const BINARY_EMPTY = {
   pool_total: '0',
   closes_at: '',
   trades: '0',
+  featured_on_home: 'false',
   type: 'binary',
   game_slug: 'pubg-mobile',
 };
@@ -68,6 +69,7 @@ function AdminWagersContent() {
       pool_total: String(row.pool_total ?? '0'),
       closes_at: closesAt,
       trades:    String(row.trades ?? row.trade_count ?? '0'),
+      featured_on_home: String(Boolean(row.featured_on_home)),
       type:      String(row.type ?? 'binary'),
       game_slug: String(row.game_slug ?? (gameSlug === 'all' ? 'pubg-mobile' : gameSlug)),
     });
@@ -110,6 +112,7 @@ function AdminWagersContent() {
         subtitle:  form.subtitle,
         match_name: form.match_name.trim(),
         trade_count: Number(form.trades || 0),
+        featured_on_home: form.featured_on_home === 'true',
         closes_at: form.closes_at,
         type:      form.type,
         game_slug: form.game_slug || (gameSlug === 'all' ? 'pubg-mobile' : gameSlug),
@@ -243,6 +246,7 @@ function AdminWagersContent() {
                 : <span className="text-fn-green text-xs">Binary</span> },
           { key: 'pool_total', label: 'Pool',   render: r => `₦${Number(r.pool_total || 0).toLocaleString()}` },
           { key: 'trades',     label: 'Trades', render: r => Number(r.trades ?? r.trade_count ?? 0).toLocaleString() },
+          { key: 'featured_on_home', label: 'Home', render: r => r.featured_on_home ? <span className="text-xs text-fn-green">Featured</span> : <span className="text-fn-muted text-xs">—</span> },
           { key: 'hot',        label: 'Hot',    render: r => r.hot ? <Flame className="w-4 h-4 text-fn-amber" /> : <span className="text-fn-muted text-xs">—</span> },
           { key: 'closes_at',  label: 'Closes', render: r => new Date(String(r.closes_at)).toLocaleDateString() },
           { key: 'status',     label: 'Status', render: r => {
@@ -388,6 +392,13 @@ function AdminWagersContent() {
 
           <Field label="Trades" required>
             <Input type="number" min="0" step="1" value={form.trades} onChange={f('trades')} required />
+          </Field>
+
+          <Field label="Feature on Home">
+            <Select value={form.featured_on_home} onChange={f('featured_on_home')}>
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </Select>
           </Field>
 
           <Field label="Closes At" required>

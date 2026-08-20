@@ -11,6 +11,9 @@ import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
 import { useAuthGate } from "@/components/common/LoginGate";
+import { useLaunchCountdown } from "@/components/common/useLaunchCountdown";
+import { formatLaunchRemaining } from "@/lib/launchCountdown";
+import StakeholderCard, { type Stakeholder } from "@/components/common/StakeholderCard";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -55,6 +58,7 @@ type HomepagePayload = {
   teams?: Team[];
   homepageSettings?: HomepageSettings;
   companyProfile?: CompanyProfile;
+  stakeholders?: Stakeholder[];
 };
 
 let homepageDataPromise: Promise<HomepagePayload> | null = null;
@@ -405,10 +409,12 @@ export default function HomePage() {
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
   const [isScoutPromptOpen, setIsScoutPromptOpen] = useState(false);
+  const { remaining } = useLaunchCountdown();
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
@@ -454,6 +460,7 @@ export default function HomePage() {
       setAllTeams(Array.isArray(payload.teams) ? payload.teams : []);
       setHomepageSettings(payload.homepageSettings && !Array.isArray(payload.homepageSettings) ? payload.homepageSettings : {});
       setCompanyProfile(payload.companyProfile ?? null);
+      setStakeholders(Array.isArray(payload.stakeholders) ? payload.stakeholders : []);
     });
 
     return () => {
@@ -525,6 +532,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen overflow-hidden">
+      <div className="border-b border-fn-green/20 bg-fn-green/10 px-4 py-2 text-center text-[10px] font-black uppercase tracking-widest text-fn-green sm:px-8 lg:px-12">
+        Launching in: {formatLaunchRemaining(remaining)}
+      </div>
       <GameSelectionModal
         open={isScoutPromptOpen}
         onClose={() => setIsScoutPromptOpen(false)}
@@ -744,6 +754,18 @@ export default function HomePage() {
         {tournaments.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No live or upcoming tournaments yet.</p> : <motion.div variants={cardStagger}><CarouselRail>{tournaments.map((event) => <Link key={event.id} href="/tournaments" className="min-w-[240px] snap-start rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="fn-label mb-2">{event.game || "All Games"}</div><h3 className="text-sm font-black uppercase text-fn-text">{event.name}</h3><div className="mt-3 flex items-center justify-between"><span className="text-[9px] font-bold uppercase" style={{ color: primary }}>{event.status}</span><span className="text-[9px] text-fn-muted">{event.start_date ? new Date(event.start_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }) : 'TBA'}</span></div></Link>)}</CarouselRail></motion.div>}
       </motion.section>
 
+
+      {/* Stakeholders Preview */}
+      <motion.section id="stakeholders-preview" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+        <div className="mb-6 flex items-center justify-between gap-4"><div><p className="fn-label mb-1 text-fn-green">STAKEHOLDERS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">MEET THE PEOPLE</h2></div><Link href="/about#stakeholders" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL <ChevronRight size={11} /></Link></div>
+        {stakeholders.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No stakeholders have been published yet.</p> : (
+          <motion.div variants={cardStagger}>
+            <CarouselRail>
+              {stakeholders.slice(0, 6).map((stakeholder) => <StakeholderCard key={stakeholder.id} stakeholder={stakeholder} compact />)}
+            </CarouselRail>
+          </motion.div>
+        )}
+      </motion.section>
 
       {/* Company Credit */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-8 border-t border-fn-gborder">
