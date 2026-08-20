@@ -3,8 +3,9 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X, Building2 } from "lucide-react";
+import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X, Building2, Medal } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
+import { athleteStatusTone, clampStat } from "@/lib/athlete-display";
 import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
@@ -41,8 +42,11 @@ type CompanyProfile = {
 
 type HomepageSettings = Record<string, string>;
 
+type FeaturedAthleteItem = { id: string; athlete_id: string; sort_order: number; athlete: Athlete | null };
+
 type HomepagePayload = {
   athletes?: Athlete[];
+  featuredAthletes?: FeaturedAthleteItem[];
   wagers?: Wager[];
   transfers?: Transfer[];
   shopItems?: ShopItem[];
@@ -308,47 +312,68 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
   );
 }
 
-function FeaturedAthletes({
-  athletes,
-  selectedGame,
-  primary,
-  showFireIcon,
-  onViewAll,
-}: {
-  athletes: Athlete[];
-  selectedGame: ReturnType<typeof useGame>["selectedGame"];
-  primary: string;
-  showFireIcon: boolean;
-  onViewAll: () => void;
-}) {
+function featuredAthleteName(athlete: Athlete) {
+  return athlete.known_name || athlete.ign || athlete.name;
+}
+
+function FeaturedAthleteCard({ item, index, primary, secondary }: { item: FeaturedAthleteItem; index: number; primary: string; secondary: string }) {
+  if (!item.athlete) return null;
+  const athlete = item.athlete;
+  const name = featuredAthleteName(athlete);
+  const tone = athleteStatusTone(athlete.status, primary);
+  const rankColor = index === 1 ? secondary : primary;
+  const stats = [
+    ['ATT', athlete.attack], ['DEF', athlete.defense], ['SUR', athlete.survival], ['CLT', athlete.clutch], ['IQ', athlete.iq],
+  ] as const;
+
   return (
-    <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="fn-label mb-1 flex items-center gap-1.5">
-            {showFireIcon && <Flame size={9} style={{ color: primary }} />}
-            <ShieldCheck size={9} style={{ color: primary }} /> ROSTER
-          </p>
-          <h2 className="font-display text-2xl font-black uppercase text-fn-text">FEATURED ATHLETES</h2>
+    <motion.article variants={reveal} className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-[0_20px_70px_rgba(0,0,0,0.28)] transition-all hover:-translate-y-1 hover:border-fn-green/40">
+      <Link href={`/athletes/${athlete.id}`} className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
+        <div className="relative aspect-[4/5] overflow-hidden bg-fn-dark">
+          {athlete.photo_url ? (
+            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(77,255,110,.16),transparent_62%)] text-fn-green"><ShieldCheck size={42} /></div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-fn-black/55 via-transparent to-fn-black/18" />
+          <span className="absolute left-3 top-3 rounded-sm border px-3 py-1 text-xs font-black uppercase tracking-widest" style={{ background: `${rankColor}22`, borderColor: `${rankColor}66`, color: rankColor }}>#{Number(item.sort_order ?? index) + 1}</span>
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-sm border px-2.5 py-1 text-[9px] font-black uppercase tracking-widest" style={{ background: tone.background, borderColor: tone.borderColor, color: tone.color }}><span style={{ color: tone.dotColor }}>●</span>{athlete.status || 'Active'}</span>
         </div>
-        <button
-          type="button"
-          onClick={onViewAll}
-          className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm transition-all"
-          style={{ borderColor: `${primary}30`, color: primary }}
-          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = `${primary}10`)}
-          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
-        >
-          VIEW ALL <ChevronRight size={11} />
-        </button>
+        <div className="bg-fn-card p-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-fn-green/30 bg-fn-green/10 text-fn-green"><Medal size={16} /></span>
+            <div className="min-w-0">
+              <h3 className="truncate font-display text-xl font-black uppercase tracking-wider text-fn-text">{name}</h3>
+              <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-[0.22em] text-fn-muted">{athlete.role || 'Athlete'}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-5 gap-1 rounded-sm border border-fn-gborder bg-fn-black/55 p-2 text-center">
+            {stats.map(([label, value]) => (
+              <div key={label} className="min-w-0 px-1">
+                <div className="font-display text-lg font-black leading-none text-fn-text sm:text-xl">{clampStat(value)}</div>
+                <div className="mt-1 truncate text-[8px] font-black uppercase tracking-widest text-fn-muted">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Link>
+    </motion.article>
+  );
+}
+
+function FeaturedAthletes({ athletes, selectedGame, primary, secondary, showFireIcon, onViewAll }: { athletes: FeaturedAthleteItem[]; selectedGame: ReturnType<typeof useGame>["selectedGame"]; primary: string; secondary: string; showFireIcon: boolean; onViewAll: () => void; }) {
+  return (
+    <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="border-t border-fn-gborder px-4 py-10 sm:px-8 lg:px-12">
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="fn-label mb-1 flex items-center gap-1.5">{showFireIcon && <Flame size={9} style={{ color: primary }} />}<ShieldCheck size={9} style={{ color: primary }} /> ROSTER</p>
+          <h2 className="font-display text-2xl font-black uppercase text-fn-text sm:text-3xl">FEATURED ATHLETES</h2>
+        </div>
+        <button type="button" onClick={onViewAll} className="electric-button flex shrink-0 items-center gap-1 rounded-sm border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL <ChevronRight size={11} /></button>
       </div>
-      {athletes.length === 0 ? (
-        <p className="text-fn-muted text-[10px] py-6">{selectedGame ? `No ${selectedGame.shortName} athletes yet.` : 'No featured athletes yet.'}</p>
-      ) : (
-        <motion.div variants={cardStagger} className="flex gap-3 overflow-x-auto pb-3">
-          {athletes.map((athlete, index) => (
-            <AthleteCard key={athlete.id} athlete={athlete} rank={index} primary={primary} />
-          ))}
+      {athletes.length === 0 ? <p className="border border-dashed border-fn-gborder bg-fn-card/60 p-5 text-xs font-bold uppercase tracking-widest text-fn-muted">{selectedGame ? `No ${selectedGame.shortName} featured athletes have been added yet.` : 'No featured athletes have been added yet.'}</p> : (
+        <motion.div variants={cardStagger} className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          {athletes.map((item, index) => <FeaturedAthleteCard key={item.id} item={item} index={index} primary={primary} secondary={secondary} />)}
         </motion.div>
       )}
     </motion.section>
@@ -361,6 +386,7 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuthGate();
   const [ticker, setTicker]       = useState(0);
   const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
+  const [featuredAthletes, setFeaturedAthletes] = useState<FeaturedAthleteItem[]>([]);
   const [wagers, setWagers]       = useState<Wager[]>([]);
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
@@ -406,6 +432,7 @@ export default function HomePage() {
       if (cancelled) return;
 
       setAllAthletes(Array.isArray(payload.athletes) ? payload.athletes : []);
+      setFeaturedAthletes(Array.isArray(payload.featuredAthletes) ? payload.featuredAthletes : []);
       setWagers(Array.isArray(payload.wagers) ? payload.wagers : []);
       setApiTransfers(Array.isArray(payload.transfers) ? payload.transfers : []);
       setShopItems(Array.isArray(payload.shopItems) ? payload.shopItems : []);
@@ -420,7 +447,6 @@ export default function HomePage() {
     };
   }, []);
 
-  const featuredAthleteIds = useMemo(() => parseFeaturedIds(homepageSettings.featured_athlete_ids), [homepageSettings.featured_athlete_ids]);
   const featuredTeamIds = useMemo(() => parseFeaturedIds(homepageSettings.featured_team_ids), [homepageSettings.featured_team_ids]);
   const fallbackAthletes = useMemo(() => (
     selectedGame
@@ -445,19 +471,13 @@ export default function HomePage() {
       game_slug: team.game_slug,
     }));
   }, [selectedGame]);
-  const athleteSource = allAthletes.length || featuredAthleteIds.length ? allAthletes : fallbackAthletes;
+  const athleteSource = allAthletes.length ? allAthletes : fallbackAthletes;
   const teamSource = allTeams.length || featuredTeamIds.length ? allTeams : fallbackTeamCards;
-  const gameAthletes: Athlete[] = useMemo(() => {
-    if (featuredAthleteIds.length && allAthletes.length) {
-      const curated = pickByIds(allAthletes, featuredAthleteIds);
-      return selectedGame
-        ? curated.filter((athlete) => athlete.game_slug === selectedGame.slug)
-        : curated;
-    }
+  const gameAthletes: FeaturedAthleteItem[] = useMemo(() => {
     return selectedGame
-      ? athleteSource.filter((athlete) => athlete.game_slug === selectedGame.slug).slice(0, 6)
-      : athleteSource.slice(0, 6);
-  }, [allAthletes, featuredAthleteIds, athleteSource, selectedGame]);
+      ? featuredAthletes.filter((item) => item.athlete?.game_slug === selectedGame.slug)
+      : featuredAthletes;
+  }, [featuredAthletes, selectedGame]);
   const iconAthletes: Athlete[] = useMemo(() => {
     if (!user) return [];
     const icons = (athleteSource as Athlete[]).filter((athlete) => Boolean(athlete.is_icon));
@@ -469,10 +489,10 @@ export default function HomePage() {
 
   useEffect(() => {
     gameAthletes.slice(0, 3).forEach((athlete) => {
-      if (!athlete.photo_url) return;
+      if (!athlete.athlete?.photo_url) return;
       const image = new Image();
       image.decoding = 'async';
-      image.src = athlete.photo_url;
+      image.src = athlete.athlete.photo_url;
     });
   }, [gameAthletes]);
 
@@ -656,6 +676,7 @@ export default function HomePage() {
           athletes={gameAthletes}
           selectedGame={selectedGame}
           primary={primary}
+          secondary={secondary}
           showFireIcon={isFF}
           onViewAll={() => setIsScoutPromptOpen(true)}
         />

@@ -81,7 +81,6 @@ function FeaturedPicker({
 
 export default function AdminHomepagePage() {
   const [settings, setSettings] = useState<Settings>({});
-  const [athletes, setAthletes] = useState<OptionRow[]>([]);
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,11 +90,9 @@ export default function AdminHomepagePage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/homepage-settings', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : {})).catch(() => ({})),
-      fetch('/api/athletes', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : [])).catch(() => []),
       fetch('/api/teams', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : [])).catch(() => []),
-    ]).then(([settingsData, athleteRows, teamRows]) => {
+    ]).then(([settingsData, teamRows]) => {
       setSettings(settingsData && !Array.isArray(settingsData) ? settingsData : {});
-      setAthletes(Array.isArray(athleteRows) ? athleteRows : []);
       setTeams(Array.isArray(teamRows) ? teamRows : []);
     }).finally(() => setLoading(false));
   }, []);
@@ -127,20 +124,18 @@ export default function AdminHomepagePage() {
     }
   }
 
-  const featuredAthleteIds = parseIds(settings.featured_athlete_ids);
   const featuredTeamIds = parseIds(settings.featured_team_ids);
 
   return (
     <div className="max-w-4xl p-8">
       <h1 className="text-xl font-bold uppercase tracking-widest text-fn-text">Homepage / General Dashboard</h1>
-      <p className="mt-1 text-xs text-fn-muted">Edit the neutral ALL GAMES landing page. Featured athletes and teams below drive the cross-game homepage mix.</p>
+      <p className="mt-1 text-xs text-fn-muted">Edit the neutral ALL GAMES landing page. Featured athletes are managed from the dedicated Featured Athletes admin page.</p>
       {loading ? (
         <div className="mt-6 flex justify-center">
           <BrandedLoader label="Loading homepage settings" />
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-sm border border-fn-gborder bg-fn-card p-5">
-          <FeaturedPicker label="Featured Athletes" ids={featuredAthleteIds} options={athletes} emptyText="No featured athletes selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_athlete_ids: ids.join(',') }))} />
           <FeaturedPicker label="Featured Teams" ids={featuredTeamIds} options={teams} emptyText="No featured teams selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_team_ids: ids.join(',') }))} />
           {TEXT_FIELDS.map(([key, label]) => (
             <Field key={key} label={label}>

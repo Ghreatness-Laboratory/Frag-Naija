@@ -12,7 +12,7 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
   recruitment_body: 'JOIN FRAG NAIJA AND GET RANKED IN THE OPEN TRIALS.',
   recruitment_cta: 'JOIN THE RANKS',
   popup_title: '', popup_body: '', popup_cta: '',
-  featured_athlete_ids: '', featured_team_ids: '', featured_tournament_ids: '',
+  featured_team_ids: '', featured_tournament_ids: '',
   show_athletes: 'true', show_teams: 'true', show_shop: 'true',
 };
 
