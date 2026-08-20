@@ -144,11 +144,6 @@ function AdminWagersContent() {
     load();
   }
 
-  async function toggleFeaturedOnHome(row: Record<string, unknown>) {
-    await fetch(`/api/wagers/${row.id}/featured-home`, { method: 'PATCH', credentials: 'include' });
-    load();
-  }
-
   function openSettle(row: Record<string, unknown>) {
     setSettleId(String(row.id));
     const rowType = String(row.type ?? 'binary');

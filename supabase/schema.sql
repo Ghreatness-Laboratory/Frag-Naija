@@ -705,7 +705,3 @@ CREATE INDEX IF NOT EXISTS team_members_status_sort_idx ON team_members(status, 
 ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "team_members_public_read" ON team_members FOR SELECT USING (status = 'Published');
 CREATE POLICY "team_members_admin_write" ON team_members FOR ALL USING (false);
-
--- Add featured_on_home column to wagers table (if not exists)
-ALTER TABLE wagers ADD COLUMN IF NOT EXISTS featured_on_home BOOLEAN DEFAULT false;
-CREATE INDEX IF NOT EXISTS idx_wagers_featured_on_home ON wagers(featured_on_home, status, closes_at);
