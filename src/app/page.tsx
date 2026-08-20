@@ -346,13 +346,16 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-fn-black/55 via-transparent to-fn-black/18" />
           <span className="absolute left-1.5 top-1.5 rounded-sm border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest" style={{ background: `${rankColor}22`, borderColor: `${rankColor}66`, color: rankColor }}>#{Number(item.sort_order ?? index) + 1}</span>
-          <span className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider" style={{ background: tone.background, borderColor: tone.borderColor, color: tone.color }}><span style={{ color: tone.dotColor }}>●</span>{athlete.status || 'Active'}</span>
           <span className="absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)] truncate rounded-sm border px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider" style={{ background: `${gameColor}18`, borderColor: `${gameColor}55`, color: gameColor }}>{gameLabel}</span>
         </div>
         <div className="bg-fn-card p-2">
           <div className="flex items-center gap-1.5">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-fn-green/30 bg-fn-green/10 text-fn-green"><Medal size={10} /></span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
+              <div className="mb-0.5 inline-flex max-w-full items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[7px] font-black uppercase leading-none tracking-wider" style={{ background: tone.background, borderColor: tone.borderColor, color: tone.color }}>
+                <span className="shrink-0" style={{ color: tone.dotColor }}>●</span>
+                <span className="truncate">{athlete.status || 'Active'}</span>
+              </div>
               <h3 className="truncate font-display text-[12px] font-black uppercase leading-tight tracking-wider text-fn-text">{name}</h3>
               <p className="mt-0.5 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-fn-muted">{athlete.role || 'Athlete'}</p>
             </div>
