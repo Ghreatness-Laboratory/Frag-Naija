@@ -26,6 +26,10 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat("en-NG", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
+function imageFor(item: NewsItem): string {
+  return item.image_url || "";
+}
+
 function CompactNewsImage({ article, lead = false }: { article: NewsItem; lead?: boolean }) {
   if (article.image_url) {
     return (
@@ -147,10 +151,10 @@ export default function NewsPage() {
                     <span><MessageCircle size={10} className="mr-1 inline" />{article.comment_count}</span>
                   </div>
                 </div>
-              </article>
-            ))}
-          </section>
-        )}
+              </div>
+            </article>
+          ))}
+        </section>
       </section>
     </main>
   );
