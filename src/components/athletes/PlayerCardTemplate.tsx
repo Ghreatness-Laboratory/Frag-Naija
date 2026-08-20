@@ -240,18 +240,20 @@ export default function PlayerCardTemplate({
           <div className="absolute left-6 top-6 z-20 text-[13px] font-black uppercase tracking-widest" style={{ color: showcaseAccent }}>
             #{rank ?? cardNumber}
           </div>
-          <div className="absolute right-6 top-6 z-20 flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em]" style={isIcon ? { color: showcaseAccent, borderColor: `${showcaseAccent}55`, background: `${showcaseAccent}12` } : { color: statusTone.color, borderColor: statusTone.borderColor, background: statusTone.background }}>
-            <span className="h-2 w-2 rounded-full" style={{ background: isIcon ? showcaseAccent : statusTone.dotColor }} />
-            {isIcon ? 'ICON' : status}
-          </div>
         </div>
 
         <div className="relative h-[178px] border-t px-7 py-5" style={{ borderColor: `${accent}26`, background: `linear-gradient(180deg, ${accent}0e, rgba(7,23,12,0.98) 38%, #07130b 100%)` }}>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center" style={{ color: showcaseAccent }}>
               <Shield size={15} />
             </div>
-            <h3 className="min-w-0 truncate font-display text-[21px] font-black leading-none tracking-wide text-white">{displayName}</h3>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em]" style={isIcon ? { color: showcaseAccent, borderColor: `${showcaseAccent}55`, background: `${showcaseAccent}12` } : { color: statusTone.color, borderColor: statusTone.borderColor, background: statusTone.background }}>
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: isIcon ? showcaseAccent : statusTone.dotColor }} />
+                {isIcon ? 'ICON' : status}
+              </div>
+              <h3 className="truncate font-display text-[21px] font-black leading-none tracking-wide text-white">{displayName}</h3>
+            </div>
           </div>
           <p className="mt-2 truncate text-[14px] font-mono uppercase tracking-[0.26em] text-white/48">{athleteSubtitle}</p>
 
