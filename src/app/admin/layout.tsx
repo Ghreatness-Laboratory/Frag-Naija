@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Shield, ArrowLeftRight,
   Trophy, Swords, Film, LogOut, ChevronRight, Banknote, ArrowUpCircle,
-  Newspaper, Star, TrendingUp, Building2, ShoppingBag, MessageCircle, Sparkles, Bot,
+  Newspaper, Star, TrendingUp, Building2, ShoppingBag, MessageCircle, Sparkles, Bot, Handshake, Flame,
 } from 'lucide-react';
 
 const NAV = [
@@ -18,6 +18,7 @@ const NAV = [
   { href: '/admin/tournament-results', label: 'Tournament Results', icon: Trophy },
   { href: '/admin/match-results', label: 'Match Results', icon: Swords },
   { href: '/admin/wagers',         label: 'Wagers',      icon: Swords },
+  { href: '/admin/featured-wagers', label: 'Featured Wagers', icon: Flame },
   { href: '/admin/custom-wagers',  label: 'Custom Wagers', icon: Bot },
   { href: '/admin/fantasy',        label: 'Fantasy League', icon: Sparkles },
   { href: '/admin/duels',          label: 'TDM Duels',   icon: Swords },
@@ -28,6 +29,7 @@ const NAV = [
   { href: '/admin/featured',       label: 'Featured',    icon: TrendingUp },
   { href: '/admin/featured-athletes', label: 'Featured Athletes', icon: Users },
   { href: '/admin/company-profile', label: 'Company Profile', icon: Building2 },
+  { href: '/admin/stakeholders', label: 'Stakeholders', icon: Handshake },
   { href: '/admin/communities',    label: 'Communities', icon: MessageCircle },
   { href: '/admin/shop',           label: 'Shop',        icon: ShoppingBag },
   { href: '/admin/finance',        label: 'Finance',     icon: Banknote },
