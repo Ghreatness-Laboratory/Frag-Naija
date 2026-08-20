@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import TeamPageClient from './TeamPageClient';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.fragnaija.com';
+
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const team = await fetch(`${siteUrl}/api/teams/${params.id}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+    const team = await fetch(`${SITE_URL}/api/teams/${params.id}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
     if (team) {
       const imageUrl = team.logo_url || '/og-image.svg';
       const gameName = team.game_slug ? team.game_slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Esports';
@@ -13,12 +14,12 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         title: team.name,
         description: `${team.name} - ${gameName} esports team on FragNaija. View roster, stats, and rankings.`,
         openGraph: {
-          title: `${team.name} | FragNaija`,
+          title: `${team.name} - FragNaija`,
           description: `${team.name} - ${gameName} esports team on FragNaija.`,
           images: [{ url: imageUrl, width: 400, height: 400, alt: team.name }],
         },
         twitter: {
-          title: `${team.name} | FragNaija`,
+          title: `${team.name} - FragNaija`,
           description: `${team.name} - ${gameName} esports team on FragNaija.`,
           images: [imageUrl],
           card: 'summary',

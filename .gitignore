@@ -1,29 +1,20 @@
 ```
-# Next.js
+# Build artifacts
 .next/
-out/
+public/*.js
 
 # Dependencies
 node_modules/
 
-# Environment variables
+# Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Logs
 *.log
 
-# Temporary files
-*.tmp
-*.swp
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Build outputs
-dist/
-build/
-target/
+# Editor
+.vscode/
+.idea/
 ```
