@@ -1,7 +1,6 @@
 "use client";
 
 import BrandedLoader from "@/components/common/BrandedLoader";
-import { LoginGate, useAuthGate } from "@/components/common/LoginGate";
 import { Clock, Copy, Eye, Heart, MessageCircle, Send, Share2, User } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,18 +17,35 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat("en-NG", { month: "long", day: "numeric", year: "numeric" }).format(date);
 }
 
+function getSessionId(): string {
+  let sessionId = localStorage.getItem("fn_session_id");
+  if (!sessionId) {
+    sessionId = `anon_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    localStorage.setItem("fn_session_id", sessionId);
+  }
+  return sessionId;
+}
+
 export default function NewsArticlePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const { user, loading: authLoading } = useAuthGate();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [comment, setComment] = useState("");
   const [copied, setCopied] = useState(false);
+  const [hasLikedSession, setHasLikedSession] = useState(false);
+
+  // Check if user already liked this article in current session (for anonymous users)
+  useEffect(() => {
+    const likedKey = `liked_article_${id}`;
+    const previouslyLiked = localStorage.getItem(likedKey);
+    if (previouslyLiked === "true") {
+      setHasLikedSession(true);
+    }
+  }, [id]);
 
   useEffect(() => {
-    if (!user || !id) { setLoading(false); return; }
     let active = true;
     setLoading(true);
     fetch(`/api/news/${id}`, { cache: "no-store", credentials: "include" })
@@ -42,12 +58,32 @@ export default function NewsArticlePage() {
       .catch((err) => { if (active) setError(err instanceof Error ? err.message : "Article unavailable"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [id, user]);
+  }, [id]);
 
   async function toggleLike() {
     if (!article) return;
+    const likedKey = `liked_article_${article.id}`;
+    const alreadyLikedThisSession = localStorage.getItem(likedKey) === "true";
+    
+    // For anonymous users, prevent rapid re-liking within the same session
+    if (alreadyLikedThisSession && !article.liked_by_me) {
+      // Already liked this article in this session, don't allow another like
+      return;
+    }
+    
     const res = await fetch(`/api/news/${article.id}`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "like" }) });
-    if (res.ok) setArticle(await res.json());
+    if (res.ok) {
+      const updated = await res.json();
+      setArticle(updated);
+      // Track that user liked this article in this session (for anonymous duplicate prevention)
+      if (updated.liked_by_me) {
+        localStorage.setItem(likedKey, "true");
+        setHasLikedSession(true);
+      } else {
+        localStorage.removeItem(likedKey);
+        setHasLikedSession(false);
+      }
+    }
   }
 
   async function submitComment(event: React.FormEvent) {
@@ -58,6 +94,12 @@ export default function NewsArticlePage() {
       const saved = await res.json();
       setArticle((current) => current ? { ...current, comments: [saved, ...current.comments], comment_count: current.comment_count + 1 } : current);
       setComment("");
+    } else {
+      const errorData = await res.json();
+      if (errorData.error === "Login required to comment") {
+        // Redirect to login or show login prompt
+        window.location.href = `/login?next=/news/${article.id}`;
+      }
     }
   }
 
@@ -73,8 +115,7 @@ export default function NewsArticlePage() {
     window.setTimeout(() => setCopied(false), 1600);
   }
 
-  if (authLoading || loading) return <div className="flex min-h-screen items-center justify-center bg-fn-black"><BrandedLoader label="Loading article" size="sm" /></div>;
-  if (!user) return <LoginGate heading="Login to read FragNaija News" message="Full article content, view tracking, likes, and comments are only available after login." next={`/news/${id}`} />;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-fn-black"><BrandedLoader label="Loading article" size="sm" /></div>;
   if (error || !article) return <main className="min-h-screen bg-fn-black px-4 py-16 text-center text-fn-muted">{error || "Article not found"}</main>;
 
   return (
