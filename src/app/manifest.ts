@@ -2,14 +2,14 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Frag Naija - Everything Esports - One Platform',
-    short_name: 'Frag Naija',
-    description: "Nigeria's premier esports platform. Everything Esports - One Platform.",
+    name: 'FragNaija - Everything Esports. One Platform.',
+    short_name: 'FragNaija',
+    description: "Nigeria's premier esports platform. Everything Esports. One Platform.",
     start_url: '/',
     id: '/',
     display: 'standalone',
     background_color: '#000000',
-    theme_color: '#00ff41',
+    theme_color: '#007a1a',
     orientation: 'portrait-primary',
     categories: ['games', 'sports', 'entertainment'],
     lang: 'en-NG',
