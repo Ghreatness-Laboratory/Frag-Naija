@@ -75,14 +75,18 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
   const [a, setA] = useState<Athlete | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user) {
-      setLoading(false);
       return;
     }
+
+    setLoading(true);
+    setNotFound(false);
+    setA(null);
 
     Promise.all([
       fetch(`/api/athletes/${params.id}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
@@ -100,7 +104,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
         game_slug: team.game_slug,
       }));
 
-      setA(athlete || (fallbackAthlete ? {
+      const resolvedAthlete = athlete || (fallbackAthlete ? {
         rating: fallbackAthlete.overall_rating,
         previous_aliases: [],
         previous_teams: [],
@@ -108,8 +112,17 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
         sensitivity_settings: {},
         control_code: '',
         ...fallbackAthlete,
-      } as Athlete : null));
+      } as Athlete : null);
+
+      if (resolvedAthlete) {
+        setA(resolvedAthlete);
+        setNotFound(false);
+      } else {
+        setNotFound(true);
+      }
       setTeams(Array.isArray(teamData) && teamData.length ? teamData : fallbackTeams);
+    }).catch(() => {
+      setNotFound(true);
     }).finally(() => setLoading(false));
   }, [authLoading, params.id, user]);
 
@@ -117,7 +130,7 @@ export default function AthleteDetail({ params }: { params: { id: string } }) {
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Checking athlete access" /></div>;
   if (!user) return <LoginGate heading="Login to view athlete profile" message="Athlete cards, stats, achievements, loadouts, and profile details are hidden until you log in." next={`/athletes/${params.id}`} />;
-  if (!a) return <div className="min-h-screen p-8"><p className="text-fn-muted">Athlete not found.</p><Link href="/athletes" className="text-fn-green">Back to roster</Link></div>;
+  if (notFound) return <div className="min-h-screen p-8"><p className="text-fn-muted">Athlete not found.</p><Link href="/athletes" className="text-fn-green">Back to roster</Link></div>;
 
   const activeGame = selectedGame ?? GAMES.find((game) => game.slug === a.game_slug);
   const primary = activeGame?.colors.primary ?? 'rgb(var(--fn-green))';
