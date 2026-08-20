@@ -17,20 +17,16 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
 };
 
 export async function getHomepageSettings() {
-  const { data, error } = await supabaseAdmin.from('homepage_settings').select('*').single();
+  const { data, error } = await supabaseAdmin.from('homepage_settings').select('key, value');
   if (error || !data) return DEFAULT_HOMEPAGE_SETTINGS;
-  return { ...DEFAULT_HOMEPAGE_SETTINGS, ...data };
+  const settings = Object.fromEntries(data.map((row) => [row.key, row.value]));
+  return { ...DEFAULT_HOMEPAGE_SETTINGS, ...settings };
 }
 
 export async function updateHomepageSettings(settings) {
-  const { data: existing } = await supabaseAdmin.from('homepage_settings').select('id').single();
-  const payload = { ...settings, updated_at: new Date().toISOString() };
-
-  if (existing?.id) {
-    const { error } = await supabaseAdmin.from('homepage_settings').update(payload).eq('id', existing.id);
-    if (error) throw new Error(`Failed to save homepage settings: ${error.message}`);
-  } else {
-    const { error } = await supabaseAdmin.from('homepage_settings').insert(payload);
-    if (error) throw new Error(`Failed to save homepage settings: ${error.message}`);
-  }
+  const entries = Object.entries(settings).filter(([key]) => key in DEFAULT_HOMEPAGE_SETTINGS);
+  const timestamp = new Date().toISOString();
+  const rows = entries.map(([key, value]) => ({ key, value: String(value ?? ''), updated_at: timestamp }));
+  const { error } = await supabaseAdmin.from('homepage_settings').upsert(rows, { onConflict: 'key' });
+  if (error) throw new Error(`Failed to save homepage settings: ${error.message}`);
 }

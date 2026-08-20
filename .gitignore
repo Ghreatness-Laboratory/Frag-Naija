@@ -1,14 +1,9 @@
 ```
-# Next.js build output
+# Build artifacts
+public/*.js
 .next/
 
-# Compiled JavaScript files
-public/*.js
-
-# Logs
-*.log
-
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*
@@ -16,33 +11,11 @@ public/*.js
 # Dependencies
 node_modules/
 
-# Editor files
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
+
+# Logs and temp files
+*.log
 *.tmp
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Coverage directory used by coverage tools
-coverage/
-htmlcov/
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Build outputs
-dist/
-build/
-target/
-
-# Virtual environments
-venv/
-.venv/
 ```
