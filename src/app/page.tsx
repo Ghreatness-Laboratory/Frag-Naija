@@ -1,4 +1,5 @@
 "use client";
+import OptimizedImage from '../components/common/OptimizedImage';
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
@@ -10,6 +11,9 @@ import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
 import { useAuthGate } from "@/components/common/LoginGate";
+import { useLaunchCountdown } from "@/components/common/useLaunchCountdown";
+import { formatLaunchRemaining } from "@/lib/launchCountdown";
+import StakeholderCard, { type Stakeholder } from "@/components/common/StakeholderCard";
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -54,6 +58,7 @@ type HomepagePayload = {
   teams?: Team[];
   homepageSettings?: HomepageSettings;
   companyProfile?: CompanyProfile;
+  stakeholders?: Stakeholder[];
 };
 
 let homepageDataPromise: Promise<HomepagePayload> | null = null;
@@ -340,7 +345,7 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
       <Link href={`/athletes/${athlete.id}`} className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
         <div className="relative h-28 overflow-hidden bg-fn-dark sm:h-32">
           {athlete.photo_url ? (
-            <img src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={152} height={112} />
+            <OptimizedImage src={athlete.photo_url} alt={name} className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-105" loading="lazy" width={152} height={112} />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(77,255,110,.16),transparent_62%)] text-fn-green"><ShieldCheck size={32} /></div>
           )}
@@ -404,10 +409,12 @@ export default function HomePage() {
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
   const [isScoutPromptOpen, setIsScoutPromptOpen] = useState(false);
+  const { remaining } = useLaunchCountdown();
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
@@ -453,6 +460,7 @@ export default function HomePage() {
       setAllTeams(Array.isArray(payload.teams) ? payload.teams : []);
       setHomepageSettings(payload.homepageSettings && !Array.isArray(payload.homepageSettings) ? payload.homepageSettings : {});
       setCompanyProfile(payload.companyProfile ?? null);
+      setStakeholders(Array.isArray(payload.stakeholders) ? payload.stakeholders : []);
     });
 
     return () => {
@@ -524,6 +532,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen overflow-hidden">
+      <div className="border-b border-fn-green/20 bg-fn-green/10 px-4 py-2 text-center text-[10px] font-black uppercase tracking-widest text-fn-green sm:px-8 lg:px-12">
+        Launching in: {formatLaunchRemaining(remaining)}
+      </div>
       <GameSelectionModal
         open={isScoutPromptOpen}
         onClose={() => setIsScoutPromptOpen(false)}
@@ -732,7 +743,7 @@ export default function HomePage() {
         {shopItems.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No shop items are published yet.</p> : (
           <motion.div variants={cardStagger}>
             <CarouselRail>
-              {shopItems.map((item) => <Link key={item.id} href="/shop" className="group min-w-[240px] snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
+              {shopItems.map((item) => <Link key={item.id} href="/shop" className="group min-w-[240px] snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/40"><div className="h-32 bg-fn-dark flex items-center justify-center">{item.image_url ? <OptimizedImage src={item.image_url} alt={item.name} className="h-full w-full object-cover" /> : <ShoppingBag style={{ color: primary }} />}</div><div className="p-3"><div className="fn-label mb-1">{item.category || item.status || 'Item'}</div><div className="text-xs font-bold text-fn-text">{item.name}</div><div className="mt-2 text-[11px] font-black" style={{ color: primary }}>{item.currency || 'NGN'} {Number(item.price || 0).toLocaleString()}</div></div></Link>)}
             </CarouselRail>
           </motion.div>)}
       </motion.section>}
@@ -744,12 +755,24 @@ export default function HomePage() {
       </motion.section>
 
 
+      {/* Stakeholders Preview */}
+      <motion.section id="stakeholders-preview" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder">
+        <div className="mb-6 flex items-center justify-between gap-4"><div><p className="fn-label mb-1 text-fn-green">STAKEHOLDERS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">MEET THE PEOPLE</h2></div><Link href="/about#stakeholders" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL <ChevronRight size={11} /></Link></div>
+        {stakeholders.length === 0 ? <p className="text-fn-muted text-[10px] py-6">No stakeholders have been published yet.</p> : (
+          <motion.div variants={cardStagger}>
+            <CarouselRail>
+              {stakeholders.slice(0, 6).map((stakeholder) => <StakeholderCard key={stakeholder.id} stakeholder={stakeholder} compact />)}
+            </CarouselRail>
+          </motion.div>
+        )}
+      </motion.section>
+
       {/* Company Credit */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-8 border-t border-fn-gborder">
         <Link href="/about" className="group flex items-center justify-between gap-4 rounded-sm border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">
-              {companyProfile?.company_logo ? <img src={companyProfile.company_logo} alt={`${companyProfile.company_name ?? 'Ghreatness Laboratory'} logo`} className="h-full w-full object-cover" /> : <Building2 size={18} className="text-fn-green" />}
+              {companyProfile?.company_logo ? <OptimizedImage src={companyProfile.company_logo} alt={`${companyProfile.company_name ?? 'Ghreatness Laboratory'} logo`} className="h-full w-full object-cover" /> : <Building2 size={18} className="text-fn-green" />}
             </div>
             <div>
               <p className="fn-label" style={{ color: primary }}>Powered by</p>

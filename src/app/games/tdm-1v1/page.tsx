@@ -1,5 +1,6 @@
 'use client';
 
+import OptimizedImage from '../../../components/common/OptimizedImage';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -97,7 +98,7 @@ function RosterTile({ athlete, selected, index, onClick, reduceMotion }: { athle
       aria-pressed={selected}
       className={`group relative aspect-[3/4] overflow-hidden border bg-fn-card text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green ${selected ? 'border-fn-green' : 'border-fn-gborder hover:border-fn-green'}`}
     >
-      {portrait(athlete) ? <img src={portrait(athlete)} alt={displayName(athlete)} className={`h-full w-full object-cover transition duration-300 ${selected ? 'scale-[1.06] grayscale-0 brightness-[.8]' : 'grayscale brightness-50 group-hover:scale-[1.06] group-hover:grayscale-0 group-hover:brightness-[.8]'}`} /> : <div className="flex h-full w-full items-center justify-center text-fn-muted"><Shield /></div>}
+      {portrait(athlete) ? <OptimizedImage src={portrait(athlete)} alt={displayName(athlete)} className={`h-full w-full object-cover transition duration-300 ${selected ? 'scale-[1.06] grayscale-0 brightness-[.8]' : 'grayscale brightness-50 group-hover:scale-[1.06] group-hover:grayscale-0 group-hover:brightness-[.8]'}`} /> : <div className="flex h-full w-full items-center justify-center text-fn-muted"><Shield /></div>}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent px-1.5 pb-1.5 pt-[48%]">
         <p className="truncate text-[8px] font-black uppercase tracking-wider text-fn-text sm:text-[9px]">{displayName(athlete)}</p>
       </div>
@@ -329,7 +330,7 @@ function TdmOneVOneContent() {
             >
               <div className="relative w-full max-w-[220px] aspect-[3/4] overflow-hidden border border-fn-gborder bg-fn-card">
                 {portrait(p1) ? (
-                  <img src={portrait(p1)} alt="" className="h-full w-full object-cover brightness-[.85]" />
+                  <OptimizedImage src={portrait(p1)} alt="" className="h-full w-full object-cover brightness-[.85]" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-fn-green"><Shield size={48} /></div>
                 )}
@@ -359,7 +360,7 @@ function TdmOneVOneContent() {
             >
               <div className="relative w-full max-w-[220px] aspect-[3/4] overflow-hidden border border-fn-gborder bg-fn-card">
                 {portrait(p2) ? (
-                  <img src={portrait(p2)} alt="" className="h-full w-full object-cover brightness-[.85]" />
+                  <OptimizedImage src={portrait(p2)} alt="" className="h-full w-full object-cover brightness-[.85]" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-fn-green"><Shield size={48} /></div>
                 )}

@@ -1,5 +1,6 @@
 'use client';
 
+import OptimizedImage from '../../components/common/OptimizedImage';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -26,7 +27,7 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
           {game.shortName.slice(0, 3)}
         </div>
       ) : (
-        <img
+        <OptimizedImage
           src={game.logo}
           alt={game.name}
           width={32} height={32}

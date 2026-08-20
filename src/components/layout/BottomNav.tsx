@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, Download, Home, Menu, Search, Shield, Sparkles, Swords, Target, Ticket, User, X, Bell, Newspaper, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePWAInstallPrompt } from "@/components/usePWAInstallPrompt";
+import { useLaunchCountdown } from "@/components/common/useLaunchCountdown";
+import { formatLaunchRemaining } from "@/lib/launchCountdown";
 
 const WAGER_COUNT_EVENT = "fn-wager-count";
 const WAGER_COUNT_KEY = "fn-wager-count";
@@ -50,6 +52,7 @@ export default function BottomNav() {
   const [bookingCode, setBookingCode] = useState("");
   const { install: installPWA, installable: pwaInstallable } = usePWAInstallPrompt();
   const [installMessage, setInstallMessage] = useState("");
+  const { remaining } = useLaunchCountdown();
 
   useEffect(() => {
     setWagerCount(readWagerCount());
@@ -115,6 +118,10 @@ export default function BottomNav() {
               <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="text-fn-muted hover:text-fn-text">
                 <X size={16} />
               </button>
+            </div>
+
+            <div className="mb-3 rounded-sm border border-fn-green/25 bg-fn-green/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-fn-green">
+              Launching in: {formatLaunchRemaining(remaining)}
             </div>
 
             <div className="grid gap-1.5">

@@ -1,7 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
 import { Building2, ChevronRight } from 'lucide-react';
 import { getCompanyProfile } from '@/features/companyProfile.server';
+import { listStakeholders } from '@/features/stakeholders.server';
+import StakeholderCard, { type Stakeholder } from '@/components/common/StakeholderCard';
+import OptimizedImage from '../../components/common/OptimizedImage';
 
 const blocks = [
   ['Mission', 'mission'],
@@ -13,7 +15,7 @@ const blocks = [
 export const dynamic = 'force-dynamic';
 
 export default async function AboutPage() {
-  const profile = await getCompanyProfile();
+  const [profile, stakeholders] = await Promise.all([getCompanyProfile(), listStakeholders() as Promise<Stakeholder[]>]);
 
   return (
     <main className="min-h-screen bg-fn-black text-fn-text">
@@ -30,7 +32,7 @@ export default async function AboutPage() {
             </div>
             <div className="rounded-sm border border-fn-gborder bg-fn-card p-5">
               <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">
-                {profile.company_logo ? <img src={profile.company_logo} alt={`${profile.company_name} logo`} className="h-full w-full object-cover" /> : <Building2 className="text-fn-green" size={28} />}
+                {profile.company_logo ? <OptimizedImage src={profile.company_logo} alt={`${profile.company_name} logo`} className="h-full w-full object-cover" /> : <Building2 className="text-fn-green" size={28} />}
               </div>
               <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-fn-green">Company</p>
               <h2 className="mt-1 text-xl font-black uppercase tracking-widest text-fn-text">{profile.company_name}</h2>
@@ -48,6 +50,23 @@ export default async function AboutPage() {
               <p className="mt-3 whitespace-pre-line text-xs leading-6 text-fn-muted">{profile[key]}</p>
             </article>
           ))}
+        </div>
+      </section>
+      <section id="stakeholders" className="border-t border-fn-gborder px-4 py-10 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="fn-label mb-2 text-fn-green">Stakeholders</p>
+              <h2 className="text-2xl font-black uppercase tracking-widest text-fn-text">Key People Behind FragNaija</h2>
+            </div>
+          </div>
+          {stakeholders.length ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {stakeholders.map((stakeholder) => <StakeholderCard key={stakeholder.id} stakeholder={stakeholder} />)}
+            </div>
+          ) : (
+            <div className="rounded-sm border border-fn-gborder bg-fn-card p-5 text-xs text-fn-muted">No stakeholders have been published yet.</div>
+          )}
         </div>
       </section>
     </main>

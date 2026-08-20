@@ -1,4 +1,5 @@
 "use client";
+import OptimizedImage from '../../components/common/OptimizedImage';
 import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
@@ -260,7 +261,7 @@ export default function TeamsPage() {
                     : { borderColor: 'rgb(var(--fn-gborder))', background: 'rgb(var(--fn-card))' }}
                 >
                   {team.logo_url
-                    ? <img src={team.logo_url} alt={team.name} className="w-full h-full object-cover" />
+                    ? <OptimizedImage src={team.logo_url} alt={team.name} className="w-full h-full object-cover" />
                     : <span className="font-display text-sm font-black" style={{ color: primary }}>{team.name[0]}</span>}
                 </div>
 
@@ -293,7 +294,7 @@ export default function TeamsPage() {
                 style={{ borderColor: primary, background: `${primary}15`, boxShadow: `0 0 20px ${primary}25` }}
               >
                 {t.logo_url
-                  ? <img src={t.logo_url} alt={t.name} className="w-full h-full object-cover" />
+                  ? <OptimizedImage src={t.logo_url} alt={t.name} className="w-full h-full object-cover" />
                   : <span className="font-display text-4xl font-black" style={{ color: primary }}>{t.name[0]}</span>}
               </div>
 
