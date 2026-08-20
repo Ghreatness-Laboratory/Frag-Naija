@@ -22,32 +22,52 @@ const sairaCondensed = Saira_Condensed({ subsets: ["latin"], weight: ["400", "50
 const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-space-mono", display: "swap" });
 const fontVariables = [chakraPetch, rajdhani, exo2, orbitron, oxanium, sairaCondensed, spaceMono].map((font) => font.variable).join(" ");
 
+const SITE_URL = "https://fragnaija.com.ng";
+const OG_IMAGE_URL = "/og-image.svg";
+const LOGO_URL = "/icons/icon.svg";
+
 export const metadata: Metadata = {
   title: {
-    default: "Frag Naija - Everything Esports - One Platform",
-    template: "%s - FragNaija",
+    default: "Frag Naija — Nigeria's Premier Esports Platform",
+    template: "%s | FragNaija",
   },
-  description: "Nigeria's premier esports platform. Everything Esports - One Platform.",
+  description: "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
   openGraph: {
-    title: "Frag Naija - Everything Esports - One Platform",
-    description: "Nigeria's premier esports platform. Everything Esports - One Platform.",
+    title: "Frag Naija — Nigeria's Premier Esports Platform",
+    description: "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
+    url: SITE_URL,
     siteName: "FragNaija",
+    images: [
+      {
+        url: OG_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: "FragNaija - Nigeria's Premier Esports Platform",
+        type: "image/svg+xml",
+      },
+    ],
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Frag Naija - Everything Esports - One Platform",
-    description: "Nigeria's premier esports platform. Everything Esports - One Platform.",
+    title: "Frag Naija — Nigeria's Premier Esports Platform",
+    description: "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
+    images: [OG_IMAGE_URL],
+    creator: "@fragnaija",
+    site: "@fragnaija",
   },
-  applicationName: "Frag Naija",
-  keywords: ["esports", "Nigeria", "PUBG Mobile", "gaming", "wager", "tournaments"],
-  authors: [{ name: "Frag Naija" }],
+  applicationName: "FragNaija",
+  keywords: ["esports", "Nigeria", "PUBG Mobile", "COD Mobile", "Free Fire", "gaming", "wager", "tournaments", "athletes", "teams", "betting", "predictions"],
+  authors: [{ name: "FragNaija" }],
+  creator: "FragNaija",
+  publisher: "FragNaija",
+  formatDetection: { telephone: false, email: false, address: false },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Frag Naija",
+    title: "FragNaija",
   },
-  formatDetection: { telephone: false },
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -55,7 +75,18 @@ export const metadata: Metadata = {
       { url: "/pwaicon.png", type: "image/png", sizes: "512x512" },
     ],
     shortcut: "/pwaicon.png",
-    apple:    "/pwaicon.png",
+    apple: "/pwaicon.png",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -73,9 +104,35 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // Get font preview mode from query params or localStorage
   // This allows testing different fonts by adding ?font=rajdhani, ?font=chakra, or ?font=exo2 to URL
+  
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "FragNaija",
+    "alternateName": "Frag Naija",
+    "url": SITE_URL,
+    "logo": `${SITE_URL}${LOGO_URL}`,
+    "image": `${SITE_URL}${OG_IMAGE_URL}`,
+    "description": "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
+    "sameAs": [
+      "https://twitter.com/fragnaija",
+      "https://facebook.com/fragnaija",
+      "https://instagram.com/fragnaija",
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer support",
+      "email": "support@fragnaija.com.ng",
+    },
+  };
+
   return (
     <html lang="en" className={`dark ${fontVariables}`} suppressHydrationWarning>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('fn-theme')||'dark';var e=document.documentElement;e.classList.remove('dark','light');e.classList.add(t);var f=localStorage.getItem('fn-font-preview');if(f){e.classList.add('font-preview-'+f);}}catch(_){}})();`,

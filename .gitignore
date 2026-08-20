@@ -1,69 +1,40 @@
 ```
-# Database migrations
-supabase/migrations/*.sql
-
 # Dependencies
 node_modules/
-.yarn/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Environment variables
-.env
-.env.local
-.env.*
-!.env.example
-
-# Build outputs
+# Build artifacts
 dist/
 build/
 .next/
 out/
-.nuxt/
-public/build/
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Environment variables
+.env
+.env.local
+*.env.*
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# IDE specific
+# Editor/IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
+*.tmp
 
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
+# Logs
+*.log
 
-# Coverage directory used by tools like istanbul
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Coverage reports
 coverage/
-*.lcov
+htmlcov/
+.coverage
 
-# Temporary folders
-tmp/
-temp/
-
-# Compiled JavaScript (if any TypeScript/JS compilation occurs)
-*.js.map
-*.tsbuildinfo
-
-# Supabase specific
-supabase/.temp/
-supabase/config.toml
+# OS generated files
+.DS_Store
+Thumbs.db
 ```
