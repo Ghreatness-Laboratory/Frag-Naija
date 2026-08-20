@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const ARTICLE_SELECT = 'id,title,content,excerpt,image_url,author,published,published_at,pinned,like_count_offset,view_count_offset,created_at,updated_at';
+const ARTICLE_SELECT = 'id,title,content,excerpt,image_url,author,published,published_at,pinned,like_count_offset,view_count_offset,created_at,updated_at,category,game_slug';
 
 function cleanText(value) {
   return String(value ?? '').trim();
@@ -162,6 +162,8 @@ export async function createNews(body) {
     published: Boolean(body.published),
     published_at: body.published_at || (body.published ? new Date().toISOString() : null),
     pinned: Boolean(body.pinned),
+    category: body.category || null,
+    game_slug: body.game_slug || null,
     like_count_offset: Math.max(0, Number(body.like_count ?? 0)),
     view_count_offset: Math.max(0, Number(body.view_count ?? 0)),
   };
@@ -183,6 +185,8 @@ export async function updateNews(id, body) {
   if (body.published !== undefined) updates.published = Boolean(body.published);
   if (body.published_at !== undefined) updates.published_at = body.published_at || null;
   if (body.pinned !== undefined) updates.pinned = Boolean(body.pinned);
+  if (body.category !== undefined) updates.category = body.category || null;
+  if (body.game_slug !== undefined) updates.game_slug = body.game_slug || null;
 
   if (body.like_count !== undefined) {
     updates.like_count_offset = Math.max(0, Number(body.like_count)) - Number(current.organic_likes ?? 0);
