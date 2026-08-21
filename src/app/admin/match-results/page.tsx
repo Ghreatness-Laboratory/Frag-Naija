@@ -91,7 +91,7 @@ export default function AdminMatchResultsPage() {
     <div className="max-w-5xl p-8">
       <p className="fn-label text-fn-green">Tournament-linked match-result finalization</p>
       <h1 className="mt-1 font-display text-2xl font-black uppercase tracking-widest text-fn-text">Tournament / Match Results</h1>
-      <p className="mt-2 max-w-3xl text-sm text-fn-muted">Finalize results under a real tournament created in the existing Tournament admin. Type the match details here; the save creates a persistent match record under that tournament before sending Gaming Alerts.</p>
+      <p className="mt-2 max-w-3xl text-sm text-fn-muted">Finalize finished match results under tournaments created in the existing Tournament admin. Gaming Alerts lists tournaments and fixtures automatically; this screen only records the final result and sends the winner/MVP alert.</p>
 
       <form onSubmit={submit} className="mt-6 grid gap-4 border border-fn-gborder bg-fn-card p-5 sm:grid-cols-2">
         <label className="block"><span className="fn-label">Tournament</span><select required value={form.tournament_id} onChange={(e) => selectTournament(e.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm"><option value="">Select existing tournament</option>{tournaments.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.game_slug}</option>)}</select></label>
