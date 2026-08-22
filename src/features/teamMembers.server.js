@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const TEAM_MEMBER_SELECT = 'id,name,role,bio,photo_url,currently_playing_game_slug,twitter_url,instagram_url,linkedin_url,twitch_url,youtube_url,sort_order,status,created_at,updated_at';
+
 const FIELDS = new Set([
   'name', 'role', 'bio', 'photo_url', 'currently_playing_game_slug',
   'twitter_url', 'instagram_url', 'linkedin_url', 'twitch_url', 'youtube_url',
@@ -18,7 +20,7 @@ function payload(body = {}) {
 }
 
 export async function getTeamMembers({ status } = {}) {
-  let query = supabaseAdmin.from('team_members').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+  let query = supabaseAdmin.from('team_members').select(TEAM_MEMBER_SELECT).order('sort_order', { ascending: true }).order('created_at', { ascending: true });
   if (status) query = query.eq('status', status);
   const { data, error } = await query;
   if (error) throw error;

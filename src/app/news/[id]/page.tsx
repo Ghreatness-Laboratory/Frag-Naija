@@ -4,6 +4,7 @@ import BrandedLoader from "@/components/common/BrandedLoader";
 import { Clock, Copy, Eye, Heart, MessageCircle, Send, Share2, User } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 type Comment = { id: string; body: string; created_at: string; user_id: string };
 type Article = {
@@ -17,15 +18,6 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat("en-NG", { month: "long", day: "numeric", year: "numeric" }).format(date);
 }
 
-function getSessionId(): string {
-  let sessionId = localStorage.getItem("fn_session_id");
-  if (!sessionId) {
-    sessionId = `anon_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-    localStorage.setItem("fn_session_id", sessionId);
-  }
-  return sessionId;
-}
-
 export default function NewsArticlePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -34,21 +26,10 @@ export default function NewsArticlePage() {
   const [error, setError] = useState("");
   const [comment, setComment] = useState("");
   const [copied, setCopied] = useState(false);
-  const [hasLikedSession, setHasLikedSession] = useState(false);
-
-  // Check if user already liked this article in current session (for anonymous users)
-  useEffect(() => {
-    const likedKey = `liked_article_${id}`;
-    const previouslyLiked = localStorage.getItem(likedKey);
-    if (previouslyLiked === "true") {
-      setHasLikedSession(true);
-    }
-  }, [id]);
-
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetch(`/api/news/${id}`, { cache: "no-store", credentials: "include" })
+    fetch(`/api/news/${id}`, { credentials: "include" })
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Article unavailable");
@@ -78,10 +59,8 @@ export default function NewsArticlePage() {
       // Track that user liked this article in this session (for anonymous duplicate prevention)
       if (updated.liked_by_me) {
         localStorage.setItem(likedKey, "true");
-        setHasLikedSession(true);
       } else {
         localStorage.removeItem(likedKey);
-        setHasLikedSession(false);
       }
     }
   }
@@ -122,8 +101,7 @@ export default function NewsArticlePage() {
     <main className="min-h-screen bg-fn-black px-3 py-5 pb-28 text-fn-text sm:px-6 lg:px-8">
       <article className="mx-auto max-w-4xl">
         <div className="overflow-hidden border border-fn-green/30 bg-fn-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={article.image_url || "/logo-icon.jpeg"} alt={article.title} className="h-[260px] w-full object-cover sm:h-[420px]" />
+          <OptimizedImage src={article.image_url || "/og-image.svg"} alt={article.title} className="h-[260px] w-full object-cover sm:h-[420px]" />
           <div className="p-5 sm:p-8">
             <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-widest text-fn-muted">
               <span className="flex items-center gap-1"><User size={11} /> {article.author || "FragNaija Desk"}</span>

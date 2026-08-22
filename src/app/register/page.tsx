@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, User, UserPlus, Gamepad2, CalendarDays, Gift } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 function GamePickCard({ game, selected, onSelect }: { game: Game; selected: boolean; onSelect: () => void }) {
   const [imgErr, setImgErr] = useState(false);
@@ -26,7 +27,7 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
           {game.shortName.slice(0, 3)}
         </div>
       ) : (
-        <img
+        <OptimizedImage
           src={game.logo}
           alt={game.name}
           width={32} height={32}

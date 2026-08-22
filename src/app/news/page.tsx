@@ -6,6 +6,7 @@ import { ArrowUpRight, Clock, Eye, Heart, ImageOff, Newspaper, User, Filter } fr
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { GAMES } from "@/lib/games";
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 type NewsItem = {
   id: string;
@@ -31,10 +32,6 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat("en-NG", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
-function imageFor(item: NewsItem): string {
-  return item.image_url || "";
-}
-
 function gameLabel(slug?: string | null) {
   if (!slug) return null;
   return GAMES.find((g) => g.slug === slug)?.name || slug;
@@ -43,7 +40,7 @@ function gameLabel(slug?: string | null) {
 function CompactNewsImage({ article, lead = false }: { article: NewsItem; lead?: boolean }) {
   if (article.image_url) {
     return (
-      <img
+      <OptimizedImage
         src={article.image_url}
         alt={article.title}
         className="h-full w-full object-cover"
@@ -77,7 +74,6 @@ function LoginTeaser({ next }: { next: string }) {
 export default function NewsPage() {
   const { user, loading: authLoading } = useAuthGate();
   const [articles, setArticles] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showLoader, setShowLoader] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedGame, setSelectedGame] = useState('');
@@ -86,10 +82,9 @@ export default function NewsPage() {
     let active = true;
     let minTimer: ReturnType<typeof setTimeout>;
     
-    setLoading(true);
     setShowLoader(true);
     
-    fetch("/api/news", { cache: "no-store", credentials: "include" })
+    fetch("/api/news", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (active) setArticles(Array.isArray(data) ? data : []);
@@ -99,7 +94,6 @@ export default function NewsPage() {
         // Ensure minimum 600ms loader display
         minTimer = setTimeout(() => {
           if (active) {
-            setLoading(false);
             setShowLoader(false);
           }
         }, 650);
@@ -118,12 +112,6 @@ export default function NewsPage() {
       return matchesCategory && matchesGame;
     });
   }, [articles, selectedCategory, selectedGame]);
-
-  // Get unique games from articles for the filter dropdown
-  const availableGames = useMemo(() => {
-    const games = new Set(articles.map((a) => a.game_slug).filter(Boolean) as string[]);
-    return Array.from(games);
-  }, [articles]);
 
   const lead = useMemo(() => filteredArticles[0] ?? null, [filteredArticles]);
   const rest = useMemo(() => filteredArticles.slice(1), [filteredArticles]);
@@ -189,7 +177,7 @@ export default function NewsPage() {
         {lead && (
           <article className="mb-4 grid overflow-hidden border border-fn-green/30 bg-fn-card md:grid-cols-2">
             <div className="relative h-48 border-b border-fn-gborder md:h-auto md:border-b-0 md:border-r">
-              <img src={imageFor(lead)} alt={lead.title} className="absolute inset-0 h-full w-full object-cover" />
+              <CompactNewsImage article={lead} lead />
               <div className="absolute inset-0 bg-gradient-to-t from-fn-black via-fn-black/45 to-transparent" />
               <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
                 {lead.category && (
@@ -219,7 +207,7 @@ export default function NewsPage() {
           {rest.map((article) => (
             <article key={article.id} className="group flex flex-col overflow-hidden border border-fn-gborder bg-fn-card transition-colors hover:border-fn-green/40">
               <div className="relative h-32 shrink-0 border-b border-fn-gborder">
-                <img src={imageFor(article)} alt={article.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                <CompactNewsImage article={article} />
                 {(article.category || article.game_slug) && (
                   <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                     {article.category && (

@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 const TABLE = 'communities';
+const COMMUNITY_SELECT = 'id,game_slug,tier,name,description,whatsapp_url,discord_url,status,sort_order,created_at,updated_at';
 
 function clean(payload) {
   return {
@@ -16,7 +17,7 @@ function clean(payload) {
 }
 
 export async function getCommunities({ game_slug, tier, status } = {}) {
-  let query = supabaseAdmin.from(TABLE).select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false });
+  let query = supabaseAdmin.from(TABLE).select(COMMUNITY_SELECT).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
   if (game_slug) query = query.eq('game_slug', game_slug);
   if (tier) query = query.eq('tier', tier);
   if (status) query = query.eq('status', status);

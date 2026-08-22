@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const HOMEPAGE_SETTINGS_SELECT = 'id,hero_eyebrow,hero_headline,hero_tagline,stat_players,stat_tournaments,stat_championships,stat_prize_pool,recruitment_headline,recruitment_body,recruitment_cta,popup_title,popup_body,popup_cta,featured_team_ids,featured_tournament_ids,show_athletes,show_teams,show_shop,created_at,updated_at';
+
 export const DEFAULT_HOMEPAGE_SETTINGS = {
   hero_eyebrow: "NIGERIA'S PREMIER ESPORTS PLATFORM",
   hero_headline: 'FRAG NAIJA',
@@ -17,7 +19,7 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
 };
 
 export async function getHomepageSettings() {
-  const { data, error } = await supabaseAdmin.from('homepage_settings').select('*').single();
+  const { data, error } = await supabaseAdmin.from('homepage_settings').select(HOMEPAGE_SETTINGS_SELECT).single();
   if (error || !data) return DEFAULT_HOMEPAGE_SETTINGS;
   return { ...DEFAULT_HOMEPAGE_SETTINGS, ...data };
 }

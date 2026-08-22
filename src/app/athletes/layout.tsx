@@ -1,17 +1,10 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Athletes',
   description: 'Browse professional esports athletes on FragNaija. View player stats, rankings, and profiles.',
-  openGraph: {
-    title: 'Athletes | FragNaija',
-    description: 'Browse professional esports athletes on FragNaija. View player stats, rankings, and profiles.',
-  },
-  twitter: {
-    title: 'Athletes | FragNaija',
-    description: 'Browse professional esports athletes on FragNaija. View player stats, rankings, and profiles.',
-  },
-};
+  path: '/athletes',
+});
 
 export default function AthletesLayout({ children }: { children: React.ReactNode }) {
   return children;

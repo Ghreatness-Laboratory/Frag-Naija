@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronRight, Lock, Shield, Zap } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
 import { useGame } from '@/context/GameContext';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 // ─── Logo component with graceful SVG/image fallback ────────────────────────
 
@@ -22,8 +23,8 @@ function GameLogo({ game, isSelected }: { game: Game; isSelected: boolean }) {
     : {};
 
   return (
-    /* Using <img> here so SVGs work without next/image domain config. */
-    <img
+    /* Using <OptimizedImage> here so SVGs work without next/image domain config. */
+    <OptimizedImage
       src={logoSrc}
       alt={`${game.name} logo`}
       width={80}

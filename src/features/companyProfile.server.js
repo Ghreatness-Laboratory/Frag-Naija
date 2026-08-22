@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const COMPANY_PROFILE_SELECT = 'id,company_name,company_logo,eyebrow,headline,intro,mission,what_we_do,operating_model,owned_products,created_at,updated_at';
+
 export const DEFAULT_COMPANY_PROFILE = {
   company_name: 'Ghreatness Laboratory',
   company_logo: '',
@@ -27,7 +29,7 @@ function payload(body = {}) {
 }
 
 export async function getCompanyProfile() {
-  const { data, error } = await supabaseAdmin.from('company_profile').select('*').single();
+  const { data, error } = await supabaseAdmin.from('company_profile').select(COMPANY_PROFILE_SELECT).single();
   if (error || !data) return DEFAULT_COMPANY_PROFILE;
   return { ...DEFAULT_COMPANY_PROFILE, ...data };
 }

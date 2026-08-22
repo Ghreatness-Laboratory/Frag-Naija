@@ -1,9 +1,11 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const SHOP_ITEM_SELECT = 'id,name,description,price,currency,image_url,category,status,game_slug,tutorial_video_url,created_at,updated_at';
+
 export async function getShopItems({ status, game_slug } = {}) {
   let query = supabaseAdmin
     .from('shop_items')
-    .select('*')
+    .select(SHOP_ITEM_SELECT)
     .order('created_at', { ascending: false });
 
   if (status) query = query.eq('status', status);

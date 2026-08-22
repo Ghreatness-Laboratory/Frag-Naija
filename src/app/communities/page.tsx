@@ -14,7 +14,7 @@ export default function CommunitiesPage() {
   const [tier, setTier] = useState('all');
 
   useEffect(() => {
-    fetch('/api/communities', { cache: 'no-store' })
+    fetch('/api/communities', { next: { revalidate: 120 } })
       .then((r) => (r.ok ? r.json() : []))
       .then(setRows)
       .finally(() => setLoading(false));

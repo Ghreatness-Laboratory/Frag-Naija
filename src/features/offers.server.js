@@ -2,6 +2,9 @@ import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { getSetting } from '@/features/settings/server';
 import { getUserProfile } from '@/features/userProfile.server';
 
+const REFERRAL_SELECT = 'id,referrer_id,referred_id,status,bonus_amount_ngn,qualified_wager_bet_id,qualified_at,created_at';
+const PROMO_SELECT = 'id,code,type,value_ngn,usage_limit,per_user_limit,is_active,expires_at,created_at';
+
 async function creditWallet(userId, amount, description) {
   await supabaseAdmin.from('wallets').upsert({ user_id: userId }, { onConflict: 'user_id' });
   const { data: wallet, error } = await supabaseAdmin.from('wallets').select('balance').eq('user_id', userId).single();
@@ -32,7 +35,7 @@ export async function createReferral(referrerId, referredId) {
 }
 
 export async function qualifyReferralForWagerBet(referredId, wagerBetId) {
-  const { data: referral } = await supabaseAdmin.from('referrals').select('*').eq('referred_id', referredId).eq('status', 'Pending').single();
+  const { data: referral } = await supabaseAdmin.from('referrals').select(REFERRAL_SELECT).eq('referred_id', referredId).eq('status', 'Pending').single();
   if (!referral) return null;
   const bonus = Number(await getSetting('referral_bonus_ngn')) || Number(referral.bonus_amount_ngn) || 500;
   const { data, error } = await supabaseAdmin.from('referrals').update({ status: 'Qualified', bonus_amount_ngn: bonus, qualified_wager_bet_id: wagerBetId, qualified_at: new Date().toISOString() }).eq('id', referral.id).eq('status', 'Pending').select().single();
@@ -43,7 +46,7 @@ export async function qualifyReferralForWagerBet(referredId, wagerBetId) {
 
 export async function getOffers(userId) {
   const profile = await getUserProfile(userId);
-  const { data: referrals } = await supabaseAdmin.from('referrals').select('*').eq('referrer_id', userId).order('created_at', { ascending: false });
+  const { data: referrals } = await supabaseAdmin.from('referrals').select(REFERRAL_SELECT).eq('referrer_id', userId).order('created_at', { ascending: false });
   return {
     referral_code: profile.referral_code,
     referrals: await Promise.all((referrals || []).map(async (row) => ({ ...row, referred_display: anonymize(await userDisplay(row.referred_id)) }))),
@@ -53,7 +56,7 @@ export async function getOffers(userId) {
 export async function redeemPromoCode(userId, code) {
   const normalized = String(code || '').trim().toUpperCase();
   if (!normalized) throw new Error('Enter a promo code.');
-  const { data: promo, error } = await supabaseAdmin.from('promo_codes').select('*').eq('code', normalized).eq('is_active', true).single();
+  const { data: promo, error } = await supabaseAdmin.from('promo_codes').select(PROMO_SELECT).eq('code', normalized).eq('is_active', true).single();
   if (error || !promo) throw new Error('Promo code is invalid or inactive.');
   if (promo.expires_at && new Date(promo.expires_at) < new Date()) throw new Error('Promo code has expired.');
   const { count } = await supabaseAdmin.from('promo_redemptions').select('id', { count: 'exact', head: true }).eq('promo_code_id', promo.id);

@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { Flag, Shield, Star } from 'lucide-react';
 import { athleteStatusTone, combatAttributes } from '@/lib/athlete-display';
 import { formatAthleteSubtitle } from '@/lib/games';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 export type PlayerCardTemplateAthlete = {
   ign: string;
@@ -138,7 +139,7 @@ function PlayerImage({
   fetchPriority?: 'high' | 'low' | 'auto';
 }) {
   return athlete.photo_url ? (
-    <img src={athlete.photo_url} alt={displayName} className={className} loading={loading} fetchPriority={fetchPriority} decoding="async" width={160} height={160} />
+    <OptimizedImage src={athlete.photo_url} alt={displayName} className={className} loading={loading} fetchPriority={fetchPriority} decoding="async" width={160} height={160} />
   ) : (
     <div className={fallbackClassName} style={{ borderColor: `${primary}70`, color: primary }}>
       <Shield size={72} />
@@ -306,7 +307,7 @@ export default function PlayerCardTemplate({
         <div className="absolute bottom-6 left-4 right-4 z-20 flex flex-col gap-3">
           <div>
             <div className="mb-2 flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
-              {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={13} style={{ color: accent }} />}
+              {team?.logo_url ? <OptimizedImage src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={13} style={{ color: accent }} />}
             </div>
             <h3 className="line-clamp-2 break-words font-display text-[23px] font-black uppercase leading-[0.88]" style={{ color: accent, textShadow: `0 0 18px ${accent}55` }}>{displayName}</h3>
             <p className="mt-2 line-clamp-2 text-[8px] font-bold uppercase leading-[1.2] tracking-[0.18em] text-white/60">{role} / {teamName}</p>
@@ -363,7 +364,7 @@ export default function PlayerCardTemplate({
       <div className="absolute bottom-8 left-5 right-5 z-20 flex flex-col gap-4">
         <div>
           <div className="mb-2 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border bg-black/75" style={{ borderColor: `${accent}80` }}>
-            {team?.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={16} style={{ color: accent }} />}
+            {team?.logo_url ? <OptimizedImage src={team.logo_url} alt={team.name} className="h-full w-full object-cover" loading="lazy" decoding="async" width={36} height={36} /> : <Flag size={16} style={{ color: accent }} />}
           </div>
           <h2 className="max-w-[245px] break-words font-display text-[32px] font-black uppercase leading-[0.86]" style={{ color: accent, textShadow: `0 0 20px ${accent}55` }}>{displayName}</h2>
           <p className="mt-3 line-clamp-2 max-w-[245px] text-[10px] font-bold uppercase leading-[1.2] tracking-[0.18em] text-white/60">{teamName}</p>
