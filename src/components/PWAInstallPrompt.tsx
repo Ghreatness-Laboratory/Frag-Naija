@@ -84,7 +84,7 @@ export default function PWAInstallPrompt() {
         <div className="p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-sm overflow-hidden bg-fn-black border border-fn-gborder">
-              <img src="/logo-icon.jpeg" alt="Frag Naija" className="w-full h-full object-contain" />
+              <img src="/icons/fn-badge.svg" alt="Frag Naija" className="w-full h-full object-contain" />
             </div>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-fn-text">Frag Naija</p>

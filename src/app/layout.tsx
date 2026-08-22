@@ -11,6 +11,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import NotificationsProvider from "@/components/notifications/NotificationsProvider";
 import FCMRegistrar from "@/components/notifications/FCMRegistrar";
 import SupportChatbot from "@/components/support/SupportChatbot";
+import { APP_ICON_PATH, DEFAULT_DESCRIPTION, OG_IMAGE_PATH, SITE_NAME, SITE_TAGLINE, SITE_URL, absoluteUrl } from "@/lib/seo";
 
 
 const chakraPetch = Chakra_Petch({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-chakra", display: "swap" });
@@ -22,20 +23,16 @@ const sairaCondensed = Saira_Condensed({ subsets: ["latin"], weight: ["400", "50
 const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-space-mono", display: "swap" });
 const fontVariables = [chakraPetch, rajdhani, exo2, orbitron, oxanium, sairaCondensed, spaceMono].map((font) => font.variable).join(" ");
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.fragnaija.com";
-const OG_IMAGE_URL = "/og-image.svg";
-const LOGO_URL = "/icons/icon.svg";
-
 export const metadata: Metadata = {
   title: {
     template: '%s - FragNaija',
-    default: 'FragNaija - Everything Esports. One Platform.',
+    default: 'FragNaija - Everything Esports - One Platform',
   },
-  description: "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
-  applicationName: 'FragNaija',
-  authors: [{ name: 'FragNaija' }],
-  creator: 'FragNaija',
-  publisher: 'FragNaija',
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   keywords: ['esports','Nigeria','PUBG Mobile','COD Mobile','Free Fire','gaming','wager','tournaments','athletes','teams','betting','predictions'],
   robots: {
     index: true,
@@ -44,31 +41,32 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    siteName: 'FragNaija',
-    title: { template: '%s - FragNaija', default: 'FragNaija - Everything Esports. One Platform.' },
-    description: "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
+    siteName: SITE_NAME,
+    title: { template: '%s - FragNaija', default: 'FragNaija - Everything Esports - One Platform' },
+    description: DEFAULT_DESCRIPTION,
     url: SITE_URL,
     locale: 'en_US',
-    images: [{ url: `${SITE_URL}${OG_IMAGE_URL}`, width: 1200, height: 630, alt: "FragNaija - Nigeria's Premier Esports Platform", type: 'image/svg+xml' }],
+    images: [{ url: absoluteUrl(OG_IMAGE_PATH), width: 1200, height: 630, alt: `${SITE_NAME} | ${SITE_TAGLINE}`, type: 'image/svg+xml' }],
   },
   twitter: {
     card: 'summary_large_image',
     site: '@fragnaija',
     creator: '@fragnaija',
-    title: { template: '%s - FragNaija', default: 'FragNaija - Everything Esports. One Platform.' },
-    description: "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
-    images: [`${SITE_URL}${OG_IMAGE_URL}`],
+    title: { template: '%s - FragNaija', default: 'FragNaija - Everything Esports - One Platform' },
+    description: DEFAULT_DESCRIPTION,
+    images: [absoluteUrl(OG_IMAGE_PATH)],
   },
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'FragNaija' },
   formatDetection: { telephone: false, address: false, email: false },
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/pwaicon.png', type: 'image/png', sizes: '192x192' },
-      { url: '/pwaicon.png', type: 'image/png', sizes: '512x512' },
+      { url: '/icons/fn-badge.svg', type: 'image/svg+xml', sizes: 'any' },
+      { url: '/icons/fn-badge-192.svg', type: 'image/svg+xml', sizes: '192x192' },
+      { url: '/icons/fn-badge-512.svg', type: 'image/svg+xml', sizes: '512x512' },
     ],
-    shortcut: '/pwaicon.png',
-    apple: '/pwaicon.png',
+    shortcut: '/icons/fn-badge.svg',
+    apple: '/icons/fn-badge-192.svg',
   },
 };
 
@@ -83,12 +81,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "FragNaija",
+    "name": SITE_NAME,
     "alternateName": "Frag Naija",
     "url": SITE_URL,
-    "logo": `${SITE_URL}${LOGO_URL}`,
-    "image": `${SITE_URL}${OG_IMAGE_URL}`,
-    "description": "Nigeria's premier esports platform. Tournaments, athletes, teams, wagering, news, shop — Everything Esports on One Platform.",
+    "logo": absoluteUrl(APP_ICON_PATH),
+    "image": absoluteUrl(OG_IMAGE_PATH),
+    "description": DEFAULT_DESCRIPTION,
     "sameAs": [
       "https://twitter.com/fragnaija",
       "https://facebook.com/fragnaija",

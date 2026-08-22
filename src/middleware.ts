@@ -16,7 +16,7 @@ function isStaticOrInternalAsset(pathname: string) {
     pathname === '/sw.js' ||
     pathname === '/manifest.webmanifest' ||
     pathname === '/favicon.ico' ||
-    pathname === '/logo-icon.jpeg'
+    pathname === '/og-image.svg'
   );
 }
 
