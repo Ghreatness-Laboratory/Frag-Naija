@@ -16,10 +16,13 @@ CREATE TABLE IF NOT EXISTS teams (
   wins        INT  DEFAULT 0,
   losses      INT  DEFAULT 0,
   kills       INT  DEFAULT 0,
+  rank        INT,
+  strength    NUMERIC(5,2),
   bio         TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
   is_icon     BOOLEAN DEFAULT false,
-  created_at  TIMESTAMPTZ DEFAULT NOW()
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE teams ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';

@@ -40,8 +40,9 @@ export default function OptimizedImage({
   alt,
   ...props
 }: OptimizedImageProps) {
+  const isSupabaseStorageImage = isSupabaseStorageUrl(src);
   const transformedSrc = supabaseImageUrl(src, transformWidth ?? Number(width), transformHeight ?? Number(height), transformQuality);
-  const shouldBypassOptimization = unoptimized || transformedSrc.endsWith('.svg') || transformedSrc.startsWith('blob:') || transformedSrc.startsWith('data:');
+  const shouldBypassOptimization = unoptimized || isSupabaseStorageImage || transformedSrc.endsWith('.svg') || transformedSrc.startsWith('blob:') || transformedSrc.startsWith('data:');
 
   return (
     <Image
