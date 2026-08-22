@@ -9,6 +9,14 @@ function applyCalculatedOverallRating(athlete) {
   };
 }
 
+const ATHLETE_SELECT = ['id', 'created_at', 'updated_at',
+  'name', 'ign', 'team', 'role', 'rating', 'overall_rating', 'kills', 'assists', 'damage', 'winrate',
+  'attack', 'defense', 'survival', 'iq', 'clutch', 'aggression', 'photo_url', 'status', 'career_status',
+  'bio', 'known_name', 'previous_aliases', 'previous_teams', 'performance_history', 'perks', 'strengths',
+  'weaknesses', 'game_slug', 'jersey_number', 'sensitivity_settings', 'control_code', 'is_icon',
+  'fantasy_price', 'recent_fantasy_points', 'total_fantasy_points', 'fantasy_status'
+].join(',');
+
 const ATHLETE_FIELDS = new Set([
   'name',
   'ign',
@@ -142,7 +150,7 @@ export async function getAthleteRoles({ game_slug } = {}) {
 }
 
 export async function getAthletes({ team, status, game_slug, is_icon } = {}) {
-  let query = supabaseAdmin.from('athletes').select('*').order('overall_rating', { ascending: false });
+  let query = supabaseAdmin.from('athletes').select(ATHLETE_SELECT).order('overall_rating', { ascending: false });
 
   if (team) query = query.eq('team', team);
   if (status) query = query.eq('status', status);
@@ -165,7 +173,7 @@ export async function getAthletes({ team, status, game_slug, is_icon } = {}) {
 }
 
 export async function getAthleteById(id) {
-  const { data, error } = await supabaseAdmin.from('athletes').select('*').eq('id', id).single();
+  const { data, error } = await supabaseAdmin.from('athletes').select(ATHLETE_SELECT).eq('id', id).single();
   if (error) throw error;
 
   const achievementMap = await getAchievementsForAthletes([id]);
@@ -191,7 +199,7 @@ export async function updateAthlete(id, body) {
   const { athlete, achievements } = splitAthletePayload(body);
   const { data: existing, error: existingError } = await supabaseAdmin
     .from('athletes')
-    .select('*')
+    .select(ATHLETE_SELECT)
     .eq('id', id)
     .single();
   if (existingError) throw existingError;

@@ -1,7 +1,9 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const HIGHLIGHT_SELECT = 'id,title,category,thumbnail,video_url,date,description,created_at,updated_at';
+
 export async function getHighlights({ category } = {}) {
-  let query = supabaseAdmin.from('highlights').select('*').order('date', { ascending: false });
+  let query = supabaseAdmin.from('highlights').select(HIGHLIGHT_SELECT).order('date', { ascending: false });
 
   if (category) query = query.eq('category', category);
 

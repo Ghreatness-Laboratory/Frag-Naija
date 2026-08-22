@@ -67,7 +67,7 @@ function MortalKombatListing({ game }: { game: Game }) {
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/athletes?game_slug=${encodeURIComponent(game.slug)}&is_icon=false`, { cache: 'no-store' })
+    fetch(`/api/athletes?game_slug=${encodeURIComponent(game.slug)}&is_icon=false`, { next: { revalidate: 120 } })
       .then((response) => (response.ok ? response.json() : []))
       .then((payload) => { if (active) setAthletes(Array.isArray(payload) ? payload : []); })
       .catch(() => { if (active) setAthletes([]); });

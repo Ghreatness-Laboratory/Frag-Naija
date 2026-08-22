@@ -50,7 +50,7 @@ export default function GamingAlertsPage() {
   }, [tournament, game]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { const timer = window.setInterval(load, 15000); return () => window.clearInterval(timer); }, [load]);
+  useEffect(() => { const timer = window.setInterval(load, 60000); return () => window.clearInterval(timer); }, [load]);
   useEffect(() => { fetch('/api/notifications/settings', { credentials: 'include' }).then((r) => r.json()).then(setSettings).catch(() => {}); }, []);
 
   const gameLabel = (slug: string) => GAMES.find((item) => item.slug === slug)?.name || slug;

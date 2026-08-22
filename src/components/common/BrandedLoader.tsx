@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 type BrandedLoaderProps = {
   label?: string;

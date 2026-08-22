@@ -1,5 +1,9 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const TEAM_SELECT = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug,organization_id,created_at,updated_at,organization:organizations(id,name,logo_url)';
+const TEAM_ATHLETE_SELECT = 'id,name,ign,known_name,team,role,photo_url,game_slug,status,overall_rating,attack,defense,survival,iq,clutch,kills,assists,damage,winrate,is_icon';
+const TEAM_GALLERY_SELECT = 'id,team_id,image_url,caption,sort_order,created_at';
+
 async function getRankingTotals(teamIds) {
   if (!teamIds.length) return new Map();
 
@@ -33,7 +37,7 @@ function withPowerRanks(teams, totals) {
 export async function getTeams({ game_slug } = {}) {
   let query = supabaseAdmin
     .from('teams')
-    .select('*, organization:organizations(id,name,logo_url)')
+    .select(TEAM_SELECT)
     .order('rank', { ascending: true, nullsLast: true });
 
   if (game_slug) query = query.eq('game_slug', game_slug);
@@ -41,7 +45,7 @@ export async function getTeams({ game_slug } = {}) {
   const { data: teams, error } = await query;
   if (error) throw error;
 
-  let athleteQuery = supabaseAdmin.from('athletes').select('*');
+  let athleteQuery = supabaseAdmin.from('athletes').select(TEAM_ATHLETE_SELECT);
   if (game_slug) athleteQuery = athleteQuery.eq('game_slug', game_slug);
   const { data: athletes, error: athletesError } = await athleteQuery;
   if (athletesError) throw athletesError;
@@ -55,7 +59,7 @@ export async function getTeams({ game_slug } = {}) {
 }
 
 export async function getTeamById(id, game_slug = null) {
-  let query = supabaseAdmin.from('teams').select('*, organization:organizations(id,name,logo_url)').eq('id', id);
+  let query = supabaseAdmin.from('teams').select(TEAM_SELECT).eq('id', id);
   
   if (game_slug) query = query.eq('game_slug', game_slug);
   
@@ -64,7 +68,7 @@ export async function getTeamById(id, game_slug = null) {
 
   let playersQuery = supabaseAdmin
     .from('athletes')
-    .select('*')
+    .select(TEAM_ATHLETE_SELECT)
     .eq('team', team.name);
     
   if (game_slug) playersQuery = playersQuery.eq('game_slug', game_slug);
@@ -74,7 +78,7 @@ export async function getTeamById(id, game_slug = null) {
 
   const { data: gallery, error: galleryError } = await supabaseAdmin
     .from('team_gallery')
-    .select('*')
+    .select(TEAM_GALLERY_SELECT)
     .eq('team_id', team.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
@@ -123,7 +127,7 @@ export async function replaceTeamGallery(teamId, gallery = []) {
   const { data, error } = await supabaseAdmin
     .from('team_gallery')
     .insert(rows)
-    .select('*')
+    .select(TEAM_GALLERY_SELECT)
     .order('sort_order', { ascending: true });
   if (error) throw error;
   return data ?? [];

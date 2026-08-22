@@ -2,6 +2,12 @@ import withPWA from 'next-pwa';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
+    ],
+  },
   eslint:     { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
 
@@ -24,7 +30,7 @@ const nextConfig = {
       },
       {
         source: '/api/homepage-data',
-        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0, must-revalidate' }],
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=120, stale-while-revalidate=300' }],
       },
     ];
   },
@@ -41,10 +47,9 @@ export default withPWA({
 
   runtimeCaching: [
     {
-      // Homepage data drives admin-curated featured athletes/teams; always fetch
-      // it from the network so admin changes are visible immediately.
+      // Homepage data is semi-static and can be revalidated instead of fetched on every navigation.
       urlPattern: /^\/api\/homepage-data/i,
-      handler: 'NetworkOnly',
+      handler: 'StaleWhileRevalidate',
       options: {},
     },
     {

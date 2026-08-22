@@ -5,8 +5,7 @@ import { getCompanyProfile } from '@/features/companyProfile.server';
 import { getFeaturedAthletes } from '@/features/featuredAthletes.server';
 import { listStakeholders } from '@/features/stakeholders.server';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 120;
 
 const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
@@ -67,7 +66,7 @@ export async function GET() {
       stakeholders,
     }, {
       headers: {
-        'Cache-Control': 'no-store',
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
       },
     });
   } catch (e) {

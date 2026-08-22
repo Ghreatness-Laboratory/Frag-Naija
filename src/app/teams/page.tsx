@@ -8,6 +8,7 @@ import { Trophy, Users, Shield, Star, Flame, Search, ChevronRight } from "lucide
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 type Athlete = {
   id: string;
@@ -101,7 +102,7 @@ export default function TeamsPage() {
     setLoading(true);
     setTeamsReady(false);
     try {
-      const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { cache: "no-store" });
+      const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { next: { revalidate: 120 } });
       setApiTeams(res.ok ? await res.json() : []);
     } catch {
       setApiTeams([]);
@@ -260,7 +261,7 @@ export default function TeamsPage() {
                     : { borderColor: 'rgb(var(--fn-gborder))', background: 'rgb(var(--fn-card))' }}
                 >
                   {team.logo_url
-                    ? <img src={team.logo_url} alt={team.name} className="w-full h-full object-cover" />
+                    ? <OptimizedImage src={team.logo_url} alt={team.name} className="w-full h-full object-cover" />
                     : <span className="font-display text-sm font-black" style={{ color: primary }}>{team.name[0]}</span>}
                 </div>
 
@@ -293,7 +294,7 @@ export default function TeamsPage() {
                 style={{ borderColor: primary, background: `${primary}15`, boxShadow: `0 0 20px ${primary}25` }}
               >
                 {t.logo_url
-                  ? <img src={t.logo_url} alt={t.name} className="w-full h-full object-cover" />
+                  ? <OptimizedImage src={t.logo_url} alt={t.name} className="w-full h-full object-cover" />
                   : <span className="font-display text-4xl font-black" style={{ color: primary }}>{t.name[0]}</span>}
               </div>
 

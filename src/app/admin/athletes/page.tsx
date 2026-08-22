@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
@@ -12,6 +11,7 @@ import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { DEFAULT_GAME, GAMES } from '@/lib/games';
 import { ATHLETE_STATUSES, athleteStatusTone, isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', career_status: '', bio: '', photo_url: '',
@@ -404,7 +404,7 @@ function AthletesContent() {
             label: 'Photo',
             render: (r) =>
               r.photo_url ? (
-                <img src={String(r.photo_url)} alt="" className="w-8 h-8 rounded-full object-cover" />
+                <OptimizedImage src={String(r.photo_url)} alt="" className="w-8 h-8 rounded-full object-cover" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-fn-card2 border border-fn-gborder" />
               ),

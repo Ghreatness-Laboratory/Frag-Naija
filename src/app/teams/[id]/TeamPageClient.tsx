@@ -8,6 +8,7 @@ import { useGame } from '@/context/GameContext';
 import { DEFAULT_GAME, GAMES } from '@/lib/games';
 import { getGameContent } from '@/lib/game-content';
 import BrandedLoader from '@/components/common/BrandedLoader';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 type Athlete = {
   id: string;
@@ -84,7 +85,7 @@ export default function TeamPageClient({ id }: { id: string }) {
     async function loadTeam() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/teams/${id}`, { cache: 'no-store' });
+        const res = await fetch(`/api/teams/${id}`, { next: { revalidate: 120 } });
         if (res.ok) {
           const data = await res.json();
           if (active) setTeam(data);
@@ -128,7 +129,7 @@ export default function TeamPageClient({ id }: { id: string }) {
       <section className="mt-4 rounded-sm border border-fn-gborder bg-fn-card p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-sm border" style={{ borderColor: primary, background: `${primary}15` }}>
-            {team.logo_url ? <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}
+            {team.logo_url ? <OptimizedImage src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> : <Shield style={{ color: primary }} />}
           </div>
           <div className="flex-1">
             <p className="fn-label">{team.region || 'Nigeria'} · rank #{team.rank ?? '-'}</p>
@@ -169,7 +170,7 @@ export default function TeamPageClient({ id }: { id: string }) {
             {team.gallery.map((item) => (
               <figure key={item.id} className="group overflow-hidden rounded-sm border border-fn-gborder bg-fn-black/50">
                 <a href={item.image_url} target="_blank" rel="noreferrer" className="block aspect-video overflow-hidden">
-                  <img src={item.image_url} alt={item.caption || `${team.name} gallery photo`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  <OptimizedImage src={item.image_url} alt={item.caption || `${team.name} gallery photo`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                 </a>
                 {item.caption && <figcaption className="border-t border-fn-gborder px-3 py-2 text-[10px] uppercase tracking-wider text-fn-muted">{item.caption}</figcaption>}
               </figure>

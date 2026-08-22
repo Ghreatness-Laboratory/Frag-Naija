@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;

@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, Zap, Target, Brain } from 'lucide-react';
+import { Shield, Zap, Brain } from 'lucide-react';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 const SIGNAL_GREEN = '#4dff6e';
 
@@ -43,9 +44,9 @@ export function AthleteStatsReveal({ athlete, side, reduceMotion }: AthleteStats
     defense: Number(athlete.defense ?? 50),
     iq: Number(athlete.iq ?? 50)
   };
-  
+
   const rating = Number(athlete.overall_rating ?? 0);
-  
+
   return (
     <motion.div
       initial={reduceMotion ? false : { x: side === 'left' ? '-120%' : '120%', filter: 'blur(14px)', opacity: 0 }}
@@ -56,28 +57,28 @@ export function AthleteStatsReveal({ athlete, side, reduceMotion }: AthleteStats
       {/* Portrait */}
       <div className="relative w-full max-w-[220px] aspect-[3/4] overflow-hidden border border-fn-gborder bg-fn-card">
         {athlete.photo_url ? (
-          <img 
-            src={athlete.photo_url} 
-            alt="" 
-            className="h-full w-full object-cover brightness-[.85]" 
+          <OptimizedImage
+            src={athlete.photo_url}
+            alt=""
+            className="h-full w-full object-cover brightness-[.85]"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-fn-green">
             <Shield size={48} />
           </div>
         )}
-        
+
         {/* Rating Badge */}
         <div className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-sm border-2 border-fn-green bg-fn-black/90">
           <span className="text-sm font-black text-fn-green">{rating}</span>
         </div>
       </div>
-      
+
       {/* Name */}
       <h2 className="text-center text-lg font-black uppercase tracking-wider text-fn-text">
         {athlete.name.split(' ').pop() || athlete.name}
       </h2>
-      
+
       {/* Stats Grid */}
       <div className="grid w-full max-w-[220px] grid-cols-3 gap-1.5">
         <StatBlock

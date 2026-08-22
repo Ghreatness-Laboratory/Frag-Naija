@@ -9,6 +9,9 @@ export async function GET(request) {
   try {
     const user = await getCurrentUser();
     const { searchParams } = new URL(request.url);
+    if (searchParams.get('summary') === '1') {
+      return NextResponse.json({ unreadCount: user ? await getUnreadCount(user.id) : 0 });
+    }
     const tracker = await listGamingTracker({ userId: user?.id, tournamentId: searchParams.get('tournament') || '', gameSlug: searchParams.get('game') || '', status: searchParams.get('status') || '' });
     const alerts = await listGamingAlerts({ userId: user?.id, tournamentId: searchParams.get('tournament') || '', gameSlug: searchParams.get('game') || '' });
     const notifications = await listGamingNotifications({ userId: user?.id, tournamentId: searchParams.get('tournament') || '', gameSlug: searchParams.get('game') || '' });

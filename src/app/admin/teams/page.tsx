@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
@@ -9,6 +8,7 @@ import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 const EMPTY = {
   name: '', region: '', wins: '', losses: '', bio: '', logo_url: '', game_slug: 'pubg-mobile',
@@ -210,7 +210,7 @@ function TeamsContent() {
             label: 'Logo',
             render: (r) =>
               r.logo_url ? (
-                <img src={String(r.logo_url)} alt="" className="w-8 h-8 rounded object-cover" />
+                <OptimizedImage src={String(r.logo_url)} alt="" className="w-8 h-8 rounded object-cover" />
               ) : (
                 <div className="w-8 h-8 rounded bg-fn-card2 border border-fn-gborder" />
               ),
@@ -332,7 +332,7 @@ function TeamsContent() {
                 {gallery.map((item, index) => (
                   <div key={index} className="grid gap-2 rounded-sm border border-fn-gborder p-2 sm:grid-cols-[80px_1fr_auto]">
                     <div className="h-20 w-20 overflow-hidden rounded-sm border border-fn-gborder bg-fn-card">
-                      {item.file ? <img src={URL.createObjectURL(item.file)} alt="" className="h-full w-full object-cover" /> : item.image_url ? <img src={item.image_url} alt="" className="h-full w-full object-cover" /> : null}
+                      {item.file ? <OptimizedImage src={URL.createObjectURL(item.file)} alt="" className="h-full w-full object-cover" /> : item.image_url ? <OptimizedImage src={item.image_url} alt="" className="h-full w-full object-cover" /> : null}
                     </div>
                     <div className="space-y-2">
                       <Input type="file" accept="image/*" onChange={(e) => setGallery((items) => items.map((g, i) => i === index ? { ...g, file: e.target.files?.[0] ?? null } : g))} />

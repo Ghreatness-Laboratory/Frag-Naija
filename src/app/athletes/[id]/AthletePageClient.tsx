@@ -89,8 +89,8 @@ export default function AthletePageClient({ id }: { id: string }) {
     setA(null);
 
     Promise.all([
-      fetch(`/api/athletes/${id}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
-      fetch('/api/teams', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/athletes/${id}`, { next: { revalidate: 120 } }).then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/teams', { next: { revalidate: 120 } }).then((r) => (r.ok ? r.json() : [])),
     ]).then(([athlete, teamData]) => {
       const fallbackContent = Object.values(GAME_CONTENT);
       const fallbackAthlete = fallbackContent

@@ -12,6 +12,7 @@ import { calculateDuelOddsFromElo, calculateDuelOddsFromKd, eloOf, kdOf } from '
 import { DuelSimViewer, type DuelPlayer } from '@/components/common/DuelSimViewer';
 import { DuelResultScreen } from '@/components/common/DuelResultScreen';
 import RouteLoadingScreen from '@/components/common/RouteLoadingScreen';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 type Athlete = { id:string; name:string; ign?:string|null; known_name?:string|null; team?:string|null; role?:string|null; status?:string|null; photo_url?:string|null; jersey_number?:number|string|null; overall_rating?:number|string|null; rating?:number|string|null; kills?:number|string|null; attack?:number|null; defense?:number|null; survival?:number|null; clutch?:number|null; iq?:number|null; game_slug?:string|null; is_icon?:boolean|null };
 type Duel = { id:string; odds_a:number|string; odds_b:number|string };
@@ -97,7 +98,7 @@ function RosterTile({ athlete, selected, index, onClick, reduceMotion }: { athle
       aria-pressed={selected}
       className={`group relative aspect-[3/4] overflow-hidden border bg-fn-card text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green ${selected ? 'border-fn-green' : 'border-fn-gborder hover:border-fn-green'}`}
     >
-      {portrait(athlete) ? <img src={portrait(athlete)} alt={displayName(athlete)} className={`h-full w-full object-cover transition duration-300 ${selected ? 'scale-[1.06] grayscale-0 brightness-[.8]' : 'grayscale brightness-50 group-hover:scale-[1.06] group-hover:grayscale-0 group-hover:brightness-[.8]'}`} /> : <div className="flex h-full w-full items-center justify-center text-fn-muted"><Shield /></div>}
+      {portrait(athlete) ? <OptimizedImage src={portrait(athlete)} alt={displayName(athlete)} className={`h-full w-full object-cover transition duration-300 ${selected ? 'scale-[1.06] grayscale-0 brightness-[.8]' : 'grayscale brightness-50 group-hover:scale-[1.06] group-hover:grayscale-0 group-hover:brightness-[.8]'}`} /> : <div className="flex h-full w-full items-center justify-center text-fn-muted"><Shield /></div>}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent px-1.5 pb-1.5 pt-[48%]">
         <p className="truncate text-[8px] font-black uppercase tracking-wider text-fn-text sm:text-[9px]">{displayName(athlete)}</p>
       </div>
@@ -329,7 +330,7 @@ function TdmOneVOneContent() {
             >
               <div className="relative w-full max-w-[220px] aspect-[3/4] overflow-hidden border border-fn-gborder bg-fn-card">
                 {portrait(p1) ? (
-                  <img src={portrait(p1)} alt="" className="h-full w-full object-cover brightness-[.85]" />
+                  <OptimizedImage src={portrait(p1)} alt="" className="h-full w-full object-cover brightness-[.85]" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-fn-green"><Shield size={48} /></div>
                 )}
@@ -359,7 +360,7 @@ function TdmOneVOneContent() {
             >
               <div className="relative w-full max-w-[220px] aspect-[3/4] overflow-hidden border border-fn-gborder bg-fn-card">
                 {portrait(p2) ? (
-                  <img src={portrait(p2)} alt="" className="h-full w-full object-cover brightness-[.85]" />
+                  <OptimizedImage src={portrait(p2)} alt="" className="h-full w-full object-cover brightness-[.85]" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-fn-green"><Shield size={48} /></div>
                 )}

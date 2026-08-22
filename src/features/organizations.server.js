@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const ORG_SELECT = '*, achievements:organization_achievements(*)';
+const ORG_SELECT = 'id,name,logo_url,region,founded_year,founded_date,description,created_at,updated_at,achievements:organization_achievements(id,title,date,game_slug,description)';
+const ORG_TEAM_SELECT = 'id,name,logo_url,region,game_slug,rank,wins,losses,kills,strength,organization_id';
 
 function orderAchievements(org) {
   return {
@@ -28,7 +29,7 @@ export async function getOrganizationById(id) {
 
   const { data: teams, error: teamsError } = await supabaseAdmin
     .from('teams')
-    .select('*')
+    .select(ORG_TEAM_SELECT)
     .eq('organization_id', id)
     .order('name', { ascending: true });
   if (teamsError) throw teamsError;

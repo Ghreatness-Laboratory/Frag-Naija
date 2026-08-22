@@ -1,7 +1,14 @@
 import crypto from 'node:crypto';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const MATCH_SELECT = `*, tournament:tournaments(id,name,game_slug,status), notification:notifications(id,title,message,url,created_at)`;
+const MATCH_SELECT = `id,source_type,source_id,tournament_id,game_slug,match_title,winner_name,winner_ref_type,winner_ref_id,mvp_name,mvp_athlete_id,placement_3_name,placement_4_name,finalized_at,alerted_at,created_at,tournament:tournaments(id,name,game_slug,status),notification:notifications(id,title,message,url,created_at)`;
+const TRACKER_TOURNAMENT_SELECT = 'id,name,game_slug,status,start_date,end_date,created_at,updated_at';
+const TRACKER_MATCH_SELECT = 'id,tournament_id,game_slug,title,status,starts_at,team_a,team_b,live_state,live_events,created_at,updated_at';
+const MATCH_RESULT_SELECT = 'id,source_id,source_type,tournament_id,game_slug,match_title,winner_name,mvp_name,placement_3_name,placement_4_name,finalized_at,created_at';
+const NOTIFICATION_SETTINGS_SELECT = 'id,user_id,match_results_enabled,created_at,updated_at';
+const FCM_TOKEN_SELECT = 'id,user_id,token,platform,created_at,updated_at';
+const SUBSCRIPTION_SELECT = 'id,user_id,match_result_id,tournament_match_id,tournament_id,created_at';
+const NOTIFICATION_SELECT = 'id,type,title,message,url,match_result_id,tournament_id,game_slug,metadata,created_at';
 const OPEN_TOURNAMENT_STATUSES = new Set(['upcoming', 'live']);
 const OPEN_MATCH_STATUSES = new Set(['scheduled', 'upcoming', 'live']);
 
@@ -210,7 +217,7 @@ export async function upsertTournamentMatchState(payload) {
 }
 
 export async function listGamingTracker({ userId, tournamentId, gameSlug, status } = {}) {
-  let tournamentsQuery = supabaseAdmin.from('tournaments').select('*').order('start_date', { ascending: false });
+  let tournamentsQuery = supabaseAdmin.from('tournaments').select(TRACKER_TOURNAMENT_SELECT).order('start_date', { ascending: false });
   if (tournamentId) tournamentsQuery = tournamentsQuery.eq('id', tournamentId);
   if (gameSlug) tournamentsQuery = tournamentsQuery.eq('game_slug', gameSlug);
   const { data: tournaments, error: tournamentError } = await tournamentsQuery;
@@ -218,7 +225,7 @@ export async function listGamingTracker({ userId, tournamentId, gameSlug, status
   const tournamentIds = (tournaments || []).map((item) => item.id);
   if (!tournamentIds.length) return { tournaments: [], matches: [] };
 
-  let matchesQuery = supabaseAdmin.from('tournament_matches').select('*').in('tournament_id', tournamentIds).order('starts_at', { ascending: true, nullsFirst: false });
+  let matchesQuery = supabaseAdmin.from('tournament_matches').select(TRACKER_MATCH_SELECT).in('tournament_id', tournamentIds).order('starts_at', { ascending: true, nullsFirst: false });
   if (status) {
     const normalized = status === 'finished' ? 'completed' : status;
     matchesQuery = matchesQuery.eq('status', normalized);
@@ -226,7 +233,7 @@ export async function listGamingTracker({ userId, tournamentId, gameSlug, status
   const { data: matches, error: matchError } = await matchesQuery;
   if (matchError) throw matchError;
   const matchIds = (matches || []).map((match) => match.id);
-  const { data: results } = matchIds.length ? await supabaseAdmin.from('match_results').select('*').eq('source_type', 'tournament_match').in('source_id', matchIds) : { data: [] };
+  const { data: results } = matchIds.length ? await supabaseAdmin.from('match_results').select(MATCH_RESULT_SELECT).eq('source_type', 'tournament_match').in('source_id', matchIds) : { data: [] };
   const resultByMatch = new Map((results || []).map((result) => [result.source_id, result]));
   let subscribed = new Set();
   let tournamentSubscribed = new Set();
@@ -261,22 +268,22 @@ export async function getUnreadCount(userId) {
 
 export async function getNotificationSettings(userId) {
   if (!userId) return { match_results_enabled: true };
-  const { data, error } = await supabaseAdmin.from('notification_settings').select('*').eq('user_id', userId).maybeSingle();
+  const { data, error } = await supabaseAdmin.from('notification_settings').select(NOTIFICATION_SETTINGS_SELECT).eq('user_id', userId).maybeSingle();
   if (error) throw error;
   if (data) return data;
-  const { data: created } = await supabaseAdmin.from('notification_settings').insert({ user_id: userId }).select('*').single();
+  const { data: created } = await supabaseAdmin.from('notification_settings').insert({ user_id: userId }).select(NOTIFICATION_SETTINGS_SELECT).single();
   return created || { match_results_enabled: true };
 }
 
 export async function saveNotificationSettings(userId, settings) {
   const payload = { user_id: userId, match_results_enabled: settings.match_results_enabled !== false, updated_at: new Date().toISOString() };
-  const { data, error } = await supabaseAdmin.from('notification_settings').upsert(payload, { onConflict: 'user_id' }).select('*').single();
+  const { data, error } = await supabaseAdmin.from('notification_settings').upsert(payload, { onConflict: 'user_id' }).select(NOTIFICATION_SETTINGS_SELECT).single();
   if (error) throw error;
   return data;
 }
 
 export async function registerFcmToken(userId, token) {
-  const { data, error } = await supabaseAdmin.from('fcm_tokens').upsert({ user_id: userId, token, platform: 'web', updated_at: new Date().toISOString() }, { onConflict: 'token' }).select('*').single();
+  const { data, error } = await supabaseAdmin.from('fcm_tokens').upsert({ user_id: userId, token, platform: 'web', updated_at: new Date().toISOString() }, { onConflict: 'token' }).select(FCM_TOKEN_SELECT).single();
   if (error) throw error;
   return data;
 }
@@ -294,7 +301,7 @@ export async function setMatchNotificationSubscription(userId, matchResultId, su
       const matchStatus = String(sourceMatch.status || '').toLowerCase();
       if (!OPEN_TOURNAMENT_STATUSES.has(tournamentStatus)) throw new Error('Match alerts can only be enabled for upcoming or live tournaments.');
       if (!OPEN_MATCH_STATUSES.has(matchStatus)) throw new Error('Match alerts can only be enabled for upcoming or live matches.');
-      const { data, error } = await supabaseAdmin.from('match_notification_subscriptions').upsert({ user_id: userId, tournament_match_id: tournamentMatchId }, { onConflict: 'user_id,tournament_match_id' }).select('*').single();
+      const { data, error } = await supabaseAdmin.from('match_notification_subscriptions').upsert({ user_id: userId, tournament_match_id: tournamentMatchId }, { onConflict: 'user_id,tournament_match_id' }).select(SUBSCRIPTION_SELECT).single();
       if (error) throw error;
       return { subscribed: true, row: data };
     }
@@ -319,7 +326,7 @@ export async function setMatchNotificationSubscription(userId, matchResultId, su
       const matchStatus = String(sourceMatch?.status || '').toLowerCase();
       if (sourceMatch && !OPEN_MATCH_STATUSES.has(matchStatus)) throw new Error('Match alerts can only be enabled for upcoming or live matches.');
     }
-    const { data, error } = await supabaseAdmin.from('match_notification_subscriptions').upsert({ user_id: userId, match_result_id: matchResultId }, { onConflict: 'user_id,match_result_id' }).select('*').single();
+    const { data, error } = await supabaseAdmin.from('match_notification_subscriptions').upsert({ user_id: userId, match_result_id: matchResultId }, { onConflict: 'user_id,match_result_id' }).select(SUBSCRIPTION_SELECT).single();
     if (error) throw error;
     return { subscribed: true, row: data };
   }
@@ -337,7 +344,7 @@ export async function setTournamentNotificationSubscription(userId, tournamentId
     const { data, error } = await supabaseAdmin
       .from('tournament_notification_subscriptions')
       .upsert({ user_id: userId, tournament_id: tournamentId }, { onConflict: 'user_id,tournament_id' })
-      .select('*')
+      .select(SUBSCRIPTION_SELECT)
       .single();
     if (error) throw error;
     return { subscribed: true, row: data };
@@ -406,7 +413,7 @@ export async function createMatchResultAlert(payload) {
   const notificationQuery = duplicate
     ? supabaseAdmin.from('notifications').update(notificationPayload).eq('match_result_id', matchResult.id).eq('type', 'match_result')
     : supabaseAdmin.from('notifications').insert(notificationPayload);
-  const { data: notification, error: nerr } = await notificationQuery.select('*').single();
+  const { data: notification, error: nerr } = await notificationQuery.select(NOTIFICATION_SELECT).single();
   if (nerr) throw nerr;
   let push = null;
   try {
@@ -431,7 +438,7 @@ async function createMatchLiveAlert({ tournament, match }) {
     message,
     url,
     metadata: { tournament_match_id: match.id, match_title: match.title, event: message },
-  }).select('*').single();
+  }).select(NOTIFICATION_SELECT).single();
   if (error) throw error;
   const push = await sendFcmToEligibleUsers({ title, body: message, url, tournamentId: tournament.id, tournamentMatchId: match.id, type: 'match_live' });
   return { notification, push };
@@ -458,7 +465,7 @@ export async function createManualMatchUpdateNotification(payload) {
     message,
     url,
     metadata: { tournament_match_id: match.id, match_title: match.title, preset: payload.preset || eventTitle, event: message },
-  }).select('*').single();
+  }).select(NOTIFICATION_SELECT).single();
   if (notificationError) throw notificationError;
   let push = null;
   try {

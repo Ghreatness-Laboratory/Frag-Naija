@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
@@ -9,6 +8,7 @@ import AdminModal from '@/components/admin/AdminModal';
 import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 const GAME_KEYWORDS: Record<string, string[]> = {
   'pubg-mobile':    ['pubg', 'battleground'],
@@ -135,7 +135,7 @@ function HighlightsContent() {
         loading={loading} rows={filtered} onEdit={openEdit} onDelete={handleDelete}
         emptyText="No highlights yet"
         columns={[
-          { key: 'thumbnail', label: 'Thumb', render: r => r.thumbnail ? <img src={String(r.thumbnail)} alt="" className="w-14 h-8 rounded object-cover" /> : <div className="w-14 h-8 rounded bg-fn-card2 border border-fn-gborder" /> },
+          { key: 'thumbnail', label: 'Thumb', render: r => r.thumbnail ? <OptimizedImage src={String(r.thumbnail)} alt="" className="w-14 h-8 rounded object-cover" /> : <div className="w-14 h-8 rounded bg-fn-card2 border border-fn-gborder" /> },
           { key: 'title',    label: 'Title',    render: r => <span className="max-w-[200px] truncate block">{String(r.title)}</span> },
           { key: 'player',   label: 'Player' },
           { key: 'category', label: 'Category', render: r => <span className="text-xs px-2 py-0.5 rounded-full bg-fn-green/10 text-fn-green">{String(r.category)}</span> },
@@ -183,7 +183,7 @@ function HighlightsContent() {
                 <input type="file" accept="image/*" className="hidden" onChange={e => setThumbFile(e.target.files?.[0] ?? null)} />
               </label>
               {editing && form.thumbnail && !thumbFile && (
-                <img src={form.thumbnail} alt="" className="h-16 rounded object-cover border border-fn-gborder" />
+                <OptimizedImage src={form.thumbnail} alt="" className="h-16 rounded object-cover border border-fn-gborder" />
               )}
               <Input value={form.thumbnail} onChange={f('thumbnail')} placeholder="Or paste thumbnail URL" />
             </div>

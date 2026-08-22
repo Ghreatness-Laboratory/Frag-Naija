@@ -128,7 +128,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <PWARegister />
             <PWAInstallPrompt />
             <FCMRegistrar />
-            <SupportChatbot />
+            <LazySupportChatbot />
             </NotificationsProvider>
           </GameProvider>
         </ThemeProvider>

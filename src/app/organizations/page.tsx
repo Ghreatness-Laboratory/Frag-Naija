@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Building2, MapPin, Trophy } from 'lucide-react';
 import BrandedLoader from '@/components/common/BrandedLoader';
+import OptimizedImage from '@/components/common/OptimizedImage';
 
 type Org = { id: string; name: string; logo_url: string | null; region: string | null; founded_year: number | null; achievements?: unknown[] };
 
@@ -12,7 +13,7 @@ export default function OrganizationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/organizations', { cache: 'no-store' })
+    fetch('/api/organizations', { next: { revalidate: 120 } })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setOrgs(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
@@ -32,7 +33,7 @@ export default function OrganizationsPage() {
             <Link key={org.id} href={`/organizations/${org.id}`} className="group rounded-sm border border-fn-gborder bg-fn-card p-5 transition-all hover:border-fn-green/40 hover:bg-fn-card2">
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-dark">
-                  {org.logo_url ? <img src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : <Building2 className="text-fn-green" />}
+                  {org.logo_url ? <OptimizedImage src={org.logo_url} alt={org.name} className="h-full w-full object-cover" /> : <Building2 className="text-fn-green" />}
                 </div>
                 <div>
                   <h2 className="font-display text-xl font-black uppercase text-fn-text group-hover:text-fn-green">{org.name}</h2>

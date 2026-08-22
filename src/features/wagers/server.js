@@ -10,6 +10,10 @@ import {
 
 export const SIGNUP_BONUS_AMOUNT = 500;
 
+const WAGER_SELECT = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at,featured_on_home,created_at,updated_at';
+const WAGER_BET_SELECT = 'id,wager_id,user_id,email,selection,amount,potential,reference,status,created_at';
+const WALLET_SELECT = 'id,user_id,balance,total_won,total_lost,created_at,updated_at';
+
 export async function processWithdrawal(userId, { amount, account_number, bank_code, name }) {
   // 1. Verify amount
   if (amount < 1000) {
@@ -90,7 +94,7 @@ export async function processWithdrawal(userId, { amount, account_number, bank_c
 export async function getWagers({ game_slug } = {}) {
   let query = supabaseAdmin
     .from('wagers')
-    .select('*')
+    .select(WAGER_SELECT)
     .order('created_at', { ascending: false });
   if (game_slug) query = query.eq('game_slug', game_slug);
   const { data, error } = await query;
@@ -102,7 +106,7 @@ export async function getWagers({ game_slug } = {}) {
 export async function getActiveWagers({ game_slug } = {}) {
   let query = supabaseAdmin
     .from('wagers')
-    .select('*')
+    .select(WAGER_SELECT)
     .eq('status', 'Active')
     .gt('closes_at', new Date().toISOString())
     .order('hot', { ascending: false })
@@ -115,7 +119,7 @@ export async function getActiveWagers({ game_slug } = {}) {
 }
 
 export async function getWagerById(id) {
-  const { data: wager, error } = await supabaseAdmin.from('wagers').select('*').eq('id', id).single();
+  const { data: wager, error } = await supabaseAdmin.from('wagers').select(WAGER_SELECT).eq('id', id).single();
   if (error) throw error;
 
   const { data: bets, error: betsError } = await supabaseAdmin
@@ -232,7 +236,7 @@ export async function settleWager(id, outcome) {
 
   const { data: bets, error: betsError } = await supabaseAdmin
     .from('wager_bets')
-    .select('*')
+    .select(WAGER_BET_SELECT)
     .eq('wager_id', id)
     .eq('status', 'Active');
   if (betsError) throw betsError;
@@ -299,7 +303,7 @@ export async function settleWager(id, outcome) {
 export async function cancelWager(id) {
   const { data: bets, error: betsError } = await supabaseAdmin
     .from('wager_bets')
-    .select('*')
+    .select(WAGER_BET_SELECT)
     .eq('wager_id', id)
     .eq('status', 'Active');
   if (betsError) throw betsError;
@@ -393,7 +397,7 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
 }
 
 export async function getWallet(userId) {
-  const { data, error } = await supabaseAdmin.from('wallets').select('*').eq('user_id', userId).single();
+  const { data, error } = await supabaseAdmin.from('wallets').select(WALLET_SELECT).eq('user_id', userId).single();
   if (error) throw error;
 
   return data;

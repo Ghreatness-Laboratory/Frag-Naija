@@ -1,9 +1,11 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const TOURNAMENT_SELECT = 'id,name,start_date,end_date,status,game,game_slug,prize_pool,currency,description,created_at,updated_at';
+
 export async function getTournaments({ status, game_slug } = {}) {
   let query = supabaseAdmin
     .from('tournaments')
-    .select('*')
+    .select(TOURNAMENT_SELECT)
     .order('start_date', { ascending: false });
   if (status) query = query.eq('status', status);
   if (game_slug) query = query.eq('game_slug', game_slug);
@@ -15,7 +17,7 @@ export async function getTournaments({ status, game_slug } = {}) {
 export async function getTournamentById(id) {
   const { data, error } = await supabaseAdmin
     .from('tournaments')
-    .select('*')
+    .select(TOURNAMENT_SELECT)
     .eq('id', id)
     .single();
   if (error) throw error;

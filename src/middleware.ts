@@ -54,7 +54,8 @@ async function isAdminRequest(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isAdmin = await isAdminRequest(request);
+  const needsAdminCheck = pathname.startsWith('/admin') || (isComingSoonEnabled() && !isStaticOrInternalAsset(pathname) && !isComingSoonPublicRoute(pathname));
+  const isAdmin = needsAdminCheck ? await isAdminRequest(request) : false;
 
   if (isComingSoonEnabled() && !isAdmin && !isStaticOrInternalAsset(pathname) && !isComingSoonPublicRoute(pathname)) {
     if (pathname.startsWith('/api/')) {

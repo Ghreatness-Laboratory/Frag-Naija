@@ -12,7 +12,7 @@ export default function NotificationsProvider({ children }: { children: React.Re
   const lastIdRef = useRef<string | null>(null);
 
   const refresh = useCallback(async (showToast = false) => {
-    const data = await fetch('/api/notifications', { credentials: 'include' }).then((r) => r.ok ? r.json() : null).catch(() => null);
+    const data = await fetch('/api/notifications?summary=1', { credentials: 'include' }).then((r) => r.ok ? r.json() : null).catch(() => null);
     if (!data) return;
     setUnreadCount(data.unreadCount || 0);
     const newest = data.alerts?.[0];
@@ -25,7 +25,9 @@ export default function NotificationsProvider({ children }: { children: React.Re
 
   useEffect(() => {
     refresh(false);
-    const timer = window.setInterval(() => refresh(true), 30000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') refresh(true);
+    }, 120000);
     return () => window.clearInterval(timer);
   }, [refresh]);
 
