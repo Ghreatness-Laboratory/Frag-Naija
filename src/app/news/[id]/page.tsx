@@ -101,7 +101,8 @@ export default function NewsArticlePage() {
     <main className="min-h-screen bg-fn-black px-3 py-5 pb-28 text-fn-text sm:px-6 lg:px-8">
       <article className="mx-auto max-w-4xl">
         <div className="overflow-hidden border border-fn-green/30 bg-fn-card">
-          <OptimizedImage src={article.image_url || "/og-image.svg"} alt={article.title} className="h-[260px] w-full object-cover sm:h-[420px]" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={article.image_url || "/og-image.svg"} alt={article.title} className="h-[260px] w-full object-cover sm:h-[420px]" />
           <div className="p-5 sm:p-8">
             <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-widest text-fn-muted">
               <span className="flex items-center gap-1"><User size={11} /> {article.author || "FragNaija Desk"}</span>

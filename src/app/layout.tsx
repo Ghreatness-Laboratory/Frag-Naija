@@ -10,7 +10,7 @@ import PWARegister from "@/components/PWARegister";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import NotificationsProvider from "@/components/notifications/NotificationsProvider";
 import FCMRegistrar from "@/components/notifications/FCMRegistrar";
-import LazySupportChatbot from "@/components/support/LazySupportChatbot";
+import SupportChatbot from "@/components/support/SupportChatbot";
 import { APP_ICON_PATH, DEFAULT_DESCRIPTION, OG_IMAGE_PATH, SITE_NAME, SITE_TAGLINE, SITE_URL, absoluteUrl } from "@/lib/seo";
 
 
