@@ -1,8 +1,19 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 import { calculateFantasyBasePrice } from '@/lib/fantasy-pricing';
+import { isChessGame } from '@/lib/game-categories';
 
 function applyCalculatedOverallRating(athlete) {
+  if (isChessGame(athlete.game_slug)) {
+    // Chess Elo commonly exceeds the numeric(4,1) range of overall_rating.
+    // It is represented exclusively by chess_rating and chess-specific fields.
+    const chessAthlete = { ...athlete };
+    for (const field of ['rating', 'overall_rating', 'attack', 'defense', 'survival', 'iq', 'clutch', 'aggression']) {
+      delete chessAthlete[field];
+    }
+    return chessAthlete;
+  }
+
   return {
     ...athlete,
     overall_rating: calculateAthleteOverallRating(athlete, athlete.game_slug),
@@ -100,6 +111,12 @@ export function splitAthletePayload(body = {}) {
   for (const [key, value] of Object.entries(body)) {
     if (key !== 'achievements' && ATHLETE_FIELDS.has(key)) {
       athlete[key] = value;
+    }
+  }
+
+  if (isChessGame(athlete.game_slug)) {
+    for (const field of ['overall_rating', 'rating', 'attack', 'defense', 'survival', 'iq', 'clutch', 'aggression']) {
+      delete athlete[field];
     }
   }
 
