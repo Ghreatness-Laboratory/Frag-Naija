@@ -36,6 +36,7 @@ function AdminWagersContent() {
   const [options, setOptions]   = useState<WagerOption[]>([]);
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
+  const [success, setSuccess]   = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,7 +52,7 @@ function AdminWagersContent() {
     const d = new Date(); d.setDate(d.getDate() + 7);
     setForm({ ...BINARY_EMPTY, game_slug: activeGame?.slug ?? 'pubg-mobile', closes_at: d.toISOString().slice(0, 16) });
     setOptions([]);
-    setError(''); setOpen(true);
+    setError(''); setSuccess(''); setOpen(true);
   }
 
   function openEdit(row: Record<string, unknown>) {
@@ -80,7 +81,7 @@ function AdminWagersContent() {
     } else {
       setOptions([]);
     }
-    setError(''); setOpen(true);
+    setError(''); setSuccess(''); setOpen(true);
   }
 
   function addOption() {
@@ -98,6 +99,15 @@ function AdminWagersContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true); setError('');
+
+    if (!form.question.trim() || !form.match_name.trim() || !form.closes_at) {
+      setError('Question, match / game fixture, and closing time are required.');
+      setSaving(false); return;
+    }
+    if (!Number.isFinite(Number(form.pool_total)) || Number(form.pool_total) < 0 || !Number.isFinite(Number(form.trades)) || Number(form.trades) < 0) {
+      setError('Stake Pool and Trades must be valid non-negative numbers.');
+      setSaving(false); return;
+    }
 
     if ((form.type === 'player_pick' || form.type === 'team_pick') && options.length < 2) {
       setError('Pick wagers need at least 2 options.');
@@ -134,8 +144,10 @@ function AdminWagersContent() {
       const method = editing ? 'PUT' : 'POST';
       const res  = await fetch(url, { method, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setOpen(false); load();
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      setOpen(false);
+      setSuccess(editing ? 'Wager updated successfully.' : 'Wager created and published successfully.');
+      await load();
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Save failed'); }
     finally { setSaving(false); }
   }
@@ -201,6 +213,12 @@ function AdminWagersContent() {
 
       <AdminGameFilter currentSlug={gameSlug} />
 
+      {success && (
+        <p role="status" className="mb-4 rounded border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-xs text-fn-green">
+          {success}
+        </p>
+      )}
+
       <AdminTable
         loading={loading} rows={filteredRows} onEdit={openEdit} onDelete={handleDelete}
         emptyText="No wagers yet"
@@ -255,7 +273,7 @@ function AdminWagersContent() {
 
       {/* Add / Edit Wager Modal */}
       <AdminModal title={editing ? 'Edit Wager' : 'Add Wager'} open={open} onClose={() => setOpen(false)}>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} onInvalid={() => setError('Complete all required fields before creating the wager.')} className="space-y-3">
           <Field label="Question" required>
             <Textarea value={form.question} onChange={f('question')} placeholder="Will X win the tournament?" required />
           </Field>
