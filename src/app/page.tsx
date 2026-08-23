@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X, Building2, Medal } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
-import { athleteStatusTone, clampStat } from "@/lib/athlete-display";
+import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
@@ -330,15 +330,9 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
   const game = GAMES.find((candidate) => candidate.slug === athlete.game_slug);
   const gameLabel = game?.shortName ?? athlete.game_slug?.replace(/-/g, ' ') ?? 'Game';
   const gameColor = game?.colors.primary ?? primary;
-  const stats = [
-    ['ATT', athlete.attack], ['DEF', athlete.defense], ['SUR', athlete.survival], ['CLT', athlete.clutch], ['IQ', athlete.iq],
-  ] as const;
-
-  // Filter stats based on game type - football games only show ATT/DEF/IQ
-  const isFootball = ['efootball', 'fc-mobile', 'ea-fc-26'].includes(athlete.game_slug ?? '');
-  const displayStats = isFootball 
-    ? stats.filter(([label]) => ['ATT', 'DEF', 'IQ'].includes(label))
-    : stats;
+  // Use the shared game-aware renderer rather than a local shooter-stat list.
+  // Chess returns exactly one Rating attribute; shooter games retain all five.
+  const displayStats = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
 
   return (
     <motion.article variants={reveal} className="group w-[38vw] min-w-[132px] max-w-[152px] flex-shrink-0 snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-[0_16px_46px_rgba(0,0,0,0.26)] transition-all hover:-translate-y-1 hover:border-fn-green/40 sm:w-[176px] sm:max-w-[176px]">
@@ -365,11 +359,11 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
               <p className="mt-0.5 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-fn-muted">{athlete.role || 'Athlete'}</p>
             </div>
           </div>
-          <div className={`mt-2 grid gap-0.5 rounded-sm border border-fn-gborder bg-fn-black/55 p-1 text-center ${displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
-            {displayStats.map(([label, value]) => (
-              <div key={label} className="min-w-0 px-px">
-                <div className="font-display text-[13px] font-black leading-none text-fn-text sm:text-sm">{clampStat(value)}</div>
-                <div className="mt-0.5 truncate text-[6px] font-black uppercase leading-none tracking-[0.12em] text-fn-muted sm:text-[7px]">{label}</div>
+          <div className={`mt-2 grid gap-0.5 rounded-sm border border-fn-gborder bg-fn-black/55 p-1 text-center ${displayStats.length === 1 ? 'grid-cols-1' : displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
+            {displayStats.map((stat) => (
+              <div key={stat.key} className="min-w-0 px-px">
+                <div className="font-display text-[13px] font-black leading-none text-fn-text sm:text-sm">{stat.value}</div>
+                <div className="mt-0.5 truncate text-[6px] font-black uppercase leading-none tracking-[0.12em] text-fn-muted sm:text-[7px]">{stat.label}</div>
               </div>
             ))}
           </div>

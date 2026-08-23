@@ -6,7 +6,7 @@ import { Download, Eye, Printer, Trophy, X } from 'lucide-react';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { useGame } from '@/context/GameContext';
 import html2canvas, { elementToSvgDataUrl } from '@/lib/html2canvas';
-import { athleteStatusTone, combatAttributes, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { athleteStatusTone, chessRating, combatAttributes, isChessGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { GAME_CONTENT } from '@/lib/game-content';
 import { formatAthleteSubtitle, getAthleteSubtitleFormat, GAMES } from '@/lib/games';
 import BrandedLoader from '@/components/common/BrandedLoader';
@@ -139,7 +139,8 @@ export default function AthletePageClient({ id }: { id: string }) {
   const aliases = parseArray(a.previous_aliases);
   const previousTeams = parseObjects<{ team?: string; years?: string }>(a.previous_teams);
   const achievements = parseObjects<Achievement>(a.achievements);
-  const rating = normalizeRating(a.overall_rating, a.rating);
+  const chessProfile = isChessGame(a.game_slug);
+  const rating = chessProfile ? chessRating(a.overall_rating, a.rating) : normalizeRating(a.overall_rating, a.rating);
   const footballProfile = isFootballGame(a.game_slug);
   const playerOnlySubtitle = getAthleteSubtitleFormat(a.game_slug) === 'player_only';
   const profileAttrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);
@@ -196,16 +197,18 @@ export default function AthletePageClient({ id }: { id: string }) {
               <p className="text-xs text-fn-muted">{a.name}{!footballProfile && aliases.length > 0 ? ` · Alias: ${aliases.join(' · ')}` : ''}</p>
               <div className="mt-5 max-w-sm border border-fn-gborder bg-fn-dark/70 p-3">
                 <div className="flex justify-between mb-2">
-                  <span className="fn-label">OVERALL RATING</span>
+                  <span className="fn-label">{chessProfile ? 'RATING' : 'OVERALL RATING'}</span>
                   <span className="font-display text-xl font-black" style={{ color: primary }}>{rating}</span>
                 </div>
-                <div className="h-2 bg-fn-black rounded-sm overflow-hidden">
-                  <div
-                    className="h-full rounded-sm"
-                    style={{ width: `${rating}%`, background: `linear-gradient(90deg, ${primary}60, ${primary})` }}
-                  />
-                </div>
-                <div className="fn-label mt-1 text-right">{rating} / 100</div>
+                {!chessProfile && <>
+                  <div className="h-2 bg-fn-black rounded-sm overflow-hidden">
+                    <div
+                      className="h-full rounded-sm"
+                      style={{ width: `${rating}%`, background: `linear-gradient(90deg, ${primary}60, ${primary})` }}
+                    />
+                  </div>
+                  <div className="fn-label mt-1 text-right">{rating} / 100</div>
+                </>}
               </div>
             </div>
           </div>
@@ -226,7 +229,7 @@ export default function AthletePageClient({ id }: { id: string }) {
           </div>
         </section>
 
-        <div className={`mt-4 grid grid-cols-2 gap-3 ${footballProfile ? 'sm:grid-cols-3' : 'sm:grid-cols-5'}`}>
+        <div className={`mt-4 grid gap-3 ${chessProfile ? 'grid-cols-1 max-w-xs' : footballProfile ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-5'}`}>
           {profileAttrs.map((stat) => (
             <div key={stat.label} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center">
               <div className="font-display text-2xl font-black text-white">{stat.value}</div>
