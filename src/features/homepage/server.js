@@ -6,10 +6,10 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
   hero_eyebrow: "NIGERIA'S PREMIER ESPORTS PLATFORM",
   hero_headline: 'FRAG NAIJA',
   hero_tagline: "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.",
-  stat_players: '1,242+',
-  stat_tournaments: '48',
-  stat_championships: '12',
-  stat_prize_pool: '₦17.2M',
+  stat_players: '1,342+',
+  stat_tournaments: '448',
+  stat_championships: '212',
+  stat_prize_pool: '₦77.2M',
   recruitment_headline: 'RECRUITMENT OPEN',
   recruitment_body: 'JOIN FRAG NAIJA AND GET RANKED IN THE OPEN TRIALS.',
   recruitment_cta: 'JOIN THE RANKS',
@@ -22,12 +22,7 @@ export async function getHomepageSettings() {
   const { data, error } = await supabaseAdmin.from('homepage_settings').select(HOMEPAGE_SETTINGS_SELECT).single();
   if (error || !data) {
     console.error('homepage_settings fetch failed:', error);
-    return {
-      ...DEFAULT_HOMEPAGE_SETTINGS,
-      __debug_error: error
-        ? { message: error.message, code: error.code, details: error.details, hint: error.hint }
-        : 'no data returned',
-    };
+    return DEFAULT_HOMEPAGE_SETTINGS;
   }
   return { ...DEFAULT_HOMEPAGE_SETTINGS, ...data };
 }
