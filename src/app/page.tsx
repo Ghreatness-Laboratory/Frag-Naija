@@ -19,6 +19,7 @@ type Athlete = {
   id: string; name: string; ign: string; role: string | null;
   known_name?: string | null; team?: string | null; jersey_number?: number | string | null;
   rating?: number; overall_rating?: number; kills: number; assists: number; winrate: number;
+  chess_rating?: number | null;
   attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
   photo_url: string | null; status: string; game_slug?: string | null; is_icon?: boolean | null;
 };
@@ -27,6 +28,8 @@ type Wager = {
   id: string; question: string; subtitle: string | null;
   yes_odds: number; no_odds: number; yes_price: number; no_price: number;
   pool_total: number; hot: boolean; status: string; closes_at: string;
+  type?: 'binary' | 'player_pick' | 'team_pick' | string | null;
+  options?: unknown;
 };
 
 type Transfer = {
@@ -278,6 +281,11 @@ const AthleteCard = memo(function AthleteCard({ athlete, rank, primary }: { athl
 AthleteCard.displayName = "AthleteCard";
 
 function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string }) {
+  const pickOptions = (() => {
+    const raw = typeof wager.options === 'string' ? (() => { try { return JSON.parse(wager.options); } catch { return []; } })() : wager.options;
+    return Array.isArray(raw) ? raw.map((option) => ({ label: String(option?.label ?? '').trim(), odds: Number(option?.odds) })).filter((option) => option.label && Number.isFinite(option.odds) && option.odds > 0) : [];
+  })();
+  const isOptionWager = (wager.type === 'player_pick' || wager.type === 'team_pick') && pickOptions.length > 0;
   const closesIn = () => {
     const diff = new Date(wager.closes_at).getTime() - Date.now();
     if (diff <= 0) return "Closed";
@@ -298,16 +306,14 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
         <span className="fn-label">₦{Number(wager.pool_total).toLocaleString()}</span>
       </div>
       <h3 className="text-xs font-bold text-fn-text leading-snug mb-3">{wager.question}</h3>
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="pred-yes rounded-sm px-2 py-2.5 text-center">
-          <div className="text-[10px] font-bold">YES</div>
-          <div className="text-base font-black">{wager.yes_odds}x</div>
+      {isOptionWager ? (
+        <div className="mb-3 space-y-1.5">
+          {pickOptions.map((option) => <div key={option.label} className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-2 py-2 text-[10px]"><span className="truncate font-bold text-fn-text">{option.label}</span><span className="ml-3 shrink-0 font-black" style={{ color: primary }}>{option.odds.toFixed(2)}x</span></div>)}
         </div>
-        <div className="pred-no rounded-sm px-2 py-2.5 text-center">
-          <div className="text-[10px] font-bold">NO</div>
-          <div className="text-base font-black">{wager.no_odds}x</div>
-        </div>
-      </div>
+      ) : <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="pred-yes rounded-sm px-2 py-2.5 text-center"><div className="text-[10px] font-bold">YES</div><div className="text-base font-black">{wager.yes_odds}x</div></div>
+        <div className="pred-no rounded-sm px-2 py-2.5 text-center"><div className="text-[10px] font-bold">NO</div><div className="text-base font-black">{wager.no_odds}x</div></div>
+      </div>}
       <div className="flex items-center justify-between text-[9px] text-fn-muted">
         <Link href="/wager" className="font-bold transition-colors" style={{ color: primary }}>Bet now →</Link>
         <span className="flex items-center gap-1"><Clock size={9} /> {closesIn()}</span>

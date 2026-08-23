@@ -53,7 +53,7 @@ export function chessRating(value: unknown, fallback?: unknown) {
 
 export function combatAttributes(athlete: Record<string, unknown>, gameSlug?: string | null) {
   if (isChessGame(gameSlug ?? String(athlete.game_slug ?? ''))) {
-    return [{ key: 'rating', label: 'Rating', name: 'Rating', value: chessRating(athlete.overall_rating, athlete.rating), color: 'rgb(var(--fn-yellow))' }];
+    return [{ key: 'rating', label: 'Rating', name: 'Rating', value: chessRating(athlete.chess_rating, athlete.overall_rating ?? athlete.rating), color: 'rgb(var(--fn-yellow))' }];
   }
 
   const attrs = [

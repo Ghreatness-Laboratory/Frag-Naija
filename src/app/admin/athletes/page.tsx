@@ -9,7 +9,7 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import PlayerCardTemplate from '@/components/athletes/PlayerCardTemplate';
 import { DEFAULT_GAME, GAMES } from '@/lib/games';
-import { ATHLETE_STATUSES, athleteStatusTone, isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
+import { ATHLETE_STATUSES, athleteStatusTone, chessRating, isChessGame, isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 import OptimizedImage from '@/components/common/OptimizedImage';
 
@@ -17,6 +17,7 @@ const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', career_status: '', bio: '', photo_url: '',
   known_name: '', game_slug: 'pubg-mobile',
   attack: '', defense: '', clutch: '', survival: '', iq: '', aggression: '',
+  chess_rating: '', chess_title: 'Untitled', chess_peak_rating: '', chess_wins: '', chess_draws: '', chess_losses: '', federation: '',
   overall_rating: '', sensitivity_settings: '', control_code: '', perks: '', strengths: '', weaknesses: '',
   previous_aliases: [''],
   previous_teams: [{ team: '', years: '' }],
@@ -235,6 +236,13 @@ function AthletesContent() {
       survival:       String(row.survival ?? '0'),
       iq:             String(row.iq       ?? '0'),
       aggression:     String(row.aggression ?? '0'),
+      chess_rating: String(row.chess_rating ?? row.overall_rating ?? row.rating ?? ''),
+      chess_title: String(row.chess_title ?? 'Untitled'),
+      chess_peak_rating: String(row.chess_peak_rating ?? ''),
+      chess_wins: String(row.chess_wins ?? ''),
+      chess_draws: String(row.chess_draws ?? ''),
+      chess_losses: String(row.chess_losses ?? ''),
+      federation: String(row.federation ?? ''),
       overall_rating: String(row.overall_rating ?? ''),
       sensitivity_settings: typeof row.sensitivity_settings === 'string' ? row.sensitivity_settings : JSON.stringify(row.sensitivity_settings ?? {}, null, 2),
       control_code: String(row.control_code ?? ''),
@@ -286,6 +294,10 @@ function AthletesContent() {
       const photoUrl = await uploadPhoto();
       const fcMobileGame = isFcMobileGame(form.game_slug);
       const shooterGame = isShooterGame(form.game_slug);
+      const chessGame = isChessGame(form.game_slug);
+      if (chessGame && (!Number.isFinite(Number(form.chess_rating)) || Number(form.chess_rating) < 100)) {
+        throw new Error('Chess athletes require a manually entered Elo rating of at least 100.');
+      }
       const body = {
         name:           fcMobileGame ? form.ign : form.name,
         ign:            form.ign,
@@ -298,13 +310,20 @@ function AthletesContent() {
         bio:            form.bio,
         photo_url:      photoUrl ?? form.photo_url,
         is_icon:        form.is_icon,
-        attack:         Number(form.attack)         || 0,
-        defense:        Number(form.defense)        || 0,
-        clutch:         fcMobileGame ? 0 : Number(form.clutch) || 0,
-        survival:       fcMobileGame ? 0 : Number(form.survival) || 0,
-        iq:             Number(form.iq)             || 0,
-        aggression:     Number(form.aggression)     || 0,
-        overall_rating: normalizeRating(form.overall_rating),
+        attack:         chessGame ? 0 : Number(form.attack) || 0,
+        defense:        chessGame ? 0 : Number(form.defense) || 0,
+        clutch:         chessGame || fcMobileGame ? 0 : Number(form.clutch) || 0,
+        survival:       chessGame || fcMobileGame ? 0 : Number(form.survival) || 0,
+        iq:             chessGame ? 0 : Number(form.iq) || 0,
+        aggression:     chessGame ? 0 : Number(form.aggression) || 0,
+        chess_rating: chessGame ? Number(form.chess_rating) : null,
+        chess_title: chessGame ? form.chess_title : null,
+        chess_peak_rating: chessGame && form.chess_peak_rating ? Number(form.chess_peak_rating) : null,
+        chess_wins: chessGame && form.chess_wins ? Number(form.chess_wins) : 0,
+        chess_draws: chessGame && form.chess_draws ? Number(form.chess_draws) : 0,
+        chess_losses: chessGame && form.chess_losses ? Number(form.chess_losses) : 0,
+        federation: chessGame ? form.federation.trim() || null : null,
+        overall_rating: chessGame ? Number(form.chess_rating) : normalizeRating(form.overall_rating),
         ...(shooterGame ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
         perks:      splitArr(form.perks),
         strengths:  splitArr(form.strengths),
@@ -351,9 +370,10 @@ function AthletesContent() {
   const shooterSelected = isShooterGame(form.game_slug);
   const fcMobileSelected = isFcMobileGame(form.game_slug);
   const footballSelected = isFootballGame(form.game_slug);
+  const chessSelected = isChessGame(form.game_slug);
   const calculatedOverallRating = calculateAthleteOverallRating(form, form.game_slug);
   const formGame = GAMES.find((game) => game.slug === form.game_slug) ?? activeGame ?? DEFAULT_GAME;
-  const previewRating = calculatedOverallRating ?? normalizeRating(form.overall_rating);
+  const previewRating = chessSelected ? chessRating(form.chess_rating) : calculatedOverallRating ?? normalizeRating(form.overall_rating);
   const previewAthlete = {
     ign: form.ign || 'Player',
     known_name: form.known_name || form.ign || 'Player',
@@ -366,6 +386,7 @@ function AthletesContent() {
     survival: Number(form.survival) || 0,
     clutch: Number(form.clutch) || 0,
     iq: Number(form.iq) || 0,
+    chess_rating: chessSelected ? Number(form.chess_rating) : null,
     game_slug: form.game_slug,
     is_icon: form.is_icon,
   };
@@ -554,6 +575,27 @@ function AthletesContent() {
             </Field>
           </div>
 
+          {chessSelected ? (
+            <div className="space-y-3 rounded border border-fn-yellow/30 bg-fn-yellow/5 p-3">
+              <p className="text-fn-yellow text-xs font-bold uppercase tracking-widest">Chess rating</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Elo Rating" required>
+                  <Input type="number" min="100" step="1" value={form.chess_rating} onChange={f('chess_rating')} placeholder="e.g. 1800" required />
+                </Field>
+                <Field label="Chess Title">
+                  <Select value={form.chess_title} onChange={f('chess_title')}>
+                    {['GM', 'IM', 'FM', 'CM', 'WGM', 'WIM', 'Untitled'].map((title) => <option key={title} value={title}>{title}</option>)}
+                  </Select>
+                </Field>
+                <Field label="Federation">
+                  <Input value={form.federation} onChange={f('federation')} placeholder="e.g. Nigeria" />
+                </Field>
+                <Field label="Peak Elo (optional)">
+                  <Input type="number" min="100" step="1" value={form.chess_peak_rating} onChange={f('chess_peak_rating')} placeholder="e.g. 1900" />
+                </Field>
+              </div>
+            </div>
+          ) : <>
           {/* Combat attributes */}
           <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
             Player Card Stats (0–100)
@@ -584,6 +626,7 @@ function AthletesContent() {
               <Input type="number" min="0" max="100" value={form.aggression} onChange={f('aggression')} placeholder="0" />
             </Field>
           </div>}
+          </>}
 
 
 

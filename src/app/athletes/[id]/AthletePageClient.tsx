@@ -25,6 +25,7 @@ type Athlete = {
   photo_url: string | null;
   overall_rating: number;
   rating: number;
+  chess_rating?: number | null;
   kills: number;
   assists: number;
   damage: number;
