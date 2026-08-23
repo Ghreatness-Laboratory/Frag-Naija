@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trophy, Users, Award, Zap, ChevronRight, TrendingUp, Clock, Flame, Gamepad2, Crosshair, Radio, ShieldCheck, Activity, ShoppingBag, CalendarDays, X, Building2, Medal } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
-import { athleteStatusTone, clampStat } from "@/lib/athlete-display";
+import { athleteStatusTone, combatAttributes } from "@/lib/athlete-display";
 import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
@@ -19,6 +19,7 @@ type Athlete = {
   id: string; name: string; ign: string; role: string | null;
   known_name?: string | null; team?: string | null; jersey_number?: number | string | null;
   rating?: number; overall_rating?: number; kills: number; assists: number; winrate: number;
+  chess_rating?: number | null;
   attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
   photo_url: string | null; status: string; game_slug?: string | null; is_icon?: boolean | null;
 };
@@ -27,6 +28,8 @@ type Wager = {
   id: string; question: string; subtitle: string | null;
   yes_odds: number; no_odds: number; yes_price: number; no_price: number;
   pool_total: number; hot: boolean; status: string; closes_at: string;
+  type?: 'binary' | 'player_pick' | 'team_pick' | string | null;
+  options?: unknown;
 };
 
 type Transfer = {
@@ -278,6 +281,11 @@ const AthleteCard = memo(function AthleteCard({ athlete, rank, primary }: { athl
 AthleteCard.displayName = "AthleteCard";
 
 function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string }) {
+  const pickOptions = (() => {
+    const raw = typeof wager.options === 'string' ? (() => { try { return JSON.parse(wager.options); } catch { return []; } })() : wager.options;
+    return Array.isArray(raw) ? raw.map((option) => ({ label: String(option?.label ?? '').trim(), odds: Number(option?.odds) })).filter((option) => option.label && Number.isFinite(option.odds) && option.odds > 0) : [];
+  })();
+  const isOptionWager = (wager.type === 'player_pick' || wager.type === 'team_pick') && pickOptions.length > 0;
   const closesIn = () => {
     const diff = new Date(wager.closes_at).getTime() - Date.now();
     if (diff <= 0) return "Closed";
@@ -298,16 +306,14 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
         <span className="fn-label">₦{Number(wager.pool_total).toLocaleString()}</span>
       </div>
       <h3 className="text-xs font-bold text-fn-text leading-snug mb-3">{wager.question}</h3>
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="pred-yes rounded-sm px-2 py-2.5 text-center">
-          <div className="text-[10px] font-bold">YES</div>
-          <div className="text-base font-black">{wager.yes_odds}x</div>
+      {isOptionWager ? (
+        <div className="mb-3 space-y-1.5">
+          {pickOptions.map((option) => <div key={option.label} className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-2 py-2 text-[10px]"><span className="truncate font-bold text-fn-text">{option.label}</span><span className="ml-3 shrink-0 font-black" style={{ color: primary }}>{option.odds.toFixed(2)}x</span></div>)}
         </div>
-        <div className="pred-no rounded-sm px-2 py-2.5 text-center">
-          <div className="text-[10px] font-bold">NO</div>
-          <div className="text-base font-black">{wager.no_odds}x</div>
-        </div>
-      </div>
+      ) : <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="pred-yes rounded-sm px-2 py-2.5 text-center"><div className="text-[10px] font-bold">YES</div><div className="text-base font-black">{wager.yes_odds}x</div></div>
+        <div className="pred-no rounded-sm px-2 py-2.5 text-center"><div className="text-[10px] font-bold">NO</div><div className="text-base font-black">{wager.no_odds}x</div></div>
+      </div>}
       <div className="flex items-center justify-between text-[9px] text-fn-muted">
         <Link href="/wager" className="font-bold transition-colors" style={{ color: primary }}>Bet now →</Link>
         <span className="flex items-center gap-1"><Clock size={9} /> {closesIn()}</span>
@@ -330,15 +336,9 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
   const game = GAMES.find((candidate) => candidate.slug === athlete.game_slug);
   const gameLabel = game?.shortName ?? athlete.game_slug?.replace(/-/g, ' ') ?? 'Game';
   const gameColor = game?.colors.primary ?? primary;
-  const stats = [
-    ['ATT', athlete.attack], ['DEF', athlete.defense], ['SUR', athlete.survival], ['CLT', athlete.clutch], ['IQ', athlete.iq],
-  ] as const;
-
-  // Filter stats based on game type - football games only show ATT/DEF/IQ
-  const isFootball = ['efootball', 'fc-mobile', 'ea-fc-26'].includes(athlete.game_slug ?? '');
-  const displayStats = isFootball 
-    ? stats.filter(([label]) => ['ATT', 'DEF', 'IQ'].includes(label))
-    : stats;
+  // Use the shared game-aware renderer rather than a local shooter-stat list.
+  // Chess returns exactly one Rating attribute; shooter games retain all five.
+  const displayStats = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
 
   return (
     <motion.article variants={reveal} className="group w-[38vw] min-w-[132px] max-w-[152px] flex-shrink-0 snap-start overflow-hidden rounded-sm border border-fn-gborder bg-fn-card shadow-[0_16px_46px_rgba(0,0,0,0.26)] transition-all hover:-translate-y-1 hover:border-fn-green/40 sm:w-[176px] sm:max-w-[176px]">
@@ -365,11 +365,11 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
               <p className="mt-0.5 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-fn-muted">{athlete.role || 'Athlete'}</p>
             </div>
           </div>
-          <div className={`mt-2 grid gap-0.5 rounded-sm border border-fn-gborder bg-fn-black/55 p-1 text-center ${displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
-            {displayStats.map(([label, value]) => (
-              <div key={label} className="min-w-0 px-px">
-                <div className="font-display text-[13px] font-black leading-none text-fn-text sm:text-sm">{clampStat(value)}</div>
-                <div className="mt-0.5 truncate text-[6px] font-black uppercase leading-none tracking-[0.12em] text-fn-muted sm:text-[7px]">{label}</div>
+          <div className={`mt-2 grid gap-0.5 rounded-sm border border-fn-gborder bg-fn-black/55 p-1 text-center ${displayStats.length === 1 ? 'grid-cols-1' : displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
+            {displayStats.map((stat) => (
+              <div key={stat.key} className="min-w-0 px-px">
+                <div className="font-display text-[13px] font-black leading-none text-fn-text sm:text-sm">{stat.value}</div>
+                <div className="mt-0.5 truncate text-[6px] font-black uppercase leading-none tracking-[0.12em] text-fn-muted sm:text-[7px]">{stat.label}</div>
               </div>
             ))}
           </div>

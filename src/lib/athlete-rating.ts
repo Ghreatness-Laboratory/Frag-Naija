@@ -1,4 +1,4 @@
-import { isFootballGame } from './game-categories';
+import { isChessGame, isFootballGame } from './game-categories';
 
 export type AthleteStatKey = 'attack' | 'defense' | 'survival' | 'iq' | 'clutch' | 'aggression';
 
@@ -21,6 +21,11 @@ export function normalizeStatValue(value: unknown): number | null {
 }
 
 export function calculateAthleteOverallRating(athlete: Record<string, unknown>, gameSlug?: string | null): number | null {
+  if (isChessGame(gameSlug ?? String(athlete.game_slug ?? ''))) {
+    const rating = Number(athlete.chess_rating ?? athlete.overall_rating ?? athlete.rating);
+    return Number.isFinite(rating) && rating > 0 ? Math.round(rating) : null;
+  }
+
   const stats = getAthleteStatCategories(gameSlug ?? String(athlete.game_slug ?? ''))
     .map((key) => normalizeStatValue(athlete[key]))
     .filter((value): value is number => value !== null);

@@ -9,7 +9,7 @@ export const revalidate = 120;
 
 const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
-const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at,featured_on_home';
+const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at,featured_on_home,type,options';
 const TRANSFER_FIELDS = 'id,from_team,to_team,fee,status,date,athletes(id,name,ign)';
 const SHOP_FIELDS = 'id,name,price,currency,image_url,category,status,tutorial_video_url';
 

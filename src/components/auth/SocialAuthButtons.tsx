@@ -31,10 +31,10 @@ export default function SocialAuthButtons() {
   return (
     <div className="space-y-2.5">
       {providers.map(({ provider, label, className, icon }) => (
-        <a key={provider} href={`/api/auth/oauth/${provider}`} className={`flex w-full items-center justify-center gap-3 rounded py-2.5 text-sm font-bold transition-all ${className}`}>
+        <button key={provider} type="button" disabled title="Social sign-in is temporarily unavailable" className={`flex w-full cursor-not-allowed items-center justify-center gap-3 rounded py-2.5 text-sm font-bold opacity-45 grayscale transition-all ${className}`}>
           {icon}
           {label}
-        </a>
+        </button>
       ))}
     </div>
   );

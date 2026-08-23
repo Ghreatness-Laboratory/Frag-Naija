@@ -1,8 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, Zap, Brain } from 'lucide-react';
+import { Shield, Zap, Brain, Trophy } from 'lucide-react';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import { chessRating, isChessGame } from '@/lib/athlete-display';
 
 const SIGNAL_GREEN = '#4dff6e';
 
@@ -33,6 +34,9 @@ interface AthleteStatsRevealProps {
     attack?: number | null;
     defense?: number | null;
     iq?: number | null;
+    rating?: number | string | null;
+    chess_rating?: number | string | null;
+    game_slug?: string | null;
   };
   side: 'left' | 'right';
   reduceMotion: boolean;
@@ -46,6 +50,7 @@ export function AthleteStatsReveal({ athlete, side, reduceMotion }: AthleteStats
   };
 
   const rating = Number(athlete.overall_rating ?? 0);
+  const isChess = isChessGame(athlete.game_slug);
 
   return (
     <motion.div
@@ -68,10 +73,12 @@ export function AthleteStatsReveal({ athlete, side, reduceMotion }: AthleteStats
           </div>
         )}
 
-        {/* Rating Badge */}
-        <div className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-sm border-2 border-fn-green bg-fn-black/90">
-          <span className="text-sm font-black text-fn-green">{rating}</span>
-        </div>
+        {/* Shooter cards retain the overall badge; Chess has one Rating metric below. */}
+        {!isChess && (
+          <div className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-sm border-2 border-fn-green bg-fn-black/90">
+            <span className="text-sm font-black text-fn-green">{rating}</span>
+          </div>
+        )}
       </div>
 
       {/* Name */}
@@ -79,24 +86,18 @@ export function AthleteStatsReveal({ athlete, side, reduceMotion }: AthleteStats
         {athlete.name.split(' ').pop() || athlete.name}
       </h2>
 
-      {/* Stats Grid */}
-      <div className="grid w-full max-w-[220px] grid-cols-3 gap-1.5">
-        <StatBlock
-          icon={<Zap size={12} />}
-          label="ATK"
-          value={stats.attack}
-        />
-        <StatBlock
-          icon={<Shield size={12} />}
-          label="DEF"
-          value={stats.defense}
-        />
-        <StatBlock
-          icon={<Brain size={12} />}
-          label="IQ"
-          value={stats.iq}
-        />
-      </div>
+      {/* Chess genuinely renders a different metric tree, not hidden shooter stats. */}
+      {isChess ? (
+        <div className="w-full max-w-[220px]">
+          <StatBlock icon={<Trophy size={12} />} label="Rating" value={chessRating(athlete.chess_rating, athlete.overall_rating ?? athlete.rating)} />
+        </div>
+      ) : (
+        <div className="grid w-full max-w-[220px] grid-cols-3 gap-1.5">
+          <StatBlock icon={<Zap size={12} />} label="ATK" value={stats.attack} />
+          <StatBlock icon={<Shield size={12} />} label="DEF" value={stats.defense} />
+          <StatBlock icon={<Brain size={12} />} label="IQ" value={stats.iq} />
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -762,6 +762,14 @@ function ProbBar({ yes, no }: { yes: number; no: number }) {
 
 type PickOption = { label: string; odds: number };
 
+function parsePickOptions(value: unknown): PickOption[] {
+  const raw = typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return []; } })() : value;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((option) => ({ label: String(option?.label ?? '').trim(), odds: Number(option?.odds) }))
+    .filter((option) => option.label && Number.isFinite(option.odds) && option.odds > 0);
+}
+
 const PICK_CONFIGS: Record<string, { prompt: string; badge: string; badgeStyle: string }> = {
   player_pick:  { prompt: "Pick a player to back",   badge: "PLAYER PICK", badgeStyle: "border-fn-yellow/30 bg-fn-yellow/10 text-fn-yellow"     },
   team_pick:    { prompt: "Pick a team to back",     badge: "TEAM PICK",   badgeStyle: "border-blue-400/30 bg-blue-400/10 text-blue-400"         },
@@ -796,7 +804,7 @@ function WagerCard({
   const [poolOpen, setPoolOpen] = useState(false);
   const { placeWager, loading } = usePlaceWager();
 
-  const pickOptions: PickOption[] = (Array.isArray(market.options) ? market.options : []) as PickOption[];
+  const pickOptions = parsePickOptions(market.options);
   const isOptionPick = pickOptions.length > 0;
   const pickConfig = PICK_CONFIGS[String(market.type ?? "")] ?? { prompt: "Pick an option", badge: "PICK", badgeStyle: "border-fn-green/30 bg-fn-green/10 text-fn-green" };
 
