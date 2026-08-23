@@ -27,6 +27,7 @@ const EMPTY = {
   recent_fantasy_points: '',
   total_fantasy_points: '',
   fantasy_status: 'available',
+  chess_rating: '', chess_title: 'Untitled', chess_peak_rating: '', chess_wins: '0', chess_draws: '0', chess_losses: '0', federation: '',
 };
 const FC_MOBILE_GAME = GAMES.find((game) => isFcMobileGame(game.slug));
 
@@ -235,6 +236,8 @@ function AthletesContent() {
       survival:       String(row.survival ?? '0'),
       iq:             String(row.iq       ?? '0'),
       aggression:     String(row.aggression ?? '0'),
+      chess_rating: String(row.chess_rating ?? ''), chess_title: String(row.chess_title ?? 'Untitled'), chess_peak_rating: String(row.chess_peak_rating ?? ''),
+      chess_wins: String(row.chess_wins ?? '0'), chess_draws: String(row.chess_draws ?? '0'), chess_losses: String(row.chess_losses ?? '0'), federation: String(row.federation ?? ''),
       overall_rating: String(row.overall_rating ?? ''),
       sensitivity_settings: typeof row.sensitivity_settings === 'string' ? row.sensitivity_settings : JSON.stringify(row.sensitivity_settings ?? {}, null, 2),
       control_code: String(row.control_code ?? ''),
@@ -304,7 +307,14 @@ function AthletesContent() {
         survival:       fcMobileGame ? 0 : Number(form.survival) || 0,
         iq:             Number(form.iq)             || 0,
         aggression:     Number(form.aggression)     || 0,
-        overall_rating: normalizeRating(form.overall_rating),
+      overall_rating: normalizeRating(form.overall_rating),
+        chess_rating: form.game_slug === 'chess' ? Number(form.chess_rating) || null : null,
+        chess_title: form.game_slug === 'chess' ? form.chess_title || 'Untitled' : null,
+        chess_peak_rating: form.game_slug === 'chess' ? Number(form.chess_peak_rating) || null : null,
+        chess_wins: form.game_slug === 'chess' ? Number(form.chess_wins) || 0 : 0,
+        chess_draws: form.game_slug === 'chess' ? Number(form.chess_draws) || 0 : 0,
+        chess_losses: form.game_slug === 'chess' ? Number(form.chess_losses) || 0 : 0,
+        federation: form.game_slug === 'chess' ? form.federation || null : null,
         ...(shooterGame ? { sensitivity_settings: (() => { try { return JSON.parse(form.sensitivity_settings || '{}'); } catch { return form.sensitivity_settings; } })(), control_code: form.control_code } : { sensitivity_settings: {}, control_code: '' }),
         perks:      splitArr(form.perks),
         strengths:  splitArr(form.strengths),
@@ -351,6 +361,7 @@ function AthletesContent() {
   const shooterSelected = isShooterGame(form.game_slug);
   const fcMobileSelected = isFcMobileGame(form.game_slug);
   const footballSelected = isFootballGame(form.game_slug);
+  const chessSelected = form.game_slug === 'chess';
   const calculatedOverallRating = calculateAthleteOverallRating(form, form.game_slug);
   const formGame = GAMES.find((game) => game.slug === form.game_slug) ?? activeGame ?? DEFAULT_GAME;
   const previewRating = calculatedOverallRating ?? normalizeRating(form.overall_rating);
@@ -554,7 +565,10 @@ function AthletesContent() {
             </Field>
           </div>
 
+          {chessSelected && <div className="grid grid-cols-2 gap-3 rounded border border-fn-gborder bg-fn-dark/30 p-3"><Field label="Chess Rating"><Input type="number" min="0" value={form.chess_rating} onChange={f('chess_rating')} placeholder="2650" /></Field><Field label="Chess Title"><Input value={form.chess_title} onChange={f('chess_title')} placeholder="GM / IM / FM" /></Field><Field label="Peak Rating"><Input type="number" min="0" value={form.chess_peak_rating} onChange={f('chess_peak_rating')} placeholder="2700" /></Field><Field label="Federation"><Input value={form.federation} onChange={f('federation')} placeholder="NGA" /></Field><Field label="Wins"><Input type="number" min="0" value={form.chess_wins} onChange={f('chess_wins')} /></Field><Field label="Draws"><Input type="number" min="0" value={form.chess_draws} onChange={f('chess_draws')} /></Field><Field label="Losses"><Input type="number" min="0" value={form.chess_losses} onChange={f('chess_losses')} /></Field></div>}
+
           {/* Combat attributes */}
+          {!chessSelected && <>
           <p className="text-fn-muted text-xs uppercase tracking-widest pt-1">
             Player Card Stats (0–100)
           </p>
@@ -583,7 +597,7 @@ function AthletesContent() {
             <Field label="Aggression">
               <Input type="number" min="0" max="100" value={form.aggression} onChange={f('aggression')} placeholder="0" />
             </Field>
-          </div>}
+          </div>}</>}
 
 
 

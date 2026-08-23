@@ -6,9 +6,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const data = await getActiveWagers({ game_slug: searchParams.get('game_slug') || '' });
-    return NextResponse.json(data);
+    const game_slug = searchParams.get('game') || searchParams.get('game_slug') || '';
+    const data = await getActiveWagers({ game_slug });
+    return NextResponse.json(Array.isArray(data) ? data : []);
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error('Failed to fetch active wagers:', e);
+    return NextResponse.json([]);
   }
 }

@@ -44,6 +44,9 @@ export default withPWA({
   disable: process.env.NODE_ENV === 'development',
   fallbacks: { document: '/offline' },
   customWorkerDir: 'worker',
+  // Next's app build manifest can be unavailable during an atomic deployment
+  // swap. It is not needed for offline navigation, so do not precache it.
+  buildExcludes: [/app-build-manifest\.json$/],
 
   runtimeCaching: [
     {
