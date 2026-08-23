@@ -283,9 +283,16 @@ AthleteCard.displayName = "AthleteCard";
 function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string }) {
   const pickOptions = (() => {
     const raw = typeof wager.options === 'string' ? (() => { try { return JSON.parse(wager.options); } catch { return []; } })() : wager.options;
-    return Array.isArray(raw) ? raw.map((option) => ({ label: String(option?.label ?? '').trim(), odds: Number(option?.odds) })).filter((option) => option.label && Number.isFinite(option.odds) && option.odds > 0) : [];
+    return Array.isArray(raw)
+      ? raw
+        .map((option) => ({ label: String(option?.label ?? '').trim(), odds: Number(option?.odds) }))
+        .filter((option) => option.label && Number.isFinite(option.odds) && option.odds > 0)
+        .sort((a, b) => b.odds - a.odds || a.label.localeCompare(b.label))
+      : [];
   })();
   const isOptionWager = (wager.type === 'player_pick' || wager.type === 'team_pick') && pickOptions.length > 0;
+  const visiblePickOptions = pickOptions.slice(0, 3);
+  const hiddenPickOptionCount = pickOptions.length - visiblePickOptions.length;
   const closesIn = () => {
     const diff = new Date(wager.closes_at).getTime() - Date.now();
     if (diff <= 0) return "Closed";
@@ -308,7 +315,8 @@ function WagerPreviewCard({ wager, primary }: { wager: Wager; primary: string })
       <h3 className="text-xs font-bold text-fn-text leading-snug mb-3">{wager.question}</h3>
       {isOptionWager ? (
         <div className="mb-3 space-y-1.5">
-          {pickOptions.map((option) => <div key={option.label} className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-2 py-2 text-[10px]"><span className="truncate font-bold text-fn-text">{option.label}</span><span className="ml-3 shrink-0 font-black" style={{ color: primary }}>{option.odds.toFixed(2)}x</span></div>)}
+          {visiblePickOptions.map((option) => <div key={option.label} className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-2 py-2 text-[10px]"><span className="truncate font-bold text-fn-text">{option.label}</span><span className="ml-3 shrink-0 font-black" style={{ color: primary }}>{option.odds.toFixed(2)}x</span></div>)}
+          {hiddenPickOptionCount > 0 && <Link href="/wager" className="block pt-0.5 text-center text-[10px] font-black uppercase tracking-widest transition-colors hover:brightness-125" style={{ color: primary }}>+{hiddenPickOptionCount} more →</Link>}
         </div>
       ) : <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="pred-yes rounded-sm px-2 py-2.5 text-center"><div className="text-[10px] font-bold">YES</div><div className="text-base font-black">{wager.yes_odds}x</div></div>
