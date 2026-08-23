@@ -15,7 +15,6 @@ export type PlayerCardTemplateAthlete = {
   jersey_number?: number | string | null;
   rating?: number | string | null;
   overall_rating?: number | string | null;
-  chess_rating?: number | string | null;
   attack?: number | null;
   defense?: number | null;
   survival?: number | null;
@@ -170,7 +169,7 @@ export default function PlayerCardTemplate({
   const displayName = athlete.known_name || athlete.ign;
   const isChess = isChessGame(athlete.game_slug);
   const ratingValue = isChess
-    ? chessRating(athlete.chess_rating, athlete.overall_rating ?? athlete.rating ?? rating)
+    ? chessRating(athlete.overall_rating, athlete.rating ?? rating)
     : Math.max(0, Math.min(100, Math.round(Number(rating) || 0)));
   const cardNumber = cardNumberFrom(athlete, team, ratingValue, rank);
   const combatStats = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);

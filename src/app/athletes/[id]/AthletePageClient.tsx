@@ -141,7 +141,7 @@ export default function AthletePageClient({ id }: { id: string }) {
   const previousTeams = parseObjects<{ team?: string; years?: string }>(a.previous_teams);
   const achievements = parseObjects<Achievement>(a.achievements);
   const chessProfile = isChessGame(a.game_slug);
-  const rating = chessProfile ? chessRating(a.chess_rating, a.overall_rating ?? a.rating) : normalizeRating(a.overall_rating, a.rating);
+  const rating = chessProfile ? chessRating(a.overall_rating, a.rating) : normalizeRating(a.overall_rating, a.rating);
   const footballProfile = isFootballGame(a.game_slug);
   const playerOnlySubtitle = getAthleteSubtitleFormat(a.game_slug) === 'player_only';
   const profileAttrs = combatAttributes(a as unknown as Record<string, unknown>, a.game_slug);

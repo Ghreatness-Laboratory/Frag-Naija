@@ -35,7 +35,6 @@ interface AthleteStatsRevealProps {
     defense?: number | null;
     iq?: number | null;
     rating?: number | string | null;
-    chess_rating?: number | string | null;
     game_slug?: string | null;
   };
   side: 'left' | 'right';
@@ -89,7 +88,7 @@ export function AthleteStatsReveal({ athlete, side, reduceMotion }: AthleteStats
       {/* Chess genuinely renders a different metric tree, not hidden shooter stats. */}
       {isChess ? (
         <div className="w-full max-w-[220px]">
-          <StatBlock icon={<Trophy size={12} />} label="Rating" value={chessRating(athlete.chess_rating, athlete.overall_rating ?? athlete.rating)} />
+          <StatBlock icon={<Trophy size={12} />} label="Rating" value={chessRating(athlete.overall_rating, athlete.rating)} />
         </div>
       ) : (
         <div className="grid w-full max-w-[220px] grid-cols-3 gap-1.5">
