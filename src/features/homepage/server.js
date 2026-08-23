@@ -20,7 +20,10 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
 
 export async function getHomepageSettings() {
   const { data, error } = await supabaseAdmin.from('homepage_settings').select(HOMEPAGE_SETTINGS_SELECT).single();
-  if (error || !data) return DEFAULT_HOMEPAGE_SETTINGS;
+  if (error || !data) {
+    console.error('homepage_settings fetch failed:', error);
+    return DEFAULT_HOMEPAGE_SETTINGS;
+  }
   return { ...DEFAULT_HOMEPAGE_SETTINGS, ...data };
 }
 

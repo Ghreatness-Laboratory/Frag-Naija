@@ -4,11 +4,11 @@ import { createWallet } from '@/features/wagers/server';
 
 export const dynamic = 'force-dynamic';
 
+/** Completes the OAuth PKCE flow and stores the session token used by getCurrentUser(). */
 export async function GET(request) {
   const requestUrl = new URL(request.url);
-  const code  = requestUrl.searchParams.get('code');
+  const code = requestUrl.searchParams.get('code');
   const error = requestUrl.searchParams.get('error');
-
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
 
   if (error || !code) {
@@ -48,10 +48,10 @@ export async function GET(request) {
   const response = NextResponse.redirect(`${siteUrl}/`);
   response.cookies.set('sb-access-token', data.session.access_token, {
     httpOnly: true,
-    secure:   process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge:   60 * 60 * 24 * 7,
-    path:     '/',
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
   });
 
   return response;
