@@ -18,6 +18,11 @@ export type PlayerCardTemplateAthlete = {
   survival?: number | null;
   clutch?: number | null;
   iq?: number | null;
+  chess_rating?: number | null;
+  chess_title?: string | null;
+  chess_wins?: number | null;
+  chess_draws?: number | null;
+  chess_losses?: number | null;
   game_slug?: string | null;
   is_icon?: boolean | null;
 };
@@ -165,10 +170,16 @@ export default function PlayerCardTemplate({
   const accent = isIcon ? ICON_GOLD : primary;
   const statLabelClass = isIcon ? 'text-[#F5C542]' : 'text-fn-green';
   const displayName = athlete.known_name || athlete.ign;
-  const ratingValue = Math.max(0, Math.min(100, Math.round(Number(rating) || 0)));
+  const isChess = athlete.game_slug === 'chess';
+  const ratingValue = isChess ? Math.max(0, Math.round(Number(athlete.chess_rating ?? rating) || 0)) : Math.max(0, Math.min(100, Math.round(Number(rating) || 0)));
   const cardNumber = cardNumberFrom(athlete, team, ratingValue, rank);
   const combatStats = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
-  const stats = combatStats.some((stat) => stat.value > 0)
+  const stats = isChess
+    ? [
+      { key: 'title', label: 'TITLE', name: 'Title', value: athlete.chess_title || 'Untitled', color: accent },
+      { key: 'record', label: 'W/D/L', name: 'Record', value: `${athlete.chess_wins ?? 0}/${athlete.chess_draws ?? 0}/${athlete.chess_losses ?? 0}`, color: accent },
+    ]
+    : combatStats.some((stat) => stat.value > 0)
     ? combatStats
     : [{ key: 'overall', label: 'OVR', name: 'Overall', value: ratingValue, color: accent }];
   const teamName = team?.name || athlete.team || 'Free Agent';
