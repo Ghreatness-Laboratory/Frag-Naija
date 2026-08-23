@@ -21,10 +21,6 @@ export function normalizeStatValue(value: unknown): number | null {
 }
 
 export function calculateAthleteOverallRating(athlete: Record<string, unknown>, gameSlug?: string | null): number | null {
-  if ((gameSlug ?? athlete.game_slug) === 'chess') {
-    const rating = Number(athlete.chess_rating);
-    return Number.isFinite(rating) && rating > 0 ? Math.round(rating) : null;
-  }
   const stats = getAthleteStatCategories(gameSlug ?? String(athlete.game_slug ?? ''))
     .map((key) => normalizeStatValue(athlete[key]))
     .filter((value): value is number => value !== null);
