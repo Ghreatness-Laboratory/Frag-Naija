@@ -3,8 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const OAUTH_PROVIDERS = new Set(['google', 'discord', 'facebook']);
+
+export async function GET(request, { params }) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  const provider = params.provider;
+
+  if (!OAUTH_PROVIDERS.has(provider)) {
+    return NextResponse.redirect(`${siteUrl}/login?error=unsupported_oauth_provider`);
+  }
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -12,10 +19,10 @@ export async function GET() {
   );
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
+    provider,
     options: {
       redirectTo: `${siteUrl}/api/auth/callback`,
-      queryParams: { access_type: 'offline', prompt: 'consent' },
+      ...(provider === 'google' ? { queryParams: { access_type: 'offline', prompt: 'consent' } } : {}),
     },
   });
 
