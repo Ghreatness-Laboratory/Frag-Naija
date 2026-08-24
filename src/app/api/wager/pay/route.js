@@ -104,9 +104,11 @@ export async function POST(request) {
 
       if (wallet && Number(wallet.balance) >= Number(amount)) {
         const reference = generateReference(resolvedSelections.length > 1 ? 'FNA' : 'FNW');
+        let slipCode = null;
+        let verificationId = null;
         for (let index = 0; index < resolvedSelections.length; index += 1) {
           const item = resolvedSelections[index];
-          await createWagerBet({
+          const placedBet = await createWagerBet({
             wager_id: item.wager_id,
             user_id,
             email,
@@ -114,11 +116,13 @@ export async function POST(request) {
             amount: index === 0 ? numericAmount : 0,
             potential: index === 0 ? potential : 0,
             reference: index === 0 ? reference : `${reference}-${index + 1}`,
+            slip_code: index === 0 ? undefined : null,
             paidFromWallet: true,
           });
+          if (index === 0) { slipCode = placedBet?.slip_code || null; verificationId = placedBet?.verification_id || null; }
         }
 
-        return NextResponse.json({ paid_from_wallet: true, potential, reference, combined_odds: combinedOdds });
+        return NextResponse.json({ paid_from_wallet: true, potential, reference, slip_code: slipCode, verification_id: verificationId, combined_odds: combinedOdds });
       }
     }
 
@@ -160,6 +164,7 @@ export async function POST(request) {
     return NextResponse.json({
       authorization_url: result.data.authorization_url,
       reference:         result.data.reference,
+      slip_code: null,
       potential,
       combined_odds: combinedOdds,
     });

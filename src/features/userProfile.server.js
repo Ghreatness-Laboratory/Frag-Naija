@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const USER_PROFILE_SELECT = 'id,user_id,username,date_of_birth,referral_code,referred_by,created_at,updated_at';
+const USER_PROFILE_SELECT = 'id,user_id,username,first_name,middle_name,last_name,date_of_birth,referral_code,referred_by,created_at,updated_at';
 const USER_SETTINGS_SELECT = 'id,user_id,show_notification_shortcuts,match_alerts_enabled,created_at,updated_at';
 
 function ageFromDob(dob) {
@@ -19,9 +19,12 @@ export function validateMinimumAge(dateOfBirth, minimumAge) {
   return age !== null && age >= minimumAge;
 }
 
-export async function ensureUserProfile(userId, { username, date_of_birth, referred_by } = {}) {
+export async function ensureUserProfile(userId, { username, first_name, middle_name, last_name, date_of_birth, referred_by } = {}) {
   const payload = { user_id: userId };
   if (username !== undefined) payload.username = username;
+  if (first_name !== undefined) payload.first_name = first_name || null;
+  if (middle_name !== undefined) payload.middle_name = middle_name || null;
+  if (last_name !== undefined) payload.last_name = last_name || null;
   if (date_of_birth !== undefined) payload.date_of_birth = date_of_birth || null;
   if (referred_by) payload.referred_by = referred_by;
   const { data, error } = await supabaseAdmin.from('user_profiles').upsert(payload, { onConflict: 'user_id' }).select(USER_PROFILE_SELECT).single();
@@ -35,9 +38,9 @@ export async function getUserProfile(userId) {
   return data || await ensureUserProfile(userId);
 }
 
-export async function updateUserProfile(userId, { username, date_of_birth }) {
+export async function updateUserProfile(userId, { username, first_name, middle_name, last_name, date_of_birth }) {
   if (date_of_birth && !validateMinimumAge(date_of_birth, 16)) throw new Error('You must be at least 16 years old to use FragNaija.');
-  const { data, error } = await supabaseAdmin.from('user_profiles').upsert({ user_id: userId, username: username || null, date_of_birth: date_of_birth || null, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).select(USER_PROFILE_SELECT).single();
+  const { data, error } = await supabaseAdmin.from('user_profiles').upsert({ user_id: userId, username: username || null, first_name: first_name || null, middle_name: middle_name || null, last_name: last_name || null, date_of_birth: date_of_birth || null, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).select(USER_PROFILE_SELECT).single();
   if (error) throw error;
   if (username) await supabaseAdmin.auth.admin.updateUserById(userId, { user_metadata: { username } }).catch(() => {});
   return data;

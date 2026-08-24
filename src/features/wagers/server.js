@@ -11,8 +11,61 @@ import {
 export const SIGNUP_BONUS_AMOUNT = 500;
 
 const WAGER_SELECT = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,trade_count,type,options,hot,status,closes_at,featured_on_home,created_at';
-const WAGER_BET_SELECT = 'id,wager_id,user_id,email,selection,amount,potential,reference,status,created_at';
+const WAGER_BET_SELECT = 'id,wager_id,user_id,email,selection,amount,potential,reference,slip_code,verification_id,status,created_at';
 const WALLET_SELECT = 'id,user_id,balance,total_won,total_lost,created_at,updated_at';
+
+
+async function generateUniqueSlipCode() {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const code = `FN${Math.floor(10000 + Math.random() * 90000)}`;
+    const { data } = await supabaseAdmin.from('wager_bets').select('id').eq('slip_code', code).maybeSingle();
+    if (!data) return code;
+  }
+  throw new Error('Unable to generate a unique bet slip code. Please try again.');
+}
+
+export async function lookupBetSlip(codeOrId) {
+  const value = String(codeOrId || '').trim();
+  if (!value) throw new Error('Enter a Bet Slip Code or verification ID.');
+  const isCode = /^FN\d{5}$/i.test(value);
+  const query = supabaseAdmin
+    .from('wager_bets')
+    .select('id,wager_id,selection,amount,potential,reference,slip_code,verification_id,status,created_at')
+    .eq(isCode ? 'slip_code' : 'verification_id', isCode ? value.toUpperCase() : value)
+    .limit(1);
+  const { data: bets, error } = await query;
+  if (error) throw error;
+  const primary = bets?.[0];
+  if (!primary) throw new Error('No genuine FragNaija Wager Zone bet slip was found for that code or ID.');
+
+  const prefix = String(primary.reference || '').split('-')[0];
+  const { data: allBets, error: allError } = await supabaseAdmin
+    .from('wager_bets')
+    .select('id,wager_id,selection,amount,potential,reference,slip_code,verification_id,status,created_at')
+    .or(`reference.eq.${prefix},reference.like.${prefix}-%`)
+    .order('created_at', { ascending: true });
+  if (allError) throw allError;
+
+  const wagerIds = [...new Set((allBets || [primary]).map((bet) => bet.wager_id).filter(Boolean))];
+  const { data: wagers, error: wagerError } = await supabaseAdmin
+    .from('wagers')
+    .select(WAGER_SELECT)
+    .in('id', wagerIds);
+  if (wagerError) throw wagerError;
+  const wagerMap = new Map((wagers || []).map((wager) => [String(wager.id), wager]));
+  const now = new Date();
+
+  const selections = (allBets?.length ? allBets : [primary]).map((bet) => {
+    const wager = wagerMap.get(String(bet.wager_id));
+    const options = Array.isArray(wager?.options) ? wager.options : [];
+    const option = options.find((item) => item.label === bet.selection);
+    const liveOdds = option ? Number(option.odds) : bet.selection === 'YES' ? Number(wager?.yes_odds) : Number(wager?.no_odds);
+    const available = wager?.status === 'Active' && wager?.closes_at && new Date(wager.closes_at) > now && Number(liveOdds) > 0;
+    return { wager_id: bet.wager_id, selection: bet.selection, original_amount: bet.amount, original_potential: bet.potential, market: wager, live_odds: liveOdds, available };
+  });
+
+  return { slip_code: primary.slip_code, verification_id: primary.verification_id, reference: prefix, status: primary.status, stake: primary.amount, potential: primary.potential, created_at: primary.created_at, selections, redeemable: selections.every((item) => item.available) };
+}
 
 export async function processWithdrawal(userId, { amount, account_number, bank_code, name }) {
   // 1. Verify amount
@@ -366,8 +419,9 @@ export async function deleteWager(id) {
   if (error) throw error;
 }
 
-export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference, paidFromWallet = false }) {
+export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference, slip_code, paidFromWallet = false }) {
   if (user_id) await assertUserAtLeast(user_id, 18);
+  const finalSlipCode = slip_code || (Number(amount) > 0 ? await generateUniqueSlipCode() : null);
   if (paidFromWallet) {
     const { data, error } = await supabaseAdmin.rpc('place_wager_from_wallet', {
       p_user_id: user_id,
@@ -380,7 +434,9 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
     });
     if (error) throw error;
     if (user_id && data) await qualifyReferralForWagerBet(user_id, Array.isArray(data) ? data[0]?.id : data.id).catch(() => {});
-    return data;
+    if (data && finalSlipCode) await supabaseAdmin.from('wager_bets').update({ slip_code: finalSlipCode }).eq('id', Array.isArray(data) ? data[0]?.id : data.id);
+    const placed = Array.isArray(data) ? { ...data[0], slip_code: finalSlipCode } : { ...data, slip_code: finalSlipCode };
+    return placed;
   }
 
   const { data: existing } = await supabaseAdmin
@@ -395,7 +451,7 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
 
   const { data, error } = await supabaseAdmin
     .from('wager_bets')
-    .insert([{ wager_id, user_id, email, selection, amount, potential, reference, status: 'Active' }])
+    .insert([{ wager_id, user_id, email, selection, amount, potential, reference, slip_code: finalSlipCode, status: 'Active' }])
     .select()
     .single();
   if (error) throw error;
