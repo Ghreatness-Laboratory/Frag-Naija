@@ -21,20 +21,20 @@ export async function loginWithPassword({ email, password }) {
   return data;
 }
 
-export async function registerUser({ email, password, username, preferred_game_slug, date_of_birth, referral_code }) {
+export async function registerUser({ email, password, username, first_name, middle_name, last_name, preferred_game_slug, date_of_birth, referral_code }) {
   if (!date_of_birth || !validateMinimumAge(date_of_birth, 16)) throw new Error('You must be at least 16 years old to create a FragNaija account.');
   const referrerId = await resolveReferralCode(referral_code);
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    user_metadata: { username: username || email.split('@')[0], preferred_game_slug: preferred_game_slug || null },
+    user_metadata: { username: username || email.split('@')[0], first_name: first_name || null, middle_name: middle_name || null, last_name: last_name || null, preferred_game_slug: preferred_game_slug || null },
     email_confirm: true,
   });
   if (error) throw error;
 
   try {
     await createWallet(data.user.id, { signupBonusEligible: true });
-    await ensureUserProfile(data.user.id, { username: username || email.split('@')[0], date_of_birth, referred_by: referrerId });
+    await ensureUserProfile(data.user.id, { username: username || email.split('@')[0], first_name, middle_name, last_name, date_of_birth, referred_by: referrerId });
     if (referrerId) await createReferral(referrerId, data.user.id);
   } catch {
     // Wallet creation is non-fatal during registration.
@@ -91,6 +91,9 @@ export async function getCurrentUser() {
     id:           user.id,
     email:        user.email,
     username:     profile?.username ?? user.user_metadata?.username,
+    first_name: profile?.first_name ?? user.user_metadata?.first_name ?? null,
+    middle_name: profile?.middle_name ?? user.user_metadata?.middle_name ?? null,
+    last_name: profile?.last_name ?? user.user_metadata?.last_name ?? null,
     date_of_birth: profile?.date_of_birth ?? null,
     referral_code: profile?.referral_code ?? null,
     preferred_game_slug: user.user_metadata?.preferred_game_slug ?? null,
