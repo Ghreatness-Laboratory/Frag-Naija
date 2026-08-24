@@ -68,7 +68,9 @@ let homepageDataPromise: Promise<HomepagePayload> | null = null;
 
 function fetchHomepageData() {
   if (!homepageDataPromise) {
-    homepageDataPromise = fetch('/api/homepage-data', { next: { revalidate: 120 } })
+    // Admin-managed homepage sections, including featured athletes, must be
+    // visible on the next navigation rather than waiting for an ISR interval.
+    homepageDataPromise = fetch('/api/homepage-data', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : {}))
       .catch(() => ({}))
       .finally(() => {
