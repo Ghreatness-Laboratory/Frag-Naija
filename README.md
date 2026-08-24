@@ -275,3 +275,12 @@ If you deploy on Vercel, Render, Railway, or another Node-compatible host, the m
 ## Next Recommended Step
 
 The most natural next improvement is to migrate the frontend pages from `src/lib/data.ts` to the live API hooks in `src/lib/hooks.js`, so the UI reflects real Supabase data end-to-end.
+
+### Supabase Match Alert scheduler
+
+The five-minute Match Alert job is scheduled by Supabase `pg_cron`, not Vercel. Before applying `202608240003_supabase_match_alert_scheduler.sql`, enable **pg_cron**, **pg_net**, and **Vault** for the Supabase project, then create these Vault secrets in the Supabase Dashboard (or through the secure Vault workflow):
+
+- `match_alert_scheduler_url`: the HTTPS origin of the deployed application, without a path.
+- `match_alert_scheduler_secret`: a high-entropy shared secret.
+
+Set the same value as `match_alert_scheduler_secret` in the application server environment as `SUPABASE_MATCH_ALERT_SCHEDULER_SECRET`. It is only read by the protected internal scheduler endpoint; never expose it with a `NEXT_PUBLIC_` prefix. The migration replaces any existing `fragnaija-match-alerts-every-minute` job and schedules exactly one `* * * * *` job. The endpoint uses recipient-scoped delivery, so a failed FCM request does not remove the in-app notification already written for an eligible subscriber.
