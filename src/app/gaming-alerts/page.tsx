@@ -80,7 +80,7 @@ export default function GamingAlertsPage() {
     return view === 'finished' && (!query || text.includes(query));
   }), [alerts, query, view]);
   const visibleNotifications = useMemo(() => notifications.filter((item) => {
-    const notificationView = item.type === 'match_live' ? 'live' : item.type === 'match_result' ? 'finished' : statusOf(item.tournament?.display_status || item.tournament?.status);
+    const notificationView = item.type === 'match_live' ? 'live' : item.type === 'match_result' ? 'finished' : item.type === 'match_starting_soon' ? 'upcoming' : statusOf(item.tournament?.display_status || item.tournament?.status);
     const text = [item.title, item.message, item.tournament?.name, item.game_slug, item.type].filter(Boolean).join(' ').toLowerCase();
     return notificationView === view && (!query || text.includes(query));
   }), [notifications, query, view]);
@@ -107,7 +107,7 @@ export default function GamingAlertsPage() {
   }
 
   async function toggleMatchSubscription(match: TrackerMatch) {
-    if (!settings.authenticated) return;
+    if (!settings.authenticated || match.display_status === 'finished') return;
     const next = !match.subscribed;
     setMatches((current) => current.map((row) => row.id === match.id ? { ...row, subscribed: next } : row));
     showSubscriptionToast(match.title, next);
@@ -118,7 +118,7 @@ export default function GamingAlertsPage() {
 
   const bellClass = (subscribed?: boolean) => `inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border transition-all disabled:cursor-not-allowed ${subscribed ? 'border-fn-green/60 bg-fn-green/10 text-fn-green shadow-[0_0_18px_rgba(57,255,20,0.18)]' : 'border-fn-gborder bg-fn-black text-fn-muted hover:border-fn-green/40 hover:text-fn-green'}`;
   const renderTournamentBell = (item: Tournament) => <button type="button" onClick={() => toggleTournamentSubscription(item)} disabled={!settings.authenticated} aria-pressed={Boolean(item.subscribed)} aria-label={item.subscribed ? `Disable tournament alerts for ${item.name}` : `Enable tournament alerts for ${item.name}`} title={settings.authenticated ? 'Toggle alerts for this tournament' : 'Log in to follow this tournament'} className={bellClass(item.subscribed)}><Bell size={16} fill={item.subscribed ? 'currentColor' : 'none'} /></button>;
-  const renderMatchBell = (match: TrackerMatch) => <button type="button" onClick={() => toggleMatchSubscription(match)} disabled={!settings.authenticated} aria-pressed={Boolean(match.subscribed)} aria-label={match.subscribed ? `Disable match alerts for ${match.title}` : `Enable match alerts for ${match.title}`} title={settings.authenticated ? 'Toggle alerts for this match' : 'Log in to follow this match'} className={bellClass(match.subscribed)}><Bell size={16} fill={match.subscribed ? 'currentColor' : 'none'} /></button>;
+  const renderMatchBell = (match: TrackerMatch) => <button type="button" onClick={() => toggleMatchSubscription(match)} disabled={!settings.authenticated || match.display_status === 'finished'} aria-pressed={Boolean(match.subscribed)} aria-label={match.subscribed ? `Disable match alerts for ${match.title}` : `Enable match alerts for ${match.title}`} title={match.display_status === 'finished' ? 'Finished matches cannot be followed' : settings.authenticated ? 'Toggle alerts for this match' : 'Log in to follow this match'} className={bellClass(match.subscribed)}><Bell size={16} fill={match.subscribed ? 'currentColor' : 'none'} /></button>;
 
   return <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8"><header className="border border-fn-green/30 bg-fn-card p-5"><p className="fn-label text-fn-green">FragNaija Gaming Alerts</p><div className="mt-2 flex flex-wrap items-end justify-between gap-4"><div><h1 className="font-display text-3xl font-black uppercase tracking-widest text-fn-text">Match Results</h1><p className="mt-2 text-sm text-fn-muted">Follow platform tournaments with bell alerts, live updates, and finalized results separated by match state.</p></div><label className="flex items-center gap-3 border border-fn-gborder bg-fn-black px-3 py-2 text-xs font-bold uppercase tracking-widest text-fn-text"><input type="checkbox" checked={settings.match_results_enabled} onChange={(e) => toggleMatchResults(e.target.checked)} /> Match alerts</label></div></header>
 
