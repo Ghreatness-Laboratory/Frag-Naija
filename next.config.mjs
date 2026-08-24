@@ -28,6 +28,10 @@ const nextConfig = {
         source: '/logos/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, immutable' }],
       },
+      {
+        source: '/api/homepage-data',
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=120, stale-while-revalidate=300' }],
+      },
     ];
   },
 };
@@ -45,6 +49,12 @@ export default withPWA({
   buildExcludes: [/app-build-manifest\.json$/],
 
   runtimeCaching: [
+    {
+      // Homepage data is semi-static and can be revalidated instead of fetched on every navigation.
+      urlPattern: /^\/api\/homepage-data/i,
+      handler: 'StaleWhileRevalidate',
+      options: {},
+    },
     {
       // API routes — keep live/account data uncached unless explicitly handled above.
       urlPattern: /^\/api\/.*/i,
