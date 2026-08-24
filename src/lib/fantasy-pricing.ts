@@ -1,10 +1,10 @@
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
+import { isChessGame, isFootballGame } from '@/lib/game-categories';
 
 export const FANTASY_SQUAD_BUDGET = 10_000_000;
 export const FANTASY_PRICE_ROUNDING = 1_000;
 export const FANTASY_PRICE_NUDGE = 1;
-export const FANTASY_MAX_PLAYERS_PER_TEAM = 3;
-export const FANTASY_TEAM_LIMIT_GAME_SLUGS = ['pubg-mobile', 'codm', 'free-fire'] as const;
+export const FANTASY_MAX_PLAYERS_PER_TEAM = 1;
 
 type FantasyPricingAthlete = {
   id?: string | number | null;
@@ -89,7 +89,7 @@ function boundedUniquePrice(basePrice: number, key: string, used: Set<number>): 
 }
 
 export function fantasyTeamLimitApplies(gameSlug?: string | null): boolean {
-  return FANTASY_TEAM_LIMIT_GAME_SLUGS.includes(String(gameSlug ?? '').toLowerCase() as typeof FANTASY_TEAM_LIMIT_GAME_SLUGS[number]);
+  return !isChessGame(gameSlug) && !isFootballGame(gameSlug);
 }
 
 export function fantasyTeamLimitViolation<T extends { team?: string | null; game_slug?: string | null }>(athletes: T[], candidate?: T | null): string {
@@ -97,10 +97,11 @@ export function fantasyTeamLimitViolation<T extends { team?: string | null; game
   const teamCounts = new Map<string, number>();
 
   for (const athlete of roster) {
-    if (!fantasyTeamLimitApplies(athlete.game_slug) || !athlete.team) continue;
-    const count = (teamCounts.get(athlete.team) ?? 0) + 1;
-    if (count > FANTASY_MAX_PLAYERS_PER_TEAM) return `Maximum ${FANTASY_MAX_PLAYERS_PER_TEAM} players per team reached — remove another ${athlete.team} player first`;
-    teamCounts.set(athlete.team, count);
+    const team = String(athlete.team || '').trim();
+    if (!fantasyTeamLimitApplies(athlete.game_slug) || !team) continue;
+    const count = (teamCounts.get(team) ?? 0) + 1;
+    if (count > FANTASY_MAX_PLAYERS_PER_TEAM) return `Only ${FANTASY_MAX_PLAYERS_PER_TEAM} player per team allowed — you already have a player from ${team} in your squad.`;
+    teamCounts.set(team, count);
   }
 
   return '';
