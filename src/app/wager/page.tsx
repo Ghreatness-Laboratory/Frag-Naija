@@ -103,6 +103,8 @@ type SlipSelection = {
 
 type PlacedTicket = {
   id: string;
+  slipCode?: string | null;
+  verificationId?: string | null;
   username: string;
   selections: SlipSelection[];
   stake: number;
@@ -877,7 +879,9 @@ function WagerCard({
         email: activeEmail,
       });
       const placedTicket: PlacedTicket = {
-        id: buildTicketId(result.reference),
+        id: result.slip_code || buildTicketId(result.reference),
+        slipCode: result.slip_code || null,
+        verificationId: result.verification_id || null,
         username,
         selections: currentSelection ? [currentSelection] : [],
         stake: numericAmount,
@@ -1424,7 +1428,9 @@ function WagerPanel({
         email,
       });
       onSubmit({
-        id: buildTicketId(result.reference),
+        id: result.slip_code || buildTicketId(result.reference),
+        slipCode: result.slip_code || null,
+        verificationId: result.verification_id || null,
         username,
         selections,
         stake: numericStake,
@@ -1689,6 +1695,30 @@ function WagerPageContent() {
       active = false;
     };
   }, [currentUser?.email, meLoading]);
+
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (!code) return;
+    let active = true;
+    fetch(`/api/wager/slip?code=${encodeURIComponent(code)}`)
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (!active || !ok || !data.redeemable) return;
+        const redeemed = (data.selections || []).map((item: { wager_id: string | number; selection: string; live_odds: number; market?: { question?: string; subtitle?: string; match_name?: string; closes_at?: string } }) => ({
+          key: `${String(item.wager_id)}:${item.selection}`,
+          wagerId: item.wager_id,
+          marketTitle: String(item.market?.question || 'Wager market'),
+          marketSubtitle: String(item.market?.subtitle || item.market?.match_name || 'Wager Zone'),
+          selection: String(item.selection),
+          odds: Number(item.live_odds || 1),
+          eventName: item.market?.match_name || item.market?.question,
+          eventDate: item.market?.closes_at,
+        }));
+        setSlipSelections(redeemed);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [searchParams]);
 
   useEffect(() => {
     publishWagerCount(slipSelections.length);

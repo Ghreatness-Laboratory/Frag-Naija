@@ -64,7 +64,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const params = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search);
   const nextPath = safeNextPath(params?.get('next') || null);
-  const [form, setForm]       = useState({ email: '', username: '', date_of_birth: '', referral_code: params?.get('ref') || '', password: '', confirm: '' });
+  const [form, setForm]       = useState({ email: '', username: '', first_name: '', middle_name: '', last_name: '', date_of_birth: '', referral_code: params?.get('ref') || '', password: '', confirm: '' });
   const [show, setShow]       = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
@@ -98,6 +98,9 @@ export default function RegisterPage() {
           email:    form.email,
           password: form.password,
           username: form.username || undefined,
+          first_name: form.first_name || undefined,
+          middle_name: form.middle_name || undefined,
+          last_name: form.last_name || undefined,
           date_of_birth: form.date_of_birth,
           referral_code: form.referral_code || undefined,
           preferred_game_slug: pickedGame?.slug || undefined,
@@ -190,6 +193,12 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* Name fields */}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div><label className="mb-2 block text-xs uppercase tracking-widest text-fn-muted">First Name</label><input type="text" value={form.first_name} onChange={set('first_name')} className="w-full rounded border border-fn-gborder bg-fn-dark px-3 py-2.5 text-sm text-fn-text outline-none focus:border-fn-green" placeholder="First" autoComplete="given-name" /></div>
+              <div><label className="mb-2 block text-xs uppercase tracking-widest text-fn-muted">Middle Name <span className="text-fn-muted/50 normal-case tracking-normal">(optional)</span></label><input type="text" value={form.middle_name} onChange={set('middle_name')} className="w-full rounded border border-fn-gborder bg-fn-dark px-3 py-2.5 text-sm text-fn-text outline-none focus:border-fn-green" placeholder="Middle" autoComplete="additional-name" /></div>
+              <div><label className="mb-2 block text-xs uppercase tracking-widest text-fn-muted">Last Name</label><input type="text" value={form.last_name} onChange={set('last_name')} className="w-full rounded border border-fn-gborder bg-fn-dark px-3 py-2.5 text-sm text-fn-text outline-none focus:border-fn-green" placeholder="Last" autoComplete="family-name" /></div>
+            </div>
 
             {/* Date of Birth */}
             <div>
