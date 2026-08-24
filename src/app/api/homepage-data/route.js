@@ -5,7 +5,11 @@ import { getCompanyProfile } from '@/features/companyProfile.server';
 import { getFeaturedAthletes } from '@/features/featuredAthletes.server';
 import { listStakeholders } from '@/features/stakeholders.server';
 
-export const revalidate = 120;
+// Featured content is changed from the admin without a deployment.  This route
+// must therefore always read through to Supabase instead of participating in
+// Next's route cache or a CDN ISR window.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
@@ -66,7 +70,7 @@ export async function GET() {
       stakeholders,
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
       },
     });
   } catch (e) {
