@@ -474,15 +474,7 @@ export async function dispatchStartingSoonMatchAlerts(now = new Date()) {
     }).select(NOTIFICATION_SELECT).single();
     if (notificationError?.code === '23505') continue;
     if (notificationError) throw notificationError;
-    let push;
-    try {
-      push = await deliverMatchAlert({ notification, title, body: message, url, tournamentId: match.tournament_id, tournamentMatchId: match.id, type: 'match_starting_soon' });
-    } catch (deliveryError) {
-      // The recipient rows were created before FCM dispatch. A push failure must
-      // not turn a valid in-app notification into a failed cron execution.
-      push = { sent: 0, attempted: 0, error: deliveryError.message };
-      console.error('Gaming Alerts FCM dispatch failed for five-minute warning:', deliveryError);
-    }
+    const push = await deliverMatchAlert({ notification, title, body: message, url, tournamentId: match.tournament_id, tournamentMatchId: match.id, type: 'match_starting_soon' });
     deliveries.push({ matchId: match.id, notificationId: notification.id, push });
   }
   return { checkedAt: now.toISOString(), dispatched: deliveries.length, deliveries };
