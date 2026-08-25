@@ -1,4 +1,4 @@
--- Supabase owns the periodic five-minute Match Alert trigger. Configure these
+-- Supabase owns the every-minute Match Alert trigger. Configure these
 -- Vault secrets in the Supabase dashboard before this job can dispatch:
 --   match_alert_scheduler_url    https://<deployed-app-origin>
 --   match_alert_scheduler_secret same value as SUPABASE_MATCH_ALERT_SCHEDULER_SECRET
