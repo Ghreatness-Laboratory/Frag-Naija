@@ -61,7 +61,8 @@ export async function POST(request) {
         console.error('Deposit webhook missing user_id in metadata', { reference });
         return NextResponse.json({ received: true });
       }
-      await processDeposit({ reference, userId, amountPaid: amountNGN });
+      const result = await processDeposit({ reference, userId, amountPaid: amountNGN });
+      console.info('Deposit webhook processed:', { reference, userId, result });
       return NextResponse.json({ received: true });
     }
 
