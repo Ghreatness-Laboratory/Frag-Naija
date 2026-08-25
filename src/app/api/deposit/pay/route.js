@@ -30,7 +30,7 @@ export async function POST(request) {
       email:        user.email,
       amount:       Number(amount),
       reference,
-      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wallet?status=success`,
+      callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wallet?status=success&tab=deposit`,
       metadata: {
         payment_type: 'deposit',
         user_id:      user.id,
