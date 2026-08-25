@@ -301,6 +301,7 @@ function WalletContent() {
   const [paying,      setPaying]      = useState(false);
   const [payErr,      setPayErr]      = useState('');
   const [showSuccess, setShowSuccess] = useState(searchParams.get('status') === 'success');
+  const [verifyMsg,   setVerifyMsg]   = useState('');
 
   const depFee      = depAmount ? Math.round(Number(depAmount) * DEPOSIT_FEE_PERCENT) / 100 : 0;
   const depCredited = depAmount ? Number(depAmount) - depFee : 0;
@@ -352,11 +353,42 @@ function WalletContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+    if (!showSuccess || !reference) return;
+
+    let cancelled = false;
+    async function verifyDeposit() {
+      setVerifyMsg('Verifying your deposit with Paystack...');
+      try {
+        const res = await fetch('/api/deposit/verify', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ reference }),
+        });
+        const data = await res.json();
+        if (!res.ok && res.status !== 202) throw new Error(data.error || 'Deposit verification failed');
+        if (cancelled) return;
+        if (data.verified) {
+          setVerifyMsg('Deposit confirmed and wallet balance updated.');
+          await load();
+        } else {
+          setVerifyMsg('Payment is still pending confirmation. Your wallet will update after Paystack confirms it.');
+        }
+      } catch (err: unknown) {
+        if (!cancelled) setVerifyMsg(err instanceof Error ? err.message : 'Deposit verification failed');
+      }
+    }
+    verifyDeposit();
+    return () => { cancelled = true; };
+  }, [showSuccess, searchParams, load]);
+
+  useEffect(() => {
     if (showSuccess) {
       const t = setTimeout(() => {
         setShowSuccess(false);
+        setVerifyMsg('');
         router.replace('/wallet');
-      }, 5000);
+      }, 8000);
       return () => clearTimeout(t);
     }
   }, [showSuccess, router]);
@@ -439,7 +471,7 @@ function WalletContent() {
           <CheckCircle className="w-5 h-5 text-fn-green shrink-0" />
           <div>
             <p className="text-fn-green font-bold text-sm uppercase tracking-widest">Deposit successful!</p>
-            <p className="text-fn-muted text-xs mt-0.5">Your wallet will be credited once Paystack confirms the payment.</p>
+            <p className="text-fn-muted text-xs mt-0.5">{verifyMsg || 'Your wallet will be credited once Paystack confirms the payment.'}</p>
           </div>
         </div>
       )}
