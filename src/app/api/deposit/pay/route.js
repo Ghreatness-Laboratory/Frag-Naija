@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initializeTransaction, generateReference } from '@/lib/paystack';
 import { getCurrentUser } from '@/features/auth/server';
 import { getSetting } from '@/features/settings/server';
+import { MIN_DEPOSIT_NGN } from '@/features/wagers/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,12 @@ export async function POST(request) {
     }
 
     const { amount } = await request.json();
-    const minDeposit = Number(await getSetting('min_deposit_ngn')) || 500;
+    const configuredMinimum = Number(await getSetting('min_deposit_ngn'));
+    // The setting can increase the minimum, but never reduce the application floor.
+    const minDeposit = Math.max(MIN_DEPOSIT_NGN, Number.isFinite(configuredMinimum) ? configuredMinimum : MIN_DEPOSIT_NGN);
+    const numericAmount = Number(amount);
 
-    if (!amount || Number(amount) < minDeposit) {
+    if (!Number.isFinite(numericAmount) || numericAmount < minDeposit) {
       return NextResponse.json({ error: `Minimum deposit is ₦${minDeposit.toLocaleString()}` }, { status: 400 });
     }
 
@@ -28,7 +32,7 @@ export async function POST(request) {
 
     const result = await initializeTransaction({
       email:        user.email,
-      amount:       Number(amount),
+      amount:       numericAmount,
       reference,
       callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wallet?status=success&tab=deposit`,
       metadata: {
