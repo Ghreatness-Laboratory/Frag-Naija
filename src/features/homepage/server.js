@@ -30,7 +30,14 @@ export async function getHomepageSettings() {
     console.error('homepage_settings fetch failed:', error);
     return DEFAULT_HOMEPAGE_SETTINGS;
   }
-  return { ...DEFAULT_HOMEPAGE_SETTINGS, ...data };
+  return {
+    ...DEFAULT_HOMEPAGE_SETTINGS,
+    ...data,
+    __debug_raw: {
+      featured_team_ids: data.featured_team_ids,
+      popup_title: data.popup_title,
+    },
+  };
 }
 
 export async function updateHomepageSettings(settings) {
