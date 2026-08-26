@@ -141,18 +141,34 @@ CREATE TABLE IF NOT EXISTS tournaments (
   game        TEXT DEFAULT 'PUBG Mobile',
   prize_pool  NUMERIC(12,2),
   currency    TEXT DEFAULT 'NGN',
-  start_date  DATE,
-  end_date    DATE,
+  start_date  TIMESTAMPTZ,
+  end_date    TIMESTAMPTZ,
   status      TEXT DEFAULT 'Upcoming' CHECK (status IN ('Upcoming', 'Live', 'Completed')),
   format      TEXT,                 -- e.g. Battle Royale, TDMS
   region      TEXT DEFAULT 'Nigeria',
   image_url   TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
+  description TEXT,
+  rules_overview TEXT,
+  participant_count INTEGER NOT NULL DEFAULT 0 CHECK (participant_count >= 0),
+  slot_count INTEGER CHECK (slot_count IS NULL OR slot_count >= 0),
+  registration_instructions TEXT,
+  watch_url TEXT,
+  access_instructions TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'local';
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules_overview TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS participant_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS slot_count INTEGER;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS registration_instructions TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS watch_url TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS access_instructions TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tournaments_public_read"  ON tournaments FOR SELECT USING (true);

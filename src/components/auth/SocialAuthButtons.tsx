@@ -45,6 +45,9 @@ export default function SocialAuthButtons() {
           {label}
         </button>
       ))}
+      <p className="rounded border border-fn-yellow/30 bg-fn-yellow/10 px-3 py-2 text-[11px] font-semibold text-fn-yellow">
+        Sign in with Google is currently disabled. Please use the sign-up form.
+      </p>
     </div>
   );
 }
