@@ -208,7 +208,7 @@ export default function LoginPage() {
             </button>
 
             <p className="text-center text-fn-muted text-xs">
-              Public signup is paused until launch. Existing admin accounts can sign in.
+              Don&apos;t have an account? <Link href="/register" className="font-bold text-fn-green hover:text-fn-gdim">Sign Up</Link>
             </p>
           </form>
         )}

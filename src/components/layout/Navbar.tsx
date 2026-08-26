@@ -160,9 +160,14 @@ export default function Navbar() {
           </Link>
 
           {!user && (
-            <Link href="/login" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-3 py-1.5 text-[10px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
-              Admin Login
-            </Link>
+            <>
+              <Link href="/register" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green/50 px-3 py-1.5 text-[10px] font-black uppercase leading-none tracking-widest text-fn-green hover:bg-fn-green/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
+                Sign Up
+              </Link>
+              <Link href="/login" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-3 py-1.5 text-[10px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
+                Login
+              </Link>
+            </>
           )}
 
           {user && (
@@ -230,9 +235,14 @@ export default function Navbar() {
           <ThemeToggle />
           <Link href="/gaming-alerts" aria-label="Open FragNaija Gaming Alerts" className="relative flex h-8 w-8 items-center justify-center border border-fn-gborder text-fn-muted hover:text-fn-green"><Bell size={14} />{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-fn-red px-1 text-[8px] font-black text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}</Link>
           {!user && (
-            <Link href="/login" className="inline-flex h-8 max-w-[72px] shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-2.5 py-1 text-[9px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
-              Login
-            </Link>
+            <>
+              <Link href="/register" aria-label="Sign up" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green/50 px-2 py-1 text-[9px] font-black uppercase leading-none tracking-widest text-fn-green hover:bg-fn-green/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
+                Sign Up
+              </Link>
+              <Link href="/login" className="inline-flex h-8 max-w-[72px] shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-2.5 py-1 text-[9px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
+                Login
+              </Link>
+            </>
           )}
           <button
             onClick={() => setOpen(!open)}
@@ -365,9 +375,14 @@ export default function Navbar() {
                   <LogOut size={12} /> Logout
                 </button>
               ) : (
-                <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
-                  Admin Login
-                </Link>
+                <>
+                  <Link href="/register" onClick={() => setOpen(false)} className="flex-1 fn-btn-outline text-[10px] py-2 text-center">
+                    Sign Up
+                  </Link>
+                  <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
+                    Login
+                  </Link>
+                </>
               )}
             </div>
           </div>

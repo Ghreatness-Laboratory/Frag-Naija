@@ -10,8 +10,6 @@ import { GAMES } from "@/lib/games";
 import { GAME_CONTENT } from "@/lib/game-content";
 import { useGame } from "@/context/GameContext";
 import { useAuthGate } from "@/components/common/LoginGate";
-import { useLaunchCountdown } from "@/components/common/useLaunchCountdown";
-import { formatLaunchRemaining } from "@/lib/launchCountdown";
 import StakeholderCard, { type Stakeholder } from "@/components/common/StakeholderCard";
 import OptimizedImage from '@/components/common/OptimizedImage';
 import AnnouncementPopup from '@/components/homepage/AnnouncementPopup';
@@ -408,7 +406,6 @@ function FeaturedAthletes({ athletes, selectedGame, primary, secondary, showFire
 }
 
 export default function HomePage() {
-  const router = useRouter();
   const { selectedGame, isHydrated } = useGame();
   const { user, loading: authLoading } = useAuthGate();
   const [ticker, setTicker]       = useState(0);
@@ -424,7 +421,6 @@ export default function HomePage() {
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
   const [popupSettings, setPopupSettings] = useState<HomepageSettings>({});
   const [isScoutPromptOpen, setIsScoutPromptOpen] = useState(false);
-  const { remaining } = useLaunchCountdown();
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
@@ -432,9 +428,6 @@ export default function HomePage() {
   const reduceMotion = useReducedMotion();
   const tickerItems = selectedGame ? (TICKER_ITEMS[selectedGame.slug] ?? TICKER_ITEMS.default) : TICKER_ITEMS.default;
 
-  useEffect(() => {
-    if (isHydrated && selectedGame) router.replace(`/${selectedGame.slug}`);
-  }, [isHydrated, router, selectedGame]);
   const tagline     = homepageSettings.hero_tagline ?? "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.";
   const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
   const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
@@ -556,9 +549,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-hidden">
       <AnnouncementPopup settings={popupSettings} />
-      <div className="border-b border-fn-green/20 bg-fn-green/10 px-4 py-2 text-center text-[10px] font-black uppercase tracking-widest text-fn-green sm:px-8 lg:px-12">
-        Launching in: {formatLaunchRemaining(remaining)}
-      </div>
       <GameSelectionModal
         open={isScoutPromptOpen}
         onClose={() => setIsScoutPromptOpen(false)}
