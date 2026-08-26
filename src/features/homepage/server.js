@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const HOMEPAGE_SETTINGS_SELECT = 'id,hero_eyebrow,hero_headline,hero_tagline,stat_players,stat_tournaments,stat_championships,stat_prize_pool,recruitment_headline,recruitment_body,recruitment_cta,popup_title,popup_body,popup_cta,featured_team_ids,featured_tournament_ids,show_athletes,show_teams,show_shop,created_at,updated_at';
+const HOMEPAGE_SETTINGS_SELECT = 'id,hero_eyebrow,hero_headline,hero_tagline,stat_players,stat_tournaments,stat_championships,stat_prize_pool,recruitment_headline,recruitment_body,recruitment_cta,popup_enabled,popup_image_url,popup_headline,popup_body,popup_cta_label,popup_cta_link,popup_title,popup_cta,featured_team_ids,featured_tournament_ids,show_athletes,show_teams,show_shop,created_at,updated_at';
 
 export const DEFAULT_HOMEPAGE_SETTINGS = {
   hero_eyebrow: "NIGERIA'S PREMIER ESPORTS PLATFORM",
@@ -13,7 +13,10 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
   recruitment_headline: 'RECRUITMENT OPEN',
   recruitment_body: 'JOIN FRAG NAIJA AND GET RANKED IN THE OPEN TRIALS.',
   recruitment_cta: 'JOIN THE RANKS',
-  popup_title: '', popup_body: '', popup_cta: '',
+  popup_enabled: 'false', popup_image_url: '',
+  // The admin form writes popup_title and popup_cta. The similarly named
+  // popup_headline and popup_cta_label columns are retained for legacy rows.
+  popup_title: '', popup_body: '', popup_cta: '', popup_cta_link: '',
   featured_team_ids: '', featured_tournament_ids: '',
   show_athletes: 'true', show_teams: 'true', show_shop: 'true',
 };
@@ -33,10 +36,6 @@ export async function getHomepageSettings() {
   return {
     ...DEFAULT_HOMEPAGE_SETTINGS,
     ...data,
-    __debug_raw: {
-      featured_team_ids: data.featured_team_ids,
-      popup_title: data.popup_title,
-    },
   };
 }
 

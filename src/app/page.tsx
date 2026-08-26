@@ -14,6 +14,7 @@ import { useLaunchCountdown } from "@/components/common/useLaunchCountdown";
 import { formatLaunchRemaining } from "@/lib/launchCountdown";
 import StakeholderCard, { type Stakeholder } from "@/components/common/StakeholderCard";
 import OptimizedImage from '@/components/common/OptimizedImage';
+import AnnouncementPopup from '@/components/homepage/AnnouncementPopup';
 
 type Athlete = {
   id: string; name: string; ign: string; role: string | null;
@@ -421,6 +422,7 @@ export default function HomePage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
+  const [popupSettings, setPopupSettings] = useState<HomepageSettings>({});
   const [isScoutPromptOpen, setIsScoutPromptOpen] = useState(false);
   const { remaining } = useLaunchCountdown();
 
@@ -474,6 +476,19 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // This endpoint is explicitly no-store, so announcement updates are visible
+  // on the next homepage visit without waiting for the broader homepage feed.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/homepage-settings', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : {}))
+      .then((settings) => {
+        if (!cancelled && settings && !Array.isArray(settings)) setPopupSettings(settings);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const featuredTeamIds = useMemo(() => parseFeaturedIds(homepageSettings.featured_team_ids), [homepageSettings.featured_team_ids]);
@@ -540,6 +555,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen overflow-hidden">
+      <AnnouncementPopup settings={popupSettings} />
       <div className="border-b border-fn-green/20 bg-fn-green/10 px-4 py-2 text-center text-[10px] font-black uppercase tracking-widest text-fn-green sm:px-8 lg:px-12">
         Launching in: {formatLaunchRemaining(remaining)}
       </div>
