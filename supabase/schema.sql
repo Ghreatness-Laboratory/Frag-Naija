@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS wagers (
   options     JSONB NOT NULL DEFAULT '[]'::JSONB,
   hot         BOOLEAN DEFAULT false,
   status      TEXT DEFAULT 'Active'
-                CHECK (status IN ('Active', 'Settled — YES Wins', 'Settled — NO Wins', 'Cancelled')),
+                CHECK (status = 'Active' OR status = 'Settled' OR status = 'Cancelled' OR status LIKE 'Settled — %'),
   closes_at   TIMESTAMPTZ NOT NULL,
   game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -260,6 +260,9 @@ ALTER TABLE wagers ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'binary';
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS options JSONB NOT NULL DEFAULT '[]'::JSONB;
 ALTER TABLE wagers DROP CONSTRAINT IF EXISTS wagers_type_check;
 ALTER TABLE wagers ADD CONSTRAINT wagers_type_check CHECK (type IN ('binary', 'player_pick', 'team_pick'));
+ALTER TABLE wagers DROP CONSTRAINT IF EXISTS wagers_status_check;
+ALTER TABLE wagers ADD CONSTRAINT wagers_status_check
+  CHECK (status = 'Active' OR status = 'Settled' OR status = 'Cancelled' OR status LIKE 'Settled — %');
 
 ALTER TABLE wagers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "wagers_public_read"  ON wagers FOR SELECT USING (true);
