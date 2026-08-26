@@ -29,10 +29,10 @@ export async function getHomepageSettings() {
     popup_body: data?.popup_body,
     popup_cta: data?.popup_cta,
   }));
-  if (error || !data) {
-    console.error('homepage_settings fetch failed:', error);
-    return DEFAULT_HOMEPAGE_SETTINGS;
-  }
+if (error || !data) {
+  console.error('homepage_settings fetch failed:', error);
+  return { ...DEFAULT_HOMEPAGE_SETTINGS, __debug_error: error ? { message: error.message, code: error.code, details: error.details } : 'no data' };
+}
   return {
     ...DEFAULT_HOMEPAGE_SETTINGS,
     ...data,
