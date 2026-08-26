@@ -279,11 +279,11 @@ export default function AdminWithdrawalsPage() {
               {selected.status === 'Pending' && (
                 <>
                   <button
-                    onClick={() => doAction('approve')}
+                    onClick={() => doAction('complete')}
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-green text-fn-black font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
                   >
-                    <CheckCircle size={13} /> Approve
+                    <CheckCircle size={13} /> Mark Completed
                   </button>
                   <button
                     onClick={() => doAction('reject')}

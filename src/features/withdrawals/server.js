@@ -81,105 +81,28 @@ export async function getUserWithdrawals(userId) {
 }
 
 export async function submitWithdrawal(userId, { amount }) {
-  // 1. Check withdrawals_enabled setting
   const withdrawalsEnabled = await getSetting('withdrawals_enabled') ?? 'true';
-  if (withdrawalsEnabled === 'false') {
-    throw new Error('Withdrawals are currently disabled');
-  }
+  if (withdrawalsEnabled === 'false') throw new Error('Withdrawals are currently disabled');
 
-  // 2. Get settings
-  const feePercent    = Number(await getSetting('withdrawal_fee_percent'))  || 5;
-  const minWithdrawal = Number(await getSetting('min_withdrawal_ngn'))       || 1000;
-  const usdNgnRate    = Number(await getSetting('usd_ngn_rate'))             || 1600;
-  const maxPayoutUsd  = Number(await getSetting('max_payout_usd'))           || 2000;
+  const feePercent = Number(await getSetting('withdrawal_fee_percent')) || 5;
+  const minWithdrawal = Number(await getSetting('min_withdrawal_ngn')) || 1000;
+  const maxWithdrawal = (Number(await getSetting('usd_ngn_rate')) || 1600) * (Number(await getSetting('max_payout_usd')) || 2000);
+  if (!Number.isFinite(amount) || amount < minWithdrawal) throw new Error(`Minimum withdrawal is ₦${minWithdrawal.toLocaleString()}`);
+  if (amount > maxWithdrawal) throw new Error(`Maximum withdrawal is ₦${maxWithdrawal.toLocaleString()}`);
 
-  // 3. Compute max
-  const maxWithdrawal = usdNgnRate * maxPayoutUsd;
-
-  // 4. Validate amount
-  if (amount < minWithdrawal) {
-    throw new Error(`Minimum withdrawal is ₦${minWithdrawal.toLocaleString()}`);
-  }
-  if (amount > maxWithdrawal) {
-    throw new Error(`Maximum withdrawal is ₦${maxWithdrawal.toLocaleString()}`);
-  }
-
-  // 5. Get bank account
   const bankAccount = await getUserBankAccount(userId);
-  if (!bankAccount) {
-    throw new Error('Please save a bank account before withdrawing');
-  }
+  if (!bankAccount) throw new Error('Please save a bank account before withdrawing');
+  assertWithdrawalMatchesFundingSource(bankAccount, await getMostRecentDepositFundingSource(userId));
 
-  const fundingSource = await getMostRecentDepositFundingSource(userId);
-  assertWithdrawalMatchesFundingSource(bankAccount, fundingSource);
-
-  // 6. Check for existing Pending withdrawal
-  const { data: pendingWithdrawal } = await supabaseAdmin
-    .from('withdrawals')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('status', 'Pending')
-    .maybeSingle();
-  if (pendingWithdrawal) {
-    throw new Error('You already have a pending withdrawal request');
-  }
-
-  // 7. Get wallet balance
-  const { data: wallet, error: walletError } = await supabaseAdmin
-    .from('wallets')
-    .select('balance')
-    .eq('user_id', userId)
-    .single();
-  if (walletError) throw walletError;
-  if (Number(wallet.balance) < amount) {
-    throw new Error('Insufficient wallet balance');
-  }
-
-  // 8. Compute fee and amount sent
-  const fee        = Math.round(amount * feePercent) / 100;
-  const amountSent = amount - fee;
-
-  // 9. Deduct full amount from wallet immediately
-  const { error: deductError } = await supabaseAdmin
-    .from('wallets')
-    .update({
-      balance:    Number(wallet.balance) - amount,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
-  if (deductError) throw deductError;
-
-  // 10. Insert withdrawal record
-  const { data: withdrawal, error: withdrawalError } = await supabaseAdmin
-    .from('withdrawals')
-    .insert([{
-      user_id:                   userId,
-      amount,
-      fee,
-      amount_sent:               amountSent,
-      bank_name:                 bankAccount.bank_name,
-      bank_code:                 bankAccount.bank_code,
-      account_number:            bankAccount.account_number,
-      account_name:              bankAccount.account_name,
-      paystack_recipient_code:   bankAccount.paystack_recipient_code,
-      status:                    'Pending',
-    }])
-    .select()
-    .single();
-  if (withdrawalError) throw withdrawalError;
-
-  // 11. Insert wallet transaction
-  const { error: txError } = await supabaseAdmin
-    .from('wallet_transactions')
-    .insert([{
-      user_id:     userId,
-      type:        'Adjustment',
-      amount:      -Number(amount),
-      description: `Withdrawal to ${bankAccount.bank_name} ****${bankAccount.account_number.slice(-4)}`,
-    }]);
-  if (txError) throw txError;
-
-  return withdrawal;
+  const fee = Math.round(amount * feePercent) / 100;
+  const { data, error } = await supabaseAdmin.rpc('create_manual_withdrawal', {
+    p_user_id: userId, p_amount: amount, p_fee: fee, p_amount_sent: amount - fee,
+    p_bank_name: bankAccount.bank_name, p_bank_code: bankAccount.bank_code,
+    p_account_number: bankAccount.account_number, p_account_name: bankAccount.account_name,
+    p_paystack_recipient_code: bankAccount.paystack_recipient_code,
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
 }
 
 export async function cancelWithdrawal(userId, withdrawalId) {
@@ -260,6 +183,17 @@ export async function adminUpdateWithdrawal(withdrawalId, { action, note }) {
     .single();
   if (fetchError || !withdrawal) {
     throw new Error('Withdrawal not found');
+  }
+
+  if (action === 'reject') {
+    const { data, error } = await supabaseAdmin.rpc('reject_manual_withdrawal', { p_withdrawal_id: withdrawalId, p_admin_note: note || null });
+    if (error) throw error;
+    return { done: true, status: Array.isArray(data) ? data[0]?.status : data?.status };
+  }
+  if (action === 'complete' && withdrawal.status === 'Pending') {
+    const { data, error } = await supabaseAdmin.rpc('complete_manual_withdrawal', { p_withdrawal_id: withdrawalId, p_admin_note: note || null });
+    if (error) throw error;
+    return { done: true, status: Array.isArray(data) ? data[0]?.status : data?.status };
   }
 
   let newStatus;

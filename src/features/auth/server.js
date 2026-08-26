@@ -67,8 +67,10 @@ export async function getCurrentUser() {
   let wallet = null;
   try {
     wallet = await getWallet(user.id);
-  } catch {
-    // Wallet may not exist yet.
+  } catch (error) {
+    // Keep authentication available for users without a wallet, but retain the
+    // query error in server logs instead of silently returning wallet: null.
+    console.error('getCurrentUser wallet lookup failed', { userId: user.id, message: error?.message });
   }
 
   let profile = null;

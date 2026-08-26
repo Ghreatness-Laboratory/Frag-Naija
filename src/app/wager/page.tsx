@@ -36,7 +36,7 @@ import {
   useWithdraw,
 } from "@/lib/hooks";
 import { publishWagerCount } from "@/components/layout/BottomNav";
-import { MAX_WAGER_AMOUNT, MIN_WAGER_AMOUNT } from "@/features/wagers/constants";
+import { MAX_WAGER_AMOUNT, MIN_STAKE_NGN } from "@/features/wagers/constants";
 import { GAMES } from "@/lib/games";
 import BrandedLoader from "@/components/common/BrandedLoader";
 
@@ -625,8 +625,8 @@ function getWagerAmountError(
     return "Enter a valid wager amount.";
   }
   
-  if (numericAmount < MIN_WAGER_AMOUNT) {
-    return `Minimum wager amount is ${formatCurrency(MIN_WAGER_AMOUNT)}.`;
+  if (numericAmount < MIN_STAKE_NGN) {
+    return `Minimum wager amount is ${formatCurrency(MIN_STAKE_NGN)}.`;
   }
   
   if (numericAmount > MAX_WAGER_AMOUNT) {
@@ -1089,7 +1089,7 @@ function WagerCard({
           </label>
           <div className="flex items-center justify-between gap-2 text-[8px]">
             <span className={amountError ? "text-fn-red" : "text-fn-muted"}>{amountError || `Balance: ${formatCurrency(walletBalance)}`}</span>
-            <span className="text-fn-muted">Min {formatCurrency(MIN_WAGER_AMOUNT)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
+            <span className="text-fn-muted">Min {formatCurrency(MIN_STAKE_NGN)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
           </div>
           <div className="flex gap-2">
             <button
@@ -1498,7 +1498,7 @@ function WagerPanel({
         </label>
         <div className="flex items-center justify-between gap-2 text-[8px]">
           <span className={stakeError ? "text-fn-red" : "text-fn-muted"}>{stakeError || `Balance: ${formatCurrency(walletBalance)}`}</span>
-          <span className="text-fn-muted">Min {formatCurrency(MIN_WAGER_AMOUNT)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
+          <span className="text-fn-muted">Min {formatCurrency(MIN_STAKE_NGN)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3">
