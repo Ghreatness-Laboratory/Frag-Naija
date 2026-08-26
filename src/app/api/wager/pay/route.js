@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { initializeTransaction, generateReference } from '@/lib/paystack';
-import { getWagerForPlacement, getUserIdByEmail, createWagerBet } from '@/features/wagers/server';
+import { getWagerForPlacement, createWagerBet } from '@/features/wagers/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { getCurrentUser } from '@/features/auth/server';
 import { MAX_WAGER_AMOUNT, MIN_STAKE_NGN } from '@/features/wagers/constants';
 
 export const dynamic = 'force-dynamic';
@@ -9,16 +10,21 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { wager_id, selection, amount, email } = body;
+    const { wager_id, selection, amount } = body;
+    const currentUser = await getCurrentUser();
+    if (!currentUser?.id || !currentUser.email) {
+      return NextResponse.json({ error: 'Sign in to place a wager' }, { status: 401 });
+    }
+    const email = currentUser.email;
     const requestedSelections = Array.isArray(body.selections)
       ? body.selections
       : wager_id && selection
         ? [{ wager_id, selection }]
         : [];
 
-    if (!requestedSelections.length || !amount || !email) {
+    if (!requestedSelections.length || !amount) {
       return NextResponse.json(
-        { error: 'selection(s), amount, and email are required' },
+        { error: 'selection(s) and amount are required' },
         { status: 400 }
       );
     }
@@ -94,7 +100,7 @@ export async function POST(request) {
     const primarySelection = resolvedSelections[0];
 
     // ── Try wallet-balance payment first ────────────────────────────────────
-    const user_id = await getUserIdByEmail(email);
+    const user_id = currentUser.id;
     if (user_id) {
       const { data: wallet } = await supabaseAdmin
         .from('wallets')
