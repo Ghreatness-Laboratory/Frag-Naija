@@ -21,8 +21,8 @@ BEGIN
   IF p_user_id IS NULL THEN
     RAISE EXCEPTION 'user_id is required';
   END IF;
-  IF p_amount_paid <= 0 OR p_amount_credited < 0 THEN
-    RAISE EXCEPTION 'Invalid deposit amount';
+  IF p_amount_paid < 100 OR p_amount_credited < 0 THEN
+    RAISE EXCEPTION 'Minimum deposit is ₦100';
   END IF;
 
   SELECT * INTO v_tx FROM public.transactions WHERE reference = p_reference;
@@ -65,6 +65,9 @@ BEGIN
   END IF;
   IF p_amount < 0 OR p_potential < 0 THEN
     RAISE EXCEPTION 'Invalid wager amount';
+  END IF;
+  IF p_amount > 0 AND p_amount < 100 THEN
+    RAISE EXCEPTION 'Minimum stake is ₦100';
   END IF;
 
   SELECT * INTO v_bet FROM public.wager_bets WHERE reference = p_reference;
@@ -265,6 +268,9 @@ DECLARE
 BEGIN
   IF p_user_id IS NULL OR p_stake <= 0 THEN
     RAISE EXCEPTION 'Invalid duel stake';
+  END IF;
+  IF p_stake < 100 THEN
+    RAISE EXCEPTION 'Minimum stake is ₦100';
   END IF;
 
   UPDATE public.wallets

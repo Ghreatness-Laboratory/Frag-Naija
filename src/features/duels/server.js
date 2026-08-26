@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { calculateDuelOddsFromElo, calculateDuelOddsFromKd, eloOf, kdOf } from '@/lib/duel-odds';
+import { MIN_STAKE_NGN } from '@/features/wagers/constants';
 
 export function calculateDuelOdds(playerAKd, playerBKd) {
   return calculateDuelOddsFromKd(playerAKd, playerBKd);
@@ -27,6 +28,7 @@ export async function getOpenDuelMatches() {
 export async function placeDuelWager({ duel_id, user_id, picked_player_id, stake }) {
   const numericStake = Number(stake);
   if (!duel_id || !user_id || !picked_player_id || !Number.isFinite(numericStake) || numericStake <= 0) throw new Error('duel_id, picked_player_id, and valid stake are required');
+  if (numericStake < MIN_STAKE_NGN) throw new Error(`Minimum stake is ₦${MIN_STAKE_NGN.toLocaleString('en-NG')}`);
   const { data: duel, error } = await supabaseAdmin.from('duel_matches').select('*').eq('id', duel_id).single();
   if (error) throw error;
   if (duel.status !== 'open') throw new Error('Duel is not open for wagers');
