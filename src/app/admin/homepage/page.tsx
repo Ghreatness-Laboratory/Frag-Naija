@@ -81,7 +81,6 @@ function FeaturedPicker({
 
 export default function AdminHomepagePage() {
   const [settings, setSettings] = useState<Settings>({});
-  const [launchSettings, setLaunchSettings] = useState<Settings>({});
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,11 +90,9 @@ export default function AdminHomepagePage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/homepage-settings', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : {})).catch(() => ({})),
-      fetch('/api/admin/settings', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : {})).catch(() => ({})),
       fetch('/api/teams', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : [])).catch(() => []),
-    ]).then(([settingsData, launchData, teamRows]) => {
+    ]).then(([settingsData, teamRows]) => {
       setSettings(settingsData && !Array.isArray(settingsData) ? settingsData : {});
-      setLaunchSettings(launchData && !Array.isArray(launchData) ? launchData : {});
       setTeams(Array.isArray(teamRows) ? teamRows : []);
     }).finally(() => setLoading(false));
   }, []);
@@ -107,22 +104,15 @@ export default function AdminHomepagePage() {
     setSuccess('');
 
     try {
-      const [homepageRes, launchRes] = await Promise.all([
+      const [homepageRes] = await Promise.all([
         fetch('/api/homepage-settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(settings)
         }),
-        fetch('/api/admin/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ launch_countdown_target: launchSettings.launch_countdown_target ?? '' })
-        }),
       ]);
       const data = await homepageRes.json();
-      const launchData = await launchRes.json();
       if (!homepageRes.ok) throw new Error(data.error || 'Save failed');
-      if (!launchRes.ok) throw new Error(launchData.error || 'Launch settings save failed');
 
       // Show success message
       setSuccess(data.message || 'Homepage settings saved successfully!');
@@ -148,13 +138,6 @@ export default function AdminHomepagePage() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-sm border border-fn-gborder bg-fn-card p-5">
-          <section className="rounded border border-fn-green/20 bg-fn-green/5 p-3">
-            <h2 className="mb-2 text-xs font-black uppercase tracking-widest text-fn-green">Pre-launch gate</h2>
-            <Field label="Launch countdown target (ISO timestamp)">
-              <Input value={launchSettings.launch_countdown_target ?? ''} onChange={(event) => setLaunchSettings((prev) => ({ ...prev, launch_countdown_target: event.target.value }))} placeholder="2026-08-27T00:00:00.000Z" />
-            </Field>
-            <p className="mt-2 text-[10px] text-fn-muted">The coming-soon gate is enabled with SITE_LAUNCH_MODE=coming_soon. This timestamp only controls the visible countdown; launch still requires the manual environment toggle.</p>
-          </section>
           <FeaturedPicker label="Featured Teams" ids={featuredTeamIds} options={teams} emptyText="No featured teams selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_team_ids: ids.join(',') }))} />
           {TEXT_FIELDS.map(([key, label]) => (
             <Field key={key} label={label}>

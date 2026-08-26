@@ -208,7 +208,7 @@ export default function LoginPage() {
             </button>
 
             <p className="text-center text-fn-muted text-xs">
-              Public signup is paused until launch. Existing admin accounts can sign in.
+              New to FragNaija? Create an account to get started.
             </p>
           </form>
         )}
