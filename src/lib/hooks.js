@@ -6,14 +6,16 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { WALLET_UPDATED_EVENT } from '@/lib/wallet-events';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 
 function useFetch(url, deps = [], options = {}) {
-  const { 
-    retries = 0, 
-    onRetryError 
+  const {
+    retries = 0,
+    onRetryError,
+    cache = 'default',
   } = options;
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,7 @@ function useFetch(url, deps = [], options = {}) {
         const res = await fetch(url, {
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
+          cache,
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -55,7 +58,7 @@ function useFetch(url, deps = [], options = {}) {
     }
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, ...deps, retries, onRetryError]);
+  }, [url, ...deps, retries, onRetryError, cache]);
 
   useEffect(() => { refetch(); }, [refetch]);
 
@@ -132,7 +135,16 @@ export function useHighlights(filters = {}) {
 // ─── Auth ──────────────────────────────────────────────────────────────────────────
 
 export function useMe() {
-  return useFetch('/api/auth/me', [], { retries: 1 });
+  const result = useFetch('/api/auth/me', [], { retries: 1, cache: 'no-store' });
+  const { refetch } = result;
+
+  useEffect(() => {
+    const refresh = () => { refetch(); };
+    window.addEventListener(WALLET_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(WALLET_UPDATED_EVENT, refresh);
+  }, [refetch]);
+
+  return result;
 }
 
 export function useBanks() {

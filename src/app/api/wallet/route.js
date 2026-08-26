@@ -5,6 +5,8 @@ import { getUserWagers, getWallet } from '@/features/wagers/server';
 
 export const dynamic = 'force-dynamic';
 
+const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, max-age=0' };
+
 export async function GET() {
   try {
     const user = await getCurrentUser();
@@ -40,7 +42,7 @@ export async function GET() {
       })),
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    return NextResponse.json({ wallet, history });
+    return NextResponse.json({ wallet, history }, { headers: NO_STORE_HEADERS });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

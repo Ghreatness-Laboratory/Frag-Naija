@@ -1,7 +1,9 @@
 'use client';
 
 import BrandedLoader from '@/components/common/BrandedLoader';
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { MIN_DEPOSIT_NGN } from '@/features/wagers/constants';
+import { notifyWalletUpdated } from '@/lib/wallet-events';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -302,6 +304,7 @@ function WalletContent() {
   const [payErr,      setPayErr]      = useState('');
   const [showSuccess, setShowSuccess] = useState(searchParams.get('status') === 'success');
   const [verifyMsg,   setVerifyMsg]   = useState('');
+  const latestLoadId = useRef(0);
 
   const depFee      = depAmount ? Math.round(Number(depAmount) * DEPOSIT_FEE_PERCENT) / 100 : 0;
   const depCredited = depAmount ? Number(depAmount) - depFee : 0;
@@ -331,16 +334,22 @@ function WalletContent() {
   }, []);
 
   const load = useCallback(async () => {
+    // A deposit verification can overlap the initial page load. Only let the
+    // latest request update state, so an older balance cannot overwrite it.
+    const loadId = ++latestLoadId.current;
     setLoading(true);
-    const res = await fetch('/api/wallet');
+    const res = await fetch('/api/wallet', { cache: 'no-store' });
+    if (loadId !== latestLoadId.current) return;
     if (res.status === 401) { setAuthErr(true); setLoading(false); return; }
     if (res.ok) {
       const data = await res.json();
+      if (loadId !== latestLoadId.current) return;
       setWallet(data.wallet);
       setHistory(data.history || []);
+      notifyWalletUpdated();
     }
     await Promise.all([loadWithdrawals(), loadBankAccount()]);
-    setLoading(false);
+    if (loadId === latestLoadId.current) setLoading(false);
   }, [loadWithdrawals, loadBankAccount]);
 
   useEffect(() => { load(); }, [load]);
@@ -396,7 +405,7 @@ function WalletContent() {
   async function handleDeposit(e: React.FormEvent) {
     e.preventDefault();
     setPayErr('');
-    if (!depAmount || Number(depAmount) < 500) { setPayErr('Minimum deposit is ₦500'); return; }
+    if (!depAmount || Number(depAmount) < MIN_DEPOSIT_NGN) { setPayErr(`Minimum deposit is ₦${MIN_DEPOSIT_NGN.toLocaleString('en-NG')}`); return; }
     setPaying(true);
     try {
       const res  = await fetch('/api/deposit/pay', {
@@ -510,7 +519,7 @@ function WalletContent() {
 
           <div className="bg-fn-dark border border-fn-gborder rounded-lg p-4 space-y-2">
             <p className="text-fn-muted text-[11px] leading-relaxed">
-              <span className="text-fn-yellow font-bold">Deposit fee:</span> 10% platform fee on all deposits. Min ₦500.
+              <span className="text-fn-yellow font-bold">Deposit fee:</span> 10% platform fee on all deposits. Min ₦{MIN_DEPOSIT_NGN.toLocaleString('en-NG')}.
             </p>
             <p className="text-fn-muted text-[11px] leading-relaxed">
               <span className="text-fn-yellow font-bold">Withdrawal fee:</span> 5% fee deducted from withdrawal amount. Min ₦1,000.
@@ -556,7 +565,7 @@ function WalletContent() {
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fn-muted font-bold text-sm">₦</span>
                       <input
                         type="number"
-                        min="500"
+                        min={MIN_DEPOSIT_NGN}
                         step="100"
                         value={depAmount}
                         onChange={(e) => setDepAmount(e.target.value)}
@@ -565,7 +574,7 @@ function WalletContent() {
                       />
                     </div>
                     <div className="flex gap-2 mt-2">
-                      {[500, 1000, 5000, 10000].map((v) => (
+                      {[MIN_DEPOSIT_NGN, 1000, 5000, 10000].map((v) => (
                         <button
                           key={v}
                           type="button"

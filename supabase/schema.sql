@@ -470,7 +470,7 @@ CREATE POLICY "settings_admin_write"  ON platform_settings FOR ALL   USING (fals
 
 -- Default settings (idempotent)
 INSERT INTO platform_settings (key, value) VALUES
-  ('min_deposit_ngn',      '500'),
+  ('min_deposit_ngn',      '100'),
   ('platform_fee_percent', '10'),
   ('deposits_enabled',     'true'),
   ('usd_ngn_rate',         '1600'),
