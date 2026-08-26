@@ -15,7 +15,10 @@ export async function GET() {
     }
 
     const [wallet, deposits, bets] = await Promise.all([
-      getWallet(user.id).catch(() => null),
+      getWallet(user.id).catch((error) => {
+        console.error('Wallet API wallet lookup failed', { userId: user.id, message: error?.message });
+        return null;
+      }),
       getUserTransactions(user.id).catch(() => []),
       getUserWagers(user.id).catch(() => []),
     ]);

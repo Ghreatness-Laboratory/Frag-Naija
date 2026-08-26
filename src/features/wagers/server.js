@@ -12,7 +12,8 @@ export const SIGNUP_BONUS_AMOUNT = 500;
 
 const WAGER_SELECT = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,trade_count,type,options,hot,status,closes_at,featured_on_home,created_at';
 const WAGER_BET_SELECT = 'id,wager_id,user_id,email,selection,amount,potential,reference,slip_code,verification_id,status,created_at';
-const WALLET_SELECT = 'id,user_id,balance,total_won,total_lost,created_at,updated_at';
+// wallets has no created_at column; selecting it causes PostgREST to reject the entire row.
+const WALLET_SELECT = 'id,user_id,balance,total_won,total_lost,updated_at';
 
 
 async function generateUniqueSlipCode() {
@@ -477,7 +478,10 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
 
 export async function getWallet(userId) {
   const { data, error } = await supabaseAdmin.from('wallets').select(WALLET_SELECT).eq('user_id', userId).single();
-  if (error) throw error;
+  if (error) {
+    console.error('getWallet query failed', { userId, code: error.code, message: error.message, details: error.details });
+    throw error;
+  }
 
   return data;
 }
