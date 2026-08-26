@@ -264,6 +264,8 @@ CREATE TABLE IF NOT EXISTS wagers (
   hot         BOOLEAN DEFAULT false,
   status      TEXT DEFAULT 'Active'
                 CHECK (status = 'Active' OR status = 'Settled' OR status = 'Cancelled' OR status LIKE 'Settled — %'),
+  settlement_outcome TEXT,
+  settled_at  TIMESTAMPTZ,
   closes_at   TIMESTAMPTZ NOT NULL,
   game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -274,6 +276,8 @@ ALTER TABLE wagers ADD COLUMN IF NOT EXISTS match_name TEXT DEFAULT '';
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS trade_count NUMERIC(12,0) DEFAULT 0;
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'binary';
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS options JSONB NOT NULL DEFAULT '[]'::JSONB;
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS settlement_outcome TEXT;
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS settled_at TIMESTAMPTZ;
 ALTER TABLE wagers DROP CONSTRAINT IF EXISTS wagers_type_check;
 ALTER TABLE wagers ADD CONSTRAINT wagers_type_check CHECK (type IN ('binary', 'player_pick', 'team_pick'));
 ALTER TABLE wagers DROP CONSTRAINT IF EXISTS wagers_status_check;
@@ -291,13 +295,25 @@ CREATE TABLE IF NOT EXISTS wager_bets (
   wager_id    UUID NOT NULL REFERENCES wagers(id) ON DELETE CASCADE,
   user_id     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   email       TEXT NOT NULL,
-  selection   TEXT NOT NULL CHECK (selection IN ('YES', 'NO')),
+  selection   TEXT NOT NULL,
   amount      NUMERIC(12,2) NOT NULL,
   potential   NUMERIC(12,2) NOT NULL,
   reference   TEXT NOT NULL UNIQUE,  -- Paystack reference (idempotency key)
   status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Won', 'Lost', 'Refunded')),
+  settlement_outcome TEXT,
+  settled_at  TIMESTAMPTZ,
+  payout_credited_at TIMESTAMPTZ,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE wager_bets ADD COLUMN IF NOT EXISTS settlement_outcome TEXT;
+ALTER TABLE wager_bets ADD COLUMN IF NOT EXISTS settled_at TIMESTAMPTZ;
+ALTER TABLE wager_bets ADD COLUMN IF NOT EXISTS payout_credited_at TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS wallet_transactions_wager_payout_once_idx
+  ON wallet_transactions (bet_id)
+  WHERE type = 'Payout' AND bet_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS wager_bets_wager_status_idx
+  ON wager_bets (wager_id, status);
 
 ALTER TABLE wager_bets ENABLE ROW LEVEL SECURITY;
 -- Users can only read their own bets
