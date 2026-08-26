@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { Trophy, ChevronRight, Flame } from "lucide-react";
+import { Trophy, ChevronRight, Flame, X, Users, CalendarClock, PlayCircle, ClipboardList } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent } from "@/lib/game-content";
 
@@ -9,11 +10,38 @@ type Tournament = {
   id: string; name: string; game: string; prize_pool: number | null;
   currency: string; start_date: string | null; end_date: string | null;
   status: string; format: string | null; region: string; image_url: string | null;
+  description?: string | null; rules_overview?: string | null;
+  participant_count?: number | null; slot_count?: number | null;
+  registration_instructions?: string | null; watch_url?: string | null;
+  access_instructions?: string | null; tier?: string | null;
+  metadata?: Record<string, unknown> | null;
+  tournament_results?: TournamentResult[];
 };
 
 function fmtPrize(amount: number | null) {
   if (!amount) return "TBA";
   return `₦${Number(amount).toLocaleString()}`;
+}
+
+type TournamentResult = {
+  id?: string;
+  placement: string;
+  points_earned?: number | null;
+  team?: { id?: string; name?: string | null; logo_url?: string | null } | null;
+};
+
+function fmtDateTime(value: string | null) {
+  if (!value) return "TBA";
+  return new Date(value).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function resultRank(result: TournamentResult) {
+  const n = Number(result.placement);
+  return Number.isFinite(n) ? n : 999;
+}
+
+function statusLabel(status: string) {
+  return status === "Completed" ? "Finished" : status;
 }
 
 function statusBadge(status: string, primary: string) {
@@ -27,6 +55,7 @@ export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState<"all" | "live" | "upcoming" | "completed">("all");
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
 
   const primary = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const isFF    = selectedGame?.slug === 'free-fire';
@@ -66,6 +95,17 @@ export default function TournamentsPage() {
     : activeTab === "live"      ? live
     : activeTab === "upcoming"  ? upcoming
     : completed;
+
+  async function openDetails(tournament: Tournament) {
+    setSelectedTournament(tournament);
+    if (!tournament.id || tournament.tournament_results) return;
+
+    const res = await fetch(`/api/tournaments/${tournament.id}`).catch(() => null);
+    if (!res?.ok) return;
+    const detail = await res.json();
+    setSelectedTournament(detail);
+    setTournaments((current) => current.map((item) => item.id === tournament.id ? { ...item, ...detail } : item));
+  }
 
   if (!selectedGame) {
     return (
@@ -165,8 +205,10 @@ export default function TournamentsPage() {
             {filtered.map((t) => {
               const badge = statusBadge(t.status, primary);
               return (
-                <div
+                <button
                   key={t.id}
+                  type="button"
+                  onClick={() => openDetails(t)}
                   className="bg-fn-card border border-fn-gborder rounded-sm p-5 transition-all group hover:scale-[1.01]"
                   onMouseEnter={e => (e.currentTarget.style.borderColor = `${primary}50`)}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = '')}
@@ -198,18 +240,84 @@ export default function TournamentsPage() {
                     </div>
                   </div>
 
-                  <button
+                  <span
                     className="text-[9px] flex items-center gap-1 w-full justify-center border rounded-sm py-2 transition-all font-bold tracking-widest uppercase"
                     style={{ borderColor: `${primary}40`, color: primary }}
                   >
                     VIEW DETAILS <ChevronRight size={10} />
-                  </button>
-                </div>
+                  </span>
+                </button>
               );
             })}
           </div>
         )}
       </div>
+
+      {selectedTournament && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/75 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
+          <section className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-sm border border-fn-gborder bg-fn-card p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="fn-label" style={{ color: primary }}>{selectedTournament.game || selectedGame.name}</p>
+                <h2 className="font-display text-2xl font-black uppercase tracking-widest text-fn-text">{selectedTournament.name}</h2>
+                <p className="mt-1 text-xs uppercase tracking-widest text-fn-muted">{selectedTournament.region || "Nigeria"} · {selectedTournament.tier || "local"} · {statusLabel(selectedTournament.status)}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedTournament(null)} className="rounded border border-fn-gborder p-2 text-fn-muted hover:text-fn-text" aria-label="Close tournament details">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Info icon={<CalendarClock size={15} />} label="Start" value={fmtDateTime(selectedTournament.start_date)} />
+              <Info icon={<CalendarClock size={15} />} label="End" value={fmtDateTime(selectedTournament.end_date)} />
+              <Info icon={<Trophy size={15} />} label="Prize Pool" value={fmtPrize(selectedTournament.prize_pool)} />
+              <Info icon={<Users size={15} />} label="Participants / Slots" value={`${selectedTournament.participant_count ?? 0}${selectedTournament.slot_count ? ` / ${selectedTournament.slot_count}` : " registered"}`} />
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-[1.1fr_.9fr]">
+              <div className="space-y-4">
+                <DetailBlock title="Format / rules overview" icon={<ClipboardList size={15} />}>
+                  {selectedTournament.rules_overview || selectedTournament.description || selectedTournament.format || "Rules and format will be announced by the organizers."}
+                </DetailBlock>
+                {selectedTournament.metadata && Object.keys(selectedTournament.metadata).length > 0 && (
+                  <DetailBlock title="Additional metadata">
+                    {Object.entries(selectedTournament.metadata).map(([key, value]) => `${key}: ${String(value)}`).join(" · ")}
+                  </DetailBlock>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {selectedTournament.status === "Completed" && (
+                  <DetailBlock title="Winners / final standings" icon={<Trophy size={15} />}>
+                    {selectedTournament.tournament_results?.length
+                      ? <ol className="space-y-2">{[...selectedTournament.tournament_results].sort((a, b) => resultRank(a) - resultRank(b)).map((result) => <li key={result.id ?? `${result.placement}-${result.team?.name}`} className="flex justify-between border border-fn-gborder bg-fn-black px-3 py-2"><span>{result.placement}. {result.team?.name || "Team TBA"}</span><span>{result.points_earned ?? 0} pts</span></li>)}</ol>
+                      : "Final standings will appear here once results are recorded."}
+                  </DetailBlock>
+                )}
+                {selectedTournament.status === "Upcoming" && (
+                  <DetailBlock title="How to join / register" icon={<Users size={15} />}>
+                    {selectedTournament.registration_instructions || "Register from your FragNaija account, confirm your team roster, and watch for admin check-in instructions before start time."}
+                  </DetailBlock>
+                )}
+                {selectedTournament.status === "Live" && (
+                  <DetailBlock title="Watch / enter live tournament" icon={<PlayCircle size={15} />}>
+                    {selectedTournament.watch_url ? <a className="text-fn-green underline" href={selectedTournament.watch_url} target="_blank" rel="noreferrer">Open live stream</a> : "Live stream details will appear here when available."}
+                    <p className="mt-2">{selectedTournament.access_instructions || "Eligible participants should join through the shared room/access code from tournament admins."}</p>
+                  </DetailBlock>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
+}
+
+function Info({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return <div className="rounded-sm border border-fn-gborder bg-fn-black p-3"><div className="mb-1 flex items-center gap-2 text-fn-green">{icon}<span className="fn-label">{label}</span></div><p className="text-sm font-bold text-fn-text">{value}</p></div>;
+}
+
+function DetailBlock({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
+  return <section className="rounded-sm border border-fn-gborder bg-fn-black p-4"><h3 className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-fn-text">{icon}{title}</h3><div className="text-sm leading-relaxed text-fn-muted">{children}</div></section>;
 }

@@ -1,6 +1,10 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const TOURNAMENT_SELECT = 'id,name,start_date,end_date,status,game,game_slug,prize_pool,currency,description,created_at,updated_at';
+const TOURNAMENT_SELECT = `
+  id,name,start_date,end_date,status,game,game_slug,prize_pool,currency,description,format,region,image_url,tier,
+  rules_overview,participant_count,slot_count,registration_instructions,watch_url,access_instructions,metadata,created_at,updated_at,
+  tournament_results(id,placement,points_earned,created_at,team:teams(id,name,logo_url))
+`;
 
 export async function getTournaments({ status, game_slug } = {}) {
   let query = supabaseAdmin
