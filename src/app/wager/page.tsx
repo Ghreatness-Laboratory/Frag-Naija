@@ -2,20 +2,22 @@
 
 import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   BarChart2,
   Info,
   Bookmark,
+  CalendarDays,
   CheckCircle,
   ChevronDown,
   ChevronUp,
   Clock,
   Download,
   Gift,
+  Hash,
   Plus,
-  Printer,
   Share2,
   Shield,
   Trophy,
@@ -189,7 +191,7 @@ function getTicketEventDetails(item: SlipSelection) {
 async function downloadTicketImage(ticket: PlacedTicket, mode: "print" | "share") {
   const width = mode === "share" ? 1080 : 900;
   const selectionHeight = 190;
-  const height = Math.max(mode === "share" ? 1180 : 980, 430 + ticket.selections.length * selectionHeight + 250);
+  const height = Math.max(mode === "share" ? 1180 : 980, 430 + ticket.selections.length * selectionHeight + 360);
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -215,7 +217,30 @@ async function downloadTicketImage(ticket: PlacedTicket, mode: "print" | "share"
   ctx.fill();
   ctx.stroke();
 
-  let y = cardY + 58;
+  const logo = await loadTicketLogo();
+
+  const logoY = cardY + 58;
+  const logoText = "FRAGNAIJA";
+  ctx.font = "900 24px monospace";
+  const logoWidth = ctx.measureText(logoText).width;
+  const centerX = cardX + cardW / 2;
+  ctx.strokeStyle = "rgba(0, 200, 83, 0.45)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cardX + 38, logoY);
+  ctx.lineTo(centerX - logoWidth / 2 - 42, logoY);
+  ctx.moveTo(centerX + logoWidth / 2 + 42, logoY);
+  ctx.lineTo(cardX + cardW - 38, logoY);
+  ctx.stroke();
+  if (logo) ctx.drawImage(logo, centerX - logoWidth / 2 - 38, logoY - 15, 24, 24);
+  ctx.textAlign = "center";
+  ctx.fillStyle = accent;
+  ctx.fillText("FRAG", centerX - 36, logoY + 8);
+  ctx.fillStyle = text;
+  ctx.fillText("NAIJA", centerX + 42, logoY + 8);
+  ctx.textAlign = "left";
+
+  let y = logoY + 84;
   ticket.selections.forEach((item, index) => {
     const rowTop = y - 8;
     if (index > 0) {
@@ -248,31 +273,12 @@ async function downloadTicketImage(ticket: PlacedTicket, mode: "print" | "share"
     y += selectionHeight;
   });
 
-  const logoY = y + 4;
-  const logoText = "FRAGNAIJA";
-  ctx.font = "900 24px monospace";
-  const logoWidth = ctx.measureText(logoText).width;
-  const centerX = cardX + cardW / 2;
-  ctx.strokeStyle = "rgba(0, 200, 83, 0.45)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(cardX + 38, logoY);
-  ctx.lineTo(centerX - logoWidth / 2 - 24, logoY);
-  ctx.moveTo(centerX + logoWidth / 2 + 24, logoY);
-  ctx.lineTo(cardX + cardW - 38, logoY);
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillStyle = accent;
-  ctx.fillText("FRAG", centerX - 36, logoY + 8);
-  ctx.fillStyle = text;
-  ctx.fillText("NAIJA", centerX + 42, logoY + 8);
-
   ctx.textAlign = "right";
   ctx.fillStyle = muted;
   ctx.font = "700 18px monospace";
-  ctx.fillText(`BET: ${ticket.id}`, cardX + cardW - 38, logoY + 55);
+  ctx.fillText(`BET: ${ticket.slipCode || ticket.id}`, cardX + cardW - 38, y + 12);
 
-  const totalsY = logoY + 105;
+  const totalsY = y + 62;
   const labelX = cardX + 52;
   const valueX = cardX + cardW - 52;
   ctx.textAlign = "left";
@@ -293,6 +299,11 @@ async function downloadTicketImage(ticket: PlacedTicket, mode: "print" | "share"
   ctx.font = "700 14px monospace";
   ctx.fillText(`${ticket.selections.length} pick${ticket.selections.length === 1 ? "" : "s"} • ${ticket.status} • ${new Date(ticket.placedAt).toLocaleString("en-NG")}`, cardX + 52, cardY + cardH - 42);
 
+  if (mode === "print") {
+    downloadCanvasPdf(canvas, `${ticket.slipCode || ticket.id}-ticket.pdf`);
+    return;
+  }
+
   const link = document.createElement("a");
   link.download = `${ticket.id}-${mode}.png`;
   link.href = canvas.toDataURL("image/png");
@@ -307,6 +318,56 @@ async function downloadTicketImage(ticket: PlacedTicket, mode: "print" | "share"
       }
     }
   }
+}
+
+function loadTicketLogo() {
+  return new Promise<HTMLImageElement | null>((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = "/logo-icon.jpeg";
+  });
+}
+
+function downloadCanvasPdf(canvas: HTMLCanvasElement, filename: string) {
+  const jpeg = canvas.toDataURL("image/jpeg", 0.95).split(",")[1];
+  const imageBytes = Uint8Array.from(atob(jpeg), (character) => character.charCodeAt(0));
+  const pageWidth = 595.28;
+  const pageHeight = Number((pageWidth * canvas.height / canvas.width).toFixed(2));
+  const encoder = new TextEncoder();
+  const objects: Uint8Array[] = [];
+  const object = (content: string | Uint8Array) => typeof content === "string" ? encoder.encode(content) : content;
+  const imageObject = [
+    encoder.encode(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`),
+    imageBytes,
+    encoder.encode("\nendstream\nendobj\n"),
+  ];
+  objects.push(object("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"));
+  objects.push(object("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"));
+  objects.push(object(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Ticket 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`));
+  objects.push(concatPdfBytes(imageObject));
+  const stream = `q\n${pageWidth} 0 0 ${pageHeight} 0 0 cm\n/Ticket Do\nQ\n`;
+  objects.push(object(`5 0 obj\n<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}endstream\nendobj\n`));
+
+  const header = encoder.encode("%PDF-1.4\n%\xFF\xFF\xFF\xFF\n");
+  const offsets: number[] = [0];
+  let offset = header.length;
+  objects.forEach((entry) => { offsets.push(offset); offset += entry.length; });
+  const xrefOffset = offset;
+  const xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((entry) => `${String(entry).padStart(10, "0")} 00000 n \n`).join("")}trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  const blob = new Blob([header, ...objects, encoder.encode(xref)], { type: "application/pdf" });
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function concatPdfBytes(parts: Uint8Array[]) {
+  const bytes = new Uint8Array(parts.reduce((length, part) => length + part.length, 0));
+  let offset = 0;
+  parts.forEach((part) => { bytes.set(part, offset); offset += part.length; });
+  return bytes;
 }
 
 function WithdrawalModal({
@@ -1512,29 +1573,35 @@ function TicketActions({ ticket, onClose }: { ticket: PlacedTicket | null; onClo
         <button onClick={onClose} className="absolute right-4 top-4 text-fn-muted hover:text-fn-text">
           <X size={15} />
         </button>
-        <CheckCircle size={24} className="mb-3 text-fn-green" />
+        <div className="mb-4 flex items-center gap-3 border-b border-fn-gborder pb-4">
+          <Image src="/logo-icon.jpeg" alt="FragNaija" width={40} height={40} className="h-10 w-10 rounded-sm border border-fn-green/40 object-cover" />
+          <div><p className="font-display text-lg font-black uppercase tracking-widest text-fn-green">Frag<span className="text-fn-text">Naija</span></p><p className="fn-label mt-1">Official wager ticket</p></div>
+          <CheckCircle size={24} className="ml-auto text-fn-green" />
+        </div>
         <h2 className="font-display text-xl font-black uppercase text-fn-text">Wager Placed</h2>
         <p className="mt-1 text-[10px] leading-relaxed text-fn-muted">
           Confirmation is complete. Generate a ticket only if you want a printable or shareable slip.
         </p>
 
         <div className="my-4 rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px]">
-          <div className="flex justify-between"><span className="fn-label">BET SLIP CODE</span><span className="font-bold text-fn-green">{ticket.slipCode || ticket.id}</span></div>
-          <div className="mt-2 flex justify-between"><span className="fn-label">PICKS</span><span>{ticket.selections.length}</span></div>
-          <div className="mt-2 flex justify-between"><span className="fn-label">STAKE</span><span>{formatCurrency(ticket.stake)}</span></div>
-          <div className="mt-2 flex justify-between"><span className="fn-label">PAYOUT</span><span>{formatCurrency(ticket.potential)}</span></div>
+          <div className="flex justify-between"><span className="fn-label flex items-center gap-1"><Hash size={11}/> BET SLIP CODE</span><span className="font-bold text-fn-green">{ticket.slipCode || ticket.id}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label flex items-center gap-1"><Trophy size={11}/> PICKS</span><span>{ticket.selections.length}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label flex items-center gap-1"><Wallet size={11}/> STAKE</span><span>{formatCurrency(ticket.stake)}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label flex items-center gap-1"><Trophy size={11}/> POTENTIAL PAYOUT</span><span className="font-bold text-fn-green">{formatCurrency(ticket.potential)}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label flex items-center gap-1"><Clock size={11}/> STATUS</span><span>{ticket.status}</span></div>
+          <div className="mt-2 flex justify-between"><span className="fn-label flex items-center gap-1"><CalendarDays size={11}/> PLACED</span><span>{new Date(ticket.placedAt).toLocaleString("en-NG")}</span></div>
         </div>
 
         <div className="grid grid-cols-1 gap-2 xs:grid-cols-2">
           <button onClick={() => downloadTicketImage(ticket, "print")} className="fn-btn-outline py-3 text-[10px]">
-            <Printer size={12} className="mr-1 inline-block" /> PRINT SLIP
+            <Download size={12} className="mr-1 inline-block" /> DOWNLOAD PDF
           </button>
           <button onClick={() => downloadTicketImage(ticket, "share")} className="fn-btn py-3 text-[10px]">
             <Share2 size={12} className="mr-1 inline-block" /> SHARE SLIP
           </button>
         </div>
         <p className="mt-3 flex items-center gap-1 text-[8px] text-fn-muted">
-          <Download size={10} /> PNG generation happens only when you click Print or Share.
+          <Download size={10} /> Download PDF preserves the branded ticket design; Share exports a PNG.
         </p>
       </div>
     </div>
