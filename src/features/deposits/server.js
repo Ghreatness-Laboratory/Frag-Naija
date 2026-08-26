@@ -4,11 +4,15 @@ import { getSetting } from '@/features/settings/server';
 const DEFAULT_FEE_PERCENT = 10;
 
 export async function processDeposit({ reference, userId, amountPaid }) {
-  const { data: existing } = await supabaseAdmin
+  const { data: existing, error: existingError } = await supabaseAdmin
     .from('transactions')
     .select('id')
     .eq('reference', reference)
     .maybeSingle();
+  if (existingError) {
+    console.error('Deposit duplicate check failed:', { reference, userId, error: existingError });
+    throw existingError;
+  }
   if (existing) return { duplicate: true };
 
   const feePercent = Number(await getSetting('platform_fee_percent')) || DEFAULT_FEE_PERCENT;
@@ -22,7 +26,10 @@ export async function processDeposit({ reference, userId, amountPaid }) {
     p_fee: fee,
     p_amount_credited: amountCredited,
   });
-  if (error) throw error;
+  if (error) {
+    console.error('Deposit wallet credit failed:', { reference, userId, amountPaid, amountCredited, fee, error });
+    throw error;
+  }
 
   return { ok: true, amountCredited, fee, transaction };
 }
