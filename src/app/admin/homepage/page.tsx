@@ -14,7 +14,7 @@ const TEXT_FIELDS = [
   ['hero_eyebrow', 'Hero eyebrow'], ['hero_headline', 'Hero headline'], ['hero_tagline', 'Hero supporting text'],
   ['stat_players', 'Players stat'], ['stat_tournaments', 'Tournaments stat'], ['stat_championships', 'Championships stat'], ['stat_prize_pool', 'Prize pool stat'],
   ['recruitment_headline', 'Recruitment headline'], ['recruitment_body', 'Recruitment body'], ['recruitment_cta', 'Recruitment CTA'],
-  ['popup_title', 'Popup title'], ['popup_body', 'Popup body'], ['popup_cta', 'Popup CTA'], ['show_athletes', 'Show athletes section (true/false)'], ['show_teams', 'Show teams section (true/false)'], ['show_shop', 'Show shop section (true/false)'], ['featured_tournament_ids', 'Featured tournament IDs (comma-separated)'],
+  ['popup_enabled', 'Show popup (true/false)'], ['popup_image_url', 'Popup image URL'], ['popup_title', 'Popup title'], ['popup_body', 'Popup body'], ['popup_cta', 'Popup CTA label'], ['popup_cta_link', 'Popup CTA link (optional)'], ['show_athletes', 'Show athletes section (true/false)'], ['show_teams', 'Show teams section (true/false)'], ['show_shop', 'Show shop section (true/false)'], ['featured_tournament_ids', 'Featured tournament IDs (comma-separated)'],
 ] as const;
 
 function parseIds(value: string | undefined) {
