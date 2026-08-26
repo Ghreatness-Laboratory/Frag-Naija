@@ -436,7 +436,7 @@ function WalletContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
-      setWdSuccess('Withdrawal request submitted! Admin will review within 24 hours.');
+      setWdSuccess("Your withdrawal has been placed. Our team will process it manually and you'll be notified once complete.");
       setWdAmount('');
       load();
     } catch (err: unknown) {
