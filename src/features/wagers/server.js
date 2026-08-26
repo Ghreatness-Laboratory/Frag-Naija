@@ -303,8 +303,8 @@ export async function settleWager(id, outcome) {
     .single();
   if (wagerError) throw wagerError;
 
-  const isPlayerPick = wager.type === 'player_pick';
-  const status = isPlayerPick
+  const usesNamedOutcome = wager.type === 'player_pick' || wager.type === 'team_pick';
+  const status = usesNamedOutcome
     ? `Settled — ${outcome} Wins`
     : outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
 
@@ -347,9 +347,9 @@ export async function settleWager(id, outcome) {
       continue;
     }
 
-    // Resolve correct odds — player_pick uses per-option odds, binary uses yes/no odds
+    // Resolve correct odds — named picks use per-option odds, binary uses yes/no odds.
     let odds;
-    if (isPlayerPick) {
+    if (usesNamedOutcome) {
       const option = Array.isArray(wager.options)
         ? wager.options.find((o) => o.label === outcome)
         : null;
