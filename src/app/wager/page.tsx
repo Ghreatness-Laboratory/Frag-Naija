@@ -612,7 +612,6 @@ function sanitizeWagerAmountInput(value: string): string | null {
  */
 function getWagerAmountError(
   amount: string | number | null | undefined,
-  walletBalance: number,
   isLoggedIn: boolean
 ): string | null {
   const numericAmount = parseWagerAmount(amount);
@@ -633,10 +632,14 @@ function getWagerAmountError(
     return `Maximum wager amount is ${formatCurrency(MAX_WAGER_AMOUNT)}.`;
   }
   
-  if (numericAmount > walletBalance) {
-    return "Insufficient wallet balance.";
+  return null;
+}
+
+function getWagerPaymentHint(amount: string | number | null | undefined, walletBalance: number): string | null {
+  const numericAmount = parseWagerAmount(amount);
+  if (numericAmount > 0 && numericAmount > walletBalance) {
+    return "Your wallet balance will not cover this stake. You will continue to Paystack checkout.";
   }
-  
   return null;
 }
 
@@ -799,7 +802,6 @@ function WagerCard({
   userWagers?: CurrentUserWager[];
 }) {
   const [picked, setPicked] = useState<string | null>(null);
-  const [pickType, setPickType] = useState<"player" | "team" | null>(null);
   const [amount, setAmount] = useState("");
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -815,9 +817,8 @@ function WagerCard({
   const noOdds = Number(market.no_odds ?? 0);
   const numericAmount = parseWagerAmount(amount);
   const activeEmail = email ?? null;
-  const amountError = getWagerAmountError(amount, walletBalance, Boolean(activeEmail));
-  const showPickTypeChoice = isOptionPick;
-  const canSubmit = Boolean(activeEmail && picked && (!showPickTypeChoice || pickType) && !amountError && !loading);
+  const amountError = getWagerAmountError(amount, Boolean(activeEmail));
+  const paymentHint = getWagerPaymentHint(amount, walletBalance);
 
   const pickedOption = isOptionPick ? pickOptions.find((o) => o.label === picked) : null;
   const pickedOdds = isOptionPick
@@ -868,7 +869,6 @@ function WagerCard({
   async function handlePlaceWager() {
     if (!activeEmail) { window.location.href = "/login?next=/wager"; return; }
     if (!picked) { setMessage(isOptionPick ? `Choose a ${pickConfig.badge.toLowerCase()} option before placing a wager.` : "Choose YES or NO before placing a wager."); return; }
-    if (showPickTypeChoice && !pickType) { setMessage("Choose Player Pick or Team Pick before placing this wager."); return; }
     if (amountError) { setMessage(amountError); return; }
     setMessage(null);
     try {
@@ -966,28 +966,6 @@ function WagerCard({
       </div>
 
       <div className="space-y-3 px-4 pb-3">
-        {showPickTypeChoice && (
-          <div>
-            <p className="fn-label mb-2">Pick Type</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[{ key: "player", label: "Player Pick" }, { key: "team", label: "Team Pick" }].map((type) => (
-                <button
-                  key={type.key}
-                  type="button"
-                  onClick={() => setPickType(type.key as "player" | "team")}
-                  className={`rounded-sm border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                    pickType === type.key
-                      ? "border-fn-green bg-fn-green/10 text-fn-green"
-                      : "border-fn-gborder bg-fn-dark/60 text-fn-muted hover:border-fn-green/40 hover:text-fn-text"
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {isOptionPick ? (
           /* ── Option Pick UI (player / team / mvp / map / outcome / first_blood) ── */
           <div>
@@ -1088,7 +1066,7 @@ function WagerCard({
             />
           </label>
           <div className="flex items-center justify-between gap-2 text-[8px]">
-            <span className={amountError ? "text-fn-red" : "text-fn-muted"}>{amountError || `Balance: ${formatCurrency(walletBalance)}`}</span>
+            <span className={amountError ? "text-fn-red" : paymentHint ? "text-fn-yellow" : "text-fn-muted"}>{amountError || paymentHint || `Balance: ${formatCurrency(walletBalance)}`}</span>
             <span className="text-fn-muted">Min {formatCurrency(MIN_STAKE_NGN)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
           </div>
           <div className="flex gap-2">
@@ -1102,10 +1080,10 @@ function WagerCard({
             </button>
             <button
               onClick={handlePlaceWager}
-              className={`fn-btn flex-1 whitespace-nowrap px-4 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
-              disabled={!canSubmit}
+              className={`fn-btn flex-1 whitespace-nowrap px-4 text-[10px] ${loading ? "cursor-wait opacity-50" : ""}`}
+              disabled={loading}
             >
-              {loading ? "..." : "PLACE WAGER"}
+              {loading ? "PLACING..." : "PLACE WAGER"}
             </button>
           </div>
         </div>
@@ -1397,8 +1375,8 @@ function WagerPanel({
   const numericStake = parseWagerAmount(stake);
   const combinedOdds = calculateCombinedOdds(selections);
   const potential = numericStake * combinedOdds;
-  const stakeError = getWagerAmountError(stake, walletBalance, Boolean(email));
-  const canSubmit = Boolean(email && selections.length > 0 && !stakeError && !placing);
+  const stakeError = getWagerAmountError(stake, Boolean(email));
+  const paymentHint = getWagerPaymentHint(stake, walletBalance);
 
   function handleStakeChange(value: string) {
     const sanitized = sanitizeWagerAmountInput(value);
@@ -1497,7 +1475,7 @@ function WagerPanel({
           />
         </label>
         <div className="flex items-center justify-between gap-2 text-[8px]">
-          <span className={stakeError ? "text-fn-red" : "text-fn-muted"}>{stakeError || `Balance: ${formatCurrency(walletBalance)}`}</span>
+          <span className={stakeError ? "text-fn-red" : paymentHint ? "text-fn-yellow" : "text-fn-muted"}>{stakeError || paymentHint || `Balance: ${formatCurrency(walletBalance)}`}</span>
           <span className="text-fn-muted">Min {formatCurrency(MIN_STAKE_NGN)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -1512,8 +1490,8 @@ function WagerPanel({
         </div>
         <button
           onClick={submitSlip}
-          disabled={!canSubmit}
-          className={`fn-btn w-full py-3 text-[10px] ${!canSubmit ? "cursor-not-allowed opacity-50" : ""}`}
+          disabled={placing}
+          className={`fn-btn w-full py-3 text-[10px] ${placing ? "cursor-wait opacity-50" : ""}`}
         >
           {placing ? "PLACING..." : selections.length > 1 ? "PLACE ACCUMULATOR" : "PLACE SLIP"}
         </button>
@@ -1541,7 +1519,7 @@ function TicketActions({ ticket, onClose }: { ticket: PlacedTicket | null; onClo
         </p>
 
         <div className="my-4 rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[10px]">
-          <div className="flex justify-between"><span className="fn-label">REF</span><span className="font-bold text-fn-green">{ticket.id}</span></div>
+          <div className="flex justify-between"><span className="fn-label">BET SLIP CODE</span><span className="font-bold text-fn-green">{ticket.slipCode || ticket.id}</span></div>
           <div className="mt-2 flex justify-between"><span className="fn-label">PICKS</span><span>{ticket.selections.length}</span></div>
           <div className="mt-2 flex justify-between"><span className="fn-label">STAKE</span><span>{formatCurrency(ticket.stake)}</span></div>
           <div className="mt-2 flex justify-between"><span className="fn-label">PAYOUT</span><span>{formatCurrency(ticket.potential)}</span></div>
