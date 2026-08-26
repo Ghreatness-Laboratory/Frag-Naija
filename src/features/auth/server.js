@@ -33,11 +33,19 @@ export async function registerUser({ email, password, username, first_name, midd
   if (error) throw error;
 
   try {
-    await createWallet(data.user.id, { signupBonusEligible: true });
     await ensureUserProfile(data.user.id, { username: username || email.split('@')[0], first_name, middle_name, last_name, date_of_birth, referred_by: referrerId });
+  } catch (profileError) {
+    // A profile stores the date of birth required for wagering, so do not allow
+    // registration to succeed if it could not be persisted.
+    await supabaseAdmin.auth.admin.deleteUser(data.user.id).catch(() => {});
+    throw profileError;
+  }
+
+  try {
+    await createWallet(data.user.id, { signupBonusEligible: true });
     if (referrerId) await createReferral(referrerId, data.user.id);
   } catch {
-    // Wallet creation is non-fatal during registration.
+    // Wallet and referral creation are non-fatal during registration.
   }
 
   return {
