@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, Save, Trash2, Trophy } from 'lucide-react';
 
 type Tournament = { id: string; name: string; game_slug: string; status?: string };
-type TournamentMatch = { id: string; tournament_id: string; title: string; status: string; team_a?: string | null; team_b?: string | null; starts_at?: string | null };
+type TournamentMatch = { id: string; tournament_id: string; title: string; status?: string | null; display_status?: string | null; team_a?: string | null; team_b?: string | null; starts_at?: string | null };
 
 type MatchResult = {
   id: string;
@@ -21,6 +21,10 @@ type MatchResult = {
 
 const EMPTY_FORM = { tournament_id: '', source_id: '', match_title: '', team_a: '', team_b: '', starts_at: '', winner_name: '', mvp_name: '', placement_3_name: '', placement_4_name: '' };
 const DELETE_CONFIRMATION = 'This will remove the public result and reopen this match for editing. This cannot be undone. Continue?';
+
+function isLiveMatch(match: TournamentMatch) {
+  return [match.display_status, match.status].some((status) => String(status || '').toLowerCase() === 'live');
+}
 
 export default function AdminMatchResultsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -105,7 +109,7 @@ export default function AdminMatchResultsPage() {
 
       <form onSubmit={submit} className="mt-6 grid gap-4 border border-fn-gborder bg-fn-card p-5 sm:grid-cols-2">
         <label className="block"><span className="fn-label">Tournament</span><select required value={form.tournament_id} onChange={(e) => selectTournament(e.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm"><option value="">Select existing tournament</option>{tournaments.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.game_slug}</option>)}</select></label>
-        <label className="block sm:col-span-2"><span className="fn-label">Live match</span><select required value={form.source_id} onChange={(e) => selectMatch(e.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm"><option value="">Select an existing live match</option>{matches.filter((match) => match.tournament_id === form.tournament_id && match.status === 'live').map((match) => <option key={match.id} value={match.id}>{match.title}{match.team_a || match.team_b ? ` · ${[match.team_a, match.team_b].filter(Boolean).join(' vs ')}` : ''}</option>)}</select></label>
+        <label className="block sm:col-span-2"><span className="fn-label">Live match</span><select required value={form.source_id} onChange={(e) => selectMatch(e.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm"><option value="">Select an existing live match</option>{matches.filter((match) => match.tournament_id === form.tournament_id && isLiveMatch(match)).map((match) => <option key={match.id} value={match.id}>{match.title}{match.team_a || match.team_b ? ` · ${[match.team_a, match.team_b].filter(Boolean).join(' vs ')}` : ''}</option>)}</select></label>
         <label className="block"><span className="fn-label">Tournament game</span><input readOnly value={selectedTournament?.game_slug || 'Select a tournament'} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-3 text-sm text-fn-muted" /></label>
         <label className="block"><span className="fn-label">Match / round label</span><input required readOnly value={form.match_title} placeholder="Grand Final — Match 5" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
         <label className="block"><span className="fn-label">Match date</span><input readOnly value={form.starts_at ? new Date(form.starts_at).toLocaleString() : ''} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
