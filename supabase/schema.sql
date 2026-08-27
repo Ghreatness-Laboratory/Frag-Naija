@@ -141,18 +141,34 @@ CREATE TABLE IF NOT EXISTS tournaments (
   game        TEXT DEFAULT 'PUBG Mobile',
   prize_pool  NUMERIC(12,2),
   currency    TEXT DEFAULT 'NGN',
-  start_date  DATE,
-  end_date    DATE,
+  start_date  TIMESTAMPTZ,
+  end_date    TIMESTAMPTZ,
   status      TEXT DEFAULT 'Upcoming' CHECK (status IN ('Upcoming', 'Live', 'Completed')),
   format      TEXT,                 -- e.g. Battle Royale, TDMS
   region      TEXT DEFAULT 'Nigeria',
   image_url   TEXT,
   game_slug   TEXT DEFAULT 'pubg-mobile',
+  description TEXT,
+  rules_overview TEXT,
+  participant_count INTEGER NOT NULL DEFAULT 0 CHECK (participant_count >= 0),
+  slot_count INTEGER CHECK (slot_count IS NULL OR slot_count >= 0),
+  registration_instructions TEXT,
+  watch_url TEXT,
+  access_instructions TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS game_slug TEXT DEFAULT 'pubg-mobile';
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'local';
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules_overview TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS participant_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS slot_count INTEGER;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS registration_instructions TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS watch_url TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS access_instructions TEXT;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tournaments_public_read"  ON tournaments FOR SELECT USING (true);
@@ -248,6 +264,8 @@ CREATE TABLE IF NOT EXISTS wagers (
   hot         BOOLEAN DEFAULT false,
   status      TEXT DEFAULT 'Active'
                 CHECK (status = 'Active' OR status = 'Settled' OR status = 'Cancelled' OR status LIKE 'Settled — %'),
+  settlement_outcome TEXT,
+  settled_at  TIMESTAMPTZ,
   closes_at   TIMESTAMPTZ NOT NULL,
   game_slug   TEXT DEFAULT 'pubg-mobile',
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -258,6 +276,8 @@ ALTER TABLE wagers ADD COLUMN IF NOT EXISTS match_name TEXT DEFAULT '';
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS trade_count NUMERIC(12,0) DEFAULT 0;
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'binary';
 ALTER TABLE wagers ADD COLUMN IF NOT EXISTS options JSONB NOT NULL DEFAULT '[]'::JSONB;
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS settlement_outcome TEXT;
+ALTER TABLE wagers ADD COLUMN IF NOT EXISTS settled_at TIMESTAMPTZ;
 ALTER TABLE wagers DROP CONSTRAINT IF EXISTS wagers_type_check;
 ALTER TABLE wagers ADD CONSTRAINT wagers_type_check CHECK (type IN ('binary', 'player_pick', 'team_pick'));
 ALTER TABLE wagers DROP CONSTRAINT IF EXISTS wagers_status_check;
@@ -275,13 +295,25 @@ CREATE TABLE IF NOT EXISTS wager_bets (
   wager_id    UUID NOT NULL REFERENCES wagers(id) ON DELETE CASCADE,
   user_id     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   email       TEXT NOT NULL,
-  selection   TEXT NOT NULL CHECK (selection IN ('YES', 'NO')),
+  selection   TEXT NOT NULL,
   amount      NUMERIC(12,2) NOT NULL,
   potential   NUMERIC(12,2) NOT NULL,
   reference   TEXT NOT NULL UNIQUE,  -- Paystack reference (idempotency key)
   status      TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Won', 'Lost', 'Refunded')),
+  settlement_outcome TEXT,
+  settled_at  TIMESTAMPTZ,
+  payout_credited_at TIMESTAMPTZ,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE wager_bets ADD COLUMN IF NOT EXISTS settlement_outcome TEXT;
+ALTER TABLE wager_bets ADD COLUMN IF NOT EXISTS settled_at TIMESTAMPTZ;
+ALTER TABLE wager_bets ADD COLUMN IF NOT EXISTS payout_credited_at TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS wallet_transactions_wager_payout_once_idx
+  ON wallet_transactions (bet_id)
+  WHERE type = 'Payout' AND bet_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS wager_bets_wager_status_idx
+  ON wager_bets (wager_id, status);
 
 ALTER TABLE wager_bets ENABLE ROW LEVEL SECURITY;
 -- Users can only read their own bets

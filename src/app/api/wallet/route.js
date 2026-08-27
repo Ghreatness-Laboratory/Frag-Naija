@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/features/auth/server';
 import { getUserTransactions } from '@/features/deposits/server';
-import { getUserWagers, getWallet } from '@/features/wagers/server';
+import { getUserWagers, getWallet, getWalletTransactions } from '@/features/wagers/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,16 +14,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const [wallet, deposits, bets] = await Promise.all([
+    const [wallet, deposits, bets, walletTransactions] = await Promise.all([
       getWallet(user.id).catch((error) => {
         console.error('Wallet API wallet lookup failed', { userId: user.id, message: error?.message });
         return null;
       }),
       getUserTransactions(user.id).catch(() => []),
       getUserWagers(user.id).catch(() => []),
+      getWalletTransactions(user.id, { limit: 100 }).catch(() => []),
     ]);
 
     // Merge into a unified timeline sorted by date descending
+    const betIdsWithWalletTransactions = new Set(walletTransactions.map((tx) => String(tx.bet_id || '')).filter(Boolean));
     const history = [
       ...deposits.map((t) => ({
         id:          t.id,
@@ -34,7 +36,16 @@ export async function GET() {
         status:      t.status,
         reference:   t.reference,
       })),
-      ...bets.map((b) => ({
+      ...walletTransactions.map((tx) => ({
+        id:          tx.id,
+        date:        tx.created_at,
+        type:        tx.type === 'Payout' ? 'winnings' : tx.type === 'Refund' ? 'refund' : tx.type === 'Stake' ? 'bet' : String(tx.type || '').toLowerCase(),
+        description: tx.description || 'Wallet transaction',
+        amount:      Number(tx.amount || 0),
+        status:      'completed',
+        reference:   tx.bet_id || tx.wager_id || tx.id,
+      })),
+      ...bets.filter((b) => !betIdsWithWalletTransactions.has(String(b.id))).map((b) => ({
         id:          b.id,
         date:        b.created_at,
         type:        b.status === 'Won' ? 'winnings' : b.status === 'Refunded' ? 'refund' : 'bet',

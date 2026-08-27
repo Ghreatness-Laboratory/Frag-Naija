@@ -181,9 +181,10 @@ function AdminWagersContent() {
   }
 
   async function handleDelete(row: Record<string, unknown>) {
-    if (!confirm('Delete this wager? (Only works if no bets placed)')) return;
+    if (!confirm('Permanently delete this settled/cancelled wager and all associated bets? This cannot be undone. Wallet transaction audit records will be kept.')) return;
     const res = await fetch(`/api/wagers/${row.id}`, { method: 'DELETE', credentials: 'include' });
     if (!res.ok) { const d = await res.json(); alert(d.error); return; }
+    setSuccess('Settled/cancelled wager deleted. Wallet transaction audit records were preserved.');
     load();
   }
 
@@ -193,6 +194,7 @@ function AdminWagersContent() {
 
   const filteredRows = gameSlug === 'all' ? rows : rows.filter((row) => String(row.game_slug ?? '') === gameSlug);
   const isActive     = (r: Record<string, unknown>) => r.status === 'Active';
+  const canDelete    = (r: Record<string, unknown>) => String(r.status ?? '').startsWith('Settled') || r.status === 'Cancelled';
   const settlingRow  = settleId ? rows.find(r => String(r.id) === settleId) : null;
   const settlingType = String(settlingRow?.type ?? 'binary');
   const settlingOpts = (settlingType === 'player_pick' || settlingType === 'team_pick')
@@ -220,7 +222,7 @@ function AdminWagersContent() {
       )}
 
       <AdminTable
-        loading={loading} rows={filteredRows} onEdit={openEdit} onDelete={handleDelete}
+        loading={loading} rows={filteredRows} onEdit={openEdit}
         emptyText="No wagers yet"
         extraActions={row => (
           <>
@@ -238,6 +240,15 @@ function AdminWagersContent() {
                 title="Settle Wager"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {canDelete(row) && (
+              <button
+                onClick={() => handleDelete(row)}
+                className="p-1.5 rounded text-fn-muted hover:text-fn-red hover:bg-fn-red/10 transition-colors"
+                title="Permanently delete settled/cancelled wager"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </>

@@ -296,85 +296,18 @@ export async function toggleWagerHot(id) {
 }
 
 export async function settleWager(id, outcome) {
-  const { data: wager, error: wagerError } = await supabaseAdmin
-    .from('wagers')
-    .select('yes_odds, no_odds, type, options')
-    .eq('id', id)
-    .single();
-  if (wagerError) throw wagerError;
-
-  const usesNamedOutcome = wager.type === 'player_pick' || wager.type === 'team_pick';
-  const status = usesNamedOutcome
-    ? `Settled — ${outcome} Wins`
-    : outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
-
-  const { error: updateWagerError } = await supabaseAdmin.from('wagers').update({ status }).eq('id', id);
-  if (updateWagerError) throw updateWagerError;
-
-  const { data: bets, error: betsError } = await supabaseAdmin
-    .from('wager_bets')
-    .select(WAGER_BET_SELECT)
-    .eq('wager_id', id)
-    .eq('status', 'Active');
-  if (betsError) throw betsError;
-
   const usdNgnRate   = Number(await getSetting('usd_ngn_rate'))   || 1600;
   const maxPayoutUsd = Number(await getSetting('max_payout_usd')) || 2000;
   const maxPayoutNgn = usdNgnRate * maxPayoutUsd;
 
-  let winners = 0;
-  let losers  = 0;
+  const { data: settlement, error: settlementError } = await supabaseAdmin.rpc('settle_wager_market', {
+    p_wager_id: id,
+    p_outcome: outcome,
+    p_max_payout: maxPayoutNgn,
+  });
 
-  for (const bet of bets) {
-    const won        = bet.selection === outcome;
-    const nextStatus = won ? 'Won' : 'Lost';
-
-    await supabaseAdmin.from('wager_bets').update({ status: nextStatus }).eq('id', bet.id);
-
-    if (!won) {
-      const { data: loserWallet } = await supabaseAdmin
-        .from('wallets')
-        .select('total_lost')
-        .eq('user_id', bet.user_id)
-        .single();
-
-      if (loserWallet) {
-        const { error: lossError } = await supabaseAdmin.rpc('record_wager_loss', { p_user_id: bet.user_id, p_amount: Number(bet.amount) });
-        if (lossError) throw lossError;
-      }
-
-      losers += 1;
-      continue;
-    }
-
-    // Resolve correct odds — named picks use per-option odds, binary uses yes/no odds.
-    let odds;
-    if (usesNamedOutcome) {
-      const option = Array.isArray(wager.options)
-        ? wager.options.find((o) => o.label === outcome)
-        : null;
-      odds = option?.odds ?? 1;
-    } else {
-      odds = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
-    }
-
-    const payout = Math.min(Number(bet.amount) * Number(odds), maxPayoutNgn);
-
-    if (bet.user_id) {
-      const { error: payoutError } = await supabaseAdmin.rpc('credit_wager_payout', {
-        p_user_id: bet.user_id,
-        p_wager_id: id,
-        p_bet_id: bet.id,
-        p_payout: payout,
-        p_description: `Wager payout — ${outcome} wins (${Number(odds).toFixed(2)}x)`,
-      });
-      if (payoutError) throw payoutError;
-    }
-
-    winners += 1;
-  }
-
-  return { settled: true, winners, losers };
+  if (settlementError) throw settlementError;
+  return settlement || { settled: true, winners: 0, losers: 0, credited: 0 };
 }
 
 export async function cancelWager(id) {
@@ -410,14 +343,9 @@ export async function cancelWager(id) {
 }
 
 export async function deleteWager(id) {
-  const { data: bets } = await supabaseAdmin.from('wager_bets').select('id').eq('wager_id', id).limit(1);
-
-  if (bets?.length) {
-    throw new Error('Cannot delete a wager that has existing bets');
-  }
-
-  const { error } = await supabaseAdmin.from('wagers').delete().eq('id', id);
+  const { data, error } = await supabaseAdmin.rpc('admin_delete_settled_wager', { p_wager_id: id });
   if (error) throw error;
+  return data;
 }
 
 export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference, slip_code, paidFromWallet = false }) {
