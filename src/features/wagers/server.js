@@ -158,18 +158,22 @@ export async function getWagers({ game_slug } = {}) {
 }
 
 export async function getActiveWagers({ game_slug } = {}) {
+  const now = new Date().toISOString();
   let query = supabaseAdmin
     .from('wagers')
     .select(WAGER_SELECT)
     .eq('status', 'Active')
-    .gt('closes_at', new Date().toISOString())
     .order('hot', { ascending: false })
     .order('created_at', { ascending: false });
   if (game_slug) query = query.eq('game_slug', game_slug);
   const { data, error } = await query;
   if (error) throw error;
 
-  return data;
+  // Mark each wager with is_expired flag based on closes_at
+  return (data || []).map((wager) => ({
+    ...wager,
+    is_expired: !wager.closes_at || new Date(wager.closes_at) < new Date(now),
+  }));
 }
 
 export async function getWagerById(id) {
@@ -202,7 +206,12 @@ export async function getWagerForPlacement(wagerId) {
     .single();
   if (error) throw error;
 
-  return data;
+  // Add is_expired flag for client-side validation
+  const now = new Date().toISOString();
+  return {
+    ...data,
+    is_expired: !data.closes_at || new Date(data.closes_at) < new Date(now),
+  };
 }
 
 export async function getUserWagers(userId) {

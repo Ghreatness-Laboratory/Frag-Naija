@@ -14,6 +14,7 @@ import {
   Clock,
   Download,
   Gift,
+  Lock,
   Plus,
   Printer,
   Share2,
@@ -808,6 +809,10 @@ function WagerCard({
   const [poolOpen, setPoolOpen] = useState(false);
   const { placeWager, loading } = usePlaceWager();
 
+  // Check if wager is expired (client-side check for immediate UI feedback)
+  const closesAt = typeof market.closes_at === "string" ? market.closes_at : null;
+  const isExpired = !closesAt || new Date(closesAt) < new Date();
+
   const pickOptions = parsePickOptions(market.options);
   const isOptionPick = pickOptions.length > 0;
   const pickConfig = PICK_CONFIGS[String(market.type ?? "")] ?? { prompt: "Pick an option", badge: "PICK", badgeStyle: "border-fn-green/30 bg-fn-green/10 text-fn-green" };
@@ -904,7 +909,7 @@ function WagerCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-sm border border-fn-gborder bg-fn-card transition-all hover:border-fn-green/30">
+    <div className={`overflow-hidden rounded-sm border transition-all ${isExpired ? "border-fn-gborder bg-fn-card opacity-60" : "border-fn-gborder bg-fn-card hover:border-fn-green/30"}`}>
       <div className="px-4 pb-3 pt-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -916,12 +921,19 @@ function WagerCard({
                 {pickConfig.badge}
               </span>
             )}
+            {isExpired && (
+              <span className="rounded-sm border border-fn-red/30 bg-fn-red/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-fn-red">
+                CLOSED
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="fn-label">{formatCompactCurrency(getPoolAmount(market))} stake pool</span>
-            <button type="button" onClick={() => setPoolOpen(true)} className="inline-flex items-center gap-1 rounded-sm border border-fn-green/25 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-fn-green hover:bg-fn-green/10">
-              <Info size={10} /> View Pool
-            </button>
+            {!isExpired && (
+              <button type="button" onClick={() => setPoolOpen(true)} className="inline-flex items-center gap-1 rounded-sm border border-fn-green/25 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-fn-green hover:bg-fn-green/10">
+                <Info size={10} /> View Pool
+              </button>
+            )}
             <button onClick={() => setSaved((current) => !current)} className="transition-colors">
               <Bookmark size={13} className={saved ? "fill-fn-green text-fn-green" : "text-fn-muted hover:text-fn-text"} />
             </button>
@@ -966,7 +978,16 @@ function WagerCard({
       </div>
 
       <div className="space-y-3 px-4 pb-3">
-        {isOptionPick ? (
+        {isExpired ? (
+          /* ── Expired/Closed Wager Message ── */
+          <div className="flex flex-col items-center justify-center rounded-sm border border-fn-red/30 bg-fn-red/5 py-8 text-center">
+            <Lock size={32} className="mb-2 text-fn-red" />
+            <p className="text-sm font-black uppercase tracking-widest text-fn-red">Wager Closed</p>
+            <p className="mt-1 text-[10px] text-fn-muted">
+              This wager closed on {closesAt ? new Date(closesAt).toLocaleString("en-NG") : "N/A"}. No more bets can be placed.
+            </p>
+          </div>
+        ) : isOptionPick ? (
           /* ── Option Pick UI (player / team / mvp / map / outcome / first_blood) ── */
           <div>
             <p className="fn-label mb-2">{pickConfig.prompt}</p>
@@ -1051,55 +1072,61 @@ function WagerCard({
       </div>
 
       <div className="px-4 pb-4">
-        <div className="space-y-2">
-          <label className={`flex items-center rounded-sm border bg-fn-dark px-3 min-w-0 ${amountError ? "border-fn-red/60" : "border-fn-gborder"}`}>
-            <span className="mr-2 fn-label shrink-0">AMOUNT</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              required
-              aria-invalid={Boolean(amountError)}
-              placeholder="₦100"
-              value={formatAmountInputValue(amount)}
-              onChange={(event) => handleAmountChange(event.target.value)}
-              className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
-            />
-          </label>
-          <div className="flex items-center justify-between gap-2 text-[8px]">
-            <span className={amountError ? "text-fn-red" : paymentHint ? "text-fn-yellow" : "text-fn-muted"}>{amountError || paymentHint || `Balance: ${formatCurrency(walletBalance)}`}</span>
-            <span className="text-fn-muted">Min {formatCurrency(MIN_STAKE_NGN)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleAddToSlip}
-              className={`fn-btn-outline flex-1 whitespace-nowrap px-3 text-[10px] ${!picked || Boolean(amountError) ? "cursor-not-allowed opacity-50" : ""}`}
-              disabled={!picked || Boolean(amountError)}
-            >
-              <Plus size={11} className="inline-block mr-1" /> SLIP
-            </button>
-            <button
-              onClick={handlePlaceWager}
-              className={`fn-btn flex-1 whitespace-nowrap px-4 text-[10px] ${loading ? "cursor-wait opacity-50" : ""}`}
-              disabled={loading}
-            >
-              {loading ? "PLACING..." : "PLACE WAGER"}
-            </button>
-          </div>
-        </div>
+        {isExpired ? (
+          <p className="text-center text-[10px] font-bold uppercase tracking-widest text-fn-red">Betting is closed for this wager</p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <label className={`flex items-center rounded-sm border bg-fn-dark px-3 min-w-0 ${amountError ? "border-fn-red/60" : "border-fn-gborder"}`}>
+                <span className="mr-2 fn-label shrink-0">AMOUNT</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  required
+                  aria-invalid={Boolean(amountError)}
+                  placeholder="₦100"
+                  value={formatAmountInputValue(amount)}
+                  onChange={(event) => handleAmountChange(event.target.value)}
+                  className="flex-1 min-w-0 bg-transparent py-2.5 text-[11px] font-bold text-fn-text outline-none"
+                />
+              </label>
+              <div className="flex items-center justify-between gap-2 text-[8px]">
+                <span className={amountError ? "text-fn-red" : paymentHint ? "text-fn-yellow" : "text-fn-muted"}>{amountError || paymentHint || `Balance: ${formatCurrency(walletBalance)}`}</span>
+                <span className="text-fn-muted">Min {formatCurrency(MIN_STAKE_NGN)} • Max {formatCurrency(MAX_WAGER_AMOUNT)}</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddToSlip}
+                  className={`fn-btn-outline flex-1 whitespace-nowrap px-3 text-[10px] ${!picked || Boolean(amountError) ? "cursor-not-allowed opacity-50" : ""}`}
+                  disabled={!picked || Boolean(amountError)}
+                >
+                  <Plus size={11} className="inline-block mr-1" /> SLIP
+                </button>
+                <button
+                  onClick={handlePlaceWager}
+                  className={`fn-btn flex-1 whitespace-nowrap px-4 text-[10px] ${loading ? "cursor-wait opacity-50" : ""}`}
+                  disabled={loading}
+                >
+                  {loading ? "PLACING..." : "PLACE WAGER"}
+                </button>
+              </div>
+            </div>
 
-        {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
-        <p className="mt-2 text-[9px] text-fn-muted">
-          By placing a wager, you agree to the{" "}
-          <Link href="/wager/terms" className="font-bold text-fn-green hover:text-fn-yellow transition-colors">
-            Wager Terms
-          </Link>
-          .
-        </p>
-        {message && (
-          <p className={`mt-2 text-[9px] ${
-            message.startsWith("Wager placed") ? "text-fn-green" : "text-fn-red"
-          }`}>{message}</p>
+            {!activeEmail && <p className="mt-2 text-[9px] text-fn-yellow">Sign in to unlock checkout for this market.</p>}
+            <p className="mt-2 text-[9px] text-fn-muted">
+              By placing a wager, you agree to the{" "}
+              <Link href="/wager/terms" className="font-bold text-fn-green hover:text-fn-yellow transition-colors">
+                Wager Terms
+              </Link>
+              .
+            </p>
+            {message && (
+              <p className={`mt-2 text-[9px] ${
+                message.startsWith("Wager placed") ? "text-fn-green" : "text-fn-red"
+              }`}>{message}</p>
+            )}
+          </>
         )}
       </div>
 
@@ -1107,8 +1134,8 @@ function WagerCard({
         <div className="flex items-center gap-1 text-[9px] text-fn-muted">
           <BarChart2 size={10} /> {getTradeCount(market).toLocaleString()} trades
         </div>
-        <div className="flex items-center gap-1 text-[9px] text-fn-muted">
-          <Clock size={10} /> {formatCountdown(String(market.closes_at ?? ""))}
+        <div className={`flex items-center gap-1 text-[9px] ${isExpired ? "text-fn-red font-bold" : "text-fn-muted"}`}>
+          <Lock size={10} /> {isExpired ? "CLOSED" : formatCountdown(String(market.closes_at ?? ""))}
         </div>
       </div>
     </div>
