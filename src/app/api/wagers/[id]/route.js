@@ -34,8 +34,8 @@ export async function DELETE(request, { params }) {
   if (authErr) return authErr;
 
   try {
-    await deleteWager(params.id);
-    return NextResponse.json({ deleted: true });
+    const result = await deleteWager(params.id);
+    return NextResponse.json(result || { deleted: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 400 });
   }

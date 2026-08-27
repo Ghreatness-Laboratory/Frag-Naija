@@ -343,14 +343,9 @@ export async function cancelWager(id) {
 }
 
 export async function deleteWager(id) {
-  const { data: bets } = await supabaseAdmin.from('wager_bets').select('id').eq('wager_id', id).limit(1);
-
-  if (bets?.length) {
-    throw new Error('Cannot delete a wager that has existing bets');
-  }
-
-  const { error } = await supabaseAdmin.from('wagers').delete().eq('id', id);
+  const { data, error } = await supabaseAdmin.rpc('admin_delete_settled_wager', { p_wager_id: id });
   if (error) throw error;
+  return data;
 }
 
 export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference, slip_code, paidFromWallet = false }) {
