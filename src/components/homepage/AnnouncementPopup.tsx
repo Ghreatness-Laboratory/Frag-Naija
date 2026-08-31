@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import OptimizedImage from '@/components/common/OptimizedImage';
 
@@ -12,6 +12,10 @@ function enabled(value: HomepageSettings['popup_enabled']) {
   return value === true || String(value ?? '').toLowerCase() === 'true';
 }
 
+function announcementId(parts: Array<string>) {
+  return parts.join('|');
+}
+
 /** Public announcement fields are the popup_title/popup_cta fields used by admin. */
 export default function AnnouncementPopup({ settings }: { settings: HomepageSettings }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,7 +24,8 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
   const cta = String(settings.popup_cta ?? '').trim();
   const imageUrl = String(settings.popup_image_url ?? '').trim();
   const ctaLink = String(settings.popup_cta_link ?? '').trim();
-  const hasContent = Boolean(title || body || cta);
+  const hasContent = Boolean(title || body || cta || imageUrl);
+  const activeAnnouncementId = useMemo(() => announcementId([title, body, cta, imageUrl, ctaLink]), [title, body, cta, imageUrl, ctaLink]);
 
   useEffect(() => {
     if (!enabled(settings.popup_enabled) || !hasContent) {
@@ -28,8 +33,8 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
       return;
     }
 
-    setIsOpen(sessionStorage.getItem(DISMISSED_KEY) !== 'true');
-  }, [settings.popup_enabled, hasContent, title, body, cta, imageUrl, ctaLink]);
+    setIsOpen(sessionStorage.getItem(DISMISSED_KEY) !== activeAnnouncementId);
+  }, [settings.popup_enabled, hasContent, activeAnnouncementId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -41,7 +46,7 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
   });
 
   function dismiss() {
-    sessionStorage.setItem(DISMISSED_KEY, 'true');
+    sessionStorage.setItem(DISMISSED_KEY, activeAnnouncementId);
     setIsOpen(false);
   }
 
@@ -49,30 +54,39 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-fn-black/85 px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-fn-black/80 px-3 py-4 backdrop-blur-md sm:px-4 sm:py-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'announcement-title' : undefined}
       aria-label={title ? undefined : 'Announcement'}
     >
-      <section className="relative w-full max-w-lg overflow-hidden rounded-sm border border-fn-green/40 bg-fn-card shadow-2xl">
-        <div className="h-1 bg-fn-green" />
-        <button type="button" onClick={dismiss} className="absolute right-3 top-4 rounded-sm border border-fn-gborder bg-fn-card p-1.5 text-fn-muted transition-colors hover:border-fn-green hover:text-fn-green" aria-label="Close announcement">
-          <X size={16} />
+      <section className="relative flex max-h-[calc(100vh-2rem)] w-full max-w-[min(92vw,34rem)] flex-col overflow-hidden rounded-[2rem] border border-fn-green/35 bg-fn-card shadow-[0_24px_80px_rgba(0,0,0,.65),0_0_42px_rgba(77,255,110,.18)] ring-1 ring-white/5 motion-safe:animate-[announcement-pop_.24s_ease-out]">
+        <button
+          type="button"
+          onClick={dismiss}
+          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-fn-black/80 text-fn-text shadow-lg backdrop-blur transition-colors hover:border-fn-green hover:bg-fn-green hover:text-fn-black focus:outline-none focus:ring-2 focus:ring-fn-green"
+          aria-label="Close announcement"
+        >
+          <X size={20} strokeWidth={2.5} />
         </button>
-        {imageUrl && (
-          <div className="relative aspect-[16/7] border-b border-fn-gborder bg-fn-black">
-            <OptimizedImage src={imageUrl} alt="" fill sizes="(max-width: 640px) 100vw, 512px" className="object-cover" />
-          </div>
-        )}
-        <div className="p-5 sm:p-6">
-          <p className="fn-label mb-2 text-fn-green">FRAG NAIJA // ANNOUNCEMENT</p>
-          {title && <h2 id="announcement-title" className="pr-8 font-display text-2xl font-black uppercase leading-tight text-fn-text sm:text-3xl">{title}</h2>}
-          {body && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fn-muted">{body}</p>}
-          {cta && (ctaLink ? (
-            <a href={ctaLink} onClick={dismiss} className="fn-btn mt-5 inline-flex">{cta}</a>
+        <div className="relative min-h-[11rem] shrink-0 overflow-hidden bg-fn-black sm:min-h-[15rem]">
+          {imageUrl ? (
+            <OptimizedImage src={imageUrl} alt="" fill sizes="(max-width: 640px) 92vw, 544px" className="object-cover" />
           ) : (
-            <button type="button" onClick={dismiss} className="fn-btn mt-5">{cta}</button>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(77,255,110,.32),transparent_35%),linear-gradient(135deg,rgba(77,255,110,.18),rgba(8,11,9,.96)_65%)]" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-fn-card via-fn-card/15 to-transparent" />
+          <div className="absolute bottom-4 left-5 rounded-full border border-fn-green/40 bg-fn-black/70 px-3 py-1 text-[9px] font-black uppercase tracking-[0.24em] text-fn-green backdrop-blur">
+            Frag Naija Ad
+          </div>
+        </div>
+        <div className="overflow-y-auto px-5 pb-5 pt-4 sm:px-7 sm:pb-7 sm:pt-5">
+          {title && <h2 id="announcement-title" className="font-display text-2xl font-black uppercase leading-[0.95] tracking-wider text-fn-text sm:text-4xl">{title}</h2>}
+          {body && <p className="mt-3 whitespace-pre-line text-sm leading-6 text-fn-muted sm:text-base sm:leading-7">{body}</p>}
+          {cta && (ctaLink ? (
+            <a href={ctaLink} onClick={dismiss} className="mt-6 flex w-full items-center justify-center rounded-full bg-fn-green px-5 py-3.5 text-center font-mono text-xs font-black uppercase tracking-[0.22em] text-fn-black shadow-[0_0_28px_rgba(77,255,110,.25)] transition hover:bg-fn-gdim active:scale-[0.98] sm:text-sm">{cta}</a>
+          ) : (
+            <button type="button" onClick={dismiss} className="mt-6 flex w-full items-center justify-center rounded-full bg-fn-green px-5 py-3.5 text-center font-mono text-xs font-black uppercase tracking-[0.22em] text-fn-black shadow-[0_0_28px_rgba(77,255,110,.25)] transition hover:bg-fn-gdim active:scale-[0.98] sm:text-sm">{cta}</button>
           ))}
         </div>
       </section>
