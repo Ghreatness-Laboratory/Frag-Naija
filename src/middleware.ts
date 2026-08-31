@@ -25,13 +25,7 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  const response = NextResponse.next();
-  if (request.nextUrl.pathname === '/admin' || request.nextUrl.pathname.startsWith('/admin/')) {
-    // Keep the directive effective even if a crawler does not render the
-    // admin layout (for example, when it receives an authentication response).
-    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
-  }
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
