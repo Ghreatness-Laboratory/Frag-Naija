@@ -8,11 +8,13 @@ function userDisplayName(user) {
   return user?.user_metadata?.username || user?.email?.split('@')[0] || 'Unknown Manager';
 }
 
-export async function GET() {
+export async function GET(request) {
+  const gameSlug = new URL(request.url).searchParams.get('game_slug') || 'pubg-mobile';
   try {
     const { data: squads, error } = await supabaseAdmin
       .from('fantasy_squads')
       .select('id, user_id, total_points, gameweek_points, squad_value, updated_at')
+      .eq('game_slug', gameSlug)
       .order('total_points', { ascending: false })
       .order('gameweek_points', { ascending: false })
       .order('updated_at', { ascending: true })
