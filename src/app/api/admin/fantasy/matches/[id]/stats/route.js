@@ -8,6 +8,19 @@ function badRequest(message, details = {}) {
   return NextResponse.json({ error: message, ...details }, { status: 400 });
 }
 
+export async function GET(_request, { params }) {
+  const unauthorized = await checkAdmin();
+  if (unauthorized) return unauthorized;
+  const { data: match, error } = await supabaseAdmin.from('fantasy_matches').select('id, gameweek_id, game_slug, title').eq('id', params.id).maybeSingle();
+  if (error || !match) return NextResponse.json({ error: 'Fantasy match not found.' }, { status: 404 });
+  const [{ data: athletes }, { data: stats }, { data: config }] = await Promise.all([
+    supabaseAdmin.from('athletes').select('id, name, ign, known_name, team').eq('game_slug', match.game_slug).eq('is_icon', false),
+    supabaseAdmin.from('fantasy_match_stats').select('*').eq('match_id', match.id),
+    supabaseAdmin.from('fantasy_scoring_config').select('*').eq('game_slug', match.game_slug).maybeSingle(),
+  ]);
+  return NextResponse.json({ match, athletes: athletes || [], stats: stats || [], config });
+}
+
 function normalizeRow(row) {
   return {
     athlete_id: String(row.athlete_id || ''),
@@ -16,6 +29,9 @@ function normalizeRow(row) {
     top_three_finish: Boolean(row.top_three_finish),
     match_win: Boolean(row.match_win),
     mvp: Boolean(row.mvp),
+    goals: row.goals === '' || row.goals === null || row.goals === undefined ? 0 : Number(row.goals),
+    result: ['win', 'loss', 'draw'].includes(row.result) ? row.result : null,
+    goals_conceded: row.goals_conceded === '' || row.goals_conceded === null || row.goals_conceded === undefined ? 0 : Number(row.goals_conceded),
     finalized: Boolean(row.finalized),
   };
 }
@@ -33,7 +49,7 @@ export async function POST(request, { params }) {
 
   const incompleteRows = rows
     .map((row, index) => ({ row, index }))
-    .filter(({ row }) => !row.athlete_id || !Number.isFinite(row.kills) || row.kills < 0);
+    .filter(({ row }) => !row.athlete_id || !Number.isFinite(row.kills) || row.kills < 0 || !Number.isFinite(row.goals) || row.goals < 0 || !Number.isFinite(row.goals_conceded) || row.goals_conceded < 0);
   if (incompleteRows.length) {
     return badRequest('Every roster row must have an athlete and an explicit non-negative kill count.', {
       incompleteRows: incompleteRows.map(({ index }) => index),
@@ -50,6 +66,8 @@ export async function POST(request, { params }) {
     .single();
   if (matchError || !match) return NextResponse.json({ error: 'Fantasy match not found.' }, { status: 404 });
 
+  if (match.game_slug === 'fc-mobile' && rows.some((row) => !row.result)) return badRequest('Every FC Mobile athlete needs a Win, Loss, or Draw result.');
+
   const now = new Date().toISOString();
   const upserts = rows.map((row) => ({
     match_id: match.id,
@@ -60,6 +78,9 @@ export async function POST(request, { params }) {
     top_three_finish: row.top_three_finish,
     match_win: row.match_win,
     mvp: row.mvp,
+    goals: row.goals,
+    result: row.result,
+    goals_conceded: row.goals_conceded,
     finalized: finalize,
     stats_last_edited_at: now,
   }));
@@ -71,11 +92,15 @@ export async function POST(request, { params }) {
 
   for (const row of upserts) {
     const { data: points, error: pointsError } = await supabaseAdmin.rpc('calculate_fantasy_match_points', {
+      p_game_slug: match.game_slug,
       p_participated: row.participated,
       p_kills: row.kills,
       p_top_three_finish: row.top_three_finish,
       p_match_win: row.match_win,
       p_mvp: row.mvp,
+      p_goals: row.goals,
+      p_result: row.result,
+      p_goals_conceded: row.goals_conceded,
     });
     if (pointsError) return NextResponse.json({ error: pointsError.message }, { status: 500 });
     const { error: updateError } = await supabaseAdmin
