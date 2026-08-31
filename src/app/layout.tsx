@@ -113,6 +113,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* Canonical URL - always point to production domain */}
+        <link rel="canonical" href={SITE_URL} />
       </head>
       <body className="bg-fn-black text-fn-text font-sans antialiased">
         <ThemeProvider>
