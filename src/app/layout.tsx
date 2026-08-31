@@ -25,11 +25,15 @@ const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], varia
 const fontVariables = [chakraPetch, rajdhani, exo2, orbitron, oxanium, sairaCondensed, spaceMono].map((font) => font.variable).join(" ");
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     template: '%s - FragNaija',
     default: 'FragNaija - Everything Esports - One Platform',
   },
   description: DEFAULT_DESCRIPTION,
+  alternates: {
+    canonical: '/',
+  },
   applicationName: SITE_NAME,
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
