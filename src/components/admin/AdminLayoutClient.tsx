@@ -21,7 +21,6 @@ const NAV = [
   { href: '/admin/featured-wagers', label: 'Featured Wagers', icon: Flame },
   { href: '/admin/custom-wagers',  label: 'Custom Wagers', icon: Bot },
   { href: '/admin/fantasy',        label: 'Fantasy League', icon: Sparkles },
-  { href: '/admin/fantasy/fc-mobile', label: 'FC Mobile Scoring', icon: Sparkles },
   { href: '/admin/duels',          label: 'TDM Duels',   icon: Swords },
   { href: '/admin/highlights',     label: 'Highlights',  icon: Film },
   { href: '/admin/news',           label: 'News',        icon: Newspaper },
