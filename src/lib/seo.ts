@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.fragnaija.com';
+// This is deliberately not derived from the incoming request or a deployment
+// environment variable. Metadata rendered on a Vercel deployment URL must
+// always identify the public, apex domain as the canonical origin.
+export const SITE_URL = 'https://fragnaija.com';
 export const SITE_NAME = 'FragNaija';
 export const SITE_TAGLINE = 'Everything Esports - One Platform';
 export const DEFAULT_DESCRIPTION = SITE_TAGLINE;
