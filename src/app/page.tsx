@@ -406,7 +406,8 @@ function FeaturedAthletes({ athletes, selectedGame, primary, secondary, showFire
 }
 
 export default function HomePage() {
-  const { selectedGame, isHydrated } = useGame();
+  const router = useRouter();
+  const { selectedGame } = useGame();
   const { user, loading: authLoading } = useAuthGate();
   const [ticker, setTicker]       = useState(0);
   const [allAthletes, setAllAthletes] = useState<Athlete[]>([]);
