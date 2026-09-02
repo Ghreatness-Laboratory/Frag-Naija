@@ -14,7 +14,7 @@ const TEXT_FIELDS = [
   ['hero_eyebrow', 'Hero eyebrow'], ['hero_headline', 'Hero headline'], ['hero_tagline', 'Hero supporting text'],
   ['stat_players', 'Players stat'], ['stat_tournaments', 'Tournaments stat'], ['stat_championships', 'Championships stat'], ['stat_prize_pool', 'Prize pool stat'],
   ['recruitment_headline', 'Recruitment headline'], ['recruitment_body', 'Recruitment body'], ['recruitment_cta', 'Recruitment CTA'],
-  ['popup_enabled', 'Show popup (true/false)'], ['popup_image_url', 'Popup image URL'], ['popup_title', 'Popup title'], ['popup_body', 'Popup body'], ['popup_cta', 'Popup CTA label'], ['popup_cta_link', 'Popup CTA link (optional)'], ['show_athletes', 'Show athletes section (true/false)'], ['show_teams', 'Show teams section (true/false)'], ['show_shop', 'Show shop section (true/false)'], ['featured_tournament_ids', 'Featured tournament IDs (comma-separated)'],
+  ['show_athletes', 'Show athletes section (true/false)'], ['show_teams', 'Show teams section (true/false)'], ['show_shop', 'Show shop section (true/false)'], ['featured_tournament_ids', 'Featured tournament IDs (comma-separated)'],
 ] as const;
 
 function parseIds(value: string | undefined) {
@@ -138,6 +138,21 @@ export default function AdminHomepagePage() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-sm border border-fn-gborder bg-fn-card p-5">
+          <section className="rounded-xl border border-fn-green/30 bg-fn-black/40 p-4">
+            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="fn-label text-fn-green">Homepage promotion</p><h2 className="font-display text-xl font-black uppercase text-fn-text">Announcement popup</h2></div>
+              <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${settings.popup_enabled === 'true' ? 'border-fn-green/40 bg-fn-green/10 text-fn-green' : 'border-fn-gborder text-fn-muted'}`}>{settings.popup_enabled === 'true' ? 'Live' : 'Hidden'}</span>
+            </div>
+            <p className="mb-4 text-xs leading-relaxed text-fn-muted">Only one announcement can be live. Enabling it requires a title, message, top image, and CTA; saving a changed announcement gives it a new dismissal identity for fresh sessions.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Announcement status"><Select value={settings.popup_enabled ?? 'false'} onChange={(event) => setSettings((prev) => ({ ...prev, popup_enabled: event.target.value }))}><option value="false">Hidden</option><option value="true">Live on homepage</option></Select></Field>
+              <Field label="CTA label"><Input value={settings.popup_cta ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, popup_cta: event.target.value }))} placeholder="Explore now" /></Field>
+              <div className="sm:col-span-2"><Field label="Announcement title"><Input value={settings.popup_title ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, popup_title: event.target.value }))} placeholder="Tournament registrations are open" /></Field></div>
+              <div className="sm:col-span-2"><Field label="Announcement message"><Textarea value={settings.popup_body ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, popup_body: event.target.value }))} placeholder="Give players a concise reason to act." /></Field></div>
+              <div className="sm:col-span-2"><Field label="Top image URL"><Input value={settings.popup_image_url ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, popup_image_url: event.target.value }))} placeholder="https://…" /></Field></div>
+              <div className="sm:col-span-2"><Field label="CTA destination (optional)"><Input value={settings.popup_cta_link ?? ''} onChange={(event) => setSettings((prev) => ({ ...prev, popup_cta_link: event.target.value }))} placeholder="https://… or /tournaments" /></Field></div>
+            </div>
+          </section>
           <FeaturedPicker label="Featured Teams" ids={featuredTeamIds} options={teams} emptyText="No featured teams selected yet." onChange={(ids) => setSettings((prev) => ({ ...prev, featured_team_ids: ids.join(',') }))} />
           {TEXT_FIELDS.map(([key, label]) => (
             <Field key={key} label={label}>

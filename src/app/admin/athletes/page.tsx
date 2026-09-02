@@ -28,6 +28,7 @@ const EMPTY = {
   recent_fantasy_points: '',
   total_fantasy_points: '',
   fantasy_status: 'available',
+  user_id: '',
 };
 const FC_MOBILE_GAME = GAMES.find((game) => isFcMobileGame(game.slug));
 
@@ -258,6 +259,7 @@ function AthletesContent() {
       recent_fantasy_points: String(row.recent_fantasy_points ?? '0'),
       total_fantasy_points: String(row.total_fantasy_points ?? '0'),
       fantasy_status: String(row.fantasy_status ?? 'available'),
+      user_id: String(row.user_id ?? ''),
     });
     setPhotoFile(null);
     setError('');
@@ -346,6 +348,7 @@ function AthletesContent() {
         recent_fantasy_points: Number(form.recent_fantasy_points) || 0,
         total_fantasy_points: Number(form.total_fantasy_points) || 0,
         fantasy_status: form.fantasy_status || 'available',
+        user_id: form.user_id.trim() || null,
       };
       const url = editing ? `/api/athletes/${editing.id}` : '/api/athletes';
       const res = await fetch(url, {
@@ -470,6 +473,9 @@ function AthletesContent() {
         onClose={() => setOpen(false)}
       >
         <form onSubmit={handleSubmit} className="space-y-3">
+          <Field label="Linked Supabase Auth user ID (Marketplace eligibility)">
+            <Input value={form.user_id} onChange={f('user_id')} placeholder="UUID of this athlete's auth.users account" />
+          </Field>
           {fcMobileSelected ? (
             <>
               <Field label="IGN" required>
