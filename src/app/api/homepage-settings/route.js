@@ -32,6 +32,6 @@ export async function PUT(request) {
     console.error('Failed to save homepage settings:', e);
     return NextResponse.json({ 
       error: e.message || 'Failed to save settings' 
-    }, { status: 500 });
+    }, { status: 400 });
   }
 }

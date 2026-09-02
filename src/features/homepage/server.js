@@ -18,6 +18,39 @@ export const DEFAULT_HOMEPAGE_SETTINGS = {
   show_athletes: 'true', show_teams: 'true', show_shop: 'true',
 };
 
+function popupIsEnabled(value) {
+  return value === true || String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+function optionalUrl(value, label) {
+  const url = String(value ?? '').trim();
+  if (!url) return '';
+  if (url.startsWith('/')) return url;
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('unsupported protocol');
+  } catch {
+    throw new Error(`${label} must be a valid http(s) URL.`);
+  }
+  return url;
+}
+
+/** Keep the single homepage announcement complete before it can go live. */
+export function validateHomepageSettings(settings = {}) {
+  if (!popupIsEnabled(settings.popup_enabled)) return;
+  const required = [
+    ['popup_title', 'Announcement title'],
+    ['popup_body', 'Announcement message'],
+    ['popup_image_url', 'Announcement image URL'],
+    ['popup_cta', 'Announcement CTA label'],
+  ];
+  for (const [key, label] of required) {
+    if (!String(settings[key] ?? '').trim()) throw new Error(`${label} is required when the announcement is live.`);
+  }
+  optionalUrl(settings.popup_image_url, 'Announcement image URL');
+  optionalUrl(settings.popup_cta_link, 'Announcement CTA link');
+}
+
 export async function getHomepageSettings() {
   const { data, error } = await supabaseAdmin.from('homepage_settings').select(HOMEPAGE_SETTINGS_SELECT).single();
   if (error || !data) {
@@ -28,8 +61,14 @@ export async function getHomepageSettings() {
 }
 
 export async function updateHomepageSettings(settings) {
+  validateHomepageSettings(settings);
+  const normalized = {
+    ...settings,
+    popup_image_url: optionalUrl(settings.popup_image_url, 'Announcement image URL'),
+    popup_cta_link: optionalUrl(settings.popup_cta_link, 'Announcement CTA link'),
+  };
   const { data: existing } = await supabaseAdmin.from('homepage_settings').select('id').single();
-  const payload = { ...settings, updated_at: new Date().toISOString() };
+  const payload = { ...normalized, updated_at: new Date().toISOString() };
   if (existing?.id) {
     const { error } = await supabaseAdmin.from('homepage_settings').update(payload).eq('id', existing.id);
     if (error) throw new Error(`Failed to save homepage settings: ${error.message}`);

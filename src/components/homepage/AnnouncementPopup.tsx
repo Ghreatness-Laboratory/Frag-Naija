@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import OptimizedImage from '@/components/common/OptimizedImage';
 
@@ -19,6 +19,7 @@ function announcementId(parts: Array<string>) {
 /** Public announcement fields are the popup_title/popup_cta fields used by admin. */
 export default function AnnouncementPopup({ settings }: { settings: HomepageSettings }) {
   const [isOpen, setIsOpen] = useState(false);
+  const dismissButtonRef = useRef<HTMLButtonElement>(null);
   const title = String(settings.popup_title ?? '').trim();
   const body = String(settings.popup_body ?? '').trim();
   const cta = String(settings.popup_cta ?? '').trim();
@@ -26,6 +27,10 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
   const ctaLink = String(settings.popup_cta_link ?? '').trim();
   const hasContent = Boolean(title || body || cta || imageUrl);
   const activeAnnouncementId = useMemo(() => announcementId([title, body, cta, imageUrl, ctaLink]), [title, body, cta, imageUrl, ctaLink]);
+  const dismiss = useCallback(() => {
+    sessionStorage.setItem(DISMISSED_KEY, activeAnnouncementId);
+    setIsOpen(false);
+  }, [activeAnnouncementId]);
 
   useEffect(() => {
     if (!enabled(settings.popup_enabled) || !hasContent) {
@@ -43,12 +48,15 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  });
+  }, [isOpen, dismiss]);
 
-  function dismiss() {
-    sessionStorage.setItem(DISMISSED_KEY, activeAnnouncementId);
-    setIsOpen(false);
-  }
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dismissButtonRef.current?.focus();
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -64,6 +72,7 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
         <button
           type="button"
           onClick={dismiss}
+          ref={dismissButtonRef}
           className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-fn-black/80 text-fn-text shadow-lg backdrop-blur transition-colors hover:border-fn-green hover:bg-fn-green hover:text-fn-black focus:outline-none focus:ring-2 focus:ring-fn-green"
           aria-label="Close announcement"
         >
