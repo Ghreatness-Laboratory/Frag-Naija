@@ -109,6 +109,16 @@ export default function AdminWithdrawalsPage() {
     }
   }
 
+  async function copyAccountNumber(accountNumber: string) {
+    try {
+      await navigator.clipboard.writeText(accountNumber);
+      setCopiedAccount(accountNumber);
+      window.setTimeout(() => setCopiedAccount(''), 1500);
+    } catch {
+      setActionErr('Could not copy the account number. Please select it manually.');
+    }
+  }
+
   const totalPending   = withdrawals.filter((w) => w.status === 'Pending').reduce((s, w) => s + Number(w.amount), 0);
   const totalCompleted = withdrawals.filter((w) => w.status === 'Completed').reduce((s, w) => s + Number(w.amount_sent), 0);
 
@@ -209,7 +219,7 @@ export default function AdminWithdrawalsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() => { setSelected(w); setActionNote(''); setActionErr(''); setCopiedAccount(''); setActionInProgress(''); }}
+                        onClick={() => { setSelected(w); setActionNote(''); setActionErr(''); setCopiedAccount(''); }}
                         className="text-fn-green hover:underline text-[10px] font-bold uppercase tracking-wider"
                       >
                         Manage
