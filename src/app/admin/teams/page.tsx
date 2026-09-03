@@ -11,8 +11,9 @@ import { GAMES } from '@/lib/games';
 import OptimizedImage from '@/components/common/OptimizedImage';
 
 const EMPTY = {
-  name: '', region: '', wins: '', losses: '', bio: '', logo_url: '', game_slug: 'pubg-mobile',
+  name: '', region: '', bio: '', logo_url: '', game_slug: 'pubg-mobile',
   rank: '', strength: '0', achievements: '', organization_id: '',
+  points: '0', gold_count: '0', silver_count: '0', bronze_count: '0',
 };
 
 type GalleryFormItem = { image_url: string; caption: string; sort_order: string; file?: File | null };
@@ -68,14 +69,16 @@ function TeamsContent() {
       name:         String(row.name     ?? ''),
       region:       String(row.region   ?? ''),
       game_slug:    String(row.game_slug ?? (gameSlug === 'all' ? 'pubg-mobile' : gameSlug)),
-      wins:         String(row.wins     ?? ''),
-      losses:       String(row.losses   ?? ''),
       bio:          String(row.bio      ?? ''),
       logo_url:     String(row.logo_url ?? ''),
       rank:         row.rank != null ? String(row.rank) : '',
       strength:     String(row.strength ?? '0'),
       achievements: toArr(row.achievements),
       organization_id: String(row.organization_id ?? ''),
+      points:       String(row.points ?? '0'),
+      gold_count:   String(row.gold_count ?? '0'),
+      silver_count: String(row.silver_count ?? '0'),
+      bronze_count: String(row.bronze_count ?? '0'),
     });
     setLogoFile(null);
     setGallery([]);
@@ -125,8 +128,10 @@ function TeamsContent() {
         region:   form.region,
         bio:      form.bio,
         logo_url: logoUrl ?? form.logo_url,
-        wins:     Number(form.wins)     || 0,
-        losses:   Number(form.losses)   || 0,
+        points: Number(form.points) || 0,
+        gold_count: Number(form.gold_count) || 0,
+        silver_count: Number(form.silver_count) || 0,
+        bronze_count: Number(form.bronze_count) || 0,
         strength: Number(form.strength) || 0,
         rank:     form.rank !== '' ? Number(form.rank) : null,
         achievements: splitArr(form.achievements),
@@ -220,8 +225,10 @@ function TeamsContent() {
           { key: 'game_slug', label: 'Game' },
           { key: 'organization', label: 'Org', render: (r) => String((r.organization as { name?: string } | null)?.name ?? '—') },
           { key: 'rank',     label: 'Rank' },
-          { key: 'wins',     label: 'W' },
-          { key: 'losses',   label: 'L' },
+          { key: 'points', label: 'Points' },
+          { key: 'gold_count', label: 'Gold' },
+          { key: 'silver_count', label: 'Silver' },
+          { key: 'bronze_count', label: 'Bronze' },
           { key: 'strength', label: 'Str' },
         ]}
       />
@@ -269,12 +276,9 @@ function TeamsContent() {
             </Field>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Wins">
-              <Input type="number" value={form.wins} onChange={f('wins')} placeholder="0" />
-            </Field>
-            <Field label="Losses">
-              <Input type="number" value={form.losses} onChange={f('losses')} placeholder="0" />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Points">
+              <Input type="number" min="0" value={form.points} onChange={f('points')} placeholder="0" />
             </Field>
             <Field label="Team Strength (0–100)">
               <Input
@@ -285,6 +289,18 @@ function TeamsContent() {
                 onChange={f('strength')}
                 placeholder="0"
               />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Gold (1st place)">
+              <Input type="number" min="0" value={form.gold_count} onChange={f('gold_count')} placeholder="0" />
+            </Field>
+            <Field label="Silver (2nd place)">
+              <Input type="number" min="0" value={form.silver_count} onChange={f('silver_count')} placeholder="0" />
+            </Field>
+            <Field label="Bronze (3rd place)">
+              <Input type="number" min="0" value={form.bronze_count} onChange={f('bronze_count')} placeholder="0" />
             </Field>
           </div>
 
