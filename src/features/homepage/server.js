@@ -4,8 +4,8 @@ const HOMEPAGE_SETTINGS_SELECT = 'id,hero_eyebrow,hero_headline,hero_tagline,sta
 
 export const DEFAULT_HOMEPAGE_SETTINGS = {
   hero_eyebrow: "NIGERIA'S PREMIER ESPORTS PLATFORM",
-  hero_headline: 'The Complete Esports Ecosystem',
-  hero_tagline: 'Bringing everything together in one place.',
+  hero_headline: 'FRAG NAIJA',
+  hero_tagline: "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.",
   stat_players: '1,242+',
   stat_tournaments: '48',
   stat_championships: '12',
