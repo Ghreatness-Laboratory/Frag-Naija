@@ -76,10 +76,6 @@ export default function AdminWithdrawalsPage() {
 
   async function doAction(action: string) {
     if (!selected) return;
-    if (action === 'reject' && !actionNote.trim()) {
-      setActionErr('Please enter a reason for rejection.');
-      return;
-    }
     setActing(true);
     setActionErr('');
     try {
@@ -92,7 +88,7 @@ export default function AdminWithdrawalsPage() {
       if (!res.ok) throw new Error(data.error);
       setSelected(null);
       setActionNote('');
-      load();
+      await load();
     } catch (e: unknown) {
       setActionErr(e instanceof Error ? e.message : 'Action failed');
     } finally {
@@ -281,7 +277,7 @@ export default function AdminWithdrawalsPage() {
 
             {/* Note field */}
             <div className="mb-4">
-              <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Note (required for rejection)</label>
+              <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Admin note (optional)</label>
               <input
                 type="text"
                 value={actionNote}
@@ -303,18 +299,18 @@ export default function AdminWithdrawalsPage() {
               {selected.status === 'Pending' && (
                 <>
                   <button
-                    onClick={() => doAction('complete')}
+                    onClick={() => doAction('approve')}
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-green text-fn-black font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
                   >
-                    <CheckCircle size={13} /> Mark Completed
+                    <CheckCircle size={13} /> {acting ? 'Approving…' : 'Approve'}
                   </button>
                   <button
                     onClick={() => doAction('reject')}
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-red/20 text-fn-red border border-fn-red/30 font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-red/30 transition-colors disabled:opacity-50"
                   >
-                    <XCircle size={13} /> Reject & Refund
+                    <XCircle size={13} /> {acting ? 'Rejecting…' : 'Reject & Refund'}
                   </button>
                 </>
               )}
@@ -325,14 +321,14 @@ export default function AdminWithdrawalsPage() {
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-green text-fn-black font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
                   >
-                    <CheckCircle size={13} /> Mark Completed
+                    <CheckCircle size={13} /> {acting ? 'Completing…' : 'Mark Completed'}
                   </button>
                   <button
                     onClick={() => doAction('fail')}
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-red/20 text-fn-red border border-fn-red/30 font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-red/30 transition-colors disabled:opacity-50"
                   >
-                    <XCircle size={13} /> Mark Failed & Refund
+                    <XCircle size={13} /> {acting ? 'Failing…' : 'Mark Failed & Refund'}
                   </button>
                 </>
               )}
@@ -341,6 +337,7 @@ export default function AdminWithdrawalsPage() {
               )}
               <button
                 onClick={() => setSelected(null)}
+                disabled={acting}
                 className="ml-auto text-fn-muted text-xs hover:text-fn-text transition-colors"
               >
                 Close
