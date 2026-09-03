@@ -1,35 +1,17 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-const TEAM_SELECT = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug,organization_id,created_at,updated_at,organization:organizations(id,name,logo_url)';
+const TEAM_SELECT = 'id,name,logo_url,region,rank,points,gold_count,silver_count,bronze_count,kills,strength,game_slug,organization_id,created_at,updated_at,organization:organizations(id,name,logo_url)';
 const TEAM_ATHLETE_SELECT = 'id,name,ign,known_name,team,role,photo_url,game_slug,status,overall_rating,attack,defense,survival,iq,clutch,kills,assists,damage,winrate,is_icon';
 const TEAM_GALLERY_SELECT = 'id,team_id,image_url,caption,sort_order,created_at';
 
-async function getRankingTotals(teamIds) {
-  if (!teamIds.length) return new Map();
-
-  const { data, error } = await supabaseAdmin
-    .from('tournament_results')
-    .select('team_id, points_earned')
-    .in('team_id', teamIds);
-
-  if (error) return new Map();
-
-  return (data ?? []).reduce((totals, row) => {
-    const current = totals.get(row.team_id) ?? 0;
-    totals.set(row.team_id, current + Number(row.points_earned ?? 0));
-    return totals;
-  }, new Map());
-}
-
-function withPowerRanks(teams, totals) {
+function withPowerRanks(teams) {
   return teams
-    .map((team) => ({ ...team, total_ranking_points: totals.get(team.id) ?? 0 }))
     .sort((a, b) => {
-      if (b.total_ranking_points !== a.total_ranking_points) return b.total_ranking_points - a.total_ranking_points;
+      if (Number(b.points ?? 0) !== Number(a.points ?? 0)) return Number(b.points ?? 0) - Number(a.points ?? 0);
       if ((a.rank ?? null) != null && (b.rank ?? null) != null) return a.rank - b.rank;
       if ((a.rank ?? null) != null) return -1;
       if ((b.rank ?? null) != null) return 1;
-      return (b.wins ?? 0) - (a.wins ?? 0);
+      return a.name.localeCompare(b.name);
     })
     .map((team, index) => ({ ...team, power_rank: index + 1 }));
 }
@@ -50,12 +32,10 @@ export async function getTeams({ game_slug } = {}) {
   const { data: athletes, error: athletesError } = await athleteQuery;
   if (athletesError) throw athletesError;
 
-  const totals = await getRankingTotals(teams.map((team) => team.id));
-
   return withPowerRanks(teams.map((team) => ({
     ...team,
     players: athletes.filter((athlete) => athlete.team === team.name),
-  })), totals);
+  })));
 }
 
 export async function getTeamById(id, game_slug = null) {
@@ -84,9 +64,7 @@ export async function getTeamById(id, game_slug = null) {
     .order('created_at', { ascending: true });
   if (galleryError) throw galleryError;
 
-  const totals = await getRankingTotals([team.id]);
-
-  return { ...team, total_ranking_points: totals.get(team.id) ?? 0, players, gallery: gallery ?? [] };
+  return { ...team, players, gallery: gallery ?? [] };
 }
 
 export async function createTeam(body) {

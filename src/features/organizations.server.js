@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 const ORG_SELECT = 'id,name,logo_url,region,founded_year,founded_date,description,created_at,updated_at,achievements:organization_achievements(id,title,date,game_slug,description)';
-const ORG_TEAM_SELECT = 'id,name,logo_url,region,game_slug,rank,wins,losses,kills,strength,organization_id';
+const ORG_TEAM_SELECT = 'id,name,logo_url,region,game_slug,rank,points,gold_count,silver_count,bronze_count,kills,strength,organization_id';
 
 function orderAchievements(org) {
   return {

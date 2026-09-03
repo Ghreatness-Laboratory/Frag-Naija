@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, CheckCircle, XCircle, AlertCircle, ArrowUpCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, AlertCircle, ArrowUpCircle, Copy } from 'lucide-react';
 
 type Withdrawal = {
   id: string;
@@ -51,6 +51,7 @@ export default function AdminWithdrawalsPage() {
   const [actionNote, setActionNote]   = useState('');
   const [acting, setActing]           = useState(false);
   const [actionErr, setActionErr]     = useState('');
+  const [copiedAccount, setCopiedAccount] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,6 +97,16 @@ export default function AdminWithdrawalsPage() {
       setActionErr(e instanceof Error ? e.message : 'Action failed');
     } finally {
       setActing(false);
+    }
+  }
+
+  async function copyAccountNumber(accountNumber: string) {
+    try {
+      await navigator.clipboard.writeText(accountNumber);
+      setCopiedAccount(accountNumber);
+      window.setTimeout(() => setCopiedAccount(''), 1500);
+    } catch {
+      setActionErr('Could not copy the account number. Please select it manually.');
     }
   }
 
@@ -159,7 +170,7 @@ export default function AdminWithdrawalsPage() {
       {/* Table */}
       <div className="bg-fn-card border border-fn-gborder rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[800px]">
+          <table className="w-full text-xs min-w-[960px]">
             <thead className="border-b border-fn-gborder bg-fn-dark">
               <tr>
                 {['User ID', 'Amount', 'Fee', 'Will Receive', 'Bank', 'Account', 'Status', 'Date', 'Actions'].map((h) => (
@@ -188,10 +199,10 @@ export default function AdminWithdrawalsPage() {
                     <td className="px-4 py-3 font-bold text-fn-text font-mono">{fmt(w.amount)}</td>
                     <td className="px-4 py-3 text-fn-red font-mono">−{fmt(w.fee)}</td>
                     <td className="px-4 py-3 text-fn-green font-bold font-mono">{fmt(w.amount_sent)}</td>
-                    <td className="px-4 py-3 text-fn-text">{w.bank_name}</td>
-                    <td className="px-4 py-3 text-fn-muted font-mono">
-                      ****{w.account_number.slice(-4)}
-                      <span className="block text-[9px] text-fn-muted">{w.account_name}</span>
+                    <td className="px-4 py-3 text-fn-text whitespace-nowrap select-text">{w.bank_name}</td>
+                    <td className="px-4 py-3 text-fn-text font-mono whitespace-nowrap select-text">
+                      {w.account_number}
+                      <span className="block text-[9px] text-fn-muted font-sans whitespace-normal break-words select-text">{w.account_name}</span>
                     </td>
                     <td className="px-4 py-3">{statusBadge(w.status)}</td>
                     <td className="px-4 py-3 text-fn-muted">
@@ -199,7 +210,7 @@ export default function AdminWithdrawalsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() => { setSelected(w); setActionNote(''); setActionErr(''); }}
+                        onClick={() => { setSelected(w); setActionNote(''); setActionErr(''); setCopiedAccount(''); }}
                         className="text-fn-green hover:underline text-[10px] font-bold uppercase tracking-wider"
                       >
                         Manage
@@ -216,7 +227,7 @@ export default function AdminWithdrawalsPage() {
       {/* Action modal */}
       {selected && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-fn-dark border border-fn-gborder rounded-lg w-full max-w-md p-6">
+          <div className="bg-fn-dark border border-fn-gborder rounded-lg w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-fn-text font-bold uppercase tracking-widest text-sm">Manage Withdrawal</h3>
               <button onClick={() => setSelected(null)} className="text-fn-muted hover:text-fn-text text-xl leading-none">×</button>
@@ -236,13 +247,26 @@ export default function AdminWithdrawalsPage() {
                 <span className="text-fn-muted">To send</span>
                 <span className="text-fn-green font-bold">{fmt(selected.amount_sent)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-fn-muted">Bank</span>
-                <span className="text-fn-text">{selected.bank_name}</span>
+              <div className="border-t border-fn-gborder pt-2 space-y-1">
+                <span className="block text-fn-muted">Bank</span>
+                <span className="block text-fn-text break-words select-text">{selected.bank_name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-fn-muted">Account</span>
-                <span className="text-fn-text">****{selected.account_number.slice(-4)} — {selected.account_name}</span>
+              <div className="border-t border-fn-gborder pt-2 space-y-1">
+                <span className="block text-fn-muted">Account number</span>
+                <div className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all select-text text-fn-text">{selected.account_number}</code>
+                  <button
+                    type="button"
+                    onClick={() => copyAccountNumber(selected.account_number)}
+                    className="shrink-0 inline-flex items-center gap-1 border border-fn-gborder px-2 py-1 text-[10px] font-sans font-bold uppercase tracking-wider text-fn-muted hover:border-fn-green/50 hover:text-fn-green"
+                  >
+                    <Copy size={11} /> {copiedAccount === selected.account_number ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+              <div className="border-t border-fn-gborder pt-2 space-y-1">
+                <span className="block text-fn-muted">Account name</span>
+                <span className="block text-fn-text break-words select-text">{selected.account_name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-fn-muted">Status</span>

@@ -5,9 +5,11 @@ import { getCompanyProfile } from '@/features/companyProfile.server';
 import { getFeaturedAthletes } from '@/features/featuredAthletes.server';
 import { listStakeholders } from '@/features/stakeholders.server';
 
-export const revalidate = 120;
+// Featured teams read the manually managed team stats directly on every request
+// so an admin save cannot leave a stale duplicate ranking on the home page.
+export const dynamic = 'force-dynamic';
 
-const TEAM_FIELDS = 'id,name,logo_url,region,rank,wins,losses,kills,strength,game_slug';
+const TEAM_FIELDS = 'id,name,logo_url,region,rank,points,gold_count,silver_count,bronze_count,kills,strength,game_slug';
 const TOURNAMENT_FIELDS = 'id,name,start_date,end_date,status,game,prize_pool,currency';
 const WAGER_FIELDS = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,hot,status,closes_at,featured_on_home,type,options';
 const TRANSFER_FIELDS = 'id,from_team,to_team,fee,status,date,athletes(id,name,ign)';
@@ -38,7 +40,7 @@ export async function GET() {
     let teamQuery = supabaseAdmin
       .from('teams')
       .select(TEAM_FIELDS)
-      .order('rank', { ascending: true, nullsLast: true })
+      .order('points', { ascending: false })
       .limit(featuredTeamIds.length || 4);
     if (featuredTeamIds.length) teamQuery = teamQuery.in('id', featuredTeamIds);
 
@@ -66,7 +68,7 @@ export async function GET() {
       stakeholders,
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (e) {

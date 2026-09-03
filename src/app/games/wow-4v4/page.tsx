@@ -12,7 +12,7 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 const PUBG_SLUG = 'pubg-mobile';
 
 type Athlete = { id:string; name:string; ign?:string|null; known_name?:string|null; team?:string|null; role?:string|null; photo_url?:string|null; attack?:number|null; defense?:number|null; iq?:number|null; overall_rating?:number|string|null; rating?:number|string|null };
-type Team = { id:string; name:string; logo_url?:string|null; region?:string|null; rank?:number|null; strength?:number|null; wins?:number|null; losses?:number|null; kills?:number|null; power_rank?:number|null; total_ranking_points?:number|null; players?:Athlete[] };
+type Team = { id:string; name:string; logo_url?:string|null; region?:string|null; rank?:number|null; strength?:number|null; points?:number|null; kills?:number|null; power_rank?:number|null; players?:Athlete[] };
 type EffectiveStats = { attack:number; defense:number; iq:number; power:number };
 
 type Step = 'grid' | 'reveal' | 'roster' | 'cube' | 'wager' | 'wagerLocked' | 'matchSim' | 'result';
@@ -28,10 +28,10 @@ function teamBaseStats(team?: Team | null): EffectiveStats {
   const withStats = players.filter((p) => p.attack || p.defense || p.iq);
   if (withStats.length) return aggregateAthleteStats(withStats);
   const strength = statValue(team?.strength, 78);
-  const winLift = Number(team?.wins ?? 0) - Number(team?.losses ?? 0);
+  const pointLift = Number(team?.points ?? 0) / 100;
   const attack = statValue(strength + Math.min(8, Number(team?.kills ?? 0) / 80), strength);
-  const defense = statValue(strength + Math.min(6, winLift / 3), strength);
-  const iq = statValue(strength + Math.min(5, Number(team?.total_ranking_points ?? 0) / 100), strength);
+  const defense = statValue(strength + Math.min(6, pointLift / 3), strength);
+  const iq = statValue(strength + Math.min(5, pointLift), strength);
   return { attack, defense, iq, power: round((attack + defense + iq) / 3) };
 }
 
@@ -77,7 +77,7 @@ function TeamTile({ team, rank, selected, index, reduceMotion, onClick }: { team
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(77,255,110,.12),transparent_55%)] opacity-0 transition-opacity group-hover:opacity-100" />
     <div className={`relative flex items-center gap-3 transition duration-300 ${selected ? 'grayscale-0 brightness-100' : 'grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100'}`}>
       <span className="flex h-12 w-12 items-center justify-center overflow-hidden border border-fn-gborder bg-fn-dark">{logo(team) ? <OptimizedImage src={logo(team)} alt={team.name} className="h-full w-full object-cover" /> : <Shield className="text-fn-green" />}</span>
-      <span className="min-w-0"><span className="block text-[11px] font-black uppercase tracking-widest text-fn-text">#{rank} {team.name}</span><span className="mt-2 inline-flex border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-fn-green">{Number(team.total_ranking_points ?? 0).toFixed(0)} PTS</span></span>
+      <span className="min-w-0"><span className="block text-[11px] font-black uppercase tracking-widest text-fn-text">#{rank} {team.name}</span><span className="mt-2 inline-flex border border-fn-green/30 bg-fn-green/10 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-fn-green">{Number(team.points ?? 0).toFixed(0)} PTS</span></span>
     </div>
     {selected && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center border border-fn-black bg-fn-green text-fn-black"><Check size={13} strokeWidth={4} /></span>}
   </motion.button>;

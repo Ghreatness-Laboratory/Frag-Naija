@@ -33,12 +33,13 @@ type Team = {
   name: string;
   logo_url: string | null;
   region: string | null;
-  wins: number;
-  losses: number;
+  points?: number | null;
+  gold_count?: number | null;
+  silver_count?: number | null;
+  bronze_count?: number | null;
   kills: number;
   rank: number | null;
   strength: number | null;
-  points?: number | null;
   form?: string[] | string | null;
   performance_history?: { label: string; value: string; date: string }[] | string | null;
   tournament_results?: { name: string; placement: string; date: string }[] | string | null;
@@ -63,11 +64,6 @@ function parseArray(v: unknown) {
 function parseObjects(v: unknown) {
   const a = parseArray(v);
   return Array.isArray(a) ? a.filter((x) => x && typeof x === 'object') : [];
-}
-
-function winRate(w: number, l: number) {
-  const t = Number(w) + Number(l);
-  return t ? Math.round((Number(w) / t) * 100) : 0;
 }
 
 export default function TeamPageClient({ id }: { id: string }) {
@@ -150,10 +146,10 @@ export default function TeamPageClient({ id }: { id: string }) {
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
         {[
-          ['PTS', team.points ?? team.strength ?? 0],
-          ['W', team.wins],
-          ['L', team.losses],
-          ['WR', `${winRate(team.wins, team.losses)}%`],
+          ['PTS', team.points ?? 0],
+          ['GLD', team.gold_count ?? 0],
+          ['SLV', team.silver_count ?? 0],
+          ['BRZ', team.bronze_count ?? 0],
           ['KLS', team.kills],
         ].map(([label, value]) => (
           <div key={label} className="rounded-sm border border-fn-gborder bg-fn-card p-4 text-center">
