@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { WALLET_UPDATED_EVENT } from '@/lib/wallet-events';
+import { useAuth } from '@/context/AuthContext';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
@@ -135,16 +136,15 @@ export function useHighlights(filters = {}) {
 // ─── Auth ──────────────────────────────────────────────────────────────────────────
 
 export function useMe() {
-  const result = useFetch('/api/auth/me', [], { retries: 1, cache: 'no-store' });
-  const { refetch } = result;
+  const { user, loading, refresh } = useAuth();
 
   useEffect(() => {
-    const refresh = () => { refetch(); };
-    window.addEventListener(WALLET_UPDATED_EVENT, refresh);
-    return () => window.removeEventListener(WALLET_UPDATED_EVENT, refresh);
-  }, [refetch]);
+    const handleWalletUpdate = () => { void refresh(); };
+    window.addEventListener(WALLET_UPDATED_EVENT, handleWalletUpdate);
+    return () => window.removeEventListener(WALLET_UPDATED_EVENT, handleWalletUpdate);
+  }, [refresh]);
 
-  return result;
+  return { data: user ?? null, loading, error: null, refetch: refresh };
 }
 
 export function useBanks() {

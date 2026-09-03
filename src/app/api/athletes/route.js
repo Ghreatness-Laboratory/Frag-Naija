@@ -23,6 +23,13 @@ export async function GET(request) {
     const data = await getAthletes(filters);
     return NextResponse.json(data);
   } catch (e) {
+    console.error('GET /api/athletes failed', {
+      game_slug: searchParams.get('game_slug'),
+      team: searchParams.get('team'),
+      status: searchParams.get('status'),
+      is_icon: searchParams.get('is_icon'),
+      error: e,
+    });
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

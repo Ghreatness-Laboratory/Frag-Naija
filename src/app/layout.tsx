@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import BottomNav from "@/components/layout/BottomNav";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/context/GameContext";
+import { AuthProvider } from "@/context/AuthContext";
 import GameAccessGate from "@/components/game/GameAccessGate";
 import PWARegister from "@/components/PWARegister";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
@@ -120,24 +121,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-fn-black text-fn-text font-sans antialiased">
         <ThemeProvider>
-          <GameProvider>
-            <GameAccessGate>
-              <NotificationsProvider>
-              <Navbar />
-              <div className="flex min-h-screen" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
-                <main className="flex-1 overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
-                  {children}
-                </main>
-              </div>
-              <Footer />
-              <BottomNav />
-              <PWARegister />
-              <PWAInstallPrompt />
-              <FCMRegistrar />
-              <LazySupportChatbot />
-              </NotificationsProvider>
-            </GameAccessGate>
-          </GameProvider>
+          <AuthProvider>
+            <GameProvider>
+              <GameAccessGate>
+                <NotificationsProvider>
+                  <Navbar />
+                  <div className="flex min-h-screen" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
+                    <main className="flex-1 overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+                      {children}
+                    </main>
+                  </div>
+                  <Footer />
+                  <BottomNav />
+                  <PWARegister />
+                  <PWAInstallPrompt />
+                  <FCMRegistrar />
+                  <LazySupportChatbot />
+                </NotificationsProvider>
+              </GameAccessGate>
+            </GameProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
