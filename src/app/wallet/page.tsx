@@ -39,6 +39,7 @@ type BankAccount = {
   account_number: string;
   account_name: string;
   paystack_recipient_code: string | null;
+  verified_at: string | null;
 };
 
 type Withdrawal = {
@@ -117,7 +118,10 @@ function BankAccountSection({
   bankAccount: BankAccount | null;
   onSaved: (acct: BankAccount) => void;
 }) {
-  const [editing,   setEditing]   = useState(!bankAccount);
+  // Keep the entry form unmounted until the explicit CTA is clicked. Previously
+  // the bank-list response was read with the wrong shape, leaving this flow
+  // looking like a non-responsive "Set Payout Account" action.
+  const [editing,   setEditing]   = useState(false);
   const [banks,     setBanks]     = useState<Bank[]>([]);
   const [bankCode,  setBankCode]  = useState('');
   const [accNum,    setAccNum]    = useState('');
@@ -129,8 +133,8 @@ function BankAccountSection({
   useEffect(() => {
     if (!editing) return;
     fetch('/api/banks')
-      .then((r) => r.json())
-      .then((d) => d.data && setBanks(d.data))
+      .then((r) => r.ok ? r.json() : Promise.reject(new Error('Could not load banks')))
+      .then((data) => setBanks(Array.isArray(data) ? data : data.data || []))
       .catch(() => {});
   }, [editing]);
 
@@ -145,7 +149,7 @@ function BankAccountSection({
     try {
       const res  = await fetch(`/api/bank-account/verify?account_number=${accNum}&bank_code=${bankCode}`);
       const data = await res.json();
-      if (!res.ok || !data.data?.account_name) throw new Error(data.message || 'Could not verify account');
+      if (!res.ok || !data.data?.account_name) throw new Error(data.error || data.message || 'Could not verify account');
       setAccName(data.data.account_name);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Verification failed');
@@ -155,7 +159,7 @@ function BankAccountSection({
   }
 
   async function handleSave() {
-    if (!accName) { setErr('Verify your account number first.'); return; }
+    if (!accName) { setErr('Enter the account holder name.'); return; }
     const bank = banks.find((b) => b.code === bankCode);
     if (!bank) { setErr('Select a bank.'); return; }
     setSaving(true);
@@ -199,7 +203,30 @@ function BankAccountSection({
               {bankAccount.bank_name} · ****{bankAccount.account_number.slice(-4)}
             </p>
           </div>
-          <CheckCircle className="w-5 h-5 text-fn-green" />
+          {bankAccount.verified_at ? <CheckCircle className="w-5 h-5 text-fn-green" /> : <AlertCircle className="w-5 h-5 text-fn-yellow" />}
+        </div>
+      </div>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <div className="bg-fn-card border border-fn-gborder rounded-lg p-5 mb-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-fn-green" />
+              <span className="text-fn-text font-bold text-xs uppercase tracking-widest">Payout Account</span>
+            </div>
+            <p className="text-fn-muted text-xs mt-2">Verify an account in your own name before withdrawing.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setEditing(true); setErr(''); }}
+            className="shrink-0 bg-fn-green text-fn-black font-bold px-3 py-2 rounded text-[10px] uppercase tracking-wider hover:bg-fn-gdim transition-colors"
+          >
+            Set Payout Account
+          </button>
         </div>
       </div>
     );
@@ -256,6 +283,18 @@ function BankAccountSection({
           </div>
         </div>
 
+        <div>
+          <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Account Holder Name</label>
+          <input
+            type="text"
+            value={accName}
+            onChange={(e) => setAccName(e.target.value)}
+            placeholder="Name registered with this account"
+            className="w-full bg-fn-dark border border-fn-gborder rounded px-3 py-2 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
+          />
+          <p className="text-fn-muted text-[10px] mt-1">We will resolve and verify this name with your registered FragNaija name before saving.</p>
+        </div>
+
         {accName && (
           <div className="flex items-center gap-2 bg-fn-green/10 border border-fn-green/20 rounded px-3 py-2">
             <CheckCircle size={13} className="text-fn-green shrink-0" />
@@ -272,7 +311,7 @@ function BankAccountSection({
 
         <button
           onClick={handleSave}
-          disabled={saving || !accName}
+          disabled={saving || !accName || !bankCode || accNum.length !== 10}
           className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save Account'}
@@ -319,6 +358,7 @@ function WalletContent() {
   const wdFee      = wdAmount ? Math.ceil(Number(wdAmount) * WITHDRAW_FEE_PERCENT) / 100 : 0;
   const wdNet      = wdAmount ? Number(wdAmount) - wdFee : 0;
   const hasPending = withdrawals.some((w) => w.status === 'Pending');
+  const payoutAccountReady = Boolean(bankAccount?.verified_at);
 
   const loadWithdrawals = useCallback(async () => {
     const res = await fetch('/api/withdraw');
@@ -696,7 +736,7 @@ function WalletContent() {
                         step="100"
                         value={wdAmount}
                         onChange={(e) => setWdAmount(e.target.value)}
-                        disabled={hasPending || !bankAccount}
+                        disabled={hasPending || !payoutAccountReady}
                         className="w-full bg-fn-dark border border-fn-gborder rounded pl-8 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors disabled:opacity-50"
                         placeholder="1,000"
                       />
@@ -706,7 +746,7 @@ function WalletContent() {
                         <button
                           key={v}
                           type="button"
-                          disabled={hasPending || !bankAccount}
+                          disabled={hasPending || !payoutAccountReady}
                           onClick={() => setWdAmount(String(v))}
                           className="flex-1 text-[10px] font-bold tracking-wider bg-fn-dark border border-fn-gborder text-fn-muted hover:text-fn-green hover:border-fn-green/50 py-1.5 rounded-sm transition-all disabled:opacity-40"
                         >
@@ -749,15 +789,15 @@ function WalletContent() {
 
                   <button
                     type="submit"
-                    disabled={wdBusy || hasPending || !bankAccount || !wdAmount}
+                    disabled={wdBusy || hasPending || !payoutAccountReady || !wdAmount}
                     className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
                   >
                     {wdBusy ? 'Submitting...' : 'Request Withdrawal'}
                   </button>
 
-                  {!bankAccount && (
+                  {!payoutAccountReady && (
                     <p className="text-fn-muted text-[11px] text-center">
-                      Set up your payout account above before withdrawing.
+                      Set up and verify your payout account above before withdrawing.
                     </p>
                   )}
                 </form>
