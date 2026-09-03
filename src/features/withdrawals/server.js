@@ -1,39 +1,6 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { getSetting } from '@/features/settings/server';
 
-
-async function getMostRecentDepositFundingSource(userId) {
-  const { data, error } = await supabaseAdmin
-    .from('wallet_transactions')
-    .select('id,funding_bank_code,funding_account_number,funding_account_name,gateway_authorization,created_at')
-    .eq('user_id', userId)
-    .in('type', ['deposit', 'Deposit'])
-    .order('created_at', { ascending: false })
-    .limit(1);
-  if (error) throw error;
-  const tx = data?.[0];
-  if (!tx) return null;
-  const authorization = tx.gateway_authorization && typeof tx.gateway_authorization === 'object' ? tx.gateway_authorization : {};
-  return {
-    bank_code: tx.funding_bank_code || authorization.bank_code || authorization.bank || null,
-    account_number: tx.funding_account_number || authorization.account_number || authorization.last4 || null,
-    account_name: tx.funding_account_name || authorization.account_name || authorization.name || null,
-  };
-}
-
-function assertWithdrawalMatchesFundingSource(bankAccount, source) {
-  if (!source) return;
-  const expectedAccount = source.account_number ? String(source.account_number).replace(/\D/g, '') : '';
-  const actualAccount = bankAccount.account_number ? String(bankAccount.account_number).replace(/\D/g, '') : '';
-  const accountMatches = expectedAccount && (actualAccount === expectedAccount || actualAccount.endsWith(expectedAccount) || expectedAccount.endsWith(actualAccount));
-  const expectedBank = source.bank_code ? String(source.bank_code).toLowerCase() : '';
-  const actualBank = bankAccount.bank_code ? String(bankAccount.bank_code).toLowerCase() : '';
-  const bankMatches = !expectedBank || expectedBank === actualBank || String(bankAccount.bank_name || '').toLowerCase().includes(expectedBank);
-  if (expectedAccount && (!accountMatches || !bankMatches)) {
-    throw new Error('Withdrawal blocked: payout account must match the account used for your most recent deposit. Please withdraw to the same funding source.');
-  }
-}
-
 export async function getUserBankAccount(userId) {
   const { data } = await supabaseAdmin
     .from('bank_accounts')
@@ -49,6 +16,7 @@ export async function saveUserBankAccount(userId, {
   account_number,
   account_name,
   paystack_recipient_code,
+  verified_at,
 }) {
   const { data, error } = await supabaseAdmin
     .from('bank_accounts')
@@ -60,6 +28,7 @@ export async function saveUserBankAccount(userId, {
         account_number,
         account_name,
         paystack_recipient_code,
+        verified_at,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id' }
@@ -91,8 +60,7 @@ export async function submitWithdrawal(userId, { amount }) {
   if (amount > maxWithdrawal) throw new Error(`Maximum withdrawal is ₦${maxWithdrawal.toLocaleString()}`);
 
   const bankAccount = await getUserBankAccount(userId);
-  if (!bankAccount) throw new Error('Please save a bank account before withdrawing');
-  assertWithdrawalMatchesFundingSource(bankAccount, await getMostRecentDepositFundingSource(userId));
+  if (!bankAccount?.verified_at) throw new Error('Please save and verify your payout account before withdrawing');
 
   const fee = Math.round(amount * feePercent) / 100;
   const { data, error } = await supabaseAdmin.rpc('create_manual_withdrawal', {

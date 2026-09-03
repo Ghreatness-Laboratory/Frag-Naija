@@ -208,7 +208,10 @@ export default function LoginPage() {
             </button>
 
             <p className="text-center text-fn-muted text-xs">
-              New to FragNaija? Create an account to get started.
+              Don&apos;t have an account?{' '}
+              <Link href={`/register?next=${encodeURIComponent(nextPath)}`} className="font-bold text-fn-green underline underline-offset-2 hover:text-fn-gdim">
+                Sign Up
+              </Link>
             </p>
           </form>
         )}
