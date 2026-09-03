@@ -50,6 +50,7 @@ export default function AdminWithdrawalsPage() {
   const [selected, setSelected]       = useState<Withdrawal | null>(null);
   const [actionNote, setActionNote]   = useState('');
   const [acting, setActing]           = useState(false);
+  const [actionInProgress, setActionInProgress] = useState('');
   const [actionErr, setActionErr]     = useState('');
   const [copiedAccount, setCopiedAccount] = useState('');
 
@@ -76,11 +77,8 @@ export default function AdminWithdrawalsPage() {
 
   async function doAction(action: string) {
     if (!selected) return;
-    if (action === 'reject' && !actionNote.trim()) {
-      setActionErr('Please enter a reason for rejection.');
-      return;
-    }
     setActing(true);
+    setActionInProgress(action);
     setActionErr('');
     try {
       const res = await fetch(`/api/admin/withdrawals/${selected.id}`, {
@@ -92,11 +90,22 @@ export default function AdminWithdrawalsPage() {
       if (!res.ok) throw new Error(data.error);
       setSelected(null);
       setActionNote('');
-      load();
+      await load();
     } catch (e: unknown) {
       setActionErr(e instanceof Error ? e.message : 'Action failed');
     } finally {
       setActing(false);
+      setActionInProgress('');
+    }
+  }
+
+  async function copyAccountNumber(accountNumber: string) {
+    try {
+      await navigator.clipboard.writeText(accountNumber);
+      setCopiedAccount(accountNumber);
+      window.setTimeout(() => setCopiedAccount(''), 1500);
+    } catch {
+      setActionErr('Could not copy the account number. Please select it manually.');
     }
   }
 
@@ -281,12 +290,12 @@ export default function AdminWithdrawalsPage() {
 
             {/* Note field */}
             <div className="mb-4">
-              <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Note (required for rejection)</label>
+              <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Admin note (optional)</label>
               <input
                 type="text"
                 value={actionNote}
                 onChange={(e) => setActionNote(e.target.value)}
-                placeholder="e.g. Account details mismatch"
+                placeholder="Optional reason, e.g. Account details mismatch"
                 className="w-full bg-fn-card border border-fn-gborder rounded px-3 py-2 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
               />
             </div>
@@ -303,18 +312,18 @@ export default function AdminWithdrawalsPage() {
               {selected.status === 'Pending' && (
                 <>
                   <button
-                    onClick={() => doAction('complete')}
+                    onClick={() => doAction('approve')}
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-green text-fn-black font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
                   >
-                    <CheckCircle size={13} /> Mark Completed
+                    <CheckCircle size={13} /> {actionInProgress === 'approve' ? 'Approving...' : 'Approve'}
                   </button>
                   <button
                     onClick={() => doAction('reject')}
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-red/20 text-fn-red border border-fn-red/30 font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-red/30 transition-colors disabled:opacity-50"
                   >
-                    <XCircle size={13} /> Reject & Refund
+                    <XCircle size={13} /> {actionInProgress === 'reject' ? 'Rejecting...' : 'Reject & Refund'}
                   </button>
                 </>
               )}
@@ -325,14 +334,14 @@ export default function AdminWithdrawalsPage() {
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-green text-fn-black font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
                   >
-                    <CheckCircle size={13} /> Mark Completed
+                    <CheckCircle size={13} /> {actionInProgress === 'complete' ? 'Completing...' : 'Mark Completed'}
                   </button>
                   <button
                     onClick={() => doAction('fail')}
                     disabled={acting}
                     className="flex items-center gap-1.5 bg-fn-red/20 text-fn-red border border-fn-red/30 font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-fn-red/30 transition-colors disabled:opacity-50"
                   >
-                    <XCircle size={13} /> Mark Failed & Refund
+                    <XCircle size={13} /> {actionInProgress === 'fail' ? 'Failing...' : 'Mark Failed & Refund'}
                   </button>
                 </>
               )}

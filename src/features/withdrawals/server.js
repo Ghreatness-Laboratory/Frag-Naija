@@ -158,12 +158,6 @@ export async function adminUpdateWithdrawal(withdrawalId, { action, note }) {
     if (error) throw error;
     return { done: true, status: Array.isArray(data) ? data[0]?.status : data?.status };
   }
-  if (action === 'complete' && withdrawal.status === 'Pending') {
-    const { data, error } = await supabaseAdmin.rpc('complete_manual_withdrawal', { p_withdrawal_id: withdrawalId, p_admin_note: note || null });
-    if (error) throw error;
-    return { done: true, status: Array.isArray(data) ? data[0]?.status : data?.status };
-  }
-
   let newStatus;
   const updates = { updated_at: new Date().toISOString() };
 
