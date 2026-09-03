@@ -5,22 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ShieldCheck, ShieldOff, Shield, Copy, Check, ArrowLeft } from 'lucide-react';
 import BrandedLoader from '@/components/common/BrandedLoader';
-
-type Factor = { id: string; status: string };
-type UserData = {
-  email: string;
-  username?: string;
-  provider?: string;
-  totp_enabled: boolean;
-  factors: Factor[];
-} | null;
+import { useAuth } from '@/context/AuthContext';
 
 type EnrollData = { factorId: string; qrCode: string; secret: string } | null;
 type EnrollStep = 'idle' | 'scan' | 'confirm' | 'done';
 
 export default function SecurityPage() {
-  const [user, setUser]           = useState<UserData>(null);
-  const [loading, setLoading]     = useState(true);
+  const { user, loading, refresh } = useAuth();
   const [enrollStep, setEnrollStep] = useState<EnrollStep>('idle');
   const [enrollData, setEnrollData] = useState<EnrollData>(null);
   const [code, setCode]           = useState('');
@@ -30,13 +21,7 @@ export default function SecurityPage() {
   const [notificationSettings, setNotificationSettings] = useState({ match_results_enabled: true });
 
   useEffect(() => {
-    let active = true;
-    fetch('/api/auth/me', { credentials: 'include', headers: { 'Content-Type': 'application/json' } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (active) { setUser(d); setLoading(false); } })
-      .catch(() => { if (active) setLoading(false); });
     fetch('/api/notifications/settings', { credentials: 'include' }).then(r => r.json()).then(d => setNotificationSettings({ match_results_enabled: d.match_results_enabled !== false })).catch(() => {});
-    return () => { active = false; };
   }, []);
 
   async function startEnroll() {
@@ -69,7 +54,7 @@ export default function SecurityPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setEnrollStep('done');
-      setUser(prev => prev ? { ...prev, totp_enabled: true } : prev);
+      await refresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Invalid code');
       setCode('');
@@ -91,8 +76,8 @@ export default function SecurityPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setUser(prev => prev ? { ...prev, totp_enabled: false, factors: [] } : prev);
       setEnrollStep('idle');
+      await refresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to disable 2FA');
     } finally {
