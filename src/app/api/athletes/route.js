@@ -5,8 +5,9 @@ import { checkAdmin } from '@/lib/checkAdmin';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+
   try {
-    const { searchParams } = new URL(request.url);
     const game_slug = searchParams.get('game_slug') || '';
 
     if (searchParams.get('distinct') === 'roles') {
@@ -28,7 +29,8 @@ export async function GET(request) {
       team: searchParams.get('team'),
       status: searchParams.get('status'),
       is_icon: searchParams.get('is_icon'),
-      error: e,
+      message: e instanceof Error ? e.message : String(e),
+      stack: e instanceof Error ? e.stack : undefined,
     });
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

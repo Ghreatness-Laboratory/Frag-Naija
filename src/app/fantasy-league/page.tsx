@@ -10,6 +10,7 @@ import { FANTASY_SQUAD_BUDGET, calculateFantasyBasePrice, fantasyTeamLimitViolat
 import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { useGame } from '@/context/GameContext';
+import { useAuth } from '@/context/AuthContext';
 
 const WELCOME_KEY = "fn-fantasy-welcome-complete";
 const MIN_LOADER_MS = 700;
@@ -33,7 +34,6 @@ type ChipWindow = { status?: string; opens?: string; closes?: string };
 type ChipWindows = { triple_captain?: ChipWindow; manual_substitute?: ChipWindow };
 type SavedSquad = { starters: string[]; bench: string[]; captain: string; activeChip?: string; chipUsage?: Record<string, number>; updatedAt?: string; confirmedAt?: string; locked?: boolean; };
 type LeaderboardRow = { rank: number; username: string; total_points: number; gameweek_points?: number; squad_value?: number };
-type AuthUser = { id?: string; email?: string; username?: string } | null;
 
 function currency(value: number) { return `₦${Math.max(0, Math.round(value)).toLocaleString()}`; }
 function rating(a: Athlete) { return calculateAthleteOverallRating(a as unknown as Record<string, unknown>, a.game_slug) ?? Number(a.overall_rating ?? 50); }
@@ -101,7 +101,7 @@ export default function FantasyLeaguePage() {
   const [transferWindow, setTransferWindow] = useState<TransferWindow>({});
   const [chipWindows, setChipWindows] = useState<ChipWindows>({});
   const [squadLocked, setSquadLocked] = useState(false);
-  const [currentUser, setCurrentUser] = useState<AuthUser | undefined>(undefined);
+  const { user: currentUser } = useAuth();
   const [activeChip, setActiveChip] = useState("");
   const [chipUsage, setChipUsage] = useState<Record<string, number>>({});
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
@@ -158,7 +158,6 @@ export default function FantasyLeaguePage() {
       } catch {}
     }
   }, [fantasyGameSlug, welcomeKey, transferWindowKey, confirmedSquadKey, inProgressSquadKey]);
-  useEffect(() => { fetch("/api/auth/me", { cache: "no-store", credentials: "include", headers: { "Content-Type": "application/json" } }).then((r) => r.ok ? r.json() : null).then((user) => setCurrentUser(user ?? null)).catch(() => setCurrentUser(null)); }, []);
   useEffect(() => {
     function handleResize() {
       setQuickButtonPosition((position) => position ? clampQuickButtonPosition(position) : defaultQuickButtonPosition());

@@ -1,13 +1,15 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, Swords, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { GAMES } from '@/lib/games';
+import { useAuth } from '@/context/AuthContext';
 
 type UserResult={id:string;username:string}; 
 type Wager={ id:string; creator_id:string; opponent_id:string; creator_name:string; opponent_name:string; terms:string; stake_amount:number|string; status:string; game_slug?:string; proof_of_win_url?:string };
 
 export default function CustomWagerPage(){
+ const { user, loading: authLoading } = useAuth();
  const [rows,setRows]=useState<Wager[]>([]); 
  const [q,setQ]=useState(''); 
  const [users,setUsers]=useState<UserResult[]>([]); 
@@ -20,15 +22,14 @@ export default function CustomWagerPage(){
  const [uploading, setUploading] = useState(false);
  const [ageBlocked, setAgeBlocked] = useState(false);
 
- async function load(){ 
-   const me=await fetch('/api/auth/me',{credentials:'include'});
-   if(me.ok){ const user=await me.json(); const dob=user.date_of_birth; if(!dob){ setAgeBlocked(true); return; } const d=new Date(`${dob}T00:00:00Z`); const now=new Date(); let age=now.getUTCFullYear()-d.getUTCFullYear(); if(now.getUTCMonth()<d.getUTCMonth()||(now.getUTCMonth()===d.getUTCMonth()&&now.getUTCDate()<d.getUTCDate())) age-=1; if(!Number.isFinite(age)||age<18){ setAgeBlocked(true); return; }}
+ const load = useCallback(async () => {
+   if(user){ const dob=user.date_of_birth; if(!dob){ setAgeBlocked(true); return; } const d=new Date(`${dob}T00:00:00Z`); const now=new Date(); let age=now.getUTCFullYear()-d.getUTCFullYear(); if(now.getUTCMonth()<d.getUTCMonth()||(now.getUTCMonth()===d.getUTCMonth()&&now.getUTCDate()<d.getUTCDate())) age-=1; if(!Number.isFinite(age)||age<18){ setAgeBlocked(true); return; }}
    const r=await fetch('/api/custom-wagers',{credentials:'include'}); 
    if(r.status===401){setMsg('Login required.');return;} 
    if(r.ok)setRows(await r.json()); 
- }
+ }, [user]);
 
- useEffect(()=>{load();},[]);
+ useEffect(()=>{ if (!authLoading) void load(); },[authLoading, load]);
 
  async function search(v:string){ 
    setQ(v); 
