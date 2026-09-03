@@ -33,8 +33,10 @@ type Team = {
   name: string;
   logo_url: string | null;
   region: string | null;
-  wins: number;
-  losses: number;
+  points: number;
+  gold_count: number;
+  silver_count: number;
+  bronze_count: number;
   kills: number;
   bio: string | null;
   rank: number | null;
@@ -42,7 +44,6 @@ type Team = {
   achievements: string[] | string | null;
   players: Athlete[];
   game_slug?: string | null;
-  total_ranking_points?: number;
   power_rank?: number;
 };
 
@@ -51,11 +52,6 @@ function parseArray(val: string[] | string | null | undefined): string[] {
   if (Array.isArray(val)) return val.filter(Boolean);
   try { const p = JSON.parse(String(val)); return Array.isArray(p) ? p.filter(Boolean) : []; }
   catch { return String(val).split(",").map((s) => s.trim()).filter(Boolean); }
-}
-
-function winRate(wins: number, losses: number) {
-  const total = wins + losses;
-  return total === 0 ? 0 : Math.round((wins / total) * 100);
 }
 
 function preloadTeamImages(teams: Team[]) {
@@ -271,7 +267,7 @@ export default function TeamsPage() {
                 </div>
 
                 <div className="flex-shrink-0 text-right">
-                  <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{Number(team.total_ranking_points ?? 0).toFixed(0)}</div>
+                  <div className="text-[11px] font-bold font-mono" style={{ color: primary }}>{Number(team.points ?? 0).toFixed(0)}</div>
                   <div className="fn-label text-[7px]">PTS</div>
                 </div>
               </button>
@@ -319,10 +315,10 @@ export default function TeamsPage() {
                 <h2 className="font-display text-3xl sm:text-4xl font-black uppercase text-fn-text tracking-wide">{t.name}</h2>
                 <div className="flex gap-4 mt-2">
                   {[
-                    { v: Number(t.total_ranking_points ?? 0).toFixed(0), l: "RANK PTS" },
-                    { v: t.wins,   l: "WINS"     },
-                    { v: t.losses, l: "LOSSES"    },
-                    { v: `${winRate(t.wins, t.losses)}%`, l: "WIN RATE" },
+                    { v: Number(t.points ?? 0).toFixed(0), l: "POINTS" },
+                    { v: t.gold_count, l: "GOLD" },
+                    { v: t.silver_count, l: "SILVER" },
+                    { v: t.bronze_count, l: "BRONZE" },
                     { v: t.kills,  l: "KILLS"     },
                   ].map(({ v, l }) => (
                     <div key={l} className="text-center">
@@ -349,12 +345,12 @@ export default function TeamsPage() {
               <div className="font-display text-3xl font-black" style={{ color: secondary }}>#{t.rank ?? "—"}</div>
             </div>
             <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
-              <div className="fn-label mb-1">TOTAL WINS</div>
-              <div className="font-display text-3xl font-black" style={{ color: primary }}>{t.wins}</div>
+              <div className="fn-label mb-1">POINTS</div>
+              <div className="font-display text-3xl font-black" style={{ color: primary }}>{t.points}</div>
             </div>
             <div className="bg-fn-card border border-fn-gborder rounded-sm p-4">
-              <div className="fn-label mb-1">WIN RATE</div>
-              <div className="font-display text-3xl font-black text-fn-text">{winRate(t.wins, t.losses)}%</div>
+              <div className="fn-label mb-1">TOURNAMENT MEDALS</div>
+              <div className="font-display text-3xl font-black text-fn-text">{t.gold_count}/{t.silver_count}/{t.bronze_count}</div>
             </div>
           </div>
 
