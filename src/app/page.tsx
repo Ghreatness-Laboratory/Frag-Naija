@@ -429,10 +429,9 @@ export default function HomePage() {
   const reduceMotion = useReducedMotion();
   const tickerItems = selectedGame ? (TICKER_ITEMS[selectedGame.slug] ?? TICKER_ITEMS.default) : TICKER_ITEMS.default;
 
-  const tagline     = homepageSettings.hero_tagline ?? "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.";
+  const tagline     = homepageSettings.hero_tagline ?? 'Bringing everything together in one place.';
   const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
-  const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
-  const [headlineFirst, ...headlineRest] = heroHeadline.split(" ");
+  const heroHeadline = homepageSettings.hero_headline ?? 'The Complete Esports Ecosystem';
 
   const handleScoutGameSelect = (gameSlug: string) => {
     setIsScoutPromptOpen(false);
@@ -613,15 +612,14 @@ export default function HomePage() {
             <Gamepad2 size={12} style={{ color: primary }} />
             {heroEyebrow}
           </p>
-          <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
-            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">{headlineFirst}</span>
-            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl tracking-tight"
-              style={{ color: primary, textShadow: `0 0 40px ${primary}40` }}>
-              {headlineRest.join(" ") || "NAIJA"}
-            </span>
+          <motion.h1 variants={reveal} className="max-w-4xl text-balance font-display text-5xl font-black leading-[0.96] tracking-tight text-fn-text sm:text-7xl lg:text-8xl">
+            {heroHeadline}
           </motion.h1>
+          <motion.p variants={reveal} className="mt-5 mb-8 max-w-xl text-balance text-base leading-relaxed text-fn-muted sm:text-xl">
+            {tagline}
+          </motion.p>
           {/* Active game badge */}
-          <motion.div variants={reveal} className="flex items-center gap-2 mb-4">
+          <motion.div variants={reveal} className="mb-4 flex items-center gap-2">
             {isFF && <Flame size={12} style={{ color: primary }} />}
             <span
               className="electric-live inline-flex items-center gap-1.5 text-[9px] font-bold px-3 py-1 tracking-widest uppercase border rounded-sm"
@@ -630,9 +628,6 @@ export default function HomePage() {
               <span className="live-dot !h-1.5 !w-1.5" /> {selectedGame ? `${selectedGame.shortName.toUpperCase()} DASHBOARD` : 'ALL GAMES DASHBOARD'}
             </span>
           </motion.div>
-          <motion.p variants={reveal} className="text-fn-text text-xs sm:text-sm tracking-wider max-w-lg mb-8 leading-relaxed">
-            {tagline}
-          </motion.p>
           <motion.div variants={reveal} className="flex flex-wrap gap-3">
             <Link href="/tournaments"
               className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
