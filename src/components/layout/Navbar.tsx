@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2, Bell, Settings } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGame } from "@/context/GameContext";
+import { useAuth } from "@/context/AuthContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
 import { useNotifications } from "@/components/notifications/NotificationsProvider";
 
@@ -35,21 +36,14 @@ function ThemeToggle({ className = "" }: { className?: string }) {
   );
 }
 
-type MeUser = { username?: string; email: string } | null;
-
 function useAuthState() {
-  const [user,    setUser]    = useState<MeUser | undefined>(undefined);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     let active = true;
-    
-    Promise.all([
-      fetch("/api/auth/me", { credentials: 'include', headers: { 'Content-Type': 'application/json' } }).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch("/api/auth/admin/check", { credentials: 'include', headers: { 'Content-Type': 'application/json' } }).then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([userData, adminData]) => {
+    fetch("/api/auth/admin/check", { credentials: 'include', headers: { 'Content-Type': 'application/json' } }).then(r => r.ok ? r.json() : null).catch(() => null).then((adminData) => {
       if (!active) return;
-      setUser(userData ?? null);
       setIsAdmin(adminData?.isAdmin ?? false);
     });
     

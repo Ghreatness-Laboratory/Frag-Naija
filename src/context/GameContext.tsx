@@ -8,9 +8,8 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { type Game, GAMES } from '@/lib/games';
-
-type AuthUser = { preferred_game_slug?: string | null };
 
 interface GameContextValue {
   /** The currently active game. Null means the user is in a neutral all-games context. */
@@ -32,41 +31,23 @@ const COOKIE_NAME = 'fn-game';
 export function GameProvider({ children }: { children: ReactNode }) {
   const [selectedGame, setGameState] = useState<Game | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    let active = true;
-
-    async function hydrateGame() {
-      try {
-        const res = await fetch('/api/auth/me', { 
-          cache: 'no-store',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        if (!active) return;
-
-        if (!res.ok) {
-          setGameState(null);
-          localStorage.removeItem(LS_KEY);
-          setIsHydrated(true);
-          return;
-        }
-
-        const user = (await res.json()) as AuthUser;
-        const stored = localStorage.getItem(LS_KEY);
-        const preferredSlug = user.preferred_game_slug || stored;
-        const found = GAMES.find((g) => g.slug === preferredSlug && g.available) ?? null;
-        setGameState(found);
-      } catch {
-        if (active) setGameState(null);
-      } finally {
-        if (active) setIsHydrated(true);
-      }
+    if (authLoading) return;
+    if (!user) {
+      setGameState(null);
+      localStorage.removeItem(LS_KEY);
+      setIsHydrated(true);
+      return;
     }
 
-    hydrateGame();
-    return () => { active = false; };
-  }, []);
+    const stored = localStorage.getItem(LS_KEY);
+    const preferredSlug = user.preferred_game_slug || stored;
+    const found = GAMES.find((g) => g.slug === preferredSlug && g.available) ?? null;
+    setGameState(found);
+    setIsHydrated(true);
+  }, [authLoading, user]);
 
   const setSelectedGame = useCallback((game: Game | null) => {
     setGameState(game);

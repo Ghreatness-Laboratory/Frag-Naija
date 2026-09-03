@@ -25,7 +25,7 @@ const ATHLETE_SELECT = ['id', 'created_at', 'updated_at',
   'attack', 'defense', 'survival', 'iq', 'clutch', 'aggression', 'chess_rating', 'chess_title', 'chess_peak_rating', 'chess_wins', 'chess_draws', 'chess_losses', 'federation', 'photo_url', 'status', 'career_status',
   'bio', 'known_name', 'previous_aliases', 'previous_teams', 'performance_history', 'perks', 'strengths',
   'weaknesses', 'game_slug', 'jersey_number', 'sensitivity_settings', 'control_code', 'is_icon',
-  'fantasy_price', 'recent_fantasy_points', 'total_fantasy_points', 'fantasy_status', 'user_id'
+  'fantasy_price', 'recent_fantasy_points', 'total_fantasy_points', 'fantasy_status'
 ].join(',');
 
 const ATHLETE_FIELDS = new Set([

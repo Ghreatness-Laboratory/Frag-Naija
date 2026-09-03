@@ -2,23 +2,10 @@
 
 import Link from "next/link";
 import { User } from "lucide-react";
-import { useEffect, useState } from "react";
-
-type AuthUser = { id?: string; email?: string; username?: string } | null;
+import { useAuth } from "@/context/AuthContext";
 
 export function useAuthGate() {
-  const [user, setUser] = useState<AuthUser | undefined>(undefined);
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/auth/me", { cache: "no-store", credentials: "include", headers: { "Content-Type": "application/json" } })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => { if (active) setUser(payload ?? null); })
-      .catch(() => { if (active) setUser(null); });
-    return () => { active = false; };
-  }, []);
-
-  return { user, loading: user === undefined };
+  return useAuth();
 }
 
 export function LoginGate({
