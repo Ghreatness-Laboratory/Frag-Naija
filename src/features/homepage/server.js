@@ -4,12 +4,12 @@ const HOMEPAGE_SETTINGS_SELECT = 'id,hero_eyebrow,hero_headline,hero_tagline,sta
 
 export const DEFAULT_HOMEPAGE_SETTINGS = {
   hero_eyebrow: "NIGERIA'S PREMIER ESPORTS PLATFORM",
-  hero_headline: 'The Complete Esports Ecosystem',
-  hero_tagline: 'Bringing everything together in one place.',
-  stat_players: '1,242+',
-  stat_tournaments: '48',
-  stat_championships: '12',
-  stat_prize_pool: '₦17.2M',
+  hero_headline: 'FRAG NAIJA',
+  hero_tagline: "The Complete Esports Ecosystem ,Bringing Everything Esports Together in One Place.",
+  stat_players: '1,342+',
+  stat_tournaments: '448',
+  stat_championships: '212',
+  stat_prize_pool: '₦77.2M',
   recruitment_headline: 'RECRUITMENT OPEN',
   recruitment_body: 'JOIN FRAG NAIJA AND GET RANKED IN THE OPEN TRIALS.',
   recruitment_cta: 'JOIN THE RANKS',
