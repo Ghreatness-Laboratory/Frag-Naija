@@ -15,6 +15,24 @@ const EMPTY = {
   start_date: '', end_date: '', status: 'Upcoming', format: '', region: 'Nigeria', image_url: '', tier: 'local',
 };
 
+const EMPTY_MATCH = { match_title: '', team_a: '', team_b: '', starts_at: '', status: 'upcoming' };
+
+type TournamentMatch = {
+  id: string;
+  title: string;
+  team_a: string | null;
+  team_b: string | null;
+  starts_at: string | null;
+  status: string;
+  display_status?: string;
+};
+
+function matchStatus(status: string) {
+  if (status === 'scheduled') return 'upcoming';
+  if (status === 'completed') return 'finished';
+  return status;
+}
+
 function TournamentsContent() {
   const searchParams = useSearchParams();
   const gameSlug     = searchParams.get('game') ?? 'all';
@@ -26,6 +44,11 @@ function TournamentsContent() {
   const [form, setForm]       = useState({ ...EMPTY });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
+  const [matches, setMatches] = useState<TournamentMatch[]>([]);
+  const [matchesLoading, setMatchesLoading] = useState(false);
+  const [matchForm, setMatchForm] = useState({ ...EMPTY_MATCH });
+  const [matchSaving, setMatchSaving] = useState(false);
+  const [matchError, setMatchError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,13 +59,29 @@ function TournamentsContent() {
 
   useEffect(() => { load(); }, [load]);
 
+  const loadMatches = useCallback(async (tournamentId: string) => {
+    setMatchesLoading(true);
+    setMatchError('');
+    try {
+      const res = await fetch(`/api/admin/tournament-matches?tournament=${encodeURIComponent(tournamentId)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to load tournament matches.');
+      setMatches(Array.isArray(data) ? data : []);
+    } catch (e: unknown) {
+      setMatches([]);
+      setMatchError(e instanceof Error ? e.message : 'Unable to load tournament matches.');
+    } finally {
+      setMatchesLoading(false);
+    }
+  }, []);
+
   // When a game is pre-selected via URL, auto-fill the game dropdown for new entries
   const activeGame = GAMES.find(g => g.slug === gameSlug);
 
   function openAdd() {
     setEditing(null);
     setForm({ ...EMPTY, game: activeGame?.name ?? 'PUBG Mobile', game_slug: activeGame?.slug ?? 'pubg-mobile' });
-    setError(''); setOpen(true);
+    setError(''); setMatches([]); setMatchForm({ ...EMPTY_MATCH }); setMatchError(''); setOpen(true);
   }
 
   function openEdit(row: Record<string, unknown>) {
@@ -61,7 +100,8 @@ function TournamentsContent() {
       image_url:  String(row.image_url  ?? ''),
       tier:       String(row.tier       ?? 'local'),
     });
-    setError(''); setOpen(true);
+    setError(''); setMatchForm({ ...EMPTY_MATCH }); setMatchError(''); setOpen(true);
+    void loadMatches(String(row.id));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -89,6 +129,47 @@ function TournamentsContent() {
     if (!confirm(`Delete "${row.name}"?`)) return;
     await fetch(`/api/tournaments/${row.id}`, { method: 'DELETE' });
     load();
+  }
+
+  async function handleMatchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing?.id) return;
+    setMatchSaving(true); setMatchError('');
+    try {
+      const res = await fetch('/api/admin/tournament-matches', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournament_id: editing.id, ...matchForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to save tournament match.');
+      setMatchForm({ ...EMPTY_MATCH });
+      await loadMatches(String(editing.id));
+    } catch (e: unknown) {
+      setMatchError(e instanceof Error ? e.message : 'Unable to save tournament match.');
+    } finally {
+      setMatchSaving(false);
+    }
+  }
+
+  async function handleMatchStatusChange(match: TournamentMatch, status: string) {
+    if (!editing?.id) return;
+    setMatchSaving(true); setMatchError('');
+    try {
+      const res = await fetch('/api/admin/tournament-matches', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournament_id: editing.id, source_id: match.id, match_title: match.title,
+          team_a: match.team_a || '', team_b: match.team_b || '', starts_at: match.starts_at, status,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to update tournament match status.');
+      await loadMatches(String(editing.id));
+    } catch (e: unknown) {
+      setMatchError(e instanceof Error ? e.message : 'Unable to update tournament match status.');
+    } finally {
+      setMatchSaving(false);
+    }
   }
 
   const f = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -204,6 +285,42 @@ function TournamentsContent() {
           {error && <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">{error}</p>}
           <SubmitBtn loading={saving} label={editing ? 'Update Tournament' : 'Add Tournament'} />
         </form>
+        {editing && (
+          <section className="mt-6 border-t border-fn-gborder pt-5">
+            <div className="mb-3">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-fn-text">Tournament Matches</h3>
+              <p className="mt-1 text-xs text-fn-muted">Create an upcoming or live match for this tournament, then update its status as it progresses.</p>
+            </div>
+            <form onSubmit={handleMatchSubmit} className="space-y-3 rounded border border-fn-gborder bg-fn-dark/40 p-3">
+              <Field label="Match Title" required><Input value={matchForm.match_title} onChange={e => setMatchForm(p => ({ ...p, match_title: e.target.value }))} placeholder="e.g. Semi-final 1" required /></Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Team A"><Input value={matchForm.team_a} onChange={e => setMatchForm(p => ({ ...p, team_a: e.target.value }))} placeholder="Team A" /></Field>
+                <Field label="Team B"><Input value={matchForm.team_b} onChange={e => setMatchForm(p => ({ ...p, team_b: e.target.value }))} placeholder="Team B" /></Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Start Date / Time"><Input type="datetime-local" value={matchForm.starts_at} onChange={e => setMatchForm(p => ({ ...p, starts_at: e.target.value }))} /></Field>
+                <Field label="Status"><Select value={matchForm.status} onChange={e => setMatchForm(p => ({ ...p, status: e.target.value }))}><option value="upcoming">Upcoming</option><option value="live">Live</option></Select></Field>
+              </div>
+              <button type="submit" disabled={matchSaving} className="w-full rounded bg-fn-green py-2 text-sm font-bold uppercase tracking-widest text-fn-black transition-colors hover:bg-fn-gdim disabled:opacity-50">{matchSaving ? 'Saving...' : 'Add Match'}</button>
+            </form>
+            {matchError && <p className="mt-3 rounded border border-fn-red/20 bg-fn-red/10 px-3 py-2 text-xs text-fn-red">{matchError}</p>}
+            <div className="mt-4 space-y-2">
+              {matchesLoading && <p className="text-xs text-fn-muted">Loading matches...</p>}
+              {!matchesLoading && !matches.length && <p className="text-xs text-fn-muted">No matches have been created for this tournament.</p>}
+              {matches.map(match => (
+                <div key={match.id} className="flex flex-col gap-2 rounded border border-fn-gborder bg-fn-card p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-fn-text">{match.title}</p>
+                    <p className="mt-0.5 text-xs text-fn-muted">{[match.team_a, match.team_b].filter(Boolean).join(' vs ') || 'Teams not set'}{match.starts_at ? ` · ${new Date(match.starts_at).toLocaleString()}` : ''}</p>
+                  </div>
+                  <Select value={matchStatus(match.status)} disabled={matchSaving} onChange={e => handleMatchStatusChange(match, e.target.value)} className="sm:w-32">
+                    <option value="upcoming">Upcoming</option><option value="live">Live</option><option value="finished">Finished</option>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </AdminModal>
     </div>
   );
