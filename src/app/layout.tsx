@@ -66,13 +66,9 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false, address: false, email: false },
   manifest: '/manifest.json',
   icons: {
-    icon: [
-      { url: '/icons/fn-badge.svg', type: 'image/svg+xml', sizes: 'any' },
-      { url: '/icons/fn-badge-192.svg', type: 'image/svg+xml', sizes: '192x192' },
-      { url: '/icons/fn-badge-512.svg', type: 'image/svg+xml', sizes: '512x512' },
-    ],
-    shortcut: '/icons/fn-badge.svg',
-    apple: '/icons/fn-badge-192.svg',
+    icon: '/therealfavicon.png',
+    shortcut: '/therealfavicon.png',
+    apple: '/therealfavicon.png',
   },
 };
 
