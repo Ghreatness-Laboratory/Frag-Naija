@@ -68,7 +68,7 @@ export default function TournamentsPage() {
     }
 
     setLoading(true);
-    const res = await fetch(`/api/tournaments?game_slug=${selectedGame.slug}`);
+    const res = await fetch(`/api/tournaments?game_slug=${selectedGame.slug}`, { cache: 'no-store' });
     if (res.ok) {
       const data: Tournament[] = await res.json();
       setTournaments(data);
@@ -100,7 +100,7 @@ export default function TournamentsPage() {
     setSelectedTournament(tournament);
     if (!tournament.id || tournament.tournament_results) return;
 
-    const res = await fetch(`/api/tournaments/${tournament.id}`).catch(() => null);
+    const res = await fetch(`/api/tournaments/${tournament.id}`, { cache: 'no-store' }).catch(() => null);
     if (!res?.ok) return;
     const detail = await res.json();
     setSelectedTournament(detail);

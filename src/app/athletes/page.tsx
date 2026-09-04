@@ -144,7 +144,7 @@ export default function AthletesPage() {
 
     try {
       const params = new URLSearchParams({ game_slug: selectedGame.slug, is_icon: rosterMode === "icons" ? "true" : "false" });
-      const res = await fetch(`/api/athletes?${params.toString()}`, { next: { revalidate: 120 } });
+      const res = await fetch(`/api/athletes?${params.toString()}`, { cache: 'no-store' });
       if (res.ok) {
         const data: Athlete[] = await res.json();
         setApiAthletes(data);
@@ -184,7 +184,7 @@ export default function AthletesPage() {
 
     let active = true;
     const params = new URLSearchParams({ game_slug: selectedGame.slug, distinct: "roles" });
-    fetch(`/api/athletes?${params.toString()}`, { next: { revalidate: 120 } })
+    fetch(`/api/athletes?${params.toString()}`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : []))
       .then((roles: string[]) => {
         if (!active) return;

@@ -81,7 +81,7 @@ export default function TeamPageClient({ id }: { id: string }) {
     async function loadTeam() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/teams/${id}`, { next: { revalidate: 120 } });
+        const res = await fetch(`/api/teams/${id}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (active) setTeam(data);

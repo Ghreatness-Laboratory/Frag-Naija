@@ -29,7 +29,7 @@ export default function NewsArticlePage() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetch(`/api/news/${id}`, { credentials: "include" })
+    fetch(`/api/news/${id}`, { cache: "no-store", credentials: "include" })
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Article unavailable");
