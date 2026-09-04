@@ -66,7 +66,14 @@ export async function reviewMarketplaceListing(id, { action, note }, adminId = '
 
   if (action === 'grant_highlight' || action === 'revoke_highlight') {
     if (action === 'grant_highlight' && !existing.highlight_requested) throw new Error('This listing has not requested a highlight.');
-    const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').update({ highlight_granted: action === 'grant_highlight', updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
+    const granted = action === 'grant_highlight';
+    const now = new Date().toISOString();
+    const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').update({
+      highlight_granted: granted,
+      highlight_granted_at: granted ? now : null,
+      highlight_granted_by: granted ? adminId : null,
+      updated_at: now,
+    }).eq('id', id).select('*').single();
     if (error) throw error;
     return data;
   }
