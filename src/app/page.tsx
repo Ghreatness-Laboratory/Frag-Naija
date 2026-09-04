@@ -21,7 +21,6 @@ type Athlete = {
   chess_rating?: number | null;
   attack?: number; defense?: number; survival?: number; iq?: number; clutch?: number;
   photo_url: string | null; status: string; game_slug?: string | null; is_icon?: boolean | null;
-  current_team?: { id: string; name: string; logo_url?: string | null; points?: number | null; rank?: number | null } | null;
 };
 
 type Wager = {
@@ -344,7 +343,6 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
   const game = GAMES.find((candidate) => candidate.slug === athlete.game_slug);
   const gameLabel = game?.shortName ?? athlete.game_slug?.replace(/-/g, ' ') ?? 'Game';
   const gameColor = game?.colors.primary ?? primary;
-  const currentTeam = athlete.current_team;
   // Use the shared game-aware renderer rather than a local shooter-stat list.
   // Chess returns exactly one Rating attribute; shooter games retain all five.
   const displayStats = combatAttributes(athlete as unknown as Record<string, unknown>, athlete.game_slug);
@@ -372,9 +370,6 @@ function FeaturedAthleteCard({ item, index, primary, secondary }: { item: Featur
               </div>
               <h3 className="truncate font-display text-[12px] font-black uppercase leading-tight tracking-wider text-fn-text">{name}</h3>
               <p className="mt-0.5 truncate text-[8px] font-bold uppercase tracking-[0.16em] text-fn-muted">{athlete.role || 'Athlete'}</p>
-              <p className="mt-1 truncate text-[8px] font-black uppercase tracking-[0.12em] text-fn-green">
-                {currentTeam ? `${currentTeam.name} · ${Number(currentTeam.points ?? 0).toFixed(0)} PTS` : 'Free agent'}
-              </p>
             </div>
           </div>
           <div className={`mt-2 grid gap-0.5 rounded-sm border border-fn-gborder bg-fn-black/55 p-1 text-center ${displayStats.length === 1 ? 'grid-cols-1' : displayStats.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
@@ -434,9 +429,10 @@ export default function HomePage() {
   const reduceMotion = useReducedMotion();
   const tickerItems = selectedGame ? (TICKER_ITEMS[selectedGame.slug] ?? TICKER_ITEMS.default) : TICKER_ITEMS.default;
 
-  const tagline     = homepageSettings.hero_tagline ?? 'Bringing everything together in one place.';
+  const tagline     = homepageSettings.hero_tagline ?? "Nigeria's premier esports command platform. Scout top athletes, track teams, enter tournaments, and follow wagers across every supported game.";
   const heroEyebrow = homepageSettings.hero_eyebrow ?? "NIGERIA'S PREMIERE ESPORTS PLATFORM";
-  const heroHeadline = homepageSettings.hero_headline ?? 'The Complete Esports Ecosystem';
+  const heroHeadline = homepageSettings.hero_headline ?? "FRAG NAIJA";
+  const [headlineFirst, ...headlineRest] = heroHeadline.split(" ");
 
   const handleScoutGameSelect = (gameSlug: string) => {
     setIsScoutPromptOpen(false);
@@ -617,14 +613,15 @@ export default function HomePage() {
             <Gamepad2 size={12} style={{ color: primary }} />
             {heroEyebrow}
           </p>
-          <motion.h1 variants={reveal} className="max-w-4xl text-balance font-display text-5xl font-black leading-[0.96] tracking-tight text-fn-text sm:text-7xl lg:text-8xl">
-            {heroHeadline}
+          <motion.h1 variants={reveal} className="font-display font-black uppercase leading-none mb-6">
+            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl text-fn-text tracking-tight">{headlineFirst}</span>
+            <span className="block text-[14vw] sm:text-[10vw] lg:text-9xl tracking-tight"
+              style={{ color: primary, textShadow: `0 0 40px ${primary}40` }}>
+              {headlineRest.join(" ") || "NAIJA"}
+            </span>
           </motion.h1>
-          <motion.p variants={reveal} className="mt-5 mb-8 max-w-xl text-balance text-base leading-relaxed text-fn-muted sm:text-xl">
-            {tagline}
-          </motion.p>
           {/* Active game badge */}
-          <motion.div variants={reveal} className="mb-4 flex items-center gap-2">
+          <motion.div variants={reveal} className="flex items-center gap-2 mb-4">
             {isFF && <Flame size={12} style={{ color: primary }} />}
             <span
               className="electric-live inline-flex items-center gap-1.5 text-[9px] font-bold px-3 py-1 tracking-widest uppercase border rounded-sm"
@@ -633,6 +630,9 @@ export default function HomePage() {
               <span className="live-dot !h-1.5 !w-1.5" /> {selectedGame ? `${selectedGame.shortName.toUpperCase()} DASHBOARD` : 'ALL GAMES DASHBOARD'}
             </span>
           </motion.div>
+          <motion.p variants={reveal} className="text-fn-text text-xs sm:text-sm tracking-wider max-w-lg mb-8 leading-relaxed">
+            {tagline}
+          </motion.p>
           <motion.div variants={reveal} className="flex flex-wrap gap-3">
             <Link href="/tournaments"
               className="inline-flex items-center gap-2 text-[11px] px-4 py-2.5 rounded-sm font-bold tracking-widest uppercase transition-all"
