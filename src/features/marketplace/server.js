@@ -45,11 +45,11 @@ export async function submitMarketplaceListing(userId, body) {
 }
 
 export async function getPublicMarketplaceListings({ game_slug, free_agent, loan_available } = {}) {
-  const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').select('id,public_data,display_name,ign,game_slug,photo_url,highlight_granted,updated_at').eq('review_status', 'approved').not('public_data', 'is', null).order('highlight_granted', { ascending: false }).order('updated_at', { ascending: false });
+  const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').select('id,public_data,updated_at').eq('review_status', 'approved').not('public_data', 'is', null).order('updated_at', { ascending: false });
   if (error) throw error;
   return (data || []).map((row) => {
     const publicData = row.public_data || {};
-    return { ...row, display_name: publicData.display_name || row.display_name, ign: publicData.ign || row.ign, game_slug: publicData.game_slug || row.game_slug, photo_url: publicData.photo_url || row.photo_url, public_data: publicData };
+    return { ...row, display_name: publicData.display_name || null, ign: publicData.ign || null, game_slug: publicData.game_slug || null, photo_url: publicData.photo_url || null, highlight_granted: false, public_data: publicData };
   }).filter((row) => (!game_slug || row.game_slug === game_slug) && (free_agent === undefined || row.public_data?.is_free_agent === free_agent) && (loan_available === undefined || row.public_data?.loan_available === loan_available));
 }
 
