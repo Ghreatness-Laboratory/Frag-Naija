@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { DEFAULT_HOMEPAGE_SETTINGS, getHomepageSettings } from '@/features/homepage/server';
 import { getCompanyProfile } from '@/features/companyProfile.server';
 import { getFeaturedAthletes } from '@/features/featuredAthletes.server';
+import { listPartners } from '@/features/partners.server';
 import { listStakeholders } from '@/features/stakeholders.server';
 import { getPublicMarketplaceListings } from '@/features/marketplace/server';
 
@@ -45,7 +46,7 @@ export async function GET() {
       .limit(featuredTeamIds.length || 4);
     if (featuredTeamIds.length) teamQuery = teamQuery.in('id', featuredTeamIds);
 
-    const [featuredAthletes, wagers, transfers, shopItems, marketplaceListings, tournaments, teams, companyProfile, stakeholders] = await Promise.all([
+    const [featuredAthletes, wagers, transfers, shopItems, marketplaceListings, tournaments, teams, companyProfile, stakeholders, partners] = await Promise.all([
       getFeaturedAthletes(),
       readTable(supabaseAdmin.from('wagers').select(WAGER_FIELDS).eq('status', 'Active').eq('featured_on_home', true).order('hot', { ascending: false }).order('closes_at', { ascending: true }).limit(3)),
       readTable(supabaseAdmin.from('transfers').select(TRANSFER_FIELDS).order('date', { ascending: false }).limit(4)),
