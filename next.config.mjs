@@ -30,7 +30,7 @@ const nextConfig = {
       },
       {
         source: '/api/homepage-data',
-        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=120, stale-while-revalidate=300' }],
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
       },
     ];
   },
@@ -50,9 +50,10 @@ export default withPWA({
 
   runtimeCaching: [
     {
-      // Homepage data is semi-static and can be revalidated instead of fetched on every navigation.
+      // Homepage data includes admin-managed content, so bypass service-worker
+      // caches and show changes as soon as the homepage refetches it.
       urlPattern: /^\/api\/homepage-data/i,
-      handler: 'StaleWhileRevalidate',
+      handler: 'NetworkOnly',
       options: {},
     },
     {
