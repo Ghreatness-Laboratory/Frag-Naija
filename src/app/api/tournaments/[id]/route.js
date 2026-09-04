@@ -31,6 +31,6 @@ export async function DELETE(request, { params }) {
     await deleteTournament(params.id);
     return NextResponse.json({ deleted: true });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json({ error: e.message }, { status: e.status || 500 });
   }
 }
