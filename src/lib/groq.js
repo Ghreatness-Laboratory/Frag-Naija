@@ -1,6 +1,6 @@
 import Groq from 'groq-sdk';
 
-export const GROQ_MODEL = 'llama-3.3-70b-versatile';
+export const GROQ_MODEL = 'openai/gpt-oss-20b';
 
 let _client = null;
 function getClient() {
