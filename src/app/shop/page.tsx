@@ -19,7 +19,7 @@ export default function ShopPage() {
   const visibleItems = items.filter((item) => category === 'All' || item.category === category);
 
   useEffect(() => {
-    fetch('/api/shop-items', { next: { revalidate: 120 } }).then((r) => r.ok ? r.json() : []).then(setItems).finally(() => setLoading(false));
+    fetch('/api/shop-items', { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).then(setItems).finally(() => setLoading(false));
   }, []);
 
   return (

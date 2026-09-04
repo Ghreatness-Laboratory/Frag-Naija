@@ -13,7 +13,7 @@ export default function OrganizationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/organizations', { next: { revalidate: 120 } })
+    fetch('/api/organizations', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setOrgs(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));

@@ -84,7 +84,7 @@ export default function NewsPage() {
     
     setShowLoader(true);
     
-    fetch("/api/news", { credentials: "include" })
+    fetch("/api/news", { cache: "no-store", credentials: "include" })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (active) setArticles(Array.isArray(data) ? data : []);

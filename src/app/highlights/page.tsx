@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Play, Clock, Eye, ChevronLeft, ChevronRight, Flame } from "lucide-react";
 import { useGame } from "@/context/GameContext";
 import { getGameContent, type DummyHighlight } from "@/lib/game-content";
@@ -28,11 +28,55 @@ function toHighlight(h: DummyHighlight) {
   };
 }
 
+type PublishedHighlight = {
+  id: string;
+  title: string;
+  player?: string | null;
+  team?: string | null;
+  category?: string | null;
+  thumbnail?: string | null;
+  featured?: boolean | null;
+};
+
+function highlightTags(category?: string | null): FilterTab[] {
+  const value = String(category ?? '').toLowerCase();
+  if (value.includes('replay')) return ['match-replays'];
+  if (value.includes('montage')) return ['montages'];
+  if (value.includes('tactic')) return ['tactical-logs'];
+  return ['clutch-moments'];
+}
+
+function toPublishedHighlight(highlight: PublishedHighlight) {
+  return {
+    id: highlight.id,
+    category: highlight.category?.replace(/-/g, ' ').toUpperCase() || 'HIGHLIGHT',
+    duration: '—',
+    title: highlight.title,
+    creator: highlight.player || highlight.team || 'FRAG NAIJA',
+    views: '—',
+    tags: highlightTags(highlight.category),
+    featured: Boolean(highlight.featured),
+    thumbnail: highlight.thumbnail || null,
+  };
+}
+
 export default function HighlightsPage() {
   const { selectedGame, isHydrated } = useGame();
   const [activeTab, setActiveTab]   = useState<FilterTab>("all-coverage");
   const [playing, setPlaying]       = useState(false);
   const [archiveOffset, setArchiveOffset] = useState(0);
+  const [publishedHighlights, setPublishedHighlights] = useState<ReturnType<typeof toPublishedHighlight>[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/highlights', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data) => {
+        if (!cancelled) setPublishedHighlights(Array.isArray(data) ? data.map(toPublishedHighlight) : []);
+      })
+      .catch(() => { if (!cancelled) setPublishedHighlights([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   const primary   = selectedGame?.colors.primary ?? 'rgb(var(--fn-green))';
   const secondary = selectedGame?.colors.secondary ?? 'rgb(var(--fn-yellow))';
@@ -40,7 +84,9 @@ export default function HighlightsPage() {
 
   const gameContent  = isHydrated && selectedGame ? getGameContent(selectedGame.slug) : null;
   const dummyVideos  = gameContent?.highlights.map(toHighlight) ?? [];
-  const videos       = dummyVideos.length > 0 ? dummyVideos : archiveVideos.map(v => ({ ...v, featured: false }));
+  const videos = publishedHighlights.length > 0
+    ? publishedHighlights
+    : (dummyVideos.length > 0 ? dummyVideos : archiveVideos.map(v => ({ ...v, featured: false })));
 
   const filteredVideos = activeTab === "all-coverage"
     ? videos

@@ -15,7 +15,7 @@ export default function OrganizationDetail({ params }: { params: { id: string } 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/organizations/${params.id}`, { next: { revalidate: 120 } })
+    fetch(`/api/organizations/${params.id}`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then(setOrg)
       .finally(() => setLoading(false));
