@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { checkAdmin } from '@/features/shared/server/adminAuth';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+
 const FC_FIELDS = ['appearance_points', 'goal_points', 'win_points', 'loss_points', 'conceded_points'];
 export async function GET() {
   const unauthorized = await checkAdmin(); if (unauthorized) return unauthorized;

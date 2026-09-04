@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getBanks } from '@/lib/paystack';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const result = await getBanks();

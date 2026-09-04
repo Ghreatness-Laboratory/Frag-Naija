@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { checkAdmin } from '@/features/shared/server/adminAuth';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+
 const ALLOWED_TRANSFER_STATUSES = new Set(['open', 'closed', 'scheduled']);
 const ALLOWED_CHIP_STATUSES = new Set(['open', 'closed', 'scheduled']);
 

@@ -4,6 +4,8 @@ import { checkAdmin } from '@/features/shared/server/adminAuth';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { createMatchResultAlert } from '@/features/notifications/server';
 
+export const dynamic = 'force-dynamic';
+
 function badRequest(message, details = {}) {
   return NextResponse.json({ error: message, ...details }, { status: 400 });
 }
