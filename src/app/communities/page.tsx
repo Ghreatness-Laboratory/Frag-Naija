@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, MessageCircle, Users } from 'lucide-react';
 import { GAMES } from '@/lib/games';
 import BrandedLoader from '@/components/common/BrandedLoader';
+import CollapsibleText from '@/components/common/CollapsibleText';
 
 type Community = { id: string; game_slug: string; tier: string; name: string; description: string | null; whatsapp_url: string | null; discord_url: string | null; status: string; sort_order: number };
 
@@ -43,7 +44,7 @@ export default function CommunitiesPage() {
           {filtered.map((row) => {
             const game = GAMES.find((item) => item.slug === row.game_slug);
             const primary = game?.colors.primary ?? 'rgb(var(--fn-green))';
-            return <article key={row.id} className="rounded-sm border border-fn-gborder bg-fn-card p-5"><div className="flex items-start justify-between gap-3"><div><p className="fn-label" style={{ color: primary }}>{game?.name ?? row.game_slug} · {row.tier}</p><h2 className="mt-1 text-base font-black uppercase text-fn-text">{row.name}</h2></div><MessageCircle size={18} style={{ color: primary }} /></div>{row.description && <p className="mt-3 text-[11px] leading-relaxed text-fn-muted">{row.description}</p>}<div className="mt-5 flex flex-wrap gap-2">{row.whatsapp_url && <a href={row.whatsapp_url} target="_blank" rel="noreferrer" className="fn-btn inline-flex items-center gap-2 text-[10px]">WhatsApp <ChevronRight size={12} /></a>}{row.discord_url && <a href={row.discord_url} target="_blank" rel="noreferrer" className="fn-btn-outline inline-flex items-center gap-2 text-[10px]">Discord <ChevronRight size={12} /></a>}</div></article>;
+            return <article key={row.id} className="rounded-sm border border-fn-gborder bg-fn-card p-5"><div className="flex items-start justify-between gap-3"><div><p className="fn-label" style={{ color: primary }}>{game?.name ?? row.game_slug} · {row.tier}</p><h2 className="mt-1 text-base font-black uppercase text-fn-text">{row.name}</h2></div><MessageCircle size={18} style={{ color: primary }} /></div>{row.description && <CollapsibleText text={row.description} className="mt-3 text-[11px] leading-relaxed text-fn-muted" />}<div className="mt-5 flex flex-wrap gap-2">{row.whatsapp_url && <a href={row.whatsapp_url} target="_blank" rel="noreferrer" className="fn-btn inline-flex items-center gap-2 text-[10px]">WhatsApp <ChevronRight size={12} /></a>}{row.discord_url && <a href={row.discord_url} target="_blank" rel="noreferrer" className="fn-btn-outline inline-flex items-center gap-2 text-[10px]">Discord <ChevronRight size={12} /></a>}</div></article>;
           })}
         </div>
       )}

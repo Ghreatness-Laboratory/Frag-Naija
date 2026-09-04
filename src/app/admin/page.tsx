@@ -12,7 +12,7 @@ const SECTIONS = [
   { href: '/admin/company-profile', icon: Building2, label: 'Company Profile', desc: 'Edit Ghreatness Laboratory About page and logo' },
   { href: '/admin/stakeholders', icon: Handshake, label: 'Stakeholders', desc: 'Manage public stakeholder people cards' },
   { href: '/admin/transfers',   icon: ArrowLeftRight, label: 'Transfers',   desc: 'Post rumours and confirmed moves'       },
-  { href: '/admin/marketplace', icon: BadgeCheck, label: 'Athlete Marketplace', desc: 'Review and moderate athlete listings' },
+  { href: '/admin/marketplace', icon: BadgeCheck, label: 'Marketplace', desc: 'Review and moderate marketplace listings' },
   { href: '/admin/tournaments', icon: Trophy,         label: 'Tournaments', desc: 'Schedule and update tournaments'        },
   { href: '/admin/tournament-results', icon: Trophy, label: 'Tournament Results', desc: 'Record placements and ranking points' },
   { href: '/admin/live-matches', icon: Activity, label: 'Live Match Updates', desc: 'Update scores and progress for existing fixtures' },
