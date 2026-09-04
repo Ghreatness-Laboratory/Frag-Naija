@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createWallet } from '@/features/wagers/server';
 
 export const dynamic = 'force-dynamic';
+const PKCE_VERIFIER_COOKIE = 'frag-naija-oauth-code-verifier';
 
 /** Completes the OAuth PKCE flow and stores the session token used by getCurrentUser(). */
 export async function GET(request) {
@@ -15,6 +16,8 @@ export async function GET(request) {
     return NextResponse.redirect(`${siteUrl}/login?error=${error || 'missing_code'}`);
   }
 
+  const verifierCookie = request.cookies.get(PKCE_VERIFIER_COOKIE)?.value;
+  const pkceVerifier = verifierCookie ? decodeURIComponent(verifierCookie) : null;
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -24,6 +27,11 @@ export async function GET(request) {
         autoRefreshToken: false,
         persistSession: false,
         detectSessionInUrl: false,
+        storage: {
+          getItem: (key) => key.endsWith('-code-verifier') ? pkceVerifier ?? null : null,
+          setItem: () => {},
+          removeItem: () => {},
+        },
       },
     }
   );
@@ -51,6 +59,10 @@ export async function GET(request) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+  });
+  response.cookies.set(PKCE_VERIFIER_COOKIE, '', {
+    maxAge: 0,
     path: '/',
   });
 
