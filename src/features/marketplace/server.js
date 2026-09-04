@@ -45,11 +45,11 @@ export async function submitMarketplaceListing(userId, body) {
 }
 
 export async function getPublicMarketplaceListings({ game_slug, free_agent, loan_available } = {}) {
-  const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').select('id,public_data,display_name,ign,game_slug,photo_url,highlight_granted,updated_at').eq('review_status', 'approved').not('public_data', 'is', null).order('highlight_granted', { ascending: false }).order('updated_at', { ascending: false });
+  const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').select('id,public_data,highlight_granted,updated_at').eq('review_status', 'approved').not('public_data', 'is', null).order('highlight_granted', { ascending: false }).order('updated_at', { ascending: false });
   if (error) throw error;
   return (data || []).map((row) => {
     const publicData = row.public_data || {};
-    return { ...row, display_name: publicData.display_name || row.display_name, ign: publicData.ign || row.ign, game_slug: publicData.game_slug || row.game_slug, photo_url: publicData.photo_url || row.photo_url, public_data: publicData };
+    return { ...row, display_name: publicData.display_name || null, ign: publicData.ign || null, game_slug: publicData.game_slug || null, photo_url: publicData.photo_url || null, public_data: publicData };
   }).filter((row) => (!game_slug || row.game_slug === game_slug) && (free_agent === undefined || row.public_data?.is_free_agent === free_agent) && (loan_available === undefined || row.public_data?.loan_available === loan_available));
 }
 
@@ -66,7 +66,14 @@ export async function reviewMarketplaceListing(id, { action, note }, adminId = '
 
   if (action === 'grant_highlight' || action === 'revoke_highlight') {
     if (action === 'grant_highlight' && !existing.highlight_requested) throw new Error('This listing has not requested a highlight.');
-    const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').update({ highlight_granted: action === 'grant_highlight', updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
+    const granted = action === 'grant_highlight';
+    const now = new Date().toISOString();
+    const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').update({
+      highlight_granted: granted,
+      highlight_granted_at: granted ? now : null,
+      highlight_granted_by: granted ? adminId : null,
+      updated_at: now,
+    }).eq('id', id).select('*').single();
     if (error) throw error;
     return data;
   }
