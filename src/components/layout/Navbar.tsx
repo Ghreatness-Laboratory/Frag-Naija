@@ -16,7 +16,7 @@ const navLinks = [
   { label: "Teams",           href: "/teams" },
   { label: "Organizations",   href: "/organizations" },
   { label: "Transfer Window", href: "/transfer-window" },
-  { label: "Marketplace",     href: "/marketplace" },
+  { label: "Athlete Marketplace", href: "/marketplace" },
   { label: "Communities",     href: "/communities" },
   { label: "Shop",            href: "/shop" },
   { label: "Highlights",      href: "/highlights" },
