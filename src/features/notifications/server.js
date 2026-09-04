@@ -376,11 +376,12 @@ async function getTournamentForMatchResult(tournamentId) {
 }
 
 async function createTournamentMatchFromResult(tournament, payload) {
-  if (!payload.source_id) throw new Error('Select an existing live tournament match before finalizing a result.');
-  const { data: sourceMatch, error } = await supabaseAdmin.from('tournament_matches')
-    .select('id,tournament_id,status').eq('id', payload.source_id).eq('tournament_id', tournament.id).single();
-  if (error || !sourceMatch) throw new Error('Selected tournament match was not found.');
-  if (normalizeTrackerStatus(sourceMatch.status) !== 'live') throw new Error('A match result can only be saved while the selected match is live.');
+  if (payload.source_id) {
+    const { data: sourceMatch, error } = await supabaseAdmin.from('tournament_matches')
+      .select('id,tournament_id,status').eq('id', payload.source_id).eq('tournament_id', tournament.id).single();
+    if (error || !sourceMatch) throw new Error('Selected tournament match was not found.');
+    if (!OPEN_MATCH_STATUSES.has(String(sourceMatch.status || '').toLowerCase())) throw new Error('A result cannot be saved for a finished tournament match.');
+  }
   const existing = await upsertTournamentMatchState({ ...payload, tournament_id: tournament.id, status: 'finished' });
   return existing.match;
 }

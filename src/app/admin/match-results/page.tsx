@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Save, Trash2, Trophy } from 'lucide-react';
 
 type Tournament = { id: string; name: string; game_slug: string; status?: string };
@@ -22,8 +22,8 @@ type MatchResult = {
 const EMPTY_FORM = { tournament_id: '', source_id: '', match_title: '', team_a: '', team_b: '', starts_at: '', winner_name: '', mvp_name: '', placement_3_name: '', placement_4_name: '' };
 const DELETE_CONFIRMATION = 'This will remove the public result and reopen this match for editing. This cannot be undone. Continue?';
 
-function isLiveMatch(match: TournamentMatch) {
-  return [match.display_status, match.status].some((status) => String(status || '').toLowerCase() === 'live');
+function isOpenFixture(match: TournamentMatch) {
+  return [match.display_status, match.status].some((status) => ['scheduled', 'upcoming', 'live'].includes(String(status || '').toLowerCase()));
 }
 
 export default function AdminMatchResultsPage() {
@@ -44,20 +44,38 @@ export default function AdminMatchResultsPage() {
     setResults(Array.isArray(data) ? data : []);
   }
 
+  const loadMatches = useCallback(async (tournamentId: string) => {
+    if (!tournamentId) {
+      setMatches([]);
+      return;
+    }
+    const res = await fetch(`/api/admin/tournament-matches?tournament=${encodeURIComponent(tournamentId)}`, { cache: 'no-store' });
+    const data = await res.json().catch(() => []);
+    if (!res.ok) throw new Error(data.error || 'Unable to load tournament fixtures.');
+    setMatches(Array.isArray(data) ? data : []);
+  }, []);
+
   useEffect(() => {
     fetch('/api/tournaments')
       .then((r) => r.ok ? r.json() : Promise.reject(new Error('Unable to load tournaments.')))
       .then((data) => setTournaments(Array.isArray(data) ? data : []))
       .catch((err) => setError(err.message));
     loadResults().catch((err) => setError(err.message));
-    fetch('/api/admin/tournament-matches').then((r) => r.ok ? r.json() : Promise.reject(new Error('Unable to load tournament matches.'))).then((data) => setMatches(Array.isArray(data) ? data : [])).catch((err) => setError(err.message));
   }, []);
+
+  useEffect(() => {
+    loadMatches(form.tournament_id).catch((err) => setError(err.message));
+  }, [form.tournament_id, loadMatches]);
 
   function selectTournament(tournamentId: string) {
     setForm({ ...form, tournament_id: tournamentId, source_id: '', match_title: '', team_a: '', team_b: '', starts_at: '' });
   }
 
   function selectMatch(sourceId: string) {
+    if (!sourceId) {
+      setForm({ ...form, source_id: '', match_title: '', team_a: '', team_b: '', starts_at: '' });
+      return;
+    }
     const match = matches.find((item) => item.id === sourceId);
     if (!match) return;
     setForm({ ...form, source_id: match.id, tournament_id: match.tournament_id, match_title: match.title, team_a: match.team_a || '', team_b: match.team_b || '', starts_at: match.starts_at || '' });
@@ -75,7 +93,7 @@ export default function AdminMatchResultsPage() {
       const pushWarning = data.push?.error ? ` Push failed separately: ${data.push.error}` : '';
       setMessage(`Result finalized for ${data.matchResult?.match_title || form.match_title || 'selected match'}.${pushWarning}`);
       setForm((current) => ({ ...EMPTY_FORM, tournament_id: current.tournament_id }));
-      await loadResults();
+      await Promise.all([loadResults(), loadMatches(form.tournament_id)]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to finalize result.');
     } finally {
@@ -105,16 +123,16 @@ export default function AdminMatchResultsPage() {
     <div className="max-w-5xl p-8">
       <p className="fn-label text-fn-green">Tournament-linked match-result finalization</p>
       <h1 className="mt-1 font-display text-2xl font-black uppercase tracking-widest text-fn-text">Tournament / Match Results</h1>
-      <p className="mt-2 max-w-3xl text-sm text-fn-muted">Finalize results under a real tournament created in the existing Tournament admin. Select an existing live fixture from real Tournament data, then save its result. This never creates a separate Match Alerts fixture.</p>
+      <p className="mt-2 max-w-3xl text-sm text-fn-muted">Finalize results under a real tournament created in the existing Tournament admin. Select an upcoming or live fixture from real Tournament data, or enter a one-off match when no fixture has been created.</p>
 
       <form onSubmit={submit} className="mt-6 grid gap-4 border border-fn-gborder bg-fn-card p-5 sm:grid-cols-2">
         <label className="block"><span className="fn-label">Tournament</span><select required value={form.tournament_id} onChange={(e) => selectTournament(e.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm"><option value="">Select existing tournament</option>{tournaments.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.game_slug}</option>)}</select></label>
-        <label className="block sm:col-span-2"><span className="fn-label">Live match</span><select required value={form.source_id} onChange={(e) => selectMatch(e.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm"><option value="">Select an existing live match</option>{matches.filter((match) => match.tournament_id === form.tournament_id && isLiveMatch(match)).map((match) => <option key={match.id} value={match.id}>{match.title}{match.team_a || match.team_b ? ` · ${[match.team_a, match.team_b].filter(Boolean).join(' vs ')}` : ''}</option>)}</select></label>
+        <label className="block sm:col-span-2"><span className="fn-label">Fixture (optional)</span><select value={form.source_id} onChange={(e) => selectMatch(e.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm"><option value="">Enter a one-off match below</option>{matches.filter(isOpenFixture).map((match) => <option key={match.id} value={match.id}>{match.title}{match.team_a || match.team_b ? ` · ${[match.team_a, match.team_b].filter(Boolean).join(' vs ')}` : ''}</option>)}</select></label>
         <label className="block"><span className="fn-label">Tournament game</span><input readOnly value={selectedTournament?.game_slug || 'Select a tournament'} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-3 text-sm text-fn-muted" /></label>
-        <label className="block"><span className="fn-label">Match / round label</span><input required readOnly value={form.match_title} placeholder="Grand Final — Match 5" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
-        <label className="block"><span className="fn-label">Match date</span><input readOnly value={form.starts_at ? new Date(form.starts_at).toLocaleString() : ''} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
-        <label className="block"><span className="fn-label">Participant / Team A</span><input readOnly value={form.team_a} placeholder="Tribe Warriors" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
-        <label className="block"><span className="fn-label">Participant / Team B</span><input readOnly value={form.team_b} placeholder="Lagos Titans" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">Match / round label</span><input required readOnly={Boolean(form.source_id)} value={form.match_title} onChange={(e) => setForm({ ...form, match_title: e.target.value })} placeholder="Grand Final — Match 5" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">Match date</span><input type="datetime-local" readOnly={Boolean(form.source_id)} value={form.starts_at ? form.starts_at.slice(0, 16) : ''} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">Participant / Team A</span><input readOnly={Boolean(form.source_id)} value={form.team_a} onChange={(e) => setForm({ ...form, team_a: e.target.value })} placeholder="Tribe Warriors" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
+        <label className="block"><span className="fn-label">Participant / Team B</span><input readOnly={Boolean(form.source_id)} value={form.team_b} onChange={(e) => setForm({ ...form, team_b: e.target.value })} placeholder="Lagos Titans" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
         <label className="block"><span className="fn-label">Winner (optional)</span><input value={form.winner_name} onChange={(e) => setForm({ ...form, winner_name: e.target.value })} placeholder="Tribe Warriors" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
         <label className="block"><span className="fn-label">MVP (optional)</span><input value={form.mvp_name} onChange={(e) => setForm({ ...form, mvp_name: e.target.value })} placeholder="PlayerName" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
         <label className="block"><span className="fn-label">2nd place (optional)</span><input value={form.placement_3_name} onChange={(e) => setForm({ ...form, placement_3_name: e.target.value })} placeholder="2nd-place team/player" className="mt-2 w-full border border-fn-gborder bg-fn-black px-3 py-3 text-sm" /></label>
