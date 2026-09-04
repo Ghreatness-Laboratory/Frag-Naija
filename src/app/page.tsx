@@ -42,7 +42,6 @@ type ShopItem = {
 };
 
 type MarketplaceListing = { id: string; display_name: string | null; ign: string | null; game_slug: string | null; photo_url: string | null; highlight_granted: boolean; public_data: { is_free_agent?: boolean } };
-type Partner = { id: string; name: string; logo_url: string; website_url: string | null };
 
 type CompanyProfile = {
   company_name?: string | null;
