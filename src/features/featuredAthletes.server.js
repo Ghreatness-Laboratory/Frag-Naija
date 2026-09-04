@@ -2,7 +2,10 @@ import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
 const ATHLETE_FIELDS = 'id,name,ign,role,known_name,team,jersey_number,rating,overall_rating,chess_rating,chess_title,chess_peak_rating,kills,assists,winrate,attack,defense,survival,iq,clutch,photo_url,status,game_slug,is_icon';
-const FEATURED_SELECT = `id,athlete_id,sort_order,created_at,athlete:athletes(${ATHLETE_FIELDS})`;
+// `athletes.team` is a foreign key to `teams.name`. Include the resolved team
+// record here rather than relying on the athlete's team-name string, so the
+// home-page featured cards always receive the team's current points.
+const FEATURED_SELECT = `id,athlete_id,sort_order,created_at,athlete:athletes(${ATHLETE_FIELDS},current_team:teams(id,name,logo_url,points,rank))`;
 
 function normalize(row) {
   if (!row) return row;
