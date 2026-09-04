@@ -41,6 +41,9 @@ type ShopItem = {
   id: string; name: string; price: number; currency: string | null; image_url: string | null; category: string | null; status: string | null;
 };
 
+type MarketplaceListing = { id: string; display_name: string | null; ign: string | null; game_slug: string | null; photo_url: string | null; highlight_granted: boolean; public_data: { is_free_agent?: boolean } };
+type Partner = { id: string; name: string; logo_url: string; website_url: string | null };
+
 type CompanyProfile = {
   company_name?: string | null;
   company_logo?: string | null;
@@ -56,11 +59,13 @@ type HomepagePayload = {
   wagers?: Wager[];
   transfers?: Transfer[];
   shopItems?: ShopItem[];
+  marketplaceListings?: MarketplaceListing[];
   tournaments?: Tournament[];
   teams?: Team[];
   homepageSettings?: HomepageSettings;
   companyProfile?: CompanyProfile;
   stakeholders?: Stakeholder[];
+  partners?: Partner[];
 };
 
 let homepageDataPromise: Promise<HomepagePayload> | null = null;
@@ -405,6 +410,11 @@ function FeaturedAthletes({ athletes, selectedGame, primary, secondary, showFire
   );
 }
 
+function PartnerLogo({ partner }: { partner: Partner }) {
+  const content = <div className="flex h-20 w-40 shrink-0 items-center justify-center rounded-sm border border-fn-gborder bg-fn-card p-3 transition-colors hover:border-fn-green/50"><OptimizedImage src={partner.logo_url} alt={`${partner.name} logo`} className="h-full w-full object-contain" /></div>;
+  return partner.website_url ? <a href={partner.website_url} target="_blank" rel="noreferrer" aria-label={`Visit ${partner.name}`}>{content}</a> : content;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const { selectedGame } = useGame();
@@ -415,8 +425,10 @@ export default function HomePage() {
   const [wagers, setWagers]       = useState<Wager[]>([]);
   const [apiTransfers, setApiTransfers] = useState<Transfer[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  const [marketplaceListings, setMarketplaceListings] = useState<MarketplaceListing[]>([]);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
@@ -460,11 +472,13 @@ export default function HomePage() {
       setWagers(Array.isArray(payload.wagers) ? payload.wagers : []);
       setApiTransfers(Array.isArray(payload.transfers) ? payload.transfers : []);
       setShopItems(Array.isArray(payload.shopItems) ? payload.shopItems : []);
+      setMarketplaceListings(Array.isArray(payload.marketplaceListings) ? payload.marketplaceListings : []);
       setTournaments(Array.isArray(payload.tournaments) ? payload.tournaments : []);
       setAllTeams(Array.isArray(payload.teams) ? payload.teams : []);
       setHomepageSettings(payload.homepageSettings && !Array.isArray(payload.homepageSettings) ? payload.homepageSettings : {});
       setCompanyProfile(payload.companyProfile ?? null);
       setStakeholders(Array.isArray(payload.stakeholders) ? payload.stakeholders : []);
+      setPartners(Array.isArray(payload.partners) ? payload.partners : []);
     });
 
     return () => {
@@ -765,6 +779,11 @@ export default function HomePage() {
           </motion.div>)}
       </motion.section>}
 
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="border-t border-fn-gborder px-4 py-10 sm:px-8 lg:px-12">
+        <div className="mb-6 flex items-center justify-between"><div><p className="fn-label mb-1 flex items-center gap-1.5"><Users size={9} style={{ color: primary }} /> RECRUITMENT BOARD</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">MARKETPLACE</h2></div><Link href="/marketplace" className="electric-button flex items-center gap-1 border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ borderColor: `${primary}30`, color: primary }}>VIEW LISTINGS <ChevronRight size={11} /></Link></div>
+        {marketplaceListings.length === 0 ? <p className="py-6 text-[10px] text-fn-muted">No approved marketplace listings yet.</p> : <motion.div variants={cardStagger}><CarouselRail>{marketplaceListings.map((listing) => <Link key={listing.id} href="/marketplace" className="min-w-[220px] snap-start border border-fn-gborder bg-fn-card p-4 transition-all hover:border-fn-green/40"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-fn-green/40 bg-fn-black text-sm font-black text-fn-green">{listing.photo_url ? <OptimizedImage src={listing.photo_url} alt="" className="h-full w-full object-cover" /> : (listing.ign || listing.display_name)?.[0]}</div><div className="min-w-0"><p className="truncate text-xs font-black uppercase text-fn-text">{listing.display_name || listing.ign || 'Player'} {listing.highlight_granted && <span className="text-fn-yellow">★</span>}</p><p className="mt-1 text-[9px] uppercase tracking-widest text-fn-muted">{listing.game_slug} · {listing.public_data.is_free_agent ? 'Free agent' : 'Open to offers'}</p></div></div></Link>)}</CarouselRail></motion.div>}
+      </motion.section>
+
       {/* Events Preview */}
       <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="px-4 sm:px-8 lg:px-12 py-10 border-t border-fn-gborder" style={{ background: `${primary}04` }}>
         <div className="flex items-center justify-between mb-6"><div><p className="fn-label mb-1 flex items-center gap-1.5"><CalendarDays size={9} style={{ color: primary }} /> EVENTS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">TOURNAMENTS</h2></div><Link href="/tournaments" className="electric-button flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase border px-3 py-1.5 rounded-sm" style={{ borderColor: `${primary}30`, color: primary }}>VIEW ALL EVENTS <ChevronRight size={11} /></Link></div>
@@ -782,6 +801,11 @@ export default function HomePage() {
             </CarouselRail>
           </motion.div>
         )}
+      </motion.section>
+
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="overflow-hidden border-t border-fn-gborder px-4 py-10 sm:px-8 lg:px-12">
+        <div className="mb-6 text-center"><p className="fn-label mb-1 text-fn-green">PARTNERS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">OUR SPONSORS</h2></div>
+        {partners.length === 0 ? <p className="py-3 text-center text-[10px] text-fn-muted">Partner announcements coming soon.</p> : reduceMotion ? <div className="flex flex-wrap justify-center gap-4">{partners.map((partner) => <PartnerLogo key={partner.id} partner={partner} />)}</div> : <motion.div className="flex w-max" animate={{ x: ['0%', '-50%'] }} transition={{ x: { duration: Math.max(20, partners.length * 5), ease: 'linear', repeat: Infinity } }}>{[...partners, ...partners].map((partner, index) => <div key={`${partner.id}-${index}`} className="mr-4"><PartnerLogo partner={partner} /></div>)}</motion.div>}
       </motion.section>
 
       {/* Company Credit */}

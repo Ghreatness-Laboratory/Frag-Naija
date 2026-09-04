@@ -9,7 +9,9 @@ type Row = {
   highlight_granted: boolean;
   pending_data: Record<string, unknown>;
   reviewer_note?: string;
-  athlete?: { ign?: string; name?: string; game_slug?: string };
+  display_name?: string;
+  ign?: string;
+  game_slug?: string;
 };
 
 export default function AdminMarketplacePage() {
@@ -51,7 +53,7 @@ export default function AdminMarketplacePage() {
   return (
     <div className="p-8">
       <p className="fn-label text-fn-green">Moderation queue</p>
-      <h1 className="font-display text-3xl font-black uppercase">Athlete Marketplace</h1>
+      <h1 className="font-display text-3xl font-black uppercase">Marketplace</h1>
       {error && <p className="mt-4 border border-fn-red/30 bg-fn-red/10 p-3 text-sm text-fn-red">{error}</p>}
       <div className="mt-5 space-y-4">
         {rows.map((row) => {
@@ -60,7 +62,7 @@ export default function AdminMarketplacePage() {
             <article key={row.id} className="border border-fn-gborder bg-fn-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-xl font-black uppercase">
-                  {row.athlete?.ign || row.athlete?.name} <span className="text-xs text-fn-muted">{row.athlete?.game_slug}</span>
+                  {row.display_name || row.ign || 'Unnamed listing'} <span className="text-xs text-fn-muted">{row.game_slug}</span>
                 </h2>
                 <span className="border border-fn-green/30 px-2 py-1 text-[10px] font-black uppercase text-fn-green">{row.review_status.replace('_', ' ')}</span>
               </div>

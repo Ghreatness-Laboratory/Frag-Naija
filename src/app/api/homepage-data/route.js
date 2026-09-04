@@ -4,6 +4,8 @@ import { DEFAULT_HOMEPAGE_SETTINGS, getHomepageSettings } from '@/features/homep
 import { getCompanyProfile } from '@/features/companyProfile.server';
 import { getFeaturedAthletes } from '@/features/featuredAthletes.server';
 import { listStakeholders } from '@/features/stakeholders.server';
+import { getPublicMarketplaceListings } from '@/features/marketplace/server';
+import { listPartners } from '@/features/partners.server';
 
 // Featured teams read the manually managed team stats directly on every request
 // so an admin save cannot leave a stale duplicate ranking on the home page.
@@ -44,15 +46,17 @@ export async function GET() {
       .limit(featuredTeamIds.length || 4);
     if (featuredTeamIds.length) teamQuery = teamQuery.in('id', featuredTeamIds);
 
-    const [featuredAthletes, wagers, transfers, shopItems, tournaments, teams, companyProfile, stakeholders] = await Promise.all([
+    const [featuredAthletes, wagers, transfers, shopItems, marketplaceListings, tournaments, teams, companyProfile, stakeholders, partners] = await Promise.all([
       getFeaturedAthletes(),
       readTable(supabaseAdmin.from('wagers').select(WAGER_FIELDS).eq('status', 'Active').eq('featured_on_home', true).order('hot', { ascending: false }).order('closes_at', { ascending: true }).limit(3)),
       readTable(supabaseAdmin.from('transfers').select(TRANSFER_FIELDS).order('date', { ascending: false }).limit(4)),
       readTable(supabaseAdmin.from('shop_items').select(SHOP_FIELDS).limit(4)),
+      getPublicMarketplaceListings(),
       readTable(supabaseAdmin.from('tournaments').select(TOURNAMENT_FIELDS).in('status', ['Upcoming', 'Live']).order('start_date', { ascending: true }).limit(4)),
       readTable(teamQuery),
       getCompanyProfile(),
       listStakeholders({ limit: 6 }),
+      listPartners(),
     ]);
 
     return NextResponse.json({
@@ -61,11 +65,13 @@ export async function GET() {
       wagers,
       transfers,
       shopItems,
+      marketplaceListings: marketplaceListings.slice(0, 4),
       tournaments,
       teams: sortByIds(teams, featuredTeamIds),
       homepageSettings: { ...DEFAULT_HOMEPAGE_SETTINGS, ...settings },
       companyProfile,
       stakeholders,
+      partners,
     }, {
       headers: {
         'Cache-Control': 'no-store',

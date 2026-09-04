@@ -473,7 +473,7 @@ function AthletesContent() {
         onClose={() => setOpen(false)}
       >
         <form onSubmit={handleSubmit} className="space-y-3">
-          <Field label="Linked Supabase Auth user ID (Marketplace eligibility)">
+          <Field label="Linked Supabase Auth user ID">
             <Input value={form.user_id} onChange={f('user_id')} placeholder="UUID of this athlete's auth.users account" />
           </Field>
           {fcMobileSelected ? (
