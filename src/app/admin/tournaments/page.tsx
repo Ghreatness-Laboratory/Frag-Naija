@@ -127,8 +127,15 @@ function TournamentsContent() {
 
   async function handleDelete(row: Record<string, unknown>) {
     if (!confirm(`Delete "${row.name}"?`)) return;
-    await fetch(`/api/tournaments/${row.id}`, { method: 'DELETE' });
-    load();
+    setError('');
+    try {
+      const res = await fetch(`/api/tournaments/${row.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Unable to delete tournament (${res.status}).`);
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Unable to delete tournament.');
+    }
   }
 
   async function handleMatchSubmit(e: React.FormEvent) {
@@ -198,6 +205,8 @@ function TournamentsContent() {
       </div>
 
       <AdminGameFilter currentSlug={gameSlug} />
+
+      {error && <p role="alert" className="mb-3 rounded border border-fn-red/20 bg-fn-red/10 px-3 py-2 text-xs text-fn-red">{error}</p>}
 
       <AdminTable
         loading={loading} rows={filtered} onEdit={openEdit} onDelete={handleDelete}
@@ -282,7 +291,6 @@ function TournamentsContent() {
             </Field>
           </div>
           <Field label="Image URL"><Input value={form.image_url} onChange={f('image_url')} placeholder="https://..." /></Field>
-          {error && <p className="text-fn-red text-xs bg-fn-red/10 border border-fn-red/20 rounded px-3 py-2">{error}</p>}
           <SubmitBtn loading={saving} label={editing ? 'Update Tournament' : 'Add Tournament'} />
         </form>
         {editing && (
