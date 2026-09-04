@@ -32,7 +32,7 @@ export default function MarketplacePage() {
     if (game) query.set('game_slug', game);
     if (freeAgent) query.set('free_agent', freeAgent);
     if (loan) query.set('loan_available', loan);
-    fetch(`/api/marketplace?${query}`).then((response) => response.ok ? response.json() : []).then(setRows).catch(() => setRows([]));
+    fetch(`/api/marketplace?${query}`, { cache: 'no-store' }).then((response) => response.ok ? response.json() : []).then(setRows).catch(() => setRows([]));
   }, [game, freeAgent, loan]);
 
   return <main className="min-h-screen px-4 py-8 sm:px-8 lg:px-12"><section className="mx-auto max-w-7xl">

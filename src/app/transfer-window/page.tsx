@@ -56,7 +56,7 @@ export default function TransferWindowPage() {
     }
 
     setLoading(true);
-    const res = await fetch(`/api/transfers?game_slug=${activeGame.slug}`);
+    const res = await fetch(`/api/transfers?game_slug=${activeGame.slug}`, { cache: 'no-store' });
     if (res.ok) setApiTransfers(await res.json());
     setLoading(false);
   }, [activeGame]);

@@ -29,8 +29,11 @@ const nextConfig = {
         headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, immutable' }],
       },
       {
-        source: '/api/homepage-data',
-        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
+        // Public content is fetched from API routes after page hydration. Keep
+        // intermediaries (including the Vercel CDN) from retaining an older
+        // response after an admin edit.
+        source: '/api/:path*',
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0, must-revalidate' }],
       },
     ];
   },
@@ -41,6 +44,10 @@ export default withPWA({
   // Registration handled by PWARegister.tsx (more reliable in Next.js App Router)
   register: false,
   skipWaiting: true,
+  // The app shell is client-rendered and fetches admin-managed content from
+  // the API. Caching `/` separately can keep an old deployment's app shell
+  // active indefinitely, so never persist the start URL.
+  cacheStartUrl: false,
   disable: process.env.NODE_ENV === 'development',
   fallbacks: { document: '/offline' },
   customWorkerDir: 'worker',
@@ -83,13 +90,14 @@ export default withPWA({
       },
     },
     {
-      // All other pages — network-first, 10s timeout
+      // Pages are only a short offline fallback. Version the cache to leave
+      // stale entries from the previous one-day policy unused immediately.
       urlPattern: /^https?.*/i,
       handler: 'NetworkFirst',
       options: {
-        cacheName: 'fn-pages-v1',
-        networkTimeoutSeconds: 10,
-        expiration: { maxEntries: 60, maxAgeSeconds: 86400 },
+        cacheName: 'fn-pages-v2',
+        networkTimeoutSeconds: 3,
+        expiration: { maxEntries: 60, maxAgeSeconds: 60 },
         cacheableResponse: { statuses: [0, 200] },
       },
     },

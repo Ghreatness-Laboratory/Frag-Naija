@@ -98,7 +98,7 @@ export default function TeamsPage() {
     setLoading(true);
     setTeamsReady(false);
     try {
-      const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { next: { revalidate: 120 } });
+      const res = await fetch(`/api/teams?game_slug=${activeGame.slug}`, { cache: 'no-store' });
       setApiTeams(res.ok ? await res.json() : []);
     } catch {
       setApiTeams([]);
