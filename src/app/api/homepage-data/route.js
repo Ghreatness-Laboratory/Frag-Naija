@@ -55,6 +55,7 @@ export async function GET() {
       readTable(teamQuery),
       getCompanyProfile(),
       listStakeholders({ limit: 6 }),
+      listPartners(),
     ]);
 
     return NextResponse.json({
@@ -69,6 +70,7 @@ export async function GET() {
       homepageSettings: { ...DEFAULT_HOMEPAGE_SETTINGS, ...settings },
       companyProfile,
       stakeholders,
+      partners,
     }, {
       headers: {
         'Cache-Control': 'no-store',

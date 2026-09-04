@@ -64,6 +64,7 @@ type HomepagePayload = {
   homepageSettings?: HomepageSettings;
   companyProfile?: CompanyProfile;
   stakeholders?: Stakeholder[];
+  partners?: Partner[];
 };
 
 let homepageDataPromise: Promise<HomepagePayload> | null = null;
@@ -408,6 +409,11 @@ function FeaturedAthletes({ athletes, selectedGame, primary, secondary, showFire
   );
 }
 
+function PartnerLogo({ partner }: { partner: Partner }) {
+  const content = <div className="flex h-20 w-40 shrink-0 items-center justify-center rounded-sm border border-fn-gborder bg-fn-card p-3 transition-colors hover:border-fn-green/50"><OptimizedImage src={partner.logo_url} alt={`${partner.name} logo`} className="h-full w-full object-contain" /></div>;
+  return partner.website_url ? <a href={partner.website_url} target="_blank" rel="noreferrer" aria-label={`Visit ${partner.name}`}>{content}</a> : content;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const { selectedGame } = useGame();
@@ -421,6 +427,7 @@ export default function HomePage() {
   const [marketplaceListings, setMarketplaceListings] = useState<MarketplaceListing[]>([]);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>({});
@@ -470,6 +477,7 @@ export default function HomePage() {
       setHomepageSettings(payload.homepageSettings && !Array.isArray(payload.homepageSettings) ? payload.homepageSettings : {});
       setCompanyProfile(payload.companyProfile ?? null);
       setStakeholders(Array.isArray(payload.stakeholders) ? payload.stakeholders : []);
+      setPartners(Array.isArray(payload.partners) ? payload.partners : []);
     });
 
     return () => {
@@ -792,6 +800,11 @@ export default function HomePage() {
             </CarouselRail>
           </motion.div>
         )}
+      </motion.section>
+
+      <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={reveal} transition={{ duration: 0.45 }} className="overflow-hidden border-t border-fn-gborder px-4 py-10 sm:px-8 lg:px-12">
+        <div className="mb-6 text-center"><p className="fn-label mb-1 text-fn-green">PARTNERS</p><h2 className="font-display text-2xl font-black uppercase text-fn-text">OUR SPONSORS</h2></div>
+        {partners.length === 0 ? <p className="py-3 text-center text-[10px] text-fn-muted">Partner announcements coming soon.</p> : reduceMotion ? <div className="flex flex-wrap justify-center gap-4">{partners.map((partner) => <PartnerLogo key={partner.id} partner={partner} />)}</div> : <motion.div className="flex w-max" animate={{ x: ['0%', '-50%'] }} transition={{ x: { duration: Math.max(20, partners.length * 5), ease: 'linear', repeat: Infinity } }}>{[...partners, ...partners].map((partner, index) => <div key={`${partner.id}-${index}`} className="mr-4"><PartnerLogo partner={partner} /></div>)}</motion.div>}
       </motion.section>
 
       {/* Company Credit */}
