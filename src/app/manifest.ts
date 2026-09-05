@@ -15,9 +15,8 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'en-NG',
     dir: 'ltr',
     icons: [
-      { src: '/icons/fn-badge.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-      { src: '/icons/fn-badge-192.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
-      { src: '/icons/fn-badge-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: '/therealfavicon.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/therealfavicon.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
     ],
     shortcuts: [
       {
@@ -25,14 +24,14 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: 'Wager',
         description: 'Open live wager markets',
         url: '/wager',
-        icons: [{ src: '/icons/fn-badge-192.svg', sizes: '192x192', type: 'image/svg+xml' }],
+        icons: [{ src: '/therealfavicon.png', sizes: '192x192', type: 'image/png' }],
       },
       {
         name: 'Tournaments',
         short_name: 'Tournaments',
         description: 'Browse active tournaments',
         url: '/tournaments',
-        icons: [{ src: '/icons/fn-badge-192.svg', sizes: '192x192', type: 'image/svg+xml' }],
+        icons: [{ src: '/therealfavicon.png', sizes: '192x192', type: 'image/png' }],
       },
     ],
     screenshots: [],
