@@ -33,17 +33,16 @@ export default function RouteLoadingScreen({
       <div className="relative flex flex-col items-center">
         <motion.div
           animate={reduceMotion ? undefined : {
-            textShadow: [
-              '0 0 10px rgba(77,255,110,0.28)',
-              '0 0 24px rgba(77,255,110,0.62)',
-              '0 0 10px rgba(77,255,110,0.28)',
+            scale: [1, 1.08, 1],
+            filter: [
+              'drop-shadow(0 0 8px rgba(77,255,110,0.3))',
+              'drop-shadow(0 0 22px rgba(77,255,110,0.7))',
+              'drop-shadow(0 0 8px rgba(77,255,110,0.3))',
             ],
           }}
           transition={reduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex items-center gap-2"
         >
-          <span className="font-display text-3xl font-black tracking-widest text-fn-green glow-text sm:text-5xl">FRAG</span>
-          <span className="font-display text-3xl font-black tracking-widest text-fn-text sm:text-5xl">NAIJA</span>
+          <img src="/therealfavicon.png" alt="Frag Naija" className="h-20 w-20 object-contain sm:h-28 sm:w-28" />
         </motion.div>
         <div className="mt-5 h-px w-48 overflow-hidden bg-fn-green/15 sm:w-64">
           {reduceMotion ? (
