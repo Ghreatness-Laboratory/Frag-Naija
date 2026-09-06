@@ -42,7 +42,10 @@ export default function RouteLoadingScreen({
           }}
           transition={reduceMotion ? undefined : { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <img src="/therealfavicon.png" alt="Frag Naija" className="h-20 w-20 object-contain sm:h-28 sm:w-28" />
+          <div className="flex items-baseline gap-2 font-display text-3xl font-black tracking-widest sm:text-4xl" aria-label="Frag Naija">
+            <span className="text-fn-green">FRAG</span>
+            <span className="text-fn-text">NAIJA</span>
+          </div>
         </motion.div>
         <div className="mt-5 h-px w-48 overflow-hidden bg-fn-green/15 sm:w-64">
           {reduceMotion ? (
