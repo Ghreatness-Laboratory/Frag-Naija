@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
-import OptimizedImage from '@/components/common/OptimizedImage';
 
 type BrandedLoaderProps = {
   label?: string;
@@ -10,15 +9,9 @@ type BrandedLoaderProps = {
 };
 
 const sizeClasses = {
-  sm: 'h-10 w-10',
-  md: 'h-14 w-14',
-  lg: 'h-20 w-20',
-};
-
-const scanTransition = {
-  duration: 1.45,
-  repeat: Infinity,
-  ease: 'linear' as const,
+  sm: 'text-xs',
+  md: 'text-sm',
+  lg: 'text-xl',
 };
 
 const glowTransition = {
@@ -33,7 +26,7 @@ export default function BrandedLoader({ label = 'Loading', size = 'md', classNam
   return (
     <div className={`flex items-center justify-center ${className}`} role="status" aria-live="polite" aria-label={label}>
       <motion.div
-        className={`relative isolate overflow-hidden rounded-sm border border-fn-green/35 bg-fn-black ${sizeClasses[size]}`}
+        className={`font-display font-black tracking-widest ${sizeClasses[size]}`}
         animate={reduceMotion ? undefined : {
           boxShadow: [
             '0 0 10px rgba(0,255,65,0.18), 0 0 0 rgba(0,255,65,0)',
@@ -44,20 +37,7 @@ export default function BrandedLoader({ label = 'Loading', size = 'md', classNam
         }}
         transition={reduceMotion ? undefined : glowTransition}
       >
-        <img src="/icons/fn-badge.svg" alt="" className="h-full w-full object-cover" aria-hidden="true" />
-        <span className="pointer-events-none absolute inset-0 rounded-sm border border-fn-green/25" />
-        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,65,0.12),transparent_62%)] mix-blend-screen" />
-        {reduceMotion ? (
-          <span className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-fn-green/70 shadow-[0_0_12px_rgba(0,255,65,0.65)]" />
-        ) : (
-          <motion.span
-            aria-hidden="true"
-            className="pointer-events-none absolute -left-2 -right-2 h-4 bg-gradient-to-b from-transparent via-fn-green/85 to-transparent opacity-90 shadow-[0_0_18px_rgba(0,255,65,0.85)]"
-            initial={{ y: '-120%' }}
-            animate={{ y: ['-120%', '720%'] }}
-            transition={scanTransition}
-          />
-        )}
+        <span className="text-fn-green">FRAG</span>{' '}<span className="text-fn-text">NAIJA</span>
       </motion.div>
       <span className="sr-only">{label}</span>
     </div>
