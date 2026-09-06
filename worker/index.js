@@ -3,6 +3,25 @@
  * Workbox handles all caching; this file handles push notifications.
  */
 
+// Take over immediately and remove the runtime caches created by previous
+// releases, which could contain stale HTML documents. Workbox receives the
+// same lifecycle settings through next.config.mjs; these explicit handlers
+// also cover this custom worker code.
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      'start-url',
+      'fn-pages-v1',
+      'fn-pages-v2',
+    ].map((cacheName) => caches.delete(cacheName)))
+      .then(() => self.clients.claim())
+  );
+});
+
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};
   event.waitUntil(
