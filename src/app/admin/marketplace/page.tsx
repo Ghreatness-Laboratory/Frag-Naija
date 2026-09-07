@@ -9,9 +9,6 @@ type Row = {
   highlight_granted: boolean;
   pending_data: Record<string, unknown>;
   reviewer_note?: string;
-  display_name?: string;
-  ign?: string;
-  game_slug?: string;
 };
 
 export default function AdminMarketplacePage() {
@@ -62,7 +59,7 @@ export default function AdminMarketplacePage() {
             <article key={row.id} className="border border-fn-gborder bg-fn-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-xl font-black uppercase">
-                  {row.display_name || row.ign || 'Unnamed listing'} <span className="text-xs text-fn-muted">{row.game_slug}</span>
+                  {String(row.pending_data?.display_name || row.pending_data?.ign || 'Unnamed listing')} <span className="text-xs text-fn-muted">{String(row.pending_data?.game_slug || '')}</span>
                 </h2>
                 <span className="border border-fn-green/30 px-2 py-1 text-[10px] font-black uppercase text-fn-green">{row.review_status.replace('_', ' ')}</span>
               </div>
