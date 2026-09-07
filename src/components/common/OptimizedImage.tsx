@@ -1,12 +1,6 @@
 import Image, { type ImageProps } from 'next/image';
 
-const STORAGE_PUBLIC_PATH = '/storage/v1/object/public/';
-
-/**
- * Rewrites only Supabase Storage public-object URLs to the optional Cloudflare
- * proxy. Objects remain stored in Supabase; this simply sends repeat reads to
- * the edge cache. Leave the variable unset until the CDN is verified live.
- */
+/** Storage transformations are unavailable; Next's image optimizer provides responsive derivatives. */
 export function supabaseImageUrl(src: string) {
   const cdnUrl = process.env.NEXT_PUBLIC_STORAGE_CDN_URL?.replace(/\/$/, '');
   if (!cdnUrl || !src.includes(STORAGE_PUBLIC_PATH)) return src;
