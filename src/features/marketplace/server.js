@@ -2,7 +2,6 @@ import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 const FIELDS = ['display_name', 'ign', 'game_slug', 'photo_url', 'is_free_agent', 'previous_teams', 'gameplay_link', 'device_used', 'availability', 'tournaments_free_for', 'achievements', 'loan_available', 'loan_conditions', 'highlight_requested'];
 const BOOLEAN_FIELDS = ['is_free_agent', 'loan_available', 'highlight_requested'];
-const IDENTITY_FIELDS = ['display_name', 'ign', 'game_slug', 'photo_url'];
 
 function cleanPayload(body = {}) {
   const data = {};
@@ -17,10 +16,6 @@ function cleanPayload(body = {}) {
   return data;
 }
 
-function identityFrom(data) {
-  return Object.fromEntries(IDENTITY_FIELDS.map((field) => [field, data[field] || null]));
-}
-
 export async function getMyMarketplaceListing(userId) {
   const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').select('*').eq('user_id', userId).maybeSingle();
   if (error) throw error;
@@ -31,7 +26,6 @@ export async function submitMarketplaceListing(userId, body) {
   const pending_data = cleanPayload(body);
   const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').upsert({
     user_id: userId,
-    ...identityFrom(pending_data),
     pending_data,
     highlight_requested: pending_data.highlight_requested,
     review_status: 'pending',
@@ -82,7 +76,6 @@ export async function reviewMarketplaceListing(id, { action, note }, adminId = '
   const update = { review_status, reviewer_note: String(note || '').trim() || null, reviewed_at: new Date().toISOString(), reviewed_by: adminId, updated_at: new Date().toISOString() };
   if (action === 'approve') {
     update.public_data = existing.pending_data;
-    Object.assign(update, identityFrom(existing.pending_data || {}));
   }
   const { data, error } = await supabaseAdmin.from('athlete_marketplace_listings').update(update).eq('id', id).select('*').single();
   if (error) throw error;

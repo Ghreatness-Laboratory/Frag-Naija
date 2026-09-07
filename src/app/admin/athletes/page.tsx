@@ -12,6 +12,7 @@ import { DEFAULT_GAME, GAMES } from '@/lib/games';
 import { ATHLETE_STATUSES, athleteStatusTone, chessRating, isChessGame, isFcMobileGame, isFootballGame, isShooterGame, normalizeRating } from '@/lib/athlete-display';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
 
 const EMPTY = {
   name: '', ign: '', team: '', role: '', status: 'Active', career_status: '', bio: '', photo_url: '',
@@ -269,7 +270,7 @@ function AthletesContent() {
   async function uploadPhoto(): Promise<string | null> {
     if (!photoFile) return null;
     const fd = new FormData();
-    fd.append('file', photoFile);
+    fd.append('file', await prepareImageUpload(photoFile, 'athletes'));
     fd.append('bucket', 'athletes');
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();

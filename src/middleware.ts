@@ -23,7 +23,16 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // A first visit has no service worker yet, so it can only receive a stale
+  // page shell from an intermediary cache. Keep HTML navigations out of the
+  // CDN/browser HTTP cache as well as out of Workbox's runtime caches.
+  if (request.headers.get('accept')?.includes('text/html')) {
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+  }
+
+  return response;
 }
 
 export const config = {
