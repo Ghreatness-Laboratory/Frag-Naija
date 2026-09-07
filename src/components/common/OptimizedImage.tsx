@@ -2,7 +2,17 @@ import Image, { type ImageProps } from 'next/image';
 
 /** Storage transformations are unavailable; Next's image optimizer provides responsive derivatives. */
 export function supabaseImageUrl(src: string) {
-  return src;
+  const cdnUrl = process.env.NEXT_PUBLIC_STORAGE_CDN_URL?.replace(/\/$/, '');
+  if (!cdnUrl || !src.includes(STORAGE_PUBLIC_PATH)) return src;
+
+  try {
+    const source = new URL(src);
+    const storagePathIndex = source.pathname.indexOf(STORAGE_PUBLIC_PATH);
+    if (storagePathIndex === -1) return src;
+    return `${cdnUrl}${source.pathname.slice(storagePathIndex)}${source.search}`;
+  } catch {
+    return src;
+  }
 }
 
 type OptimizedImageProps = Omit<ImageProps, 'src'> & {
