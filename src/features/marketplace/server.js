@@ -43,8 +43,23 @@ export async function getPublicMarketplaceListings({ game_slug, free_agent, loan
   if (error) throw error;
   return (data || []).map((row) => {
     const publicData = row.public_data || {};
-    return { ...row, display_name: publicData.display_name || null, ign: publicData.ign || null, game_slug: publicData.game_slug || null, photo_url: publicData.photo_url || null, highlight_granted: false, public_data: publicData };
-  }).filter((row) => (!game_slug || row.game_slug === game_slug) && (free_agent === undefined || row.public_data?.is_free_agent === free_agent) && (loan_available === undefined || row.public_data?.loan_available === loan_available));
+    return { 
+      id: row.id,
+      public_data: publicData,
+      updated_at: row.updated_at,
+      highlight_granted: false,
+      athlete: {
+        id: row.id,
+        name: publicData.display_name || null,
+        ign: publicData.ign || null,
+        known_name: publicData.display_name || null,
+        game_slug: publicData.game_slug || null,
+        role: 'Athlete',
+        photo_url: publicData.photo_url || null,
+        overall_rating: null
+      }
+    };
+  }).filter((row) => (!game_slug || row.athlete.game_slug === game_slug) && (free_agent === undefined || row.public_data?.is_free_agent === free_agent) && (loan_available === undefined || row.public_data?.loan_available === loan_available));
 }
 
 export async function getMarketplaceReviewQueue() {
