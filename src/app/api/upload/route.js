@@ -4,8 +4,15 @@ import { checkAdmin } from '@/features/shared/server/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_BUCKETS = ['athletes', 'teams', 'highlights', 'team-members', 'shop-items', 'news', 'wager-proofs'];
+const ALLOWED_BUCKETS = ['athletes', 'teams', 'partners', 'highlights', 'team-members', 'shop-items', 'news', 'wager-proofs'];
 const MAX_SIZE_MB = 10;
+const STATIC_ASSET_BUCKETS = new Set(['teams', 'partners']);
+
+function imageCacheControl(bucket) {
+  return STATIC_ASSET_BUCKETS.has(bucket)
+    ? 'public, max-age=31536000, immutable'
+    : 'public, max-age=2592000';
+}
 
 export async function POST(request) {
   const authErr = await checkAdmin();
@@ -44,6 +51,7 @@ export async function POST(request) {
       .from(bucket)
       .upload(filename, buffer, {
         contentType: file.type,
+        cacheControl: imageCacheControl(bucket),
         upsert: false,
       });
 

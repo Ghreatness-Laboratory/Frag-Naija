@@ -4,6 +4,7 @@ import { Search, Swords, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { GAMES } from '@/lib/games';
 import { useAuth } from '@/context/AuthContext';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
 
 type UserResult={id:string;username:string}; 
 type Wager={ id:string; creator_id:string; opponent_id:string; creator_name:string; opponent_name:string; terms:string; stake_amount:number|string; status:string; game_slug?:string; proof_of_win_url?:string };
@@ -57,7 +58,7 @@ export default function CustomWagerPage(){
    if (proofFile) {
      setUploading(true);
      const formData = new FormData();
-     formData.append('file', proofFile);
+     formData.append('file', await prepareImageUpload(proofFile, 'wager-proofs'));
      formData.append('bucket', 'wager-proofs');
      
      try {

@@ -7,6 +7,7 @@ import AdminTable from '@/components/admin/AdminTable';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
 
 type Row = Record<string, unknown> & { id: string; name: string; role: string };
 const EMPTY = { name: '', role: '', bio: '', photo_url: '', currently_playing_game_slug: '', twitter_url: '', instagram_url: '', linkedin_url: '', twitch_url: '', youtube_url: '', sort_order: '0', status: 'Published' };
@@ -44,7 +45,7 @@ export default function AdminTeamMembersPage() {
   async function uploadPhoto() {
     if (!photoFile) return null;
     const fd = new FormData();
-    fd.append('file', photoFile);
+    fd.append('file', await prepareImageUpload(photoFile, 'team-members'));
     fd.append('bucket', 'team-members');
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();

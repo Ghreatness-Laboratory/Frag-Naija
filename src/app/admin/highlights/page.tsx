@@ -9,6 +9,7 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
 
 const GAME_KEYWORDS: Record<string, string[]> = {
   'pubg-mobile':    ['pubg', 'battleground'],
@@ -76,7 +77,7 @@ function HighlightsContent() {
   async function uploadThumb(): Promise<string | null> {
     if (!thumbFile) return null;
     const fd = new FormData();
-    fd.append('file', thumbFile);
+    fd.append('file', await prepareImageUpload(thumbFile, 'highlights'));
     fd.append('bucket', 'highlights');
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();
