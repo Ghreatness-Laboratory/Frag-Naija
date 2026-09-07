@@ -43,14 +43,23 @@ export default withPWA({
   dest: 'public',
   // Registration handled by PWARegister.tsx (more reliable in Next.js App Router)
   register: false,
+  // Version Workbox's cache namespace so this deployment cannot reuse caches
+  // produced by earlier service-worker policies.
+  cacheId: 'frag-naija-sw-v3',
   skipWaiting: true,
+  clientsClaim: true,
   // The app shell is client-rendered and fetches admin-managed content from
   // the API. Caching `/` separately can keep an old deployment's app shell
   // active indefinitely, so never persist the start URL.
   cacheStartUrl: false,
+  // next-pwa otherwise adds its own NetworkFirst `start-url` route whenever
+  // this is true, even when cacheStartUrl is false.
+  dynamicStartUrl: false,
   disable: process.env.NODE_ENV === 'development',
-  fallbacks: { document: '/offline' },
   customWorkerDir: 'worker',
+  // Public files are precached by next-pwa. Exclude non-asset documentation;
+  // page documents are never added to this manifest.
+  publicExcludes: ['!noprecache/**/*', '!**/*.md'],
   // Next's app build manifest can be unavailable during an atomic deployment
   // swap. It is not needed for offline navigation, so do not precache it.
   buildExcludes: [/app-build-manifest\.json$/],
@@ -90,16 +99,11 @@ export default withPWA({
       },
     },
     {
-      // Pages are only a short offline fallback. Version the cache to leave
-      // stale entries from the previous one-day policy unused immediately.
+      // Never cache HTML documents. These routes render database-managed
+      // content, so a navigation must always reach the origin.
       urlPattern: /^https?.*/i,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'fn-pages-v2',
-        networkTimeoutSeconds: 3,
-        expiration: { maxEntries: 60, maxAgeSeconds: 60 },
-        cacheableResponse: { statuses: [0, 200] },
-      },
+      handler: 'NetworkOnly',
+      options: {},
     },
   ],
 })(nextConfig);
