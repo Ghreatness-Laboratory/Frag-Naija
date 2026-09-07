@@ -6,6 +6,7 @@ import AdminTable from '@/components/admin/AdminTable';
 import AdminModal from '@/components/admin/AdminModal';
 import { Field, Input, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
 
 const CATEGORIES = ['Trending', 'Hot', 'Gossip', 'Transfer News'];
 const EMPTY = { title: '', excerpt: '', content: '', image_url: '', author: '', published_at: '', published: false, pinned: false, category: '', game_slug: '', like_count: 0, view_count: 0 };
@@ -65,7 +66,7 @@ export default function AdminNewsPage() {
   async function uploadImage() {
     if (!imageFile) return null;
     const fd = new FormData();
-    fd.append('file', imageFile);
+    fd.append('file', await prepareImageUpload(imageFile, 'news'));
     fd.append('bucket', 'news');
     const res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
     const data = await res.json();

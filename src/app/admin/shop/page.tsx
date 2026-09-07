@@ -6,6 +6,7 @@ import AdminModal from '@/components/admin/AdminModal';
 import AdminTable from '@/components/admin/AdminTable';
 import { Field, Input, Select, SubmitBtn, Textarea } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
 
 type Row = {
   id: string;
@@ -84,7 +85,7 @@ export default function AdminShopPage() {
   async function uploadProductImage(): Promise<string | null> {
     if (!imageFile) return null;
     const fd = new FormData();
-    fd.append('file', imageFile);
+    fd.append('file', await prepareImageUpload(imageFile, 'shop-items'));
     fd.append('bucket', 'shop-items');
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();

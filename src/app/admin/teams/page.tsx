@@ -9,6 +9,7 @@ import AdminGameFilter from '@/components/admin/AdminGameFilter';
 import { Field, Input, Select, Textarea, SubmitBtn } from '@/components/admin/Field';
 import { GAMES } from '@/lib/games';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
 
 const EMPTY = {
   name: '', region: '', bio: '', logo_url: '', game_slug: 'pubg-mobile',
@@ -98,7 +99,7 @@ function TeamsContent() {
 
   async function uploadFile(file: File, bucket = 'teams'): Promise<string> {
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', await prepareImageUpload(file, bucket));
     fd.append('bucket', bucket);
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();

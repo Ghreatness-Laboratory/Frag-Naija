@@ -1,13 +1,6 @@
 import Image, { type ImageProps } from 'next/image';
 
-function isSupabaseStorageUrl(value: string) {
-  return value.includes('/storage/v1/object/public/');
-}
-
-/**
- * Storage public URLs must be requested directly. Supabase's render endpoint
- * requires the Image Transformations feature, which is not enabled here.
- */
+/** Storage transformations are unavailable; Next's image optimizer provides responsive derivatives. */
 export function supabaseImageUrl(src: string) {
   return src;
 }
@@ -22,12 +15,12 @@ export default function OptimizedImage({
   width = 320,
   height = 240,
   unoptimized,
+  loading = 'lazy',
   alt,
   ...props
 }: OptimizedImageProps) {
-  const isSupabaseStorageImage = isSupabaseStorageUrl(src);
   const imageSrc = supabaseImageUrl(src);
-  const shouldBypassOptimization = unoptimized || isSupabaseStorageImage || imageSrc.endsWith('.svg') || imageSrc.startsWith('blob:') || imageSrc.startsWith('data:');
+  const shouldBypassOptimization = unoptimized || imageSrc.endsWith('.svg') || imageSrc.startsWith('blob:') || imageSrc.startsWith('data:');
 
   return (
     <Image
@@ -36,6 +29,7 @@ export default function OptimizedImage({
       width={width}
       height={height}
       alt={alt}
+      loading={loading}
       unoptimized={shouldBypassOptimization}
     />
   );
