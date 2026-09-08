@@ -1,5 +1,7 @@
 import Image, { type ImageProps } from 'next/image';
 
+const STORAGE_PUBLIC_PATH = '/storage/v1/object/public/';
+
 /** Storage transformations are unavailable; Next's image optimizer provides responsive derivatives. */
 export function supabaseImageUrl(src: string) {
   const cdnUrl = process.env.NEXT_PUBLIC_STORAGE_CDN_URL?.replace(/\/$/, '');
