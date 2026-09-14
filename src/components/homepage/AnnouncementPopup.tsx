@@ -68,34 +68,34 @@ export default function AnnouncementPopup({ settings }: { settings: HomepageSett
       aria-labelledby={title ? 'announcement-title' : undefined}
       aria-label={title ? undefined : 'Announcement'}
     >
-      <section className="relative flex max-h-[calc(100vh-2rem)] w-full max-w-[min(92vw,34rem)] flex-col overflow-hidden rounded-[2rem] border border-fn-green/35 bg-fn-card shadow-[0_24px_80px_rgba(0,0,0,.65),0_0_42px_rgba(77,255,110,.18)] ring-1 ring-white/5 motion-safe:animate-[announcement-pop_.24s_ease-out]">
+      <section className="relative flex max-h-[calc(100vh-4rem)] w-full max-w-[min(85vw,28rem)] flex-col overflow-hidden rounded-[1.5rem] border border-fn-green/35 bg-fn-card shadow-[0_20px_56px_rgba(0,0,0,.6),0_0_30px_rgba(77,255,110,.16)] ring-1 ring-white/5 motion-safe:animate-[announcement-pop_.24s_ease-out]">
         <button
           type="button"
           onClick={dismiss}
           ref={dismissButtonRef}
-          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-fn-black/80 text-fn-text shadow-lg backdrop-blur transition-colors hover:border-fn-green hover:bg-fn-green hover:text-fn-black focus:outline-none focus:ring-2 focus:ring-fn-green"
+          className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-fn-black/80 text-fn-text shadow-lg backdrop-blur transition-colors hover:border-fn-green hover:bg-fn-green hover:text-fn-black focus:outline-none focus:ring-2 focus:ring-fn-green"
           aria-label="Close announcement"
         >
-          <X size={20} strokeWidth={2.5} />
+          <X size={18} strokeWidth={2.5} />
         </button>
-        <div className="relative min-h-[11rem] shrink-0 overflow-hidden bg-fn-black sm:min-h-[15rem]">
+        <div className="relative min-h-[8.5rem] shrink-0 overflow-hidden bg-fn-black sm:min-h-[11rem]">
           {imageUrl ? (
-            <OptimizedImage src={imageUrl} alt="" fill sizes="(max-width: 640px) 92vw, 544px" className="object-cover" />
+            <OptimizedImage src={imageUrl} alt="" fill sizes="(max-width: 640px) 85vw, 448px" className="object-cover" />
           ) : (
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(77,255,110,.32),transparent_35%),linear-gradient(135deg,rgba(77,255,110,.18),rgba(8,11,9,.96)_65%)]" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-fn-card via-fn-card/15 to-transparent" />
-          <div className="absolute bottom-4 left-5 rounded-full border border-fn-green/40 bg-fn-black/70 px-3 py-1 text-[9px] font-black uppercase tracking-[0.24em] text-fn-green backdrop-blur">
+          <div className="absolute bottom-3 left-4 rounded-full border border-fn-green/40 bg-fn-black/70 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-fn-green backdrop-blur">
             Frag Naija Ad
           </div>
         </div>
-        <div className="overflow-y-auto px-5 pb-5 pt-4 sm:px-7 sm:pb-7 sm:pt-5">
-          {title && <h2 id="announcement-title" className="font-display text-2xl font-black uppercase leading-[0.95] tracking-wider text-fn-text sm:text-4xl">{title}</h2>}
-          {body && <p className="mt-3 whitespace-pre-line text-sm leading-6 text-fn-muted sm:text-base sm:leading-7">{body}</p>}
+        <div className="overflow-y-auto px-4 pb-4 pt-3.5 sm:px-5 sm:pb-5 sm:pt-4">
+          {title && <h2 id="announcement-title" className="font-display text-xl font-black uppercase leading-tight tracking-wide text-fn-text sm:text-3xl">{title}</h2>}
+          {body && <p className="mt-2.5 whitespace-pre-line text-sm leading-5 text-fn-muted sm:leading-6">{body}</p>}
           {cta && (ctaLink ? (
-            <a href={ctaLink} onClick={dismiss} className="mt-6 flex w-full items-center justify-center rounded-full bg-fn-green px-5 py-3.5 text-center font-mono text-xs font-black uppercase tracking-[0.22em] text-fn-black shadow-[0_0_28px_rgba(77,255,110,.25)] transition hover:bg-fn-gdim active:scale-[0.98] sm:text-sm">{cta}</a>
+            <a href={ctaLink} onClick={dismiss} className="mt-4 flex w-full items-center justify-center rounded-full bg-fn-green px-4 py-3 text-center font-mono text-xs font-black uppercase tracking-[0.18em] text-fn-black shadow-[0_0_22px_rgba(77,255,110,.22)] transition hover:bg-fn-gdim active:scale-[0.98]">{cta}</a>
           ) : (
-            <button type="button" onClick={dismiss} className="mt-6 flex w-full items-center justify-center rounded-full bg-fn-green px-5 py-3.5 text-center font-mono text-xs font-black uppercase tracking-[0.22em] text-fn-black shadow-[0_0_28px_rgba(77,255,110,.25)] transition hover:bg-fn-gdim active:scale-[0.98] sm:text-sm">{cta}</button>
+            <button type="button" onClick={dismiss} className="mt-4 flex w-full items-center justify-center rounded-full bg-fn-green px-4 py-3 text-center font-mono text-xs font-black uppercase tracking-[0.18em] text-fn-black shadow-[0_0_22px_rgba(77,255,110,.22)] transition hover:bg-fn-gdim active:scale-[0.98]">{cta}</button>
           ))}
         </div>
       </section>
