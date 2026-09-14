@@ -1,0 +1,2 @@
+import { NextResponse } from 'next/server'; import { checkAdmin } from '@/features/shared/server/adminAuth'; import { getCurrentUser } from '@/features/auth/server'; import { reviewAccountSale } from '@/features/account-sales/server';
+export const dynamic='force-dynamic'; export async function POST(request,{params}){const err=await checkAdmin();if(err)return err;const user=await getCurrentUser();try{return NextResponse.json(await reviewAccountSale(params.id,await request.json(),user?.id));}catch(e){return NextResponse.json({error:e.message},{status:400});}}
