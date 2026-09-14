@@ -14,7 +14,6 @@ const SECTIONS = [
   { href: '/admin/partners', icon: PanelsTopLeft, label: 'Partners', desc: 'Manage sponsor logos on the homepage' },
   { href: '/admin/transfers',   icon: ArrowLeftRight, label: 'Transfers',   desc: 'Post rumours and confirmed moves'       },
   { href: '/admin/marketplace', icon: BadgeCheck, label: 'Marketplace', desc: 'Review and moderate marketplace listings' },
-  { href: '/admin/account-sales', icon: ShoppingBag, label: 'Account Sales', desc: 'Review player account sale listings' },
   { href: '/admin/tournaments', icon: Trophy,         label: 'Tournaments', desc: 'Schedule and update tournaments'        },
   { href: '/admin/tournament-results', icon: Trophy, label: 'Tournament Results', desc: 'Record placements and ranking points' },
   { href: '/admin/live-matches', icon: Activity, label: 'Live Match Updates', desc: 'Update scores and progress for existing fixtures' },
