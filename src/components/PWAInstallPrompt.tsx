@@ -1,54 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
 import OptimizedImage from '@/components/common/OptimizedImage';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePWAInstallPrompt } from '@/components/usePWAInstallPrompt';
 
 const DISMISSED_KEY = 'fn-pwa-dismissed';
 
 export default function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const { deferredPromptReady, install, isIOS, isStandalone, hydrated } = usePWAInstallPrompt();
   const [visible, setVisible] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      ('standalone' in navigator && (navigator as { standalone?: boolean }).standalone === true);
+    if (!hydrated || isStandalone || localStorage.getItem(DISMISSED_KEY)) return;
 
-    setIsIOS(ios);
-    setIsStandalone(standalone);
-
-    if (standalone || localStorage.getItem(DISMISSED_KEY)) return;
-
-    if (ios) {
-      const t = setTimeout(() => setVisible(true), 3000);
-      return () => clearTimeout(t);
+    if (isIOS) {
+      const timer = window.setTimeout(() => setVisible(true), 3000);
+      return () => window.clearTimeout(timer);
     }
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
+    if (deferredPromptReady) setVisible(true);
+  }, [deferredPromptReady, hydrated, isIOS, isStandalone]);
 
   async function handleInstall() {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setVisible(false);
-    setDeferredPrompt(null);
+    const result = await install();
+    if (result.status === 'accepted' || result.status === 'installed') setVisible(false);
   }
 
   function dismiss() {
@@ -64,50 +40,38 @@ export default function PWAInstallPrompt() {
       role="dialog"
       aria-label="Install Frag Naija app"
     >
-      <div className="overflow-hidden rounded-sm border border-fn-green/30 bg-fn-card shadow-2xl"
+      <div
+        className="overflow-hidden rounded-sm border border-fn-green/30 bg-fn-card shadow-2xl"
         style={{ boxShadow: '0 0 24px rgba(0,255,65,0.12)' }}
       >
-        {/* Header strip */}
         <div className="flex items-center justify-between border-b border-fn-gborder bg-fn-dark px-4 py-2.5">
           <div className="flex items-center gap-2">
             <Smartphone size={12} className="text-fn-green" />
             <span className="fn-label text-fn-text">Install App</span>
           </div>
-          <button
-            onClick={dismiss}
-            aria-label="Dismiss"
-            className="text-fn-muted hover:text-fn-text transition-colors"
-          >
+          <button onClick={dismiss} aria-label="Dismiss" className="text-fn-muted transition-colors hover:text-fn-text">
             <X size={13} />
           </button>
         </div>
-
         <div className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-sm overflow-hidden bg-fn-black border border-fn-gborder">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-sm border border-fn-gborder bg-fn-black">
               <OptimizedImage src="/therealfavicon.png" alt="Frag Naija" width={48} height={48} sizes="48px" className="h-full w-full object-contain" />
             </div>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-fn-text">Frag Naija</p>
-              <p className="text-[9px] text-fn-muted leading-snug">
-                {isIOS
-                  ? 'Add to Home Screen for the full app experience'
-                  : 'Install for faster access — works offline too'}
+              <p className="text-[9px] leading-snug text-fn-muted">
+                {isIOS ? 'Add to Home Screen for the full app experience' : 'Install for faster access — works offline too'}
               </p>
             </div>
           </div>
-
           {isIOS ? (
-            <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[9px] text-fn-muted leading-relaxed">
-              Tap <strong className="text-fn-text">Share</strong> (
-              <span className="font-bold text-fn-green">&#x2B06;</span>) then{' '}
+            <div className="rounded-sm border border-fn-gborder bg-fn-dark p-3 text-[9px] leading-relaxed text-fn-muted">
+              Tap <strong className="text-fn-text">Share</strong> (<span className="font-bold text-fn-green">&#x2B06;</span>) then{' '}
               <strong className="text-fn-text">&quot;Add to Home Screen&quot;</strong>
             </div>
           ) : (
-            <button
-              onClick={handleInstall}
-              className="fn-btn flex w-full items-center justify-center gap-2 py-2.5 text-[10px]"
-            >
+            <button type="button" onClick={handleInstall} className="fn-btn flex w-full items-center justify-center gap-2 py-2.5 text-[10px]">
               <Download size={11} /> INSTALL APP
             </button>
           )}
