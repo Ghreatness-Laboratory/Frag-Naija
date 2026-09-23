@@ -90,11 +90,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "logo": absoluteUrl(APP_ICON_PATH),
     "image": absoluteUrl(OG_IMAGE_PATH),
     "description": DEFAULT_DESCRIPTION,
-    "sameAs": [
-      "https://twitter.com/fragnaija",
-      "https://facebook.com/fragnaija",
-      "https://instagram.com/fragnaija",
-    ],
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "customer support",
