@@ -163,7 +163,10 @@ export default function PlayerCardTemplate({
   imageFetchPriority = 'auto',
 }: PlayerCardTemplateProps) {
   const isIcon = Boolean(athlete.is_icon) || variant === 'icon';
-  const cardVariant = variant === 'icon' ? 'featured' : variant;
+  // Icons intentionally share the roster's compact card geometry. Their gold
+  // treatment and badge distinguish them without turning the list into a
+  // separate portrait-card layout.
+  const cardVariant = variant === 'icon' ? 'compact' : variant;
   const accent = isIcon ? ICON_GOLD : primary;
   const statLabelClass = isIcon ? 'text-[#F5C542]' : 'text-fn-green';
   const displayName = athlete.known_name || athlete.ign;
