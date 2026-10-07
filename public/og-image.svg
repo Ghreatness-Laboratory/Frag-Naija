@@ -1,0 +1,16 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#061507"/><stop offset=".48" stop-color="#020703"/><stop offset="1" stop-color="#0b190b"/></linearGradient>
+    <pattern id="scan" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 0h12v1H0z" fill="#00ff41" opacity=".08"/><path d="M0 0v12" stroke="#ffffff" opacity=".025"/></pattern>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/><rect width="1200" height="630" fill="url(#scan)"/>
+  <path d="M-50 510C210 410 327 677 595 516c242-145 388-22 655-123" fill="none" stroke="#00ff41" stroke-width="2" opacity=".18"/>
+  <rect x="36" y="36" width="1128" height="558" rx="28" fill="none" stroke="#00ff41" stroke-width="3" opacity=".55"/>
+  <g transform="translate(82 122)" filter="url(#glow)"><rect width="314" height="314" rx="70" fill="#041006" stroke="#00ff41" stroke-width="12"/><path d="M67 69h178l-16 137-72 50-72-50L67 69Z" fill="#071508" stroke="#00ff41" stroke-width="10"/><path d="M104 110h77l-6 25h-45v27h38l-6 24h-32v50h-26V110Zm91 0h27v126h-24l-49-72v72h-27V110h25l48 71V110Z" fill="#f8fff8"/><path d="M104 250h106" stroke="#00ff41" stroke-width="7" stroke-linecap="round"/></g>
+  <text x="450" y="220" font-family="Orbitron, Impact, Arial Black, sans-serif" font-size="82" font-weight="900" fill="#f8fff8" letter-spacing="5">FRAGNAIJA</text>
+  <text x="454" y="292" font-family="Rajdhani, Arial, sans-serif" font-size="42" font-weight="800" fill="#00ff41" letter-spacing="2">Everything Esports - One Platform</text>
+  <text x="456" y="365" font-family="Arial, sans-serif" font-size="24" fill="#b7c4b7" letter-spacing="1">News • Tournaments • Athletes • Teams • Wagers</text>
+  <g fill="#00ff41" opacity=".9"><rect x="454" y="420" width="220" height="6"/><rect x="704" y="420" width="80" height="6" opacity=".55"/><rect x="812" y="420" width="180" height="6" opacity=".3"/></g>
+  <text x="454" y="510" font-family="Space Mono, monospace" font-size="22" fill="#d8fadd" letter-spacing="3">FRAGNAIJA.COM</text>
+</svg>

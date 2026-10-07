@@ -4,34 +4,24 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ShieldCheck, ShieldOff, Shield, Copy, Check, ArrowLeft } from 'lucide-react';
-
-type Factor = { id: string; status: string };
-type UserData = {
-  email: string;
-  username?: string;
-  provider?: string;
-  totp_enabled: boolean;
-  factors: Factor[];
-} | null;
+import BrandedLoader from '@/components/common/BrandedLoader';
+import { useAuth } from '@/context/AuthContext';
 
 type EnrollData = { factorId: string; qrCode: string; secret: string } | null;
 type EnrollStep = 'idle' | 'scan' | 'confirm' | 'done';
 
 export default function SecurityPage() {
-  const [user, setUser]           = useState<UserData>(null);
-  const [loading, setLoading]     = useState(true);
+  const { user, loading, refresh } = useAuth();
   const [enrollStep, setEnrollStep] = useState<EnrollStep>('idle');
   const [enrollData, setEnrollData] = useState<EnrollData>(null);
   const [code, setCode]           = useState('');
   const [error, setError]         = useState('');
   const [busy, setBusy]           = useState(false);
   const [copied, setCopied]       = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({ match_results_enabled: true });
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { setUser(d); setLoading(false); })
-      .catch(() => setLoading(false));
+    fetch('/api/notifications/settings', { credentials: 'include' }).then(r => r.json()).then(d => setNotificationSettings({ match_results_enabled: d.match_results_enabled !== false })).catch(() => {});
   }, []);
 
   async function startEnroll() {
@@ -64,7 +54,7 @@ export default function SecurityPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setEnrollStep('done');
-      setUser(prev => prev ? { ...prev, totp_enabled: true } : prev);
+      await refresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Invalid code');
       setCode('');
@@ -86,8 +76,8 @@ export default function SecurityPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setUser(prev => prev ? { ...prev, totp_enabled: false, factors: [] } : prev);
       setEnrollStep('idle');
+      await refresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to disable 2FA');
     } finally {
@@ -105,7 +95,7 @@ export default function SecurityPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-fn-black flex items-center justify-center">
-        <div className="text-fn-muted text-sm uppercase tracking-widest animate-pulse">Loading...</div>
+        <BrandedLoader label="Loading security" />
       </div>
     );
   }
@@ -132,7 +122,7 @@ export default function SecurityPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-fn-text font-mono tracking-widest uppercase flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-fn-text font-display tracking-widest uppercase flex items-center gap-3">
             <Shield className="text-fn-green" size={22} /> Account Security
           </h1>
           <p className="text-fn-muted text-sm mt-1">{user.email}</p>
@@ -152,6 +142,28 @@ export default function SecurityPage() {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
           )}
+        </div>
+
+
+        {/* Notifications settings */}
+        <div className="bg-fn-card border border-fn-gborder rounded-lg p-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-fn-muted text-xs uppercase tracking-widest mb-1">Notifications</p>
+            <p className="text-fn-text text-sm font-bold">Match-result alerts</p>
+            <p className="mt-1 text-xs text-fn-muted">Controls in-app Gaming Alerts and FCM push notifications for winner + MVP results.</p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-fn-green">
+            <input
+              type="checkbox"
+              checked={notificationSettings.match_results_enabled}
+              onChange={async (event) => {
+                const enabled = event.target.checked;
+                setNotificationSettings({ match_results_enabled: enabled });
+                await fetch('/api/notifications/settings', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ match_results_enabled: enabled }) }).catch(() => null);
+              }}
+            />
+            On
+          </label>
         </div>
 
         {/* 2FA card */}
@@ -205,7 +217,7 @@ export default function SecurityPage() {
 
               {/* Manual secret */}
               <div className="bg-fn-dark border border-fn-gborder rounded p-3">
-                <p className="text-fn-muted text-[10px] uppercase tracking-widest mb-1">Can't scan? Enter this key manually:</p>
+                <p className="text-fn-muted text-[10px] uppercase tracking-widest mb-1">Can&apos;t scan? Enter this key manually:</p>
                 <div className="flex items-center gap-2">
                   <code className="text-fn-green text-xs font-mono flex-1 break-all">{enrollData.secret}</code>
                   <button onClick={copySecret} className="text-fn-muted hover:text-fn-green transition-colors shrink-0">
@@ -218,7 +230,7 @@ export default function SecurityPage() {
                 onClick={() => setEnrollStep('confirm')}
                 className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors"
               >
-                I've scanned it →
+                I&apos;ve scanned it →
               </button>
             </div>
           )}
@@ -263,7 +275,7 @@ export default function SecurityPage() {
             <div className="text-center space-y-2 py-2">
               <ShieldCheck size={32} className="text-fn-green mx-auto" />
               <p className="text-fn-green font-bold text-sm uppercase tracking-widest">2FA Activated!</p>
-              <p className="text-fn-muted text-xs">Your account is now protected. You'll be asked for a code on every login.</p>
+              <p className="text-fn-muted text-xs">Your account is now protected. You&apos;ll be asked for a code on every login.</p>
             </div>
           )}
 

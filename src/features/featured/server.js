@@ -1,9 +1,11 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const FEATURED_SELECT = 'id,type,ref_id,label,badge,priority,is_active,created_at,updated_at';
+
 export async function getFeatured({ activeOnly } = {}) {
   let query = supabaseAdmin
     .from('featured')
-    .select('*')
+    .select(FEATURED_SELECT)
     .order('priority', { ascending: true });
 
   if (activeOnly === true) {
@@ -19,7 +21,7 @@ export async function getFeatured({ activeOnly } = {}) {
 export async function getFeaturedById(id) {
   const { data, error } = await supabaseAdmin
     .from('featured')
-    .select('*')
+    .select(FEATURED_SELECT)
     .eq('id', id)
     .single();
   if (error) throw error;

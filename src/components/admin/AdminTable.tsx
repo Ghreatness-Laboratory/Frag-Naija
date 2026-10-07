@@ -1,6 +1,7 @@
 'use client';
 
 import { Trash2, Pencil } from 'lucide-react';
+import BrandedLoader from '@/components/common/BrandedLoader';
 
 interface Column {
   key: string;
@@ -22,7 +23,7 @@ export default function AdminTable({ columns, rows, onDelete, onEdit, extraActio
   if (loading) {
     return (
       <div className="border border-fn-gborder rounded-lg overflow-hidden">
-        <div className="p-8 text-center text-fn-muted text-sm">Loading...</div>
+        <div className="flex justify-center p-8"><BrandedLoader label="Loading table" size="sm" /></div>
       </div>
     );
   }

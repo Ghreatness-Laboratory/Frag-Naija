@@ -18,16 +18,26 @@ export type DummyAthlete = {
   attack: number; defense: number; clutch: number; survival: number;
   iq: number; aggression: number;
   kills: number; assists: number; damage: number; winrate: number;
-  photo_url: null; status: string; bio: string | null;
+  photo_url: string | null; status: string; bio: string | null;
+  known_name?: string | null;
+  previous_aliases?: string[];
+  previous_teams?: { team: string; years: string }[];
+  achievements?: { title: string; date: string; description?: string }[];
+  performance_history?: { label: string; value: string; date: string }[];
+  sensitivity_settings?: Record<string, unknown>;
+  control_code?: string;
+  jersey_number?: number | string | null;
+  game_slug?: string | null;
   perks: string[]; strengths: string[]; weaknesses: string[];
 };
 
 export type DummyTeam = {
-  id: string; name: string; logo_url: null; region: string | null;
+  id: string; name: string; logo_url: string | null; region: string | null;
   wins: number; losses: number; kills: number; bio: string | null;
   rank: number | null; strength: number | null;
   achievements: string[];
-  players: { id: string; name: string; ign: string; role: string | null; overall_rating: number; photo_url: null; status: string }[];
+  game_slug?: string | null;
+  players: { id: string; name: string; ign: string; role: string | null; overall_rating: number; photo_url: string | null; status: string }[];
 };
 
 export type DummyTransfer = {
@@ -49,6 +59,168 @@ export type GameDummyContent = {
   teams: DummyTeam[];
   transfers: DummyTransfer[];
   highlights: DummyHighlight[];
+};
+
+// ─── PUBG MOBILE ─────────────────────────────────────────────────────────────
+
+const pubgPhoto1 = '/WhatsApp Image 2026-04-15 at 5.34.13 PM.jpeg';
+const pubgPhoto2 = '/WhatsApp Image 2026-04-15 at 5.34.13 PM (1).jpeg';
+const pubgPhoto3 = '/WhatsApp Image 2026-04-15 at 5.34.13 PM (2).jpeg';
+
+const pubgMobile: GameDummyContent = {
+  tournaments: [
+    {
+      id: 'pubg-t1', name: 'PUBG Mobile National Championship Nigeria 2026',
+      game: 'PUBG Mobile', prize_pool: 12000000, currency: 'NGN', status: 'Live',
+      format: 'Squad Battle Royale - Erangel / Miramar', region: 'Nigeria',
+      start_date: '2026-04-08', end_date: '2026-04-18', image_url: null,
+    },
+    {
+      id: 'pubg-t2', name: 'Lagos TDM Kings Invitational',
+      game: 'PUBG Mobile', prize_pool: 3500000, currency: 'NGN', status: 'Upcoming',
+      format: '4v4 TDM', region: 'Lagos',
+      start_date: '2026-05-04', end_date: '2026-05-05', image_url: null,
+    },
+    {
+      id: 'pubg-t3', name: 'West Africa Scrim League',
+      game: 'PUBG Mobile', prize_pool: 7000000, currency: 'NGN', status: 'Upcoming',
+      format: 'Weekly Scrims', region: 'West Africa',
+      start_date: '2026-05-12', end_date: '2026-06-02', image_url: null,
+    },
+  ],
+
+  athletes: [
+    {
+      id: 'pubg-a1', name: 'Crusader', ign: 'TribeCrusaeeder', known_name: 'TribeCrusaeeder',
+      team: 'Tribe Warriors', role: 'Fragger', overall_rating: 95,
+      attack: 97, defense: 94, survival: 89, clutch: 94, iq: 94, aggression: 96,
+      kills: 7.8, assists: 3.4, damage: 2480, winrate: 72,
+      photo_url: pubgPhoto1, status: 'Active', jersey_number: 10, game_slug: 'pubg-mobile',
+      bio: 'Crusader is a top Nigerian PUBG Mobile esports player based in Germany, currently playing for Tribe Warriors (also known as Tribe Outlaws). He has specialized in PUBG Mobile Esports and was named the Best TDM Player in Nigeria in 2023. Over the course of his esports career, he has also represented Slime 4KT and Fowl Play, building a reputation as one of the most consistent players to come out of Nigeria.',
+      previous_aliases: ['Crusader', 'TribeCrusader'],
+      previous_teams: [
+        { team: 'FowlPlay', years: '2024' },
+        { team: 'Slime 4KT', years: '2023' },
+        { team: '1011 Esports', years: '2022' },
+        { team: 'Aura Esports', years: '2021' },
+      ],
+      achievements: [
+        {
+          title: '2nd - PUBG Mobile National Championship Nigeria',
+          date: '2026-04-12',
+          description: 'Runner-up finish built on high entry impact, late-zone damage, and consistent TDM pressure.',
+        },
+      ],
+      performance_history: [
+        { label: 'Entry damage', value: '2,480 average damage', date: 'Spring 2026' },
+        { label: 'TDM form', value: 'Best TDM Player Nigeria', date: '2023' },
+      ],
+      sensitivity_settings: {},
+      control_code: '',
+      perks: ['TDM specialist', 'Entry pressure', 'Late-circle finisher'],
+      strengths: ['Fast opening knocks', 'Clean recoil control', 'High-pressure clutch reads'],
+      weaknesses: ['Can over-commit after first knock', 'Needs support smoke timing'],
+    },
+    {
+      id: 'pubg-a2', name: 'Samuel Kwila', ign: 'SLImeKwila', known_name: 'SLImeKwila',
+      team: 'Slime 4KT', role: 'Fragger', overall_rating: 92,
+      attack: 95, defense: 92, survival: 86, clutch: 90, iq: 92, aggression: 93,
+      kills: 7.1, assists: 3.8, damage: 2310, winrate: 68,
+      photo_url: pubgPhoto2, status: 'Active', jersey_number: 12, game_slug: 'pubg-mobile',
+      bio: 'SLImeKwila is an explosive PUBG Mobile fragger known for quick trades, confident close-range pressure, and a steady late-game presence for Slime 4KT.',
+      previous_aliases: ['Kwila'],
+      previous_teams: [{ team: 'Northern Lights', years: '2024' }],
+      achievements: [
+        {
+          title: 'Top 4 - Lagos TDM Kings',
+          date: '2026-03-28',
+          description: 'Carried Slime 4KT through the upper bracket with repeated opening duels.',
+        },
+      ],
+      performance_history: [{ label: 'Opening duel rate', value: '61% won', date: '2026 split' }],
+      sensitivity_settings: {},
+      control_code: '',
+      perks: ['Trade machine', 'Close-range specialist', 'Composed reset timing'],
+      strengths: ['Rapid follow-up fights', 'Strong pre-aim discipline', 'Squad spacing'],
+      weaknesses: ['Occasional solo pushes', 'Lower survival on Miramar rotations'],
+    },
+    {
+      id: 'pubg-a3', name: 'Adekunle Musa', ign: 'NorthAce', known_name: 'NorthAce',
+      team: 'Kano Vipers', role: 'IGL', overall_rating: 89,
+      attack: 86, defense: 93, survival: 91, clutch: 88, iq: 96, aggression: 72,
+      kills: 4.9, assists: 6.6, damage: 1860, winrate: 69,
+      photo_url: pubgPhoto3, status: 'Active', jersey_number: 7, game_slug: 'pubg-mobile',
+      bio: 'NorthAce leads rotations with a measured tempo, prioritizing central compounds, vehicle discipline, and information control before the final circles collapse.',
+      previous_aliases: ['Ace'],
+      previous_teams: [{ team: 'Abuja Apex', years: '2025' }],
+      achievements: [
+        {
+          title: 'Best IGL - West Africa Scrim League',
+          date: '2026-02-18',
+          description: 'Recognized for calm calls and efficient zone conversions across five matchdays.',
+        },
+      ],
+      performance_history: [{ label: 'Final-circle conversion', value: '44%', date: '2026 split' }],
+      sensitivity_settings: {},
+      control_code: '',
+      perks: ['Zone caller', 'Vehicle discipline', 'Info anchor'],
+      strengths: ['Rotation planning', 'Low-risk resets', 'Late-zone positioning'],
+      weaknesses: ['Low entry volume', 'Needs fraggers to create first knock'],
+    },
+  ],
+
+  teams: [
+    {
+      id: 'pubg-team-1', name: 'Tribe Warriors', logo_url: null, region: 'Nigeria / Germany',
+      wins: 31, losses: 9, kills: 428, rank: 1, strength: 95, game_slug: 'pubg-mobile',
+      bio: 'A high-pressure PUBG Mobile roster built around entry damage, coordinated crashes, and decisive late circles.',
+      achievements: ['National Championship Nigeria runners-up', '2026 TDM finalist'],
+      players: [
+        { id: 'pubg-a1', name: 'Crusader', ign: 'TribeCrusaeeder', role: 'Fragger', overall_rating: 95, photo_url: pubgPhoto1, status: 'Active' },
+      ],
+    },
+    {
+      id: 'pubg-team-2', name: 'Slime 4KT', logo_url: null, region: 'Lagos',
+      wins: 27, losses: 13, kills: 392, rank: 2, strength: 91, game_slug: 'pubg-mobile',
+      bio: 'Fast entry team with strong TDM fundamentals and aggressive school/apartment contests.',
+      achievements: ['Lagos TDM Kings top 4', 'West Africa Scrim League finalist'],
+      players: [
+        { id: 'pubg-a2', name: 'Samuel Kwila', ign: 'SLImeKwila', role: 'Fragger', overall_rating: 92, photo_url: pubgPhoto2, status: 'Active' },
+      ],
+    },
+    {
+      id: 'pubg-team-3', name: 'Kano Vipers', logo_url: null, region: 'Kano',
+      wins: 21, losses: 17, kills: 286, rank: 3, strength: 86, game_slug: 'pubg-mobile',
+      bio: 'Methodical macro team that values central priority, utility discipline, and quiet placement points.',
+      achievements: ['Best IGL award', 'Northern Invitational champions'],
+      players: [
+        { id: 'pubg-a3', name: 'Adekunle Musa', ign: 'NorthAce', role: 'IGL', overall_rating: 89, photo_url: pubgPhoto3, status: 'Active' },
+      ],
+    },
+  ],
+
+  transfers: [
+    {
+      id: 'pubg-tr1', from_team: 'Slime 4KT', to_team: 'Tribe Warriors',
+      fee: 1200000, status: 'Confirmed', date: '2026-04-02',
+      notes: 'Tribe Warriors add more TDM firepower before the national championship final stretch.',
+      athletes: { id: 'pubg-a1', name: 'Crusader', ign: 'TribeCrusaeeder' },
+    },
+  ],
+
+  highlights: [
+    {
+      id: 'pubg-h1', title: 'TribeCrusaeeder 1v3 hold at School Apartments',
+      category: 'clutch-moments', duration: '01:42', views: '54K', ago: '3hr ago',
+      featured: true,
+      tags: ['clutch-moments', 'all-coverage'],
+    },
+    {
+      id: 'pubg-h2', title: 'Slime 4KT vs Tribe Warriors TDM final map',
+      category: 'match-replays', duration: '18:20', views: '31K', ago: '1d ago',
+      tags: ['match-replays', 'all-coverage'],
+    },
+  ],
 };
 
 // ─── FREE FIRE ────────────────────────────────────────────────────────────────
@@ -271,6 +443,7 @@ const freeFire: GameDummyContent = {
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 export const GAME_CONTENT: Record<string, GameDummyContent> = {
+  'pubg-mobile': pubgMobile,
   'free-fire': freeFire,
 };
 

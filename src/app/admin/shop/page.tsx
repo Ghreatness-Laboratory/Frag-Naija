@@ -1,0 +1,7 @@
+import AdminShopClient from './AdminShopClient';
+
+export const dynamic = 'force-dynamic';
+
+export default function Page() {
+  return <AdminShopClient />;
+}

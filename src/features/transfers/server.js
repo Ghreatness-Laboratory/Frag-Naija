@@ -1,12 +1,13 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
-export async function getTransfers({ status } = {}) {
+export async function getTransfers({ status, game_slug } = {}) {
   let query = supabaseAdmin
     .from('transfers')
     .select('*, athletes(id, name, ign)')
     .order('date', { ascending: false });
 
   if (status) query = query.eq('status', status);
+  if (game_slug) query = query.eq('game_slug', game_slug);
 
   const { data, error } = await query;
   if (error) throw error;

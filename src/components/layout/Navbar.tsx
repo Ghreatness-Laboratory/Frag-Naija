@@ -2,17 +2,23 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2 } from "lucide-react";
+import { Menu, X, User, ChevronRight, Sun, Moon, LogOut, Wallet, Shield, ShieldCheck, Gamepad2, Bell, Settings } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGame } from "@/context/GameContext";
+import { useAuth } from "@/context/AuthContext";
 import DisclaimerModal from "@/components/DisclaimerModal";
+import { useNotifications } from "@/components/notifications/NotificationsProvider";
 
 const navLinks = [
   { label: "Home",            href: "/" },
   { label: "Tournaments",     href: "/tournaments" },
   { label: "Athletes",        href: "/athletes" },
   { label: "Teams",           href: "/teams" },
+  { label: "Organizations",   href: "/organizations" },
   { label: "Transfer Window", href: "/transfer-window" },
+  { label: "Marketplace",     href: "/marketplace" },
+  { label: "Communities",     href: "/communities" },
+  { label: "Shop",            href: "/shop" },
   { label: "Highlights",      href: "/highlights" },
 ];
 
@@ -30,20 +36,18 @@ function ThemeToggle({ className = "" }: { className?: string }) {
   );
 }
 
-type MeUser = { username?: string; email: string } | null;
-
 function useAuthState() {
-  const [user,    setUser]    = useState<MeUser | undefined>(undefined);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/auth/me").then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch("/api/auth/admin/check").then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([userData, adminData]) => {
-      setUser(userData ?? null);
+    let active = true;
+    fetch("/api/auth/admin/check", { credentials: 'include', headers: { 'Content-Type': 'application/json' } }).then(r => r.ok ? r.json() : null).catch(() => null).then((adminData) => {
+      if (!active) return;
       setIsAdmin(adminData?.isAdmin ?? false);
     });
+    
+    return () => { active = false; };
   }, []);
 
   return { user, isAdmin };
@@ -60,10 +64,12 @@ function GameSwitcher({ onClick }: { onClick: () => void }) {
     >
       <span
         className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-        style={{ background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }}
+        style={selectedGame
+          ? { background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }
+          : { background: 'rgb(var(--fn-muted))' }}
       />
       <span className="text-[9px] font-bold uppercase tracking-widest text-fn-text group-hover:text-fn-green transition-colors truncate max-w-[80px]">
-        {selectedGame.shortName}
+        {selectedGame?.shortName ?? 'All Games'}
       </span>
       <Gamepad2 size={10} className="text-fn-muted group-hover:text-fn-green transition-colors flex-shrink-0" />
     </button>
@@ -76,6 +82,7 @@ export default function Navbar() {
   const router          = useRouter();
   const { user, isAdmin } = useAuthState();
   const { selectedGame, isHydrated } = useGame();
+  const { unreadCount } = useNotifications();
 
   const displayName = user?.username || user?.email?.split("@")[0];
 
@@ -92,9 +99,9 @@ export default function Navbar() {
   return (
     <>
       <DisclaimerModal />
-      <nav className="fixed top-0 left-0 right-0 z-50 h-14 bg-fn-dark border-b border-fn-gborder flex items-center px-3 sm:px-6">
+      <nav className="fixed left-0 right-0 top-0 z-50 flex min-h-14 items-center border-b border-fn-gborder bg-fn-dark px-3 sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(3.5rem + env(safe-area-inset-top))' }}>
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-1.5 mr-6 shrink-0">
+        <Link href="/" className="flex shrink-0 items-center gap-1.5 border-0 outline-none ring-0 focus:outline-none focus-visible:outline-none sm:mr-6 [&_span]:border-none [&_span]:outline-none">
           <span className="font-display text-lg sm:text-xl font-black text-fn-green tracking-widest glow-text">FRAG</span>
           <span className="font-display text-lg sm:text-xl font-black text-fn-text tracking-widest">NAIJA</span>
         </Link>
@@ -122,7 +129,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop: actions */}
-        <div className="hidden lg:flex items-center gap-2 ml-auto">
+        <div className="hidden lg:flex items-center gap-3 ml-auto">
           <Link
             href="/wager"
             className={`px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all rounded-sm ${
@@ -134,16 +141,23 @@ export default function Navbar() {
             ⚡ WAGER
           </Link>
           <ThemeToggle />
+          <Link
+            href="/gaming-alerts"
+            aria-label="Open FragNaija Gaming Alerts"
+            className={`relative flex h-8 w-8 items-center justify-center border rounded-sm transition-all ${
+              path === "/gaming-alerts"
+                ? "border-fn-green/40 bg-fn-green/10 text-fn-green"
+                : "border-fn-gborder text-fn-muted hover:border-fn-green/50 hover:text-fn-green"
+            }`}
+          >
+            <Bell size={13} />
+            {unreadCount > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-fn-black bg-fn-red px-1 text-[8px] font-black leading-none text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+          </Link>
 
-          {user === null && (
-            <>
-              <Link href="/login" className="text-fn-muted hover:text-fn-text text-[10px] tracking-widest uppercase transition-colors">
-                Login
-              </Link>
-              <Link href="/register" className="fn-btn text-[10px] px-3 py-1.5">
-                Sign Up
-              </Link>
-            </>
+          {!user && (
+            <Link href="/login" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-3 py-1.5 text-[10px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
+              Login
+            </Link>
           )}
 
           {user && (
@@ -165,6 +179,16 @@ export default function Navbar() {
                 }`}
               >
                 <Wallet size={10} /> Wallet
+              </Link>
+              <Link
+                href="/settings"
+                className={`flex items-center gap-1 px-2.5 py-1.5 border rounded-sm text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  path === "/settings"
+                    ? "text-fn-green bg-fn-green/10 border-fn-green/30"
+                    : "text-fn-muted border-fn-gborder hover:text-fn-green hover:border-fn-green/30"
+                }`}
+              >
+                <Settings size={10} /> Settings
               </Link>
               <Link
                 href="/security"
@@ -194,14 +218,17 @@ export default function Navbar() {
         </div>
 
         {/* Mobile: actions */}
-        <div className="flex items-center gap-2 ml-auto lg:hidden">
-          <Link href="/wager" className="text-fn-amber text-[9px] font-bold tracking-widest uppercase border border-fn-amber/30 px-2.5 py-1 rounded-sm">
-            ⚡
-          </Link>
+        <div className="flex items-center gap-1.5 ml-auto lg:hidden">
           <ThemeToggle />
+          <Link href="/gaming-alerts" aria-label="Open FragNaija Gaming Alerts" className="relative flex h-8 w-8 items-center justify-center border border-fn-gborder text-fn-muted hover:text-fn-green"><Bell size={14} />{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-fn-red px-1 text-[8px] font-black text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}</Link>
+          {!user && (
+            <Link href="/login" className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap border border-fn-green bg-fn-green px-2.5 py-1 text-[9px] font-black uppercase leading-none tracking-widest text-fn-black hover:bg-fn-gdim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fn-green">
+              Login
+            </Link>
+          )}
           <button
             onClick={() => setOpen(!open)}
-            className="p-2 text-fn-muted hover:text-fn-green transition-colors"
+            className="p-1.5 text-fn-muted hover:text-fn-green transition-colors"
             aria-label="Toggle menu"
           >
             {open ? <X size={18} /> : <Menu size={18} />}
@@ -216,7 +243,7 @@ export default function Navbar() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="absolute top-14 right-0 bottom-0 w-72 bg-fn-dark border-l border-fn-gborder flex flex-col animate-slide-u"
+            className="absolute right-0 bottom-0 w-72 bg-fn-dark border-l border-fn-gborder flex flex-col animate-slide-u" style={{ top: 'calc(3.5rem + env(safe-area-inset-top))' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-fn-gborder">
@@ -239,12 +266,14 @@ export default function Navbar() {
                   <div className="flex items-center gap-2">
                     <span
                       className="h-2 w-2 rounded-full flex-shrink-0"
-                      style={{ background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }}
+                      style={selectedGame
+                        ? { background: selectedGame.colors.primary, boxShadow: `0 0 6px ${selectedGame.colors.primary}` }
+                        : { background: 'rgb(var(--fn-muted))' }}
                     />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-fn-text">
-                      {selectedGame.shortName}
+                      {selectedGame?.shortName ?? 'All Games'}
                     </span>
-                    <span className="text-[8px] text-fn-muted uppercase tracking-wider">— Active Game</span>
+                    <span className="text-[8px] text-fn-muted uppercase tracking-wider">{selectedGame ? '— Active Game' : '— Neutral'}</span>
                   </div>
                   <div className="flex items-center gap-1 text-[8px] text-fn-muted">
                     <Gamepad2 size={10} /> Switch
@@ -283,6 +312,18 @@ export default function Navbar() {
                     <ChevronRight size={12} />
                   </Link>
                   <Link
+                    href="/settings"
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
+                      path === "/settings"
+                        ? "text-fn-green bg-fn-green/10 border border-fn-gborder"
+                        : "text-fn-muted hover:text-fn-text hover:bg-fn-card"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2"><Settings size={12} /> Settings</span>
+                    <ChevronRight size={12} />
+                  </Link>
+                  <Link
                     href="/security"
                     onClick={() => setOpen(false)}
                     className={`flex items-center justify-between px-3 py-3 mb-1 rounded-sm text-[11px] font-bold tracking-wider uppercase transition-all ${
@@ -315,16 +356,7 @@ export default function Navbar() {
                 >
                   <LogOut size={12} /> Logout
                 </button>
-              ) : (
-                <>
-                  <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn-outline text-[10px] py-2 text-center">
-                    Login
-                  </Link>
-                  <Link href="/register" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">
-                    Sign Up
-                  </Link>
-                </>
-              )}
+              ) : <Link href="/login" onClick={() => setOpen(false)} className="flex-1 fn-btn text-[10px] py-2 text-center">Login</Link>}
             </div>
           </div>
         </div>

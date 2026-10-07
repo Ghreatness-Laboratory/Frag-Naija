@@ -1,6 +1,9 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import BrandedLoader from '@/components/common/BrandedLoader';
+import { MIN_DEPOSIT_NGN } from '@/features/wagers/constants';
+import { notifyWalletUpdated } from '@/lib/wallet-events';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -36,6 +39,7 @@ type BankAccount = {
   account_number: string;
   account_name: string;
   paystack_recipient_code: string | null;
+  verified_at: string | null;
 };
 
 type Withdrawal = {
@@ -114,7 +118,10 @@ function BankAccountSection({
   bankAccount: BankAccount | null;
   onSaved: (acct: BankAccount) => void;
 }) {
-  const [editing,   setEditing]   = useState(!bankAccount);
+  // Keep the entry form unmounted until the explicit CTA is clicked. Previously
+  // the bank-list response was read with the wrong shape, leaving this flow
+  // looking like a non-responsive "Set Payout Account" action.
+  const [editing,   setEditing]   = useState(false);
   const [banks,     setBanks]     = useState<Bank[]>([]);
   const [bankCode,  setBankCode]  = useState('');
   const [accNum,    setAccNum]    = useState('');
@@ -126,8 +133,8 @@ function BankAccountSection({
   useEffect(() => {
     if (!editing) return;
     fetch('/api/banks')
-      .then((r) => r.json())
-      .then((d) => d.data && setBanks(d.data))
+      .then((r) => r.ok ? r.json() : Promise.reject(new Error('Could not load banks')))
+      .then((data) => setBanks(Array.isArray(data) ? data : data.data || []))
       .catch(() => {});
   }, [editing]);
 
@@ -142,7 +149,7 @@ function BankAccountSection({
     try {
       const res  = await fetch(`/api/bank-account/verify?account_number=${accNum}&bank_code=${bankCode}`);
       const data = await res.json();
-      if (!res.ok || !data.data?.account_name) throw new Error(data.message || 'Could not verify account');
+      if (!res.ok || !data.data?.account_name) throw new Error(data.error || data.message || 'Could not verify account');
       setAccName(data.data.account_name);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Verification failed');
@@ -152,7 +159,7 @@ function BankAccountSection({
   }
 
   async function handleSave() {
-    if (!accName) { setErr('Verify your account number first.'); return; }
+    if (!accName) { setErr('Enter the account holder name.'); return; }
     const bank = banks.find((b) => b.code === bankCode);
     if (!bank) { setErr('Select a bank.'); return; }
     setSaving(true);
@@ -196,7 +203,30 @@ function BankAccountSection({
               {bankAccount.bank_name} · ****{bankAccount.account_number.slice(-4)}
             </p>
           </div>
-          <CheckCircle className="w-5 h-5 text-fn-green" />
+          {bankAccount.verified_at ? <CheckCircle className="w-5 h-5 text-fn-green" /> : <AlertCircle className="w-5 h-5 text-fn-yellow" />}
+        </div>
+      </div>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <div className="bg-fn-card border border-fn-gborder rounded-lg p-5 mb-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-fn-green" />
+              <span className="text-fn-text font-bold text-xs uppercase tracking-widest">Payout Account</span>
+            </div>
+            <p className="text-fn-muted text-xs mt-2">Verify an account in your own name before withdrawing.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setEditing(true); setErr(''); }}
+            className="shrink-0 bg-fn-green text-fn-black font-bold px-3 py-2 rounded text-[10px] uppercase tracking-wider hover:bg-fn-gdim transition-colors"
+          >
+            Set Payout Account
+          </button>
         </div>
       </div>
     );
@@ -253,6 +283,18 @@ function BankAccountSection({
           </div>
         </div>
 
+        <div>
+          <label className="block text-fn-muted text-[10px] uppercase tracking-widest mb-1">Account Holder Name</label>
+          <input
+            type="text"
+            value={accName}
+            onChange={(e) => setAccName(e.target.value)}
+            placeholder="Name registered with this account"
+            className="w-full bg-fn-dark border border-fn-gborder rounded px-3 py-2 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
+          />
+          <p className="text-fn-muted text-[10px] mt-1">We will resolve and verify this name with your registered FragNaija name before saving.</p>
+        </div>
+
         {accName && (
           <div className="flex items-center gap-2 bg-fn-green/10 border border-fn-green/20 rounded px-3 py-2">
             <CheckCircle size={13} className="text-fn-green shrink-0" />
@@ -269,7 +311,7 @@ function BankAccountSection({
 
         <button
           onClick={handleSave}
-          disabled={saving || !accName}
+          disabled={saving || !accName || !bankCode || accNum.length !== 10}
           className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-xs uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save Account'}
@@ -293,13 +335,15 @@ function WalletContent() {
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const [loading,     setLoading]     = useState(true);
   const [authErr,     setAuthErr]     = useState(false);
-  const [tab,         setTab]         = useState<Tab>('deposit');
+  const [tab,         setTab]         = useState<Tab>(searchParams.get('tab') === 'withdraw' ? 'withdraw' : 'deposit');
 
   // Deposit state
   const [depAmount,   setDepAmount]   = useState('');
   const [paying,      setPaying]      = useState(false);
   const [payErr,      setPayErr]      = useState('');
   const [showSuccess, setShowSuccess] = useState(searchParams.get('status') === 'success');
+  const [verifyMsg,   setVerifyMsg]   = useState('');
+  const latestLoadId = useRef(0);
 
   const depFee      = depAmount ? Math.round(Number(depAmount) * DEPOSIT_FEE_PERCENT) / 100 : 0;
   const depCredited = depAmount ? Number(depAmount) - depFee : 0;
@@ -314,6 +358,7 @@ function WalletContent() {
   const wdFee      = wdAmount ? Math.ceil(Number(wdAmount) * WITHDRAW_FEE_PERCENT) / 100 : 0;
   const wdNet      = wdAmount ? Number(wdAmount) - wdFee : 0;
   const hasPending = withdrawals.some((w) => w.status === 'Pending');
+  const payoutAccountReady = Boolean(bankAccount?.verified_at);
 
   const loadWithdrawals = useCallback(async () => {
     const res = await fetch('/api/withdraw');
@@ -329,26 +374,70 @@ function WalletContent() {
   }, []);
 
   const load = useCallback(async () => {
+    // A deposit verification can overlap the initial page load. Only let the
+    // latest request update state, so an older balance cannot overwrite it.
+    const loadId = ++latestLoadId.current;
     setLoading(true);
-    const res = await fetch('/api/wallet');
+    const res = await fetch('/api/wallet', { cache: 'no-store' });
+    if (loadId !== latestLoadId.current) return;
     if (res.status === 401) { setAuthErr(true); setLoading(false); return; }
     if (res.ok) {
       const data = await res.json();
+      if (loadId !== latestLoadId.current) return;
       setWallet(data.wallet);
       setHistory(data.history || []);
+      notifyWalletUpdated();
     }
     await Promise.all([loadWithdrawals(), loadBankAccount()]);
-    setLoading(false);
+    if (loadId === latestLoadId.current) setLoading(false);
   }, [loadWithdrawals, loadBankAccount]);
 
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab === 'deposit' || requestedTab === 'withdraw') {
+      setTab(requestedTab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+    if (!showSuccess || !reference) return;
+
+    let cancelled = false;
+    async function verifyDeposit() {
+      setVerifyMsg('Verifying your deposit with Paystack...');
+      try {
+        const res = await fetch('/api/deposit/verify', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ reference }),
+        });
+        const data = await res.json();
+        if (!res.ok && res.status !== 202) throw new Error(data.error || 'Deposit verification failed');
+        if (cancelled) return;
+        if (data.verified) {
+          setVerifyMsg('Deposit confirmed and wallet balance updated.');
+          await load();
+        } else {
+          setVerifyMsg('Payment is still pending confirmation. Your wallet will update after Paystack confirms it.');
+        }
+      } catch (err: unknown) {
+        if (!cancelled) setVerifyMsg(err instanceof Error ? err.message : 'Deposit verification failed');
+      }
+    }
+    verifyDeposit();
+    return () => { cancelled = true; };
+  }, [showSuccess, searchParams, load]);
+
+  useEffect(() => {
     if (showSuccess) {
       const t = setTimeout(() => {
         setShowSuccess(false);
+        setVerifyMsg('');
         router.replace('/wallet');
-      }, 5000);
+      }, 8000);
       return () => clearTimeout(t);
     }
   }, [showSuccess, router]);
@@ -356,7 +445,7 @@ function WalletContent() {
   async function handleDeposit(e: React.FormEvent) {
     e.preventDefault();
     setPayErr('');
-    if (!depAmount || Number(depAmount) < 500) { setPayErr('Minimum deposit is ₦500'); return; }
+    if (!depAmount || Number(depAmount) < MIN_DEPOSIT_NGN) { setPayErr(`Minimum deposit is ₦${MIN_DEPOSIT_NGN.toLocaleString('en-NG')}`); return; }
     setPaying(true);
     try {
       const res  = await fetch('/api/deposit/pay', {
@@ -387,7 +476,7 @@ function WalletContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
-      setWdSuccess('Withdrawal request submitted! Admin will review within 24 hours.');
+      setWdSuccess("Your withdrawal has been placed. Our team will process it manually and you'll be notified once complete.");
       setWdAmount('');
       load();
     } catch (err: unknown) {
@@ -431,7 +520,7 @@ function WalletContent() {
           <CheckCircle className="w-5 h-5 text-fn-green shrink-0" />
           <div>
             <p className="text-fn-green font-bold text-sm uppercase tracking-widest">Deposit successful!</p>
-            <p className="text-fn-muted text-xs mt-0.5">Your wallet will be credited once Paystack confirms the payment.</p>
+            <p className="text-fn-muted text-xs mt-0.5">{verifyMsg || 'Your wallet will be credited once Paystack confirms the payment.'}</p>
           </div>
         </div>
       )}
@@ -440,7 +529,7 @@ function WalletContent() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Wallet className="w-6 h-6 text-fn-green" />
-          <h1 className="text-2xl font-bold text-fn-text font-mono tracking-widest uppercase">Wallet</h1>
+          <h1 className="text-2xl font-bold text-fn-text font-display tracking-widest uppercase">Wallet</h1>
         </div>
         <p className="text-fn-muted text-sm">Manage your Frag Naija balance</p>
       </div>
@@ -470,7 +559,7 @@ function WalletContent() {
 
           <div className="bg-fn-dark border border-fn-gborder rounded-lg p-4 space-y-2">
             <p className="text-fn-muted text-[11px] leading-relaxed">
-              <span className="text-fn-yellow font-bold">Deposit fee:</span> 10% platform fee on all deposits. Min ₦500.
+              <span className="text-fn-yellow font-bold">Deposit fee:</span> 10% platform fee on all deposits. Min ₦{MIN_DEPOSIT_NGN.toLocaleString('en-NG')}.
             </p>
             <p className="text-fn-muted text-[11px] leading-relaxed">
               <span className="text-fn-yellow font-bold">Withdrawal fee:</span> 5% fee deducted from withdrawal amount. Min ₦1,000.
@@ -506,7 +595,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <ArrowDownCircle className="w-5 h-5 text-fn-green" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Deposit Funds</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Deposit Funds</h2>
                 </div>
 
                 <form onSubmit={handleDeposit} className="space-y-4">
@@ -516,7 +605,7 @@ function WalletContent() {
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fn-muted font-bold text-sm">₦</span>
                       <input
                         type="number"
-                        min="500"
+                        min={MIN_DEPOSIT_NGN}
                         step="100"
                         value={depAmount}
                         onChange={(e) => setDepAmount(e.target.value)}
@@ -525,7 +614,7 @@ function WalletContent() {
                       />
                     </div>
                     <div className="flex gap-2 mt-2">
-                      {[500, 1000, 5000, 10000].map((v) => (
+                      {[MIN_DEPOSIT_NGN, 1000, 5000, 10000].map((v) => (
                         <button
                           key={v}
                           type="button"
@@ -573,7 +662,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <Clock className="w-5 h-5 text-fn-muted" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Transaction History</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Transaction History</h2>
                 </div>
 
                 {loading ? (
@@ -626,7 +715,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <ArrowUpCircle className="w-5 h-5 text-fn-green" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Withdraw Funds</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Withdraw Funds</h2>
                 </div>
 
                 {hasPending && (
@@ -647,7 +736,7 @@ function WalletContent() {
                         step="100"
                         value={wdAmount}
                         onChange={(e) => setWdAmount(e.target.value)}
-                        disabled={hasPending || !bankAccount}
+                        disabled={hasPending || !payoutAccountReady}
                         className="w-full bg-fn-dark border border-fn-gborder rounded pl-8 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors disabled:opacity-50"
                         placeholder="1,000"
                       />
@@ -657,7 +746,7 @@ function WalletContent() {
                         <button
                           key={v}
                           type="button"
-                          disabled={hasPending || !bankAccount}
+                          disabled={hasPending || !payoutAccountReady}
                           onClick={() => setWdAmount(String(v))}
                           className="flex-1 text-[10px] font-bold tracking-wider bg-fn-dark border border-fn-gborder text-fn-muted hover:text-fn-green hover:border-fn-green/50 py-1.5 rounded-sm transition-all disabled:opacity-40"
                         >
@@ -700,15 +789,15 @@ function WalletContent() {
 
                   <button
                     type="submit"
-                    disabled={wdBusy || hasPending || !bankAccount || !wdAmount}
+                    disabled={wdBusy || hasPending || !payoutAccountReady || !wdAmount}
                     className="w-full bg-fn-green text-fn-black font-bold py-2.5 rounded text-sm uppercase tracking-widest hover:bg-fn-gdim transition-colors disabled:opacity-50"
                   >
                     {wdBusy ? 'Submitting...' : 'Request Withdrawal'}
                   </button>
 
-                  {!bankAccount && (
+                  {!payoutAccountReady && (
                     <p className="text-fn-muted text-[11px] text-center">
-                      Set up your payout account above before withdrawing.
+                      Set up and verify your payout account above before withdrawing.
                     </p>
                   )}
                 </form>
@@ -718,7 +807,7 @@ function WalletContent() {
               <div className="bg-fn-card border border-fn-gborder rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <Clock className="w-5 h-5 text-fn-muted" />
-                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest">Withdrawal History</h2>
+                  <h2 className="text-fn-text font-bold text-sm uppercase tracking-widest font-display">Withdrawal History</h2>
                 </div>
 
                 {loading ? (
@@ -777,7 +866,7 @@ export default function WalletPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-fn-black flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-fn-green border-t-transparent rounded-full animate-spin" />
+        <BrandedLoader label="Loading" size="sm" />
       </div>
     }>
       <WalletContent />

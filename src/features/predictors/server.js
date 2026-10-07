@@ -1,9 +1,11 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
+const PREDICTOR_SELECT = 'id,rank,tag,accuracy,weekly_earnings,created_at,updated_at';
+
 export async function getPredictors() {
   const { data, error } = await supabaseAdmin
     .from('predictors')
-    .select('*')
+    .select(PREDICTOR_SELECT)
     .order('rank', { ascending: true });
   if (error) throw error;
 
@@ -13,7 +15,7 @@ export async function getPredictors() {
 export async function getPredictorById(id) {
   const { data, error } = await supabaseAdmin
     .from('predictors')
-    .select('*')
+    .select(PREDICTOR_SELECT)
     .eq('id', id)
     .single();
   if (error) throw error;

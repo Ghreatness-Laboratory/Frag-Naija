@@ -1,10 +1,72 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { assertUserAtLeast } from '@/features/userProfile.server';
+import { qualifyReferralForWagerBet } from '@/features/offers.server';
 import { getSetting } from '@/features/settings/server';
 import {
   createTransferRecipient,
   initiateTransfer,
   generateReference,
 } from '@/lib/paystack';
+
+export const SIGNUP_BONUS_AMOUNT = 500;
+
+const WAGER_SELECT = 'id,question,subtitle,match_name,game_slug,yes_odds,no_odds,yes_price,no_price,pool_total,trade_count,type,options,hot,status,closes_at,featured_on_home,created_at';
+const WAGER_BET_SELECT = 'id,wager_id,user_id,email,selection,amount,potential,reference,slip_code,verification_id,status,created_at';
+// wallets has no created_at column; selecting it causes PostgREST to reject the entire row.
+const WALLET_SELECT = 'id,user_id,balance,total_won,total_lost,updated_at';
+
+
+async function generateUniqueSlipCode() {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const code = `FN${Math.floor(10000 + Math.random() * 90000)}`;
+    const { data } = await supabaseAdmin.from('wager_bets').select('id').eq('slip_code', code).maybeSingle();
+    if (!data) return code;
+  }
+  throw new Error('Unable to generate a unique bet slip code. Please try again.');
+}
+
+export async function lookupBetSlip(codeOrId) {
+  const value = String(codeOrId || '').trim();
+  if (!value) throw new Error('Enter a Bet Slip Code or verification ID.');
+  const isCode = /^FN\d{5}$/i.test(value);
+  const query = supabaseAdmin
+    .from('wager_bets')
+    .select('id,wager_id,selection,amount,potential,reference,slip_code,verification_id,status,created_at')
+    .eq(isCode ? 'slip_code' : 'verification_id', isCode ? value.toUpperCase() : value)
+    .limit(1);
+  const { data: bets, error } = await query;
+  if (error) throw error;
+  const primary = bets?.[0];
+  if (!primary) throw new Error('No genuine FragNaija Wager Zone bet slip was found for that code or ID.');
+
+  const prefix = String(primary.reference || '').split('-')[0];
+  const { data: allBets, error: allError } = await supabaseAdmin
+    .from('wager_bets')
+    .select('id,wager_id,selection,amount,potential,reference,slip_code,verification_id,status,created_at')
+    .or(`reference.eq.${prefix},reference.like.${prefix}-%`)
+    .order('created_at', { ascending: true });
+  if (allError) throw allError;
+
+  const wagerIds = [...new Set((allBets || [primary]).map((bet) => bet.wager_id).filter(Boolean))];
+  const { data: wagers, error: wagerError } = await supabaseAdmin
+    .from('wagers')
+    .select(WAGER_SELECT)
+    .in('id', wagerIds);
+  if (wagerError) throw wagerError;
+  const wagerMap = new Map((wagers || []).map((wager) => [String(wager.id), wager]));
+  const now = new Date();
+
+  const selections = (allBets?.length ? allBets : [primary]).map((bet) => {
+    const wager = wagerMap.get(String(bet.wager_id));
+    const options = Array.isArray(wager?.options) ? wager.options : [];
+    const option = options.find((item) => item.label === bet.selection);
+    const liveOdds = option ? Number(option.odds) : bet.selection === 'YES' ? Number(wager?.yes_odds) : Number(wager?.no_odds);
+    const available = wager?.status === 'Active' && wager?.closes_at && new Date(wager.closes_at) > now && Number(liveOdds) > 0;
+    return { wager_id: bet.wager_id, selection: bet.selection, original_amount: bet.amount, original_potential: bet.potential, market: wager, live_odds: liveOdds, available };
+  });
+
+  return { slip_code: primary.slip_code, verification_id: primary.verification_id, reference: prefix, status: primary.status, stake: primary.amount, potential: primary.potential, created_at: primary.created_at, selections, redeemable: selections.every((item) => item.available) };
+}
 
 export async function processWithdrawal(userId, { amount, account_number, bank_code, name }) {
   // 1. Verify amount
@@ -83,31 +145,39 @@ export async function processWithdrawal(userId, { amount, account_number, bank_c
   return { success: true, reference, amount };
 }
 
-export async function getWagers() {
-  const { data, error } = await supabaseAdmin
+export async function getWagers({ game_slug } = {}) {
+  let query = supabaseAdmin
     .from('wagers')
-    .select('*')
+    .select(WAGER_SELECT)
     .order('created_at', { ascending: false });
+  if (game_slug) query = query.eq('game_slug', game_slug);
+  const { data, error } = await query;
   if (error) throw error;
 
   return data;
 }
 
-export async function getActiveWagers() {
-  const { data, error } = await supabaseAdmin
+export async function getActiveWagers({ game_slug } = {}) {
+  const now = new Date().toISOString();
+  let query = supabaseAdmin
     .from('wagers')
-    .select('*')
+    .select(WAGER_SELECT)
     .eq('status', 'Active')
-    .gt('closes_at', new Date().toISOString())
     .order('hot', { ascending: false })
     .order('created_at', { ascending: false });
+  if (game_slug) query = query.eq('game_slug', game_slug);
+  const { data, error } = await query;
   if (error) throw error;
 
-  return data;
+  // Mark each wager with is_expired flag based on closes_at
+  return (data || []).map((wager) => ({
+    ...wager,
+    is_expired: !wager.closes_at || new Date(wager.closes_at) < new Date(now),
+  }));
 }
 
 export async function getWagerById(id) {
-  const { data: wager, error } = await supabaseAdmin.from('wagers').select('*').eq('id', id).single();
+  const { data: wager, error } = await supabaseAdmin.from('wagers').select(WAGER_SELECT).eq('id', id).single();
   if (error) throw error;
 
   const { data: bets, error: betsError } = await supabaseAdmin
@@ -136,7 +206,12 @@ export async function getWagerForPlacement(wagerId) {
     .single();
   if (error) throw error;
 
-  return data;
+  // Add is_expired flag for client-side validation
+  const now = new Date().toISOString();
+  return {
+    ...data,
+    is_expired: !data.closes_at || new Date(data.closes_at) < new Date(now),
+  };
 }
 
 export async function getUserWagers(userId) {
@@ -181,7 +256,30 @@ export async function getUserWagers(userId) {
 }
 
 export async function createWager(body) {
-  const { data, error } = await supabaseAdmin.from('wagers').insert([body]).select().single();
+  const question = typeof body.question === 'string' ? body.question.trim() : '';
+  const matchName = typeof body.match_name === 'string' ? body.match_name.trim() : '';
+  const type = body.type ?? 'binary';
+  const options = Array.isArray(body.options) ? body.options : [];
+
+  if (!question || !matchName || !body.closes_at) {
+    throw new Error('Question, match / game fixture, and closing time are required.');
+  }
+  if (!['binary', 'player_pick', 'team_pick'].includes(type)) {
+    throw new Error('Choose a valid wager type.');
+  }
+  if ((type === 'player_pick' || type === 'team_pick') &&
+    (options.length < 2 || options.some((option) => !String(option?.label ?? '').trim() || !Number.isFinite(Number(option?.odds)) || Number(option.odds) <= 1))) {
+    throw new Error('Pick wagers need at least two named options with odds greater than 1.');
+  }
+
+  const payload = {
+    ...body,
+    question,
+    match_name: matchName,
+    type,
+    options,
+  };
+  const { data, error } = await supabaseAdmin.from('wagers').insert([payload]).select().single();
   if (error) throw error;
 
   return data;
@@ -207,116 +305,24 @@ export async function toggleWagerHot(id) {
 }
 
 export async function settleWager(id, outcome) {
-  const { data: wager, error: wagerError } = await supabaseAdmin
-    .from('wagers')
-    .select('yes_odds, no_odds, type, options')
-    .eq('id', id)
-    .single();
-  if (wagerError) throw wagerError;
-
-  const isPlayerPick = wager.type === 'player_pick';
-  const status = isPlayerPick
-    ? `Settled — ${outcome} Wins`
-    : outcome === 'YES' ? 'Settled — YES Wins' : 'Settled — NO Wins';
-
-  const { error: updateWagerError } = await supabaseAdmin.from('wagers').update({ status }).eq('id', id);
-  if (updateWagerError) throw updateWagerError;
-
-  const { data: bets, error: betsError } = await supabaseAdmin
-    .from('wager_bets')
-    .select('*')
-    .eq('wager_id', id)
-    .eq('status', 'Active');
-  if (betsError) throw betsError;
-
   const usdNgnRate   = Number(await getSetting('usd_ngn_rate'))   || 1600;
   const maxPayoutUsd = Number(await getSetting('max_payout_usd')) || 2000;
   const maxPayoutNgn = usdNgnRate * maxPayoutUsd;
 
-  let winners = 0;
-  let losers  = 0;
+  const { data: settlement, error: settlementError } = await supabaseAdmin.rpc('settle_wager_market', {
+    p_wager_id: id,
+    p_outcome: outcome,
+    p_max_payout: maxPayoutNgn,
+  });
 
-  for (const bet of bets) {
-    const won        = bet.selection === outcome;
-    const nextStatus = won ? 'Won' : 'Lost';
-
-    await supabaseAdmin.from('wager_bets').update({ status: nextStatus }).eq('id', bet.id);
-
-    if (!won) {
-      const { data: loserWallet } = await supabaseAdmin
-        .from('wallets')
-        .select('total_lost')
-        .eq('user_id', bet.user_id)
-        .single();
-
-      if (loserWallet) {
-        await supabaseAdmin
-          .from('wallets')
-          .update({
-            total_lost: Number(loserWallet.total_lost) + Number(bet.amount),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', bet.user_id);
-      }
-
-      losers += 1;
-      continue;
-    }
-
-    // Resolve correct odds — player_pick uses per-option odds, binary uses yes/no odds
-    let odds;
-    if (isPlayerPick) {
-      const option = Array.isArray(wager.options)
-        ? wager.options.find((o) => o.label === outcome)
-        : null;
-      odds = option?.odds ?? 1;
-    } else {
-      odds = outcome === 'YES' ? wager.yes_odds : wager.no_odds;
-    }
-
-    const payout = Math.min(Number(bet.amount) * Number(odds), maxPayoutNgn);
-
-    const { data: wallet } = await supabaseAdmin
-      .from('wallets')
-      .select('balance, total_won')
-      .eq('user_id', bet.user_id)
-      .single();
-
-    if (wallet) {
-      await supabaseAdmin
-        .from('wallets')
-        .update({
-          balance:    Number(wallet.balance)   + payout,
-          total_won:  Number(wallet.total_won) + payout,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', bet.user_id);
-    }
-
-    if (bet.user_id) {
-      await supabaseAdmin
-        .from('wallet_transactions')
-        .insert([{
-          user_id:     bet.user_id,
-          wager_id:    id,
-          bet_id:      bet.id,
-          type:        'Payout',
-          amount:      payout,
-          currency:    'NGN',
-          description: `Wager payout — ${outcome} wins (${Number(odds).toFixed(2)}x)`,
-        }]);
-    }
-
-    winners += 1;
-  }
-
-  return { settled: true, winners, losers };
+  if (settlementError) throw settlementError;
+  return settlement || { settled: true, winners: 0, losers: 0, credited: 0 };
 }
 
 export async function cancelWager(id) {
   const { data: bets, error: betsError } = await supabaseAdmin
     .from('wager_bets')
-    .select('*')
+    .select(WAGER_BET_SELECT)
     .eq('wager_id', id)
     .eq('status', 'Active');
   if (betsError) throw betsError;
@@ -332,47 +338,45 @@ export async function cancelWager(id) {
 
     if (!bet.user_id) continue;
 
-    const { data: wallet } = await supabaseAdmin
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', bet.user_id)
-      .single();
-
-    if (wallet) {
-      await supabaseAdmin
-        .from('wallets')
-        .update({ balance: Number(wallet.balance) + Number(bet.amount), updated_at: new Date().toISOString() })
-        .eq('user_id', bet.user_id);
-    }
-
-    await supabaseAdmin
-      .from('wallet_transactions')
-      .insert([{
-        user_id:     bet.user_id,
-        wager_id:    id,
-        bet_id:      bet.id,
-        type:        'Refund',
-        amount:      Number(bet.amount),
-        currency:    'NGN',
-        description: `Wager cancelled — stake refunded`,
-      }]);
+    const { error: refundError } = await supabaseAdmin.rpc('refund_wager_stake', {
+      p_user_id: bet.user_id,
+      p_wager_id: id,
+      p_bet_id: bet.id,
+      p_amount: Number(bet.amount),
+      p_description: 'Wager cancelled — stake refunded',
+    });
+    if (refundError) throw refundError;
   }
 
   return { cancelled: true, refunded: bets.length };
 }
 
 export async function deleteWager(id) {
-  const { data: bets } = await supabaseAdmin.from('wager_bets').select('id').eq('wager_id', id).limit(1);
-
-  if (bets?.length) {
-    throw new Error('Cannot delete a wager that has existing bets');
-  }
-
-  const { error } = await supabaseAdmin.from('wagers').delete().eq('id', id);
+  const { data, error } = await supabaseAdmin.rpc('admin_delete_settled_wager', { p_wager_id: id });
   if (error) throw error;
+  return data;
 }
 
-export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference }) {
+export async function createWagerBet({ wager_id, user_id, email, selection, amount, potential, reference, slip_code, paidFromWallet = false }) {
+  if (user_id) await assertUserAtLeast(user_id, 18);
+  const finalSlipCode = slip_code || (Number(amount) > 0 ? await generateUniqueSlipCode() : null);
+  if (paidFromWallet) {
+    const { data, error } = await supabaseAdmin.rpc('place_wager_from_wallet', {
+      p_user_id: user_id,
+      p_wager_id: wager_id,
+      p_email: email,
+      p_selection: selection,
+      p_amount: Number(amount),
+      p_potential: Number(potential),
+      p_reference: reference,
+    });
+    if (error) throw error;
+    if (user_id && data) await qualifyReferralForWagerBet(user_id, Array.isArray(data) ? data[0]?.id : data.id).catch(() => {});
+    if (data && finalSlipCode) await supabaseAdmin.from('wager_bets').update({ slip_code: finalSlipCode }).eq('id', Array.isArray(data) ? data[0]?.id : data.id);
+    const placed = Array.isArray(data) ? { ...data[0], slip_code: finalSlipCode } : { ...data, slip_code: finalSlipCode };
+    return placed;
+  }
+
   const { data: existing } = await supabaseAdmin
     .from('wager_bets')
     .select('id')
@@ -385,14 +389,14 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
 
   const { data, error } = await supabaseAdmin
     .from('wager_bets')
-    .insert([{ wager_id, user_id, email, selection, amount, potential, reference, status: 'Active' }])
+    .insert([{ wager_id, user_id, email, selection, amount, potential, reference, slip_code: finalSlipCode, status: 'Active' }])
     .select()
     .single();
   if (error) throw error;
 
-  await supabaseAdmin.rpc('increment_wager_pool', { wager_id, amount });
+  if (user_id) await qualifyReferralForWagerBet(user_id, data.id).catch(() => {});
 
-  if (user_id) {
+  if (user_id && Number(amount) > 0) {
     await supabaseAdmin
       .from('wallet_transactions')
       .insert([{
@@ -410,21 +414,65 @@ export async function createWagerBet({ wager_id, user_id, email, selection, amou
 }
 
 export async function getWallet(userId) {
-  const { data, error } = await supabaseAdmin.from('wallets').select('*').eq('user_id', userId).single();
-  if (error) throw error;
+  const { data, error } = await supabaseAdmin.from('wallets').select(WALLET_SELECT).eq('user_id', userId).single();
+  if (error) {
+    console.error('getWallet query failed', { userId, code: error.code, message: error.message, details: error.details });
+    throw error;
+  }
 
   return data;
 }
 
-export async function createWallet(userId) {
+export async function createWallet(userId, { signupBonusEligible = false } = {}) {
   const { data, error } = await supabaseAdmin
     .from('wallets')
-    .insert([{ user_id: userId, balance: 0, total_won: 0, total_lost: 0 }])
+    .insert([{
+      user_id: userId,
+      balance: 0,
+      total_won: 0,
+      total_lost: 0,
+      signup_bonus_eligible: signupBonusEligible,
+      signup_bonus_claimed: false,
+    }])
     .select()
     .single();
   if (error) throw error;
 
   return data;
+}
+
+export async function getSignupBonusStatus(userId) {
+  const wallet = await getWallet(userId);
+  const claimed = Boolean(wallet.signup_bonus_claimed);
+  const eligible = Boolean(wallet.signup_bonus_eligible) && !claimed;
+
+  return {
+    amount: SIGNUP_BONUS_AMOUNT,
+    eligible,
+    claimed,
+    claimed_at: wallet.signup_bonus_claimed_at ?? null,
+  };
+}
+
+export async function claimSignupBonus(userId) {
+  const { data, error } = await supabaseAdmin.rpc('claim_signup_bonus', {
+    p_user_id: userId,
+  });
+
+  if (error) throw error;
+
+  const result = Array.isArray(data) ? data[0] : data;
+
+  return {
+    amount: SIGNUP_BONUS_AMOUNT,
+    creditedAmount: Number(result?.credited_amount ?? 0),
+    claimed: Boolean(result?.signup_bonus_claimed),
+    claimed_at: result?.signup_bonus_claimed_at ?? null,
+    wallet: {
+      id: result?.wallet_id ?? null,
+      balance: Number(result?.balance ?? 0),
+    },
+  };
 }
 
 export async function getUserIdByEmail(email) {

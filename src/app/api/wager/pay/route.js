@@ -1,68 +1,106 @@
 import { NextResponse } from 'next/server';
 import { initializeTransaction, generateReference } from '@/lib/paystack';
-import { getWagerForPlacement, getUserIdByEmail, createWagerBet } from '@/features/wagers/server';
+import { getWagerForPlacement, createWagerBet } from '@/features/wagers/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { getCurrentUser } from '@/features/auth/server';
+import { MAX_WAGER_AMOUNT, MIN_STAKE_NGN } from '@/features/wagers/constants';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
-    const { wager_id, selection, amount, email } = await request.json();
+    const body = await request.json();
+    const { wager_id, selection, amount } = body;
+    const currentUser = await getCurrentUser();
+    if (!currentUser?.id || !currentUser.email) {
+      return NextResponse.json({ error: 'Sign in to place a wager' }, { status: 401 });
+    }
+    const email = currentUser.email;
+    const requestedSelections = Array.isArray(body.selections)
+      ? body.selections
+      : wager_id && selection
+        ? [{ wager_id, selection }]
+        : [];
 
-    if (!wager_id || !selection || !amount || !email) {
+    if (!requestedSelections.length || !amount) {
       return NextResponse.json(
-        { error: 'wager_id, selection, amount, and email are required' },
+        { error: 'selection(s) and amount are required' },
         { status: 400 }
       );
     }
 
-    if (amount < 100) {
-      return NextResponse.json({ error: 'Minimum wager amount is ₦100' }, { status: 400 });
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json({ error: 'Enter a valid wager amount' }, { status: 400 });
     }
 
-    // Fetch wager to get odds and verify it's active
-    let wager;
-    try {
-      wager = await getWagerForPlacement(wager_id);
-    } catch {
-      return NextResponse.json({ error: 'Wager not found' }, { status: 404 });
+    if (!/^\d+(\.\d{1,2})?$/.test(String(amount))) {
+      return NextResponse.json({ error: 'Wager amount may include at most 2 decimal places' }, { status: 400 });
     }
 
-    if (wager.status !== 'Active') {
-      return NextResponse.json({ error: 'This wager is no longer active' }, { status: 400 });
+    if (numericAmount < MIN_STAKE_NGN) {
+      return NextResponse.json({ error: `Minimum wager amount is ₦${MIN_STAKE_NGN.toLocaleString('en-NG')}` }, { status: 400 });
     }
 
-    if (new Date(wager.closes_at) < new Date()) {
-      return NextResponse.json({ error: 'This wager has closed' }, { status: 400 });
+    if (numericAmount > MAX_WAGER_AMOUNT) {
+      return NextResponse.json({ error: `Maximum wager amount is ₦${MAX_WAGER_AMOUNT.toLocaleString('en-NG')}` }, { status: 400 });
     }
 
-    const isPlayerPick = wager.type === 'player_pick';
+    const seenWagers = new Set();
+    let combinedOdds = 1;
+    const resolvedSelections = [];
 
-    // Validate selection
-    if (isPlayerPick) {
-      const validOptions = Array.isArray(wager.options)
-        ? wager.options.map((o) => o.label)
-        : [];
-      if (!validOptions.includes(selection)) {
-        return NextResponse.json({ error: 'Invalid player selection' }, { status: 400 });
+    for (const requested of requestedSelections) {
+      if (!requested.wager_id || !requested.selection) {
+        return NextResponse.json({ error: 'Each selection requires wager_id and selection' }, { status: 400 });
       }
-    } else if (!['YES', 'NO'].includes(selection)) {
-      return NextResponse.json({ error: 'selection must be YES or NO' }, { status: 400 });
+
+      const wagerKey = String(requested.wager_id);
+      if (seenWagers.has(wagerKey)) {
+        return NextResponse.json({ error: 'Duplicate/conflicting selections from the same wager are not allowed' }, { status: 400 });
+      }
+      seenWagers.add(wagerKey);
+
+      let wager;
+      try {
+        wager = await getWagerForPlacement(requested.wager_id);
+      } catch {
+        return NextResponse.json({ error: 'Wager not found' }, { status: 404 });
+      }
+
+      if (wager.status !== 'Active') {
+        return NextResponse.json({ error: 'One or more wagers are no longer active' }, { status: 400 });
+      }
+
+      if (new Date(wager.closes_at) < new Date()) {
+        return NextResponse.json({ error: 'One or more wagers have closed' }, { status: 400 });
+      }
+
+      const options = Array.isArray(wager.options) ? wager.options : [];
+      const hasOptions = options.length > 0;
+      let odds;
+
+      if (hasOptions) {
+        const option = options.find((o) => o.label === requested.selection);
+        if (!option) {
+          return NextResponse.json({ error: 'Invalid wager option selection' }, { status: 400 });
+        }
+        odds = Number(option.odds ?? 1);
+      } else if (['YES', 'NO'].includes(requested.selection)) {
+        odds = requested.selection === 'YES' ? wager.yes_odds : wager.no_odds;
+      } else {
+        return NextResponse.json({ error: 'selection must be YES or NO' }, { status: 400 });
+      }
+
+      combinedOdds *= Number(odds);
+      resolvedSelections.push({ wager_id: requested.wager_id, selection: requested.selection, odds: Number(odds) });
     }
 
-    // Calculate odds
-    let odds;
-    if (isPlayerPick) {
-      const option = wager.options.find((o) => o.label === selection);
-      odds = option?.odds ?? 1;
-    } else {
-      odds = selection === 'YES' ? wager.yes_odds : wager.no_odds;
-    }
-
-    const potential = Number(amount) * Number(odds);
+    const potential = numericAmount * Number(combinedOdds);
+    const primarySelection = resolvedSelections[0];
 
     // ── Try wallet-balance payment first ────────────────────────────────────
-    const user_id = await getUserIdByEmail(email);
+    const user_id = currentUser.id;
     if (user_id) {
       const { data: wallet } = await supabaseAdmin
         .from('wallets')
@@ -71,19 +109,26 @@ export async function POST(request) {
         .single();
 
       if (wallet && Number(wallet.balance) >= Number(amount)) {
-        // Deduct from wallet
-        await supabaseAdmin
-          .from('wallets')
-          .update({
-            balance:    Number(wallet.balance) - Number(amount),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user_id);
+        const reference = generateReference(resolvedSelections.length > 1 ? 'FNA' : 'FNW');
+        let slipCode = null;
+        let verificationId = null;
+        for (let index = 0; index < resolvedSelections.length; index += 1) {
+          const item = resolvedSelections[index];
+          const placedBet = await createWagerBet({
+            wager_id: item.wager_id,
+            user_id,
+            email,
+            selection: item.selection,
+            amount: index === 0 ? numericAmount : 0,
+            potential: index === 0 ? potential : 0,
+            reference: index === 0 ? reference : `${reference}-${index + 1}`,
+            slip_code: index === 0 ? undefined : null,
+            paidFromWallet: true,
+          });
+          if (index === 0) { slipCode = placedBet?.slip_code || null; verificationId = placedBet?.verification_id || null; }
+        }
 
-        const reference = generateReference('FNW');
-        await createWagerBet({ wager_id, user_id, email, selection, amount: Number(amount), potential, reference });
-
-        return NextResponse.json({ paid_from_wallet: true, potential });
+        return NextResponse.json({ paid_from_wallet: true, potential, reference, slip_code: slipCode, verification_id: verificationId, combined_odds: combinedOdds });
       }
     }
 
@@ -100,15 +145,17 @@ export async function POST(request) {
 
     const result = await initializeTransaction({
       email,
-      amount,
+      amount: numericAmount,
       reference,
       metadata: {
-        wager_id,
-        selection,
+        wager_id: primarySelection.wager_id,
+        selection: primarySelection.selection,
+        selections: resolvedSelections,
+        combined_odds: combinedOdds.toFixed(4),
         potential: potential.toFixed(2),
         custom_fields: [
-          { display_name: 'Wager ID',   variable_name: 'wager_id',  value: wager_id },
-          { display_name: 'Selection',  variable_name: 'selection', value: selection },
+          { display_name: 'Selections', variable_name: 'selections', value: String(resolvedSelections.length) },
+          { display_name: 'Combined Odds', variable_name: 'combined_odds', value: combinedOdds.toFixed(2) },
         ],
       },
     });
@@ -123,7 +170,9 @@ export async function POST(request) {
     return NextResponse.json({
       authorization_url: result.data.authorization_url,
       reference:         result.data.reference,
+      slip_code: null,
       potential,
+      combined_odds: combinedOdds,
     });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });

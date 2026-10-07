@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 import { createWallet, getWallet } from '@/features/wagers/server';
+import { createReferral } from '@/features/offers.server';
+import { ensureUserProfile, getUserProfile, resolveReferralCode, validateMinimumAge } from '@/features/userProfile.server';
 
 export function createPublicSupabaseClient() {
   return createClient(
@@ -19,19 +21,31 @@ export async function loginWithPassword({ email, password }) {
   return data;
 }
 
-export async function registerUser({ email, password, username }) {
+export async function registerUser({ email, password, username, first_name, middle_name, last_name, preferred_game_slug, date_of_birth, referral_code }) {
+  if (!date_of_birth || !validateMinimumAge(date_of_birth, 16)) throw new Error('You must be at least 16 years old to create a FragNaija account.');
+  const referrerId = await resolveReferralCode(referral_code);
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    user_metadata: { username: username || email.split('@')[0] },
+    user_metadata: { username: username || email.split('@')[0], first_name: first_name || null, middle_name: middle_name || null, last_name: last_name || null, preferred_game_slug: preferred_game_slug || null },
     email_confirm: true,
   });
   if (error) throw error;
 
   try {
-    await createWallet(data.user.id);
+    await ensureUserProfile(data.user.id, { username: username || email.split('@')[0], first_name, middle_name, last_name, date_of_birth, referred_by: referrerId });
+  } catch (profileError) {
+    // A profile stores the date of birth required for wagering, so do not allow
+    // registration to succeed if it could not be persisted.
+    await supabaseAdmin.auth.admin.deleteUser(data.user.id).catch(() => {});
+    throw profileError;
+  }
+
+  try {
+    await createWallet(data.user.id, { signupBonusEligible: true });
+    if (referrerId) await createReferral(referrerId, data.user.id);
   } catch {
-    // Wallet creation is non-fatal during registration.
+    // Wallet and referral creation are non-fatal during registration.
   }
 
   return {
@@ -61,9 +75,14 @@ export async function getCurrentUser() {
   let wallet = null;
   try {
     wallet = await getWallet(user.id);
-  } catch {
-    // Wallet may not exist yet.
+  } catch (error) {
+    // Keep authentication available for users without a wallet, but retain the
+    // query error in server logs instead of silently returning wallet: null.
+    console.error('getCurrentUser wallet lookup failed', { userId: user.id, message: error?.message });
   }
+
+  let profile = null;
+  try { profile = await getUserProfile(user.id); } catch {}
 
   // Fetch enrolled MFA factors using user-scoped client
   let factors = [];
@@ -81,7 +100,13 @@ export async function getCurrentUser() {
   return {
     id:           user.id,
     email:        user.email,
-    username:     user.user_metadata?.username,
+    username:     profile?.username ?? user.user_metadata?.username,
+    first_name: profile?.first_name ?? user.user_metadata?.first_name ?? null,
+    middle_name: profile?.middle_name ?? user.user_metadata?.middle_name ?? null,
+    last_name: profile?.last_name ?? user.user_metadata?.last_name ?? null,
+    date_of_birth: profile?.date_of_birth ?? null,
+    referral_code: profile?.referral_code ?? null,
+    preferred_game_slug: user.user_metadata?.preferred_game_slug ?? null,
     provider:     user.app_metadata?.provider ?? 'email',
     totp_enabled: factors.some(f => f.status === 'verified'),
     factors,

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const filters = { status: searchParams.get('status') || '' };
+    const filters = { status: searchParams.get('status') || '', game_slug: searchParams.get('game_slug') || '' };
     const data = await getTournaments(filters);
     return NextResponse.json(data);
   } catch (e) {

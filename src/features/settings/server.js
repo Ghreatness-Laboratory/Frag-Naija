@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
 
 export async function getSettings() {
-  const { data, error } = await supabaseAdmin.from('platform_settings').select('*');
+  const { data, error } = await supabaseAdmin.from('platform_settings').select('key,value');
   if (error) throw error;
   return Object.fromEntries(data.map((r) => [r.key, r.value]));
 }

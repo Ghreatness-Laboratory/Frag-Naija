@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, User, UserPlus, Gamepad2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, UserPlus, Gamepad2, CalendarDays, Gift } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
+import OptimizedImage from '@/components/common/OptimizedImage';
+import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
 
 function GamePickCard({ game, selected, onSelect }: { game: Game; selected: boolean; onSelect: () => void }) {
   const [imgErr, setImgErr] = useState(false);
@@ -19,7 +21,7 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
       }`}
       style={selected
         ? { borderColor: game.colors.border, background: game.colors.cardBg, boxShadow: `0 0 12px ${game.colors.glow}` }
-        : { borderColor: '#1a2a1a', background: '#0a100a' }}
+        : { borderColor: 'rgb(var(--fn-gborder))', background: 'rgb(var(--fn-card))' }}
     >
       {/* Coming Soon badge for gated games */}
       {!game.available && (
@@ -36,7 +38,7 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
           {game.shortName.slice(0, 3)}
         </div>
       ) : (
-        <img
+        <OptimizedImage
           src={game.logo}
           alt={game.name}
           width={32} height={32}
@@ -54,7 +56,7 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
       {selected && (
         <span
           className="absolute -top-px -right-px flex h-3.5 w-3.5 items-center justify-center rounded-bl-sm text-[7px] font-black"
-          style={{ background: game.colors.primary, color: '#000' }}
+          style={{ background: game.colors.primary, color: 'rgb(var(--fn-black))' }}
         >
           ✓
         </span>
@@ -63,9 +65,16 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
   );
 }
 
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm]       = useState({ email: '', username: '', password: '', confirm: '' });
+  const params = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search);
+  const nextPath = safeNextPath(params?.get('next') || null);
+  const [form, setForm]       = useState({ email: '', username: '', first_name: '', middle_name: '', last_name: '', date_of_birth: '', referral_code: params?.get('ref') || '', password: '', confirm: '' });
   const [show, setShow]       = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
@@ -83,6 +92,12 @@ export default function RegisterPage() {
 
     if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!form.date_of_birth) { setError('Date of birth is required'); return; }
+    const dob = new Date(`${form.date_of_birth}T00:00:00Z`);
+    const today = new Date();
+    let age = today.getUTCFullYear() - dob.getUTCFullYear();
+    if (today.getUTCMonth() < dob.getUTCMonth() || (today.getUTCMonth() === dob.getUTCMonth() && today.getUTCDate() < dob.getUTCDate())) age -= 1;
+    if (!Number.isFinite(age) || age < 16) { setError('You must be at least 16 years old to create a FragNaija account.'); return; }
 
     setLoading(true);
     try {
@@ -93,6 +108,12 @@ export default function RegisterPage() {
           email:    form.email,
           password: form.password,
           username: form.username || undefined,
+          first_name: form.first_name || undefined,
+          middle_name: form.middle_name || undefined,
+          last_name: form.last_name || undefined,
+          date_of_birth: form.date_of_birth,
+          referral_code: form.referral_code || undefined,
+          preferred_game_slug: pickedGame?.slug || undefined,
         }),
       });
       const data = await res.json();
@@ -105,7 +126,7 @@ export default function RegisterPage() {
       }
 
       setSuccess(true);
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push(`/login?next=${encodeURIComponent(nextPath)}`), 2000);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Registration failed');
     } finally {
@@ -125,7 +146,7 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-fn-green/10 border border-fn-green/30 mb-4">
             <UserPlus className="w-7 h-7 text-fn-green" />
           </div>
-          <h1 className="text-2xl font-bold text-fn-text font-mono tracking-widest uppercase">Join Up</h1>
+          <h1 className="text-2xl font-bold text-fn-text font-display tracking-widest uppercase">Join Up</h1>
           <p className="text-fn-muted text-sm mt-1">Create your Frag Naija account</p>
         </div>
 
@@ -143,19 +164,7 @@ export default function RegisterPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-fn-card border border-fn-gborder rounded-lg p-6 space-y-4">
-            {/* Google */}
-            <a
-              href="/api/auth/google"
-              className="flex items-center justify-center gap-3 w-full border border-fn-gborder rounded py-2.5 text-fn-text text-sm font-bold hover:border-fn-green/50 hover:bg-fn-green/5 transition-all"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Continue with Google
-            </a>
+            <SocialAuthButtons />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -191,6 +200,32 @@ export default function RegisterPage() {
                   className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors"
                   placeholder="FragKing99" autoComplete="username"
                 />
+              </div>
+            </div>
+
+            {/* Name fields */}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div><label className="mb-2 block text-xs uppercase tracking-widest text-fn-muted">First Name</label><input type="text" value={form.first_name} onChange={set('first_name')} className="w-full rounded border border-fn-gborder bg-fn-dark px-3 py-2.5 text-sm text-fn-text outline-none focus:border-fn-green" placeholder="First" autoComplete="given-name" /></div>
+              <div><label className="mb-2 block text-xs uppercase tracking-widest text-fn-muted">Middle Name <span className="text-fn-muted/50 normal-case tracking-normal">(optional)</span></label><input type="text" value={form.middle_name} onChange={set('middle_name')} className="w-full rounded border border-fn-gborder bg-fn-dark px-3 py-2.5 text-sm text-fn-text outline-none focus:border-fn-green" placeholder="Middle" autoComplete="additional-name" /></div>
+              <div><label className="mb-2 block text-xs uppercase tracking-widest text-fn-muted">Last Name</label><input type="text" value={form.last_name} onChange={set('last_name')} className="w-full rounded border border-fn-gborder bg-fn-dark px-3 py-2.5 text-sm text-fn-text outline-none focus:border-fn-green" placeholder="Last" autoComplete="family-name" /></div>
+            </div>
+
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Date of Birth</label>
+              <div className="relative">
+                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
+                <input type="date" value={form.date_of_birth} onChange={set('date_of_birth')} className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm focus:outline-none focus:border-fn-green transition-colors" required />
+              </div>
+              <p className="mt-1 text-[10px] text-fn-muted">You must be 16+ to create an account and 18+ for wagering.</p>
+            </div>
+
+            {/* Referral Code */}
+            <div>
+              <label className="block text-fn-muted text-xs uppercase tracking-widest mb-2">Referral Code <span className="text-fn-muted/50 normal-case tracking-normal">(optional)</span></label>
+              <div className="relative">
+                <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fn-muted" />
+                <input type="text" value={form.referral_code} onChange={set('referral_code')} className="w-full bg-fn-dark border border-fn-gborder rounded pl-10 pr-4 py-2.5 text-fn-text text-sm uppercase focus:outline-none focus:border-fn-green transition-colors" placeholder="FRAGCODE" />
               </div>
             </div>
 
@@ -271,7 +306,7 @@ export default function RegisterPage() {
 
             <p className="text-center text-fn-muted text-xs">
               Already have an account?{' '}
-              <Link href="/login" className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">
+              <Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="text-fn-green hover:text-fn-gdim transition-colors font-bold uppercase tracking-wider">
                 Sign in
               </Link>
             </p>

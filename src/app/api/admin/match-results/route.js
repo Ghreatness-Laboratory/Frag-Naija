@@ -1,0 +1,31 @@
+import { NextResponse } from 'next/server';
+import { checkAdmin } from '@/features/shared/server/adminAuth';
+import { createMatchResultAlert, listGamingAlerts, upsertTournamentMatchState } from '@/features/notifications/server';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  const unauthorized = await checkAdmin();
+  if (unauthorized) return unauthorized;
+  return NextResponse.json(await listGamingAlerts({}));
+}
+
+export async function POST(request) {
+  const unauthorized = await checkAdmin();
+  if (unauthorized) return unauthorized;
+  try {
+    const body = await request.json().catch(() => ({}));
+    for (const key of ['tournament_id', 'match_title']) {
+      if (!String(body[key] || '').trim()) return NextResponse.json({ error: `${key} is required` }, { status: 400 });
+    }
+    const status = String(body.status || 'finished').toLowerCase();
+    if (status !== 'finished' && status !== 'completed') {
+      const result = await upsertTournamentMatchState(body);
+      return NextResponse.json({ saved: true, ...result }, { status: body.source_id ? 200 : 201 });
+    }
+    const result = await createMatchResultAlert({ ...body, source_type: 'tournament_match' });
+    return NextResponse.json(result, { status: result.duplicate ? 200 : 201 });
+  } catch (error) {
+    return NextResponse.json({ error: error.message || 'Unable to finalize result.' }, { status: 500 });
+  }
+}

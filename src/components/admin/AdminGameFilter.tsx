@@ -1,13 +1,14 @@
 'use client';
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { GAMES } from '@/lib/games';
 
-export default function AdminGameFilter({ currentSlug }: { currentSlug: string }) {
+export default function AdminGameFilter({ currentSlug, onChange }: { currentSlug: string; onChange?: (slug: string) => void }) {
   const router     = useRouter();
   const pathname   = usePathname();
 
   function pick(slug: string) {
+    if (onChange) { onChange(slug); return; }
     const params = new URLSearchParams();
     if (slug !== 'all') params.set('game', slug);
     const qs = params.toString();
@@ -20,8 +21,8 @@ export default function AdminGameFilter({ currentSlug }: { currentSlug: string }
         onClick={() => pick('all')}
         className="px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase rounded-sm border transition-all"
         style={currentSlug === 'all'
-          ? { background: '#00ff41', color: '#000', borderColor: '#00ff41' }
-          : { background: 'transparent', color: '#666', borderColor: '#222' }}
+          ? { background: 'rgb(var(--fn-green))', color: 'rgb(var(--fn-black))', borderColor: 'rgb(var(--fn-green))' }
+          : { background: 'transparent', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
       >
         ALL GAMES
       </button>
@@ -31,12 +32,12 @@ export default function AdminGameFilter({ currentSlug }: { currentSlug: string }
           onClick={() => pick(g.slug)}
           className="px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase rounded-sm border transition-all flex items-center gap-1.5"
           style={currentSlug === g.slug
-            ? { background: g.colors.primary, color: '#000', borderColor: g.colors.primary }
-            : { background: 'transparent', color: '#666', borderColor: '#222' }}
+            ? { background: g.colors.primary, color: 'rgb(var(--fn-black))', borderColor: g.colors.primary }
+            : { background: 'transparent', color: 'rgb(var(--fn-muted))', borderColor: 'rgb(var(--fn-gborder))' }}
         >
           <span
             className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-            style={{ background: currentSlug === g.slug ? '#000' : g.colors.primary }}
+            style={{ background: currentSlug === g.slug ? 'rgb(var(--fn-black))' : g.colors.primary }}
           />
           {g.shortName}
         </button>

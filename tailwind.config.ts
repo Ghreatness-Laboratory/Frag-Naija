@@ -26,8 +26,9 @@ const config: Config = {
         "fn-text":    "rgb(var(--fn-text)    / <alpha-value>)",
       },
       fontFamily: {
-        mono:    ["'JetBrains Mono'", "'Courier New'", "monospace"],
-        display: ["'Barlow Condensed'", "Impact", "sans-serif"],
+        sans:    ["var(--font-chakra)", "Chakra Petch", "sans-serif"],
+        mono:    ["var(--font-chakra)", "Chakra Petch", "sans-serif"],
+        display: ["var(--font-chakra)", "Chakra Petch", "sans-serif"],
       },
       animation: {
         blink:     "blink 1.2s step-end infinite",

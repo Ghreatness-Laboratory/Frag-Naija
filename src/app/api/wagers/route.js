@@ -4,12 +4,15 @@ import { checkAdmin } from '@/lib/checkAdmin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const data = await getWagers();
-    return NextResponse.json(data);
+    const { searchParams } = new URL(request.url);
+    const game_slug = searchParams.get('game') || searchParams.get('game_slug') || '';
+    const data = await getWagers({ game_slug });
+    return NextResponse.json(Array.isArray(data) ? data : []);
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error('Failed to fetch wagers:', e);
+    return NextResponse.json([]);
   }
 }
 
@@ -22,6 +25,12 @@ export async function POST(request) {
     const data = await createWager(body);
     return NextResponse.json(data, { status: 201 });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    const message = e instanceof Error ? e.message : 'Failed to create wager';
+    const isValidationError = [
+      'Question, match / game fixture, and closing time are required.',
+      'Choose a valid wager type.',
+      'Pick wagers need at least two named options with odds greater than 1.',
+    ].includes(message);
+    return NextResponse.json({ error: message }, { status: isValidationError ? 400 : 500 });
   }
 }

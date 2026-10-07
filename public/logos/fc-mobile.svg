@@ -1,0 +1,10 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">FC Mobile logo placeholder</title>
+  <desc id="desc">Temporary FC Mobile football-style badge used until an official app icon asset can be committed.</desc>
+  <rect width="256" height="256" rx="48" fill="#07130B"/>
+  <path d="M34 54c37-24 151-24 188 0v76c0 48-36 85-94 105-58-20-94-57-94-105V54Z" fill="#14F195" fill-opacity="0.14" stroke="#14F195" stroke-width="10"/>
+  <circle cx="128" cy="124" r="46" fill="#EAFEF5" stroke="#14F195" stroke-width="8"/>
+  <path d="M128 80l18 14-7 22h-22l-7-22 18-14ZM91 116l22 2 8 21-17 15-20-12 7-26ZM165 118l-22-2-8 22 17 16 20-13-7-23ZM107 171l14-18h15l14 18-22 12-21-12Z" fill="#07130B"/>
+  <text x="128" y="56" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="28" font-weight="900" fill="#EAFEF5">FC</text>
+  <text x="128" y="218" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" font-weight="900" letter-spacing="2" fill="#14F195">MOBILE</text>
+</svg>

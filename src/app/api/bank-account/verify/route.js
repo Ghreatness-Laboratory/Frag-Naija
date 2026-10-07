@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { getCurrentUser } from '@/features/auth/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const account_number = searchParams.get('account_number');
     const bank_code      = searchParams.get('bank_code');

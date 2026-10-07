@@ -6,6 +6,19 @@ export interface GameColors {
   cardBg: string;
 }
 
+export type AthleteSubtitleFormat = 'role_team' | 'player_only';
+
+export type GameModeVariant = 'Teams' | 'Players' | 'Custom Players' | 'Player';
+export type GameModeStatus = 'live' | 'locked-tbd';
+
+export interface GameMode {
+  key: string;
+  label: string;
+  variant?: GameModeVariant;
+  status: GameModeStatus;
+  route?: string;
+}
+
 export interface Game {
   id: string;
   slug: string;
@@ -14,8 +27,11 @@ export interface Game {
   description: string;
   colors: GameColors;
   logo: string;
+  athleteSubtitleFormat: AthleteSubtitleFormat;
   badge?: string;
   available: boolean;
+  modes: GameMode[];
+  hasModeMenu: boolean;
 }
 
 export const GAMES: Game[] = [
@@ -23,7 +39,7 @@ export const GAMES: Game[] = [
     id: 'pubg-mobile',
     slug: 'pubg-mobile',
     name: 'PUBG Mobile',
-    shortName: 'PUBG',
+    shortName: 'PUBG Mobile',
     description: 'Battle Royale — 100 players, one survivor.',
     colors: {
       primary:   '#00FF41',           // matrix / terminal green
@@ -33,8 +49,20 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(0, 255, 65, 0.05)',
     },
     logo: '/logos/pubg-mobile.svg',
+    athleteSubtitleFormat: 'role_team',
     badge: 'FEATURED',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'tdm_1v1', label: 'TDM 1V1', variant: 'Players', status: 'live', route: '/games/tdm-1v1' },
+      { key: 'wow_team_4v4', label: 'WOW Mode 4v4 Team', variant: 'Teams', status: 'live', route: '/games/wow-4v4' },
+      { key: 'wow_team_3v3', label: 'WOW Mode 3v3 Team', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'wow_team_2v3', label: 'WOW Mode 2v3 Team', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'wow_player_4v4', label: 'WOW Mode 4v4 Player', variant: 'Players', status: 'locked-tbd' },
+      { key: 'wow_player_2v2', label: 'WOW Mode 2v2 Player', variant: 'Players', status: 'locked-tbd' },
+      { key: 'wow_player_3v3', label: 'WOW Mode 3v3 Player', variant: 'Players', status: 'locked-tbd' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'live', route: '/fantasy-league' },
+    ],
   },
   {
     id: 'cod-mobile',
@@ -66,7 +94,61 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(255, 69, 0, 0.05)',
     },
     logo: '/logos/free-fire.svg',
+    athleteSubtitleFormat: 'role_team',
     available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'clash_squad_4v4_teams', label: 'Clash Squad 4v4 — Teams', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'clash_squad_4v4_players', label: 'Clash Squad 4v4 — Players', variant: 'Players', status: 'locked-tbd' },
+      { key: 'clash_squad_2v2_teams', label: 'Clash Squad 2v2 — Teams', variant: 'Teams', status: 'locked-tbd' },
+      { key: 'clash_squad_2v2_players', label: 'Clash Squad 2v2 — Players', variant: 'Players', status: 'locked-tbd' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
+    ],
+  },
+  {
+    id: 'fc-mobile',
+    slug: 'fc-mobile',
+    name: 'FC Mobile',
+    shortName: 'FC Mobile',
+    description: 'Mobile football — Build squads and dominate the pitch.',
+    colors: {
+      primary:   '#14F195',
+      secondary: '#1D4ED8',
+      glow:      'rgba(20, 241, 149, 0.35)',
+      border:    'rgba(20, 241, 149, 0.40)',
+      cardBg:    'rgba(20, 241, 149, 0.05)',
+    },
+    logo: '/logos/fc-mobile.svg',
+    athleteSubtitleFormat: 'player_only',
+    available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'virtual_match_1v1', label: 'Virtual Match 1v1', variant: 'Player', status: 'locked-tbd' },
+    ],
+  },
+  {
+    id: 'chess',
+    slug: 'chess',
+    name: 'Chess',
+    shortName: 'Chess',
+    description: 'Individual 1v1 skill game — rapid, blitz, and bullet chess.',
+    colors: {
+      primary:   '#F5F5DC',
+      secondary: '#8B5CF6',
+      glow:      'rgba(245, 245, 220, 0.35)',
+      border:    'rgba(245, 245, 220, 0.40)',
+      cardBg:    'rgba(245, 245, 220, 0.05)',
+    },
+    logo: '/logos/chess.svg',
+    athleteSubtitleFormat: 'player_only',
+    available: true,
+    hasModeMenu: true,
+    modes: [
+      { key: 'rapid_1v1', label: 'Rapid 1v1', variant: 'Player', status: 'live', route: '/games/tdm-1v1?mode=rapid_1v1' },
+      { key: 'blitz_1v1', label: 'Blitz 1v1', variant: 'Player', status: 'live', route: '/games/tdm-1v1?mode=blitz_1v1' },
+      { key: 'bullet_1v1', label: 'Bullet 1v1', variant: 'Player', status: 'locked-tbd' },
+      { key: 'chess_fantasy_league', label: 'Chess Fantasy League', variant: 'Player', status: 'locked-tbd' },
+    ],
   },
   {
     id: 'ea-fc-26',
@@ -135,3 +217,22 @@ export const GAMES: Game[] = [
 ];
 
 export const DEFAULT_GAME = GAMES[0];
+
+
+export function getAthleteSubtitleFormat(gameSlug?: string | null): AthleteSubtitleFormat {
+  return GAMES.find((game) => game.slug === String(gameSlug ?? '').toLowerCase())?.athleteSubtitleFormat ?? 'role_team';
+}
+
+export function formatAthleteSubtitle({
+  gameSlug,
+  role,
+  teamName,
+}: {
+  gameSlug?: string | null;
+  role?: string | null;
+  teamName?: string | null;
+}) {
+  const displayRole = role || 'Player';
+  if (getAthleteSubtitleFormat(gameSlug) === 'player_only') return displayRole;
+  return `${displayRole} / ${teamName || 'Free Agent'}`;
+}

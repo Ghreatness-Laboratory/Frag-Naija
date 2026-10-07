@@ -1,0 +1,2 @@
+import { NextResponse } from 'next/server'; import { getCurrentUser } from '@/features/auth/server'; import { getMyAccountSales } from '@/features/account-sales/server';
+export const dynamic='force-dynamic'; export async function GET(){const user=await getCurrentUser();if(!user)return NextResponse.json({error:'Not authenticated'},{status:401});try{return NextResponse.json(await getMyAccountSales(user.id));}catch(e){return NextResponse.json({error:e.message},{status:500});}}

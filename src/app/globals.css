@@ -1,27 +1,139 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── FONT SYSTEM ────────────────────────────────────────────────────────────*/
+:root {
+  /* Primary Display Font - Headings & Large Metrics */
+  --font-display: var(--font-chakra), 'Chakra Petch', sans-serif;
+  
+  /* Secondary UI & Body Font - Labels, Controls & Subtext */
+  --font-mono: var(--font-chakra), 'Chakra Petch', sans-serif;
+  
+  /* ─── ESPORTS FONT CANDIDATES (for preview/testing) ───────────────────────*/
+  /* Rajdhani - Angular, esports-standard, good legibility at small sizes */
+  --font-rajdhani-family: var(--font-rajdhani), 'Rajdhani', sans-serif;
+  /* Chakra Petch - Technical/HUD feel, slightly wider than Rajdhani */
+  --font-chakra-family: var(--font-chakra), 'Chakra Petch', sans-serif;
+  /* Exo 2 - Geometric with technical edge, versatile for display and body */
+  --font-exo2-family: var(--font-exo2), 'Exo 2', sans-serif;
+  --font-orbitron-family: var(--font-orbitron), 'Orbitron', sans-serif;
+  --font-oxanium-family: var(--font-oxanium), 'Oxanium', sans-serif;
+  --font-saira-condensed-family: var(--font-saira-condensed), 'Saira Condensed', sans-serif;
+  --font-space-mono-family: var(--font-space-mono), 'Space Mono', monospace;
+}
+
+/* ─── FONT PREVIEW MODES ────────────────────────────────────────────────────*/
+/* Apply these classes to html element to preview different fonts site-wide */
+html.font-preview-legacy {
+  --font-display: var(--font-space-mono-family);
+  --font-mono: var(--font-space-mono-family);
+}
+
+html.font-preview-rajdhani {
+  --font-display: var(--font-rajdhani-family);
+  --font-mono: var(--font-rajdhani-family);
+}
+
+html.font-preview-chakra {
+  --font-display: var(--font-chakra-family);
+  --font-mono: var(--font-chakra-family);
+}
+
+html.font-preview-exo2 {
+  --font-display: var(--font-exo2-family);
+  --font-mono: var(--font-exo2-family);
+}
+
+html.font-preview-orbitron {
+  --font-display: var(--font-orbitron-family);
+  --font-mono: var(--font-orbitron-family);
+}
+
+html.font-preview-oxanium {
+  --font-display: var(--font-oxanium-family);
+  --font-mono: var(--font-oxanium-family);
+}
+
+html.font-preview-saira-condensed {
+  --font-display: var(--font-saira-condensed-family);
+  --font-mono: var(--font-saira-condensed-family);
+}
+
+/* ─── FONT APPLICATION RULES ────────────────────────────────────────────────*/
+/* Apply display font to all headings and large metrics */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em; /* Increased from -0.02em for better readability */
+}
+
+/* Utility classes for explicit font application */
+.font-display {
+  font-family: var(--font-display) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+/* Apply mono font to body, labels, controls, and UI elements with improved spacing */
+body, p, label, input, select, textarea {
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em; /* Slight increase for better readability */
+  line-height: 1.6; /* Increased from default for less cramped feel */
+}
+
+/* Specific styling for rating numbers and large metrics */
+.rating-number,
+.metric-value,
+.fn-display-large {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.01em; /* Reduced negative tracking for cleaner look */
+}
+
+/* ─── IMPROVED TYPOGRAPHY FOR ESPORTS READABILITY ─────────────────────────*/
+/* Increase spacing in commonly cramped areas */
+.fn-label {
+  letter-spacing: 0.12em !important; /* Slightly reduced from 0.15em but still spacious */
+  line-height: 1.5 !important;
+}
+
+/* Card descriptions and body copy */
+p, .text-xs, .text-sm {
+  letter-spacing: 0.015em;
+  line-height: 1.65;
+}
+
+/* Stat readouts - keep monospace feel but with better spacing */
+.stat-value, .metric-value {
+  letter-spacing: 0.02em;
+}
+
 /* ─── DARK MODE (default) ──────────────────────────────────────────────────── */
 /* Values are space-separated R G B — used with rgb(var(--x) / alpha) in Tailwind */
 :root, html, html.dark {
-  --fn-black:   4 9 4;
-  --fn-dark:    7 13 7;
-  --fn-card:    12 26 12;
-  --fn-card2:   15 34 15;
-  --fn-green:   0 255 65;
-  --fn-gdim:    0 204 51;
-  --fn-gborder: 26 58 26;
-  --fn-yellow:  240 192 64;
-  --fn-amber:   232 160 32;
-  --fn-red:     255 65 65;
-  --fn-pink:    255 107 138;
-  --fn-muted:   61 92 61;
-  --fn-text:    184 204 184;
-  --background: #040904;
-  --foreground: #b8ccb8;
+  --fn-black:   8 10 7;
+  --fn-dark:    8 10 7;
+  --fn-card:    14 19 12;
+  --fn-card2:   14 19 12;
+  --fn-green:   77 255 110;
+  --fn-gdim:    31 92 43;
+  --fn-gborder: 33 49 33;
+  --fn-yellow:  224 168 63;
+  --fn-amber:   224 168 63;
+  --fn-red:     255 90 60;
+  --fn-pink:    255 90 60;
+  --fn-muted:   101 115 95;
+  --fn-text:    238 243 234;
+  --background: #080a07;
+  --foreground: #eef3ea;
   /* Hero gradient */
   --hero-from: #0d2010;
   --hero-to:   #040904;
@@ -32,26 +144,39 @@
 
 /* ─── LIGHT MODE ─────────────────────────────────────────────────────────────*/
 html.light {
-  --fn-black:   242 247 242;
-  --fn-dark:    228 238 228;
+  --fn-black:   247 250 248;
+  --fn-dark:    233 241 236;
   --fn-card:    255 255 255;
-  --fn-card2:   245 250 245;
-  --fn-green:   0 120 26;
-  --fn-gdim:    0 90 18;
-  --fn-gborder: 172 208 172;
-  --fn-yellow:  180 120 0;
-  --fn-amber:   150 95 0;
-  --fn-red:     200 20 20;
-  --fn-pink:    190 50 80;
-  --fn-muted:   110 148 110;
-  --fn-text:    26 42 26;
-  --background: #f2f7f2;
-  --foreground: #1a2a1a;
-  --hero-from: #d0ecd0;
-  --hero-to:   #f2f7f2;
-  --scroll-thumb: #b0d0b0;
+  --fn-card2:   240 247 243;
+  --fn-green:   0 130 64;
+  --fn-gdim:    0 104 51;
+  --fn-gborder: 184 207 193;
+  --fn-yellow:  151 99 16;
+  --fn-amber:   139 88 14;
+  --fn-red:     185 28 28;
+  --fn-pink:    190 24 93;
+  --fn-muted:   78 102 88;
+  --fn-text:    18 31 24;
+  --background: #f7faf8;
+  --foreground: #121f18;
+  --hero-from: #dff1df;
+  --hero-to:   #f7faf7;
+  --scroll-thumb: #b7d4b7;
   color-scheme: light;
 }
+
+
+/* Light-mode compatibility for legacy arbitrary dark utility classes.
+   Keeps dark mode untouched while routing missed surfaces back to the token system. */
+html.light .bg-black { background-color: rgb(var(--fn-black)) !important; }
+html.light .bg-black\/60 { background-color: rgb(21 36 21 / 0.28) !important; }
+html.light .bg-black\/70 { background-color: rgb(21 36 21 / 0.72) !important; }
+html.light .bg-black\/80,
+html.light .bg-black\/85,
+html.light .bg-black\/90,
+html.light .bg-black\/95 { background-color: rgb(21 36 21 / 0.35) !important; }
+html.light .border-\[\#333\] { border-color: rgb(var(--fn-gborder)) !important; }
+html.light .text-black { color: rgb(var(--fn-black)) !important; }
 
 /* ─── BASE ───────────────────────────────────────────────────────────────────*/
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,7 +185,7 @@ html { scroll-behavior: smooth; }
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-family: var(--font-mono);
   overflow-x: hidden;
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -83,6 +208,8 @@ body {
 
 .glow-green  { box-shadow: 0 0 20px rgb(var(--fn-green)/0.25), 0 0 40px rgb(var(--fn-green)/0.10); }
 .glow-text   { text-shadow: 0 0 24px rgb(var(--fn-green)/0.55); }
+/* Remove any default outline/border on logo elements */
+a[href="/"] .glow-text, a[href="/"] span { outline: none !important; border: none !important; }
 .glow-border { border-color: rgb(var(--fn-green)); box-shadow: 0 0 12px rgb(var(--fn-green)/0.3); }
 
 /* ─── LIVE DOT ───────────────────────────────────────────────────────────────*/
@@ -97,6 +224,14 @@ body {
 /* ─── STAT BAR ───────────────────────────────────────────────────────────────*/
 .stat-bar { height: 4px; background: rgb(var(--fn-gborder)); border-radius: 2px; overflow: hidden; }
 .stat-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease-out; }
+
+.fn-mini-bio {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  max-height: 4.7rem;
+  overflow: hidden;
+}
 
 /* ─── PREDICTION BUTTONS ─────────────────────────────────────────────────────*/
 .pred-yes {
@@ -129,12 +264,125 @@ body {
 /* Don't transition transforms/opacity for interactive elements */
 button, a, input { transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease, box-shadow 0.2s ease; }
 
+
+/* ─── ESPORTS MOTION TEXTURES ───────────────────────────────────────────────*/
+.fn-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 8px,
+    rgb(var(--fn-green) / 0.035) 9px,
+    transparent 10px
+  );
+  animation: scanlineDrift 8s linear infinite;
+}
+
+@keyframes scanlineDrift {
+  from { transform: translateY(0); }
+  to { transform: translateY(20px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fn-scanlines { animation: none; }
+}
+
 /* ─── UTILITY LAYER ──────────────────────────────────────────────────────────*/
 @layer utilities {
-  .fn-label    { @apply text-[9px] font-mono tracking-[0.15em] uppercase text-fn-muted; }
-  .fn-value    { @apply text-fn-green font-mono font-bold; }
-  .fn-btn      { @apply bg-fn-green text-fn-black text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-gdim transition-all active:scale-95 rounded-sm; }
-  .fn-btn-outline { @apply border border-fn-green text-fn-green text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-green hover:text-fn-black transition-all active:scale-95 rounded-sm; }
-  .fn-btn-ghost   { @apply text-fn-muted text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:text-fn-green transition-all; }
-  .section-title  { @apply font-display text-2xl sm:text-3xl font-bold uppercase tracking-wider text-fn-text; }
+  /* Secondary Font - Labels, Controls & Subtext */
+  .fn-label    { @apply font-mono text-[9px] tracking-[0.15em] uppercase text-fn-muted; }
+  .fn-value    { @apply font-mono text-fn-green font-bold; }
+  
+  /* Primary Display Font - Headings & Large Metrics */
+  .fn-display  { @apply font-display font-bold uppercase tracking-tight; }
+  
+  /* Button Styles with Mono Font */
+  .fn-btn      { @apply font-mono bg-fn-green text-fn-black text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-gdim transition-all active:scale-95; }
+  .fn-btn-outline { @apply font-mono border border-fn-green text-fn-green text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-fn-green hover:text-fn-black transition-all active:scale-95; }
+  .fn-btn-ghost   { @apply font-mono text-fn-muted text-xs font-bold tracking-widest uppercase px-4 py-2.5 hover:text-fn-green transition-all; }
+  
+  /* Section Titles with Display Font */
+  .section-title  { @apply font-display text-2xl sm:text-3xl font-bold uppercase tracking-tight text-fn-text; }
+}
+
+/* ─── PLAYER CARD COMPOSITION ───────────────────────────────────────────────*/
+.player-card-identity-bg {
+  background-blend-mode: screen, screen, overlay, luminosity;
+  filter: saturate(1.22) contrast(1.08) blur(0.2px);
+  mask-image: radial-gradient(circle at 50% 38%, black 0%, black 58%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at 50% 38%, black 0%, black 58%, transparent 100%);
+}
+
+.player-card-backdrop-portrait {
+  background-repeat: no-repeat;
+  opacity: 0.16;
+  mix-blend-mode: luminosity;
+  filter: saturate(0.55) contrast(1.08);
+  mask-image: linear-gradient(180deg, black 0%, rgba(0, 0, 0, 0.8) 24%, rgba(0, 0, 0, 0.36) 48%, transparent 72%);
+  -webkit-mask-image: linear-gradient(180deg, black 0%, rgba(0, 0, 0, 0.8) 24%, rgba(0, 0, 0, 0.36) 48%, transparent 72%);
+}
+
+.player-card-subject {
+  filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.42));
+  mix-blend-mode: normal;
+  background-blend-mode: normal;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.player-card-subject:is([src$='.png'], [src*='.png?'], [src*='.png#']) {
+  mix-blend-mode: normal;
+}
+
+.player-card-portrait-frame {
+  isolation: isolate;
+}
+
+.player-card-portrait-subject {
+  filter: brightness(1.14) contrast(1.06) saturate(1.08) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.32));
+  mix-blend-mode: multiply;
+  mask-image: linear-gradient(180deg, black 0%, black 88%, rgba(0, 0, 0, 0.86) 96%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, black 0%, black 88%, rgba(0, 0, 0, 0.86) 96%, transparent 100%);
+  transform-origin: 50% 50%;
+}
+
+.player-card-portrait-subject:is([src$='.png'], [src*='.png?'], [src*='.png#']) {
+  mix-blend-mode: normal;
+}
+
+/* ─── PLAYER CARD PRINT EXPORT ──────────────────────────────────────────────*/
+.print-card-only { display: none; }
+
+@media print {
+  @page { size: 3.5in 5in portrait; margin: 0.12in; }
+  body { background: #fff !important; }
+  body * { visibility: hidden !important; }
+  .print-card-only, .print-card-only * { visibility: visible !important; }
+  .print-card-only {
+    display: flex !important;
+    position: fixed !important;
+    inset: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .player-card {
+    width: 3.5in !important;
+    height: 5in !important;
+    max-width: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    box-shadow: none !important;
+  }
+}
+
+@keyframes announcement-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

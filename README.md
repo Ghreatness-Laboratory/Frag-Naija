@@ -139,6 +139,8 @@ See [Environment Variables](#environment-variables) below.
    - `athletes`
    - `teams`
    - `highlights`
+   - `team-members`
+   - `shop-items`
 
 ### 5. Start the app
 
@@ -184,7 +186,7 @@ It also creates:
 Storage is used by the upload API:
 
 - `/api/upload`
-- allowed buckets: `athletes`, `teams`, `highlights`
+- allowed buckets: `athletes`, `teams`, `highlights`, `team-members`, `shop-items`
 - max file size: `10MB`
 
 ## API Surface
@@ -273,3 +275,73 @@ If you deploy on Vercel, Render, Railway, or another Node-compatible host, the m
 ## Next Recommended Step
 
 The most natural next improvement is to migrate the frontend pages from `src/lib/data.ts` to the live API hooks in `src/lib/hooks.js`, so the UI reflects real Supabase data end-to-end.
+
+### Supabase Match Alert scheduler
+
+The Match Alert dispatcher is scheduled by Supabase `pg_cron`, not Vercel. The cron job runs every minute (`* * * * *`) and the dispatcher sends the “Match starting in 5 minutes” alert for matches in the safe 4–6 minute lookahead window. Before applying `202608240003_supabase_match_alert_scheduler.sql`, enable **pg_cron**, **pg_net**, and **Vault** for the Supabase project. On hosted Supabase, enable these from **Dashboard → Database → Extensions** if raw `CREATE EXTENSION` statements are not permitted, then run the migration SQL.
+
+Create these Vault secrets in the Supabase Dashboard, or through the secure Vault workflow, before scheduling the job:
+
+- `match_alert_scheduler_url`: the HTTPS origin of the deployed application, without a path.
+- `match_alert_scheduler_secret`: a high-entropy shared secret. Set this to the exact same value as the Vercel environment variable `SUPABASE_MATCH_ALERT_SCHEDULER_SECRET`. Never expose it with a `NEXT_PUBLIC_` prefix.
+
+The scheduled function posts to `/api/internal/match-alerts/dispatch` with `Authorization: Bearer <match_alert_scheduler_secret>`. The migration replaces any existing `fragnaija-match-alerts-every-minute` job and schedules exactly one `* * * * *` job. The endpoint uses recipient-scoped delivery, so a failed FCM request does not remove the in-app notification already written for an eligible subscriber.
+
+Run this SQL in Supabase after setting the two Vault secrets:
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+create or replace function public.invoke_match_alert_scheduler()
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions, vault
+as $$
+declare
+  v_url text;
+  v_secret text;
+begin
+  select decrypted_secret into v_url
+  from vault.decrypted_secrets
+  where name = 'match_alert_scheduler_url';
+
+  select decrypted_secret into v_secret
+  from vault.decrypted_secrets
+  where name = 'match_alert_scheduler_secret';
+
+  if coalesce(v_url, '') = '' or coalesce(v_secret, '') = '' then
+    raise exception 'Match-alert scheduler Vault secrets are not configured.';
+  end if;
+
+  perform net.http_post(
+    url := regexp_replace(v_url, '/+$', '') || '/api/internal/match-alerts/dispatch',
+    headers := jsonb_build_object(
+      'Authorization', 'Bearer ' || v_secret,
+      'Content-Type', 'application/json'
+    ),
+    body := '{}'::jsonb
+  );
+end;
+$$;
+
+revoke all on function public.invoke_match_alert_scheduler() from public;
+
+do $$
+declare
+  v_job_id bigint;
+begin
+  for v_job_id in select jobid from cron.job where jobname = 'fragnaija-match-alerts-every-minute'
+  loop
+    perform cron.unschedule(v_job_id);
+  end loop;
+end;
+$$;
+
+select cron.schedule(
+  'fragnaija-match-alerts-every-minute',
+  '* * * * *',
+  'select public.invoke_match_alert_scheduler();'
+);
+```
