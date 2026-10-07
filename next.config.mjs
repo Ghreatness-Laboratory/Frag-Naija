@@ -3,6 +3,10 @@ import withPWA from 'next-pwa';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Serve original image URLs directly. Avoids Vercel's image optimizer,
+    // which returns 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED once the
+    // free quota is used up.
+    unoptimized: true,
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
       { protocol: 'http', hostname: '**' },
