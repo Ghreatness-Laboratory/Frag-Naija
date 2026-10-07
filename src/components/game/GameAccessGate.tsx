@@ -7,7 +7,7 @@ import { Gamepad2 } from 'lucide-react';
 import { GAMES, type Game } from '@/lib/games';
 import { useGame } from '@/context/GameContext';
 
-const LAUNCHED_GAME_SLUGS = new Set(['fc-mobile', 'pubg-mobile']);
+const LAUNCHED_GAME_SLUGS = new Set(['fc-mobile', 'free-fire', 'pubg-mobile']);
 const GAME_SCOPED_PATHS = new Set([
   'athletes',
   'teams',
@@ -42,7 +42,7 @@ function GameComingSoonTakeover({ game }: { game: Game }) {
         <p className="mt-7 text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: game.colors.primary }}>FragNaija game arena</p>
         <h1 className="mt-3 font-display text-4xl font-black uppercase tracking-wider sm:text-6xl">{game.name}</h1>
         <p className="mt-5 text-lg font-black uppercase tracking-[0.18em]" style={{ color: game.colors.primary }}>Coming Soon</p>
-        <p className="mx-auto mt-5 max-w-lg text-sm leading-7 text-fn-muted">This game&apos;s arena is still being prepared. FC Mobile and PUBG Mobile are live now; check back soon for {game.name}.</p>
+        <p className="mx-auto mt-5 max-w-lg text-sm leading-7 text-fn-muted">This game&apos;s arena is still being prepared. FC Mobile, Free Fire, and PUBG Mobile are live now; check back soon for {game.name}.</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/register" className="bg-fn-green px-5 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Create account</Link>
           <Link href="/login" className="border px-5 py-3 text-xs font-black uppercase tracking-widest" style={{ borderColor: game.colors.border, color: game.colors.primary }}>Sign in</Link>
