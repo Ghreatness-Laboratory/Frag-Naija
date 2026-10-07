@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   BarChart2,

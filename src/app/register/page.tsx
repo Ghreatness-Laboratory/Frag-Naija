@@ -13,12 +13,22 @@ function GamePickCard({ game, selected, onSelect }: { game: Game; selected: bool
   return (
     <button
       type="button"
-      onClick={onSelect}
-      className="relative flex flex-col items-center gap-1.5 rounded-sm border p-2.5 transition-all duration-200"
+      onClick={() => game.available && onSelect()}
+      disabled={!game.available}
+      aria-label={game.name}
+      className={`relative flex flex-col items-center gap-1.5 rounded-sm border p-2.5 transition-all duration-200 ${
+        game.available ? 'cursor-pointer' : 'cursor-not-allowed opacity-45'
+      }`}
       style={selected
         ? { borderColor: game.colors.border, background: game.colors.cardBg, boxShadow: `0 0 12px ${game.colors.glow}` }
         : { borderColor: 'rgb(var(--fn-gborder))', background: 'rgb(var(--fn-card))' }}
     >
+      {/* Coming Soon badge for gated games */}
+      {!game.available && (
+        <span className="absolute -top-px left-1.5 px-1.5 py-0.5 text-[6px] font-black uppercase tracking-widest bg-[#3d5c3d] text-[#040904]">
+          Coming Soon
+        </span>
+      )}
       {/* Logo */}
       {imgErr ? (
         <div

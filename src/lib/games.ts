@@ -78,15 +78,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(255, 215, 0, 0.05)',
     },
     logo: '/logos/cod-mobile.svg',
-    athleteSubtitleFormat: 'role_team',
-    available: true,
-    hasModeMenu: true,
-    modes: [
-      { key: 'team_tdm_4v4_teams', label: 'Team TDM 4v4 — Teams', variant: 'Teams', status: 'locked-tbd' },
-      { key: 'tdm_4v4_players', label: 'TDM 4v4 — Players', variant: 'Players', status: 'locked-tbd' },
-      { key: 'tdm_1v1', label: 'TDM 1v1', variant: 'Players', status: 'live', route: '/games/tdm-1v1' },
-      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
-    ],
+    available: false,
   },
   {
     id: 'free-fire',
@@ -172,12 +164,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(0, 212, 255, 0.05)',
     },
     logo: '/logos/ea-fc-26.svg',
-    athleteSubtitleFormat: 'player_only',
-    available: true,
-    hasModeMenu: true,
-    modes: [
-      { key: 'virtual_match_1v1', label: 'Virtual Match 1v1', variant: 'Player', status: 'locked-tbd' },
-    ],
+    available: false,
   },
   {
     id: 'mortal-kombat',
@@ -193,10 +180,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(204, 0, 0, 0.05)',
     },
     logo: '/logos/mortal-kombat.svg',
-    athleteSubtitleFormat: 'player_only',
-    available: true,
-    hasModeMenu: false,
-    modes: [],
+    available: false,
   },
   {
     id: 'efootball',
@@ -212,12 +196,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(33, 150, 243, 0.05)',
     },
     logo: '/logos/efootball.svg',
-    athleteSubtitleFormat: 'player_only',
-    available: true,
-    hasModeMenu: true,
-    modes: [
-      { key: 'virtual_match_1v1', label: 'Virtual Match 1v1', variant: 'Player', status: 'locked-tbd' },
-    ],
+    available: false,
   },
   {
     id: 'mobile-legends',
@@ -233,14 +212,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(156, 39, 176, 0.05)',
     },
     logo: '/logos/mobile-legends.svg',
-    athleteSubtitleFormat: 'role_team',
-    available: true,
-    hasModeMenu: true,
-    modes: [
-      { key: 'competitive_team_5v5_teams', label: 'Competitive Team 5v5 — Teams', variant: 'Teams', status: 'locked-tbd' },
-      { key: 'competitive_players_5v5_custom', label: 'Competitive Players 5v5 — Custom Players', variant: 'Custom Players', status: 'locked-tbd' },
-      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
-    ],
+    available: false,
   },
 ];
 
