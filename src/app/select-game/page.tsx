@@ -100,6 +100,13 @@ function GameCard({
         </span>
       )}
 
+      {/* Coming Soon badge for gated games */}
+      {!game.available && (
+        <span className="absolute -top-px right-3 px-2 py-0.5 text-[7px] font-black uppercase tracking-widest bg-[#3d5c3d] text-[#040904]">
+          Coming Soon
+        </span>
+      )}
+
 
       {/* Logo */}
       <GameLogo game={game} isSelected={isSelected} />

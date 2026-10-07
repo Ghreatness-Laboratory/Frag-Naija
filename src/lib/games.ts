@@ -50,7 +50,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(255, 215, 0, 0.05)',
     },
     logo: '/logos/cod-mobile.svg',
-    available: true,
+    available: false,
   },
   {
     id: 'free-fire',
@@ -82,7 +82,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(0, 212, 255, 0.05)',
     },
     logo: '/logos/ea-fc-26.svg',
-    available: true,
+    available: false,
   },
   {
     id: 'mortal-kombat',
@@ -98,7 +98,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(204, 0, 0, 0.05)',
     },
     logo: '/logos/mortal-kombat.svg',
-    available: true,
+    available: false,
   },
   {
     id: 'efootball',
@@ -114,7 +114,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(33, 150, 243, 0.05)',
     },
     logo: '/logos/efootball.svg',
-    available: true,
+    available: false,
   },
   {
     id: 'mobile-legends',
@@ -130,7 +130,7 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(156, 39, 176, 0.05)',
     },
     logo: '/logos/mobile-legends.svg',
-    available: true,
+    available: false,
   },
 ];
 
