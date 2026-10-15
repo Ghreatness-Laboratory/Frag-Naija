@@ -32,7 +32,6 @@ export function DuelResultScreen({
   const profit = userWon ? payout - stake : -stake;
   
   const winnerName = winner === 'a' ? playerAName : playerBName;
-  const loserName = winner === 'a' ? playerBName : playerAName;
   
   return (
     <motion.div

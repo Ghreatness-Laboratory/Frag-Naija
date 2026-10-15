@@ -19,7 +19,6 @@ export default function SupportChatbot() {
   
   // Draggable position hook
   const { 
-    position, 
     isDragging, 
     handlers: dragHandlers, 
     wasDragged, 

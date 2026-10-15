@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Type, X, Check } from "lucide-react";
 import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
 import { useDraggablePosition } from '@/hooks/useDraggablePosition';
@@ -74,11 +74,10 @@ export default function FontPreviewToggle() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentFont, setCurrentFont] = useState<string>("default");
   const [selectedFont, setSelectedFont] = useState<string | null>(null);
-  const { dismissed, handleDismiss, handleReenable, mounted } = useFloatingIconDismiss('font-toggle');
+  const { dismissed, handleDismiss, handleReenable } = useFloatingIconDismiss('font-toggle');
   
   // Draggable position hook
   const { 
-    position, 
     isDragging, 
     handlers: dragHandlers, 
     wasDragged, 

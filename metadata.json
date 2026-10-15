@@ -1,0 +1,8 @@
+{
+  "name": "Frag Naija",
+  "description": "Nigeria-focused esports media and engagement platform.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

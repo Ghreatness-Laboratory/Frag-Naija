@@ -59,7 +59,7 @@ export default function AdminCustomWagersPage(){
          {row.proof_of_win_url && (
            <a href={String(row.proof_of_win_url)} target="_blank" rel="noopener noreferrer" className="text-[10px] text-fn-green underline">📎 View Proof</a>
          )}
-         {(row as any).evidence?.map((ev:any,i:number)=><a key={i} href={ev.image_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-fn-red underline">📎 Evidence {i+1}</a>)}
+         {(row.evidence as Array<{ image_url: string }> | undefined)?.map((ev, i: number)=><a key={i} href={ev.image_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-fn-red underline">📎 Evidence {i+1}</a>)}
          <button onClick={()=>resolve(row,'creator',String(row.creator_id))} className="text-[10px] text-fn-green">Creator wins</button>
          <button onClick={()=>resolve(row,'opponent',String(row.opponent_id))} className="text-[10px] text-fn-green">Opponent wins</button>
          <button onClick={()=>resolve(row,'refund')} className="text-[10px] text-fn-yellow">Refund</button>

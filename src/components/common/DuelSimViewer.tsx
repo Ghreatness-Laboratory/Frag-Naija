@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipForward, Zap, Target, Shield } from 'lucide-react';
+import { Play, Pause, SkipForward, Target } from 'lucide-react';
 
 const SIGNAL_GREEN = '#4dff6e';
 const DANGER_RED = '#ff4d4d';
@@ -256,7 +256,6 @@ export function DuelSimViewer({
       
       processedEventsRef.current.add(idx);
       
-      const attacker = players.find(p => p.id === event.actor);
       const victim = players.find(p => p.id === event.target);
       
       if (event.event_type === 'elimination' && victim) {
@@ -398,7 +397,7 @@ export function DuelSimViewer({
       ctx.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
       
       // Draw effects
-      activeEffects.forEach((effect, idx) => {
+      activeEffects.forEach((effect) => {
         if (effect.type === 'grenade_detonation') {
           ctx.beginPath();
           ctx.arc(effect.x, effect.y, 30 * effect.life, 0, Math.PI * 2);

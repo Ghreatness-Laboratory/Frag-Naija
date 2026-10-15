@@ -32,7 +32,6 @@ export function MatchResultScreen({
   const profit = userWon ? payout - stake : -stake;
   
   const winningTeamName = winner === 'a' ? teamAName : teamBName;
-  const losingTeamName = winner === 'a' ? teamBName : teamAName;
   
   return (
     <motion.div

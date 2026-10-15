@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipForward, Trophy } from 'lucide-react';
+import { Play, Pause, SkipForward } from 'lucide-react';
 
 const SIGNAL_GREEN = '#4dff6e';
 const ARENA_WIDTH = 800;
@@ -90,8 +90,6 @@ function generateMatchScript(
   let currentTime = 2000; // Start after spawns
   const timeStep = (duration - 5000) / totalEliminations;
   
-  let killsA = 0;
-  let killsB = 0;
   
   for (let i = 0; i < totalEliminations; i++) {
     const isTeamAKill = i < finalScore.a;
@@ -117,7 +115,6 @@ function generateMatchScript(
       }
     });
     
-    if (isTeamAKill) killsA++; else killsB++;
   }
   
   // Match end event
@@ -186,7 +183,7 @@ export function MatchSimViewer({
   const processEvents = useCallback((time: number) => {
     const relevantEvents = script.events.filter(e => e.time <= time);
     
-    let newScore = { a: 0, b: 0 };
+    const newScore = { a: 0, b: 0 };
     const newPlayers = [...players];
     const newKillFeed: Array<{ id: number; text: string }> = [];
     
