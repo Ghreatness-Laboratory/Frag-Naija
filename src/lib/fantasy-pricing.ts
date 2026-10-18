@@ -5,6 +5,18 @@ export const FANTASY_SQUAD_BUDGET = 10_000_000;
 export const FANTASY_PRICE_ROUNDING = 1_000;
 export const FANTASY_PRICE_NUDGE = 1;
 export const FANTASY_MAX_PLAYERS_PER_TEAM = 1;
+export const FC_MOBILE_FANTASY_BUDGET = 5_000_000;
+export const FC_MOBILE_MAX_NINETY_PLUS = 2;
+
+export const GAME_FANTASY_BUDGETS: Record<string, number> = {
+  'fc-mobile': FC_MOBILE_FANTASY_BUDGET,
+  default: FANTASY_SQUAD_BUDGET,
+};
+
+export function getFantasySquadBudget(gameSlug?: string | null): number {
+  if (gameSlug === 'fc-mobile') return GAME_FANTASY_BUDGETS['fc-mobile'];
+  return GAME_FANTASY_BUDGETS.default;
+}
 
 type FantasyPricingAthlete = {
   id?: string | number | null;
@@ -13,8 +25,15 @@ type FantasyPricingAthlete = {
   rating?: number | string | null;
   overall_rating?: number | string | null;
   game_slug?: string | null;
+  attack?: number | string | null;
+  defense?: number | string | null;
+  iq?: number | string | null;
+  clutch?: number | string | null;
+  survival?: number | string | null;
+  aggression?: number | string | null;
 };
 
+// Default pricing tiers (PUBG Mobile, Free Fire, etc.)
 const PRICE_TIERS = [
   { minRating: 95, maxRating: 100, minPrice: 2_600_000, maxPrice: 3_800_000 },
   { minRating: 90, maxRating: 94, minPrice: 1_600_000, maxPrice: 2_500_000 },
@@ -24,6 +43,22 @@ const PRICE_TIERS = [
   { minRating: 70, maxRating: 74, minPrice: 380_000, maxPrice: 680_000 },
   { minRating: 60, maxRating: 69, minPrice: 180_000, maxPrice: 370_000 },
   { minRating: 0, maxRating: 59, minPrice: 70_000, maxPrice: 170_000 },
+] as const;
+
+// Dedicated FC Mobile pricing tiers:
+// Satisfies with B = 5,000,000, N = 6, P_min = 70,000:
+// 1) 3*P90 + 3*P_min > B => 3*1,650,000 + 3*70,000 = 5,160,000 > 5,000,000 (cannot hold three 90+ players)
+// 2) 2*P90_max + 4*P_min <= B => 2*2,350,000 + 4*70,000 = 4,980,000 <= 5,000,000 (two top stars buildable)
+// 3) Strict monotonicity with clear gap below 90: rating 89 max is 1,150,000 (500k gap below 90 at 1,650,000)
+export const FC_MOBILE_PRICE_TIERS = [
+  { minRating: 95, maxRating: 100, minPrice: 2_150_000, maxPrice: 2_350_000 },
+  { minRating: 90, maxRating: 94, minPrice: 1_650_000, maxPrice: 2_100_000 },
+  { minRating: 85, maxRating: 89, minPrice: 820_000, maxPrice: 1_150_000 },
+  { minRating: 80, maxRating: 84, minPrice: 480_000, maxPrice: 700_000 },
+  { minRating: 75, maxRating: 79, minPrice: 300_000, maxPrice: 450_000 },
+  { minRating: 70, maxRating: 74, minPrice: 180_000, maxPrice: 280_000 },
+  { minRating: 60, maxRating: 69, minPrice: 100_000, maxPrice: 160_000 },
+  { minRating: 0, maxRating: 59, minPrice: 70_000, maxPrice: 95_000 },
 ] as const;
 
 function numericRating(athlete: FantasyPricingAthlete): number {
@@ -40,12 +75,34 @@ function roundToNearest(value: number, nearest: number) {
   return Math.round(value / nearest) * nearest;
 }
 
+export function getEffectiveAthleteRating(athlete: FantasyPricingAthlete): number {
+  return numericRating(athlete);
+}
+
+export function isNinetyPlusAthlete(athlete: FantasyPricingAthlete): boolean {
+  return getEffectiveAthleteRating(athlete) >= 90;
+}
+
+export function fcMobileNinetyPlusViolation<T extends FantasyPricingAthlete>(athletes: T[], candidate?: T | null): string {
+  const isCandidateEligible = candidate ? isNinetyPlusAthlete(candidate) : false;
+  const currentCount = athletes.filter((a) => (a.game_slug === 'fc-mobile' || !a.game_slug) && isNinetyPlusAthlete(a)).length;
+  const projectedCount = currentCount + (isCandidateEligible ? 1 : 0);
+
+  if (projectedCount > FC_MOBILE_MAX_NINETY_PLUS) {
+    return 'FC Mobile squad limit: Maximum 2 players rated 90 or higher allowed.';
+  }
+  return '';
+}
+
 export function calculateFantasyBasePrice(athlete: FantasyPricingAthlete): number {
   const rating = numericRating(athlete);
-  const tier = PRICE_TIERS.find((item) => rating >= item.minRating && rating <= item.maxRating) ?? PRICE_TIERS[PRICE_TIERS.length - 1];
+  const isFcMobile = athlete.game_slug === 'fc-mobile';
+  const tiers = isFcMobile ? FC_MOBILE_PRICE_TIERS : PRICE_TIERS;
+  const tier = tiers.find((item) => rating >= item.minRating && rating <= item.maxRating) ?? tiers[tiers.length - 1];
   const span = Math.max(1, tier.maxRating - tier.minRating);
   const progress = Math.min(1, Math.max(0, (rating - tier.minRating) / span));
-  if (tier.minRating === 95) {
+
+  if (!isFcMobile && tier.minRating === 95) {
     const anchorRating = 96;
     const anchorPrice = 3_200_000;
     const price = rating <= anchorRating
@@ -53,6 +110,7 @@ export function calculateFantasyBasePrice(athlete: FantasyPricingAthlete): numbe
       : anchorPrice + ((tier.maxPrice - anchorPrice) * (rating - anchorRating)) / (tier.maxRating - anchorRating);
     return roundToNearest(price, FANTASY_PRICE_ROUNDING);
   }
+
   return roundToNearest(tier.minPrice + (tier.maxPrice - tier.minPrice) * progress, FANTASY_PRICE_ROUNDING);
 }
 
@@ -64,12 +122,13 @@ function stableHash(value: string): number {
   return hash;
 }
 
-function tierForPrice(price: number) {
-  return PRICE_TIERS.find((tier) => price >= tier.minPrice && price <= tier.maxPrice) ?? PRICE_TIERS[PRICE_TIERS.length - 1];
+function tierForPrice(price: number, gameSlug?: string | null) {
+  const tiers = gameSlug === 'fc-mobile' ? FC_MOBILE_PRICE_TIERS : PRICE_TIERS;
+  return tiers.find((tier) => price >= tier.minPrice && price <= tier.maxPrice) ?? tiers[tiers.length - 1];
 }
 
-function boundedUniquePrice(basePrice: number, key: string, used: Set<number>): number {
-  const tier = tierForPrice(basePrice);
+function boundedUniquePrice(basePrice: number, key: string, used: Set<number>, gameSlug?: string | null): number {
+  const tier = tierForPrice(basePrice, gameSlug);
   const direction = stableHash(key) % 2 === 0 ? 1 : -1;
   const seedOffset = stableHash(key) % Math.max(1, Math.floor(FANTASY_PRICE_ROUNDING / FANTASY_PRICE_NUDGE));
   const candidates = [basePrice + seedOffset * FANTASY_PRICE_NUDGE * direction, basePrice];
@@ -116,7 +175,7 @@ export function calculateUniqueFantasyPrices<T extends FantasyPricingAthlete>(at
     .sort((a, b) => a.basePrice - b.basePrice || a.key.localeCompare(b.key));
 
   for (const row of rows) {
-    const price = boundedUniquePrice(row.basePrice, row.key, used);
+    const price = boundedUniquePrice(row.basePrice, row.key, used, row.athlete.game_slug);
     used.add(price);
     prices.set(String(row.athlete.id), price);
   }
