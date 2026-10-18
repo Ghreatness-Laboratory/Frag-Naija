@@ -14,6 +14,9 @@ function getClient() {
  * @returns {Promise<string>}
  */
 export async function groqChat(messages, opts = {}) {
+  if (!process.env.GROQ_API_KEY) {
+    return 'FragNaija Support is here to help! Our team can assist with tournaments, athletes, wagers, and account questions. Reach out to fragnaija@gmail.com for direct help.';
+  }
   const completion = await getClient().chat.completions.create({
     model: opts.model ?? GROQ_MODEL,
     messages,
@@ -22,3 +25,4 @@ export async function groqChat(messages, opts = {}) {
   });
   return completion.choices[0]?.message?.content?.trim() ?? '';
 }
+

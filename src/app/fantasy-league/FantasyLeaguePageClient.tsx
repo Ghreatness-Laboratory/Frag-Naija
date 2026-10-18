@@ -6,7 +6,7 @@ import { Crosshair, ListChecks, Lock, Search, Shield, Sparkles, Star, Trophy, X 
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
-import { FANTASY_SQUAD_BUDGET, calculateFantasyBasePrice, fantasyTeamLimitViolation, getFantasySquadBudget } from "@/lib/fantasy-pricing";
+import { calculateFantasyBasePrice, fantasyTeamLimitViolation, getFantasySquadBudget } from "@/lib/fantasy-pricing";
 import { useFloatingIconDismiss } from '@/hooks/useFloatingIconDismiss';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { useGame } from '@/context/GameContext';
