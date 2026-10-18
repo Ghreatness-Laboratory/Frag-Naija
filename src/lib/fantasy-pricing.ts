@@ -5,7 +5,7 @@ export const FANTASY_SQUAD_BUDGET = 10_000_000;
 export const FANTASY_PRICE_ROUNDING = 1_000;
 export const FANTASY_PRICE_NUDGE = 1;
 export const FANTASY_MAX_PLAYERS_PER_TEAM = 1;
-export const FC_MOBILE_FANTASY_BUDGET = 5_000_000;
+export const FC_MOBILE_FANTASY_BUDGET = 6_000_000;
 export const FC_MOBILE_MAX_NINETY_PLUS = 2;
 
 export const GAME_FANTASY_BUDGETS: Record<string, number> = {
@@ -46,13 +46,13 @@ const PRICE_TIERS = [
 ] as const;
 
 // Dedicated FC Mobile pricing tiers:
-// Satisfies with B = 5,000,000, N = 6, P_min = 70,000:
-// 1) 3*P90 + 3*P_min > B => 3*1,650,000 + 3*70,000 = 5,160,000 > 5,000,000 (cannot hold three 90+ players)
-// 2) 2*P90_max + 4*P_min <= B => 2*2,350,000 + 4*70,000 = 4,980,000 <= 5,000,000 (two top stars buildable)
-// 3) Strict monotonicity with clear gap below 90: rating 89 max is 1,150,000 (500k gap below 90 at 1,650,000)
+// Satisfies with B = 6,000,000, N = 6, P_min = 70,000:
+// 1) 3*P90 + 3*P_min > B => 3*1,950,000 + 3*70,000 = 6,060,000 > 6,000,000 (cannot hold three 90+ players)
+// 2) 2*P90_max + 4*P_min <= B => 2*2,450,000 + 4*70,000 = 5,180,000 <= 6,000,000 (two top stars buildable)
+// 3) Strict monotonicity with clear gap below 90: rating 89 max is 1,150,000 (800k gap below 90 at 1,950,000)
 export const FC_MOBILE_PRICE_TIERS = [
-  { minRating: 95, maxRating: 100, minPrice: 2_150_000, maxPrice: 2_350_000 },
-  { minRating: 90, maxRating: 94, minPrice: 1_650_000, maxPrice: 2_100_000 },
+  { minRating: 95, maxRating: 100, minPrice: 2_500_000, maxPrice: 2_800_000 },
+  { minRating: 90, maxRating: 94, minPrice: 1_950_000, maxPrice: 2_450_000 },
   { minRating: 85, maxRating: 89, minPrice: 820_000, maxPrice: 1_150_000 },
   { minRating: 80, maxRating: 84, minPrice: 480_000, maxPrice: 700_000 },
   { minRating: 75, maxRating: 79, minPrice: 300_000, maxPrice: 450_000 },

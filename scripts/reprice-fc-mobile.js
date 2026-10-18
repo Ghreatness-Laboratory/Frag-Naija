@@ -2,13 +2,13 @@
  * Repricing script for FC Mobile (game_slug = 'fc-mobile')
  *
  * Requirements:
- * - Budget B = 5,000,000 (reduced from 10,000,000)
+ * - Budget B = 6,000,000
  * - Squad size N = 6 (4 starters + 2 bench)
  * - P_min = 70,000
  * - At most 2 players with overall_rating >= 90 per squad:
- *     1) 3*P90 + (N-3)*P_min > B => 3*1,650,000 + 3*70,000 = 5,160,000 > 5,000,000
- *     2) 2*P90_max + (N-2)*P_min <= B => 2*2,100,000 + 4*70,000 = 4,480,000 <= 5,000,000
- *     3) Monotonic prices with clear gap below 90 (rating 89 ceiling = 1,150,000; rating 90 floor = 1,650,000; gap = 500,000)
+ *     1) 3*P90 + (N-3)*P_min > B => 3*1,950,000 + 3*70,000 = 6,060,000 > 6,000,000
+ *     2) 2*P90_max + (N-2)*P_min <= B => 2*2,450,000 + 4*70,000 = 5,180,000 <= 6,000,000
+ *     3) Monotonic prices with clear gap below 90 (rating 89 ceiling = 1,150,000; rating 90 floor = 1,950,000; gap = 800,000)
  */
 
 const fs = require('fs');
@@ -33,10 +33,10 @@ const OLD_PRICES = {
 
 // Target new prices adhering strictly to the mathematical constraints
 const NEW_PRICES = {
-  'Victor Osimhen': 2100000,    // Rating 94 (P90_max in current squad)
-  'Ademola Lookman': 1760000,   // Rating 91
-  'Alex Iwobi': 1650000,        // Rating 90 (P90 floor)
-  'Samuel Chukwueze': 1060000,  // Rating 88 (590k drop below 90)
+  'Victor Osimhen': 2450000,    // Rating 94 (P90_max in current squad)
+  'Ademola Lookman': 2100000,   // Rating 91
+  'Alex Iwobi': 1950000,        // Rating 90 (P90 floor)
+  'Samuel Chukwueze': 1060000,  // Rating 88
   'Victor Boniface': 900000,    // Rating 86
   'Wilfred Ndidi': 660000,      // Rating 84
   'Calvin Bassey': 520000,      // Rating 81
@@ -107,16 +107,16 @@ async function run() {
     });
   }
 
-  // Step 4: Update FC Mobile fantasy settings (B = 5,000,000)
+  // Step 4: Update FC Mobile fantasy settings (B = 6,000,000)
   await supabaseAdmin.from('fantasy_settings').upsert([
     {
       key: 'fc_mobile_budget',
-      value: 5000000,
+      value: 6000000,
       updated_at: new Date().toISOString(),
     },
   ]);
 
-  console.log('FC Mobile fantasy squad budget set to 5,000,000 in fantasy_settings.');
+  console.log('FC Mobile fantasy squad budget set to 6,000,000 in fantasy_settings.');
 
   // Print comparison table
   console.log('\nRepricing Summary:');
@@ -131,11 +131,11 @@ async function run() {
   );
 
   // Validate mathematical proofs
-  const B = 5000000;
+  const B = 6000000;
   const N = 6;
   const P_min = 70000;
-  const P90 = 1650000; // Alex Iwobi (rating 90)
-  const P90_max = 2100000; // Victor Osimhen (rating 94)
+  const P90 = 1950000; // Alex Iwobi (rating 90)
+  const P90_max = 2450000; // Victor Osimhen (rating 94)
 
   const ineq1 = 3 * P90 + (N - 3) * P_min;
   const ineq2 = 2 * P90_max + (N - 2) * P_min;

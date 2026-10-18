@@ -21,7 +21,7 @@ const defaults = {
 
 export default function FCMobileFantasyScoringPage() {
   const [values, setValues] = useState(defaults);
-  const [budget, setBudget] = useState(5000000);
+  const [budget, setBudget] = useState(6000000);
   const [message, setMessage] = useState('');
   const [budgetMessage, setBudgetMessage] = useState('');
 
@@ -42,7 +42,7 @@ export default function FCMobileFantasyScoringPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((settings) => {
         if (settings?.budget) {
-          setBudget(Number(settings.budget) || 5000000);
+          setBudget(Number(settings.budget) || 6000000);
         }
       })
       .catch(() => null);
@@ -94,7 +94,7 @@ export default function FCMobileFantasyScoringPage() {
               onChange={(e) => setBudget(Number(e.target.value))}
               className="mt-2 w-full border border-fn-gborder bg-fn-dark p-2 text-sm font-bold text-fn-green outline-none"
             />
-            <p className="mt-1 text-[10px] text-fn-muted">Default: ₦5,000,000 for FC Mobile (other games: ₦10,000,000)</p>
+            <p className="mt-1 text-[10px] text-fn-muted">Default: ₦6,000,000 for FC Mobile (other games: ₦10,000,000)</p>
           </label>
           <div className="border border-fn-gborder bg-fn-black p-3">
             <span className="fn-label">90+ Rating Limit</span>
