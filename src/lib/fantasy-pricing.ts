@@ -10,11 +10,13 @@ export const FC_MOBILE_MAX_NINETY_PLUS = 2;
 
 export const GAME_FANTASY_BUDGETS: Record<string, number> = {
   'fc-mobile': FC_MOBILE_FANTASY_BUDGET,
+  'free-fire': FANTASY_SQUAD_BUDGET,
   default: FANTASY_SQUAD_BUDGET,
 };
 
 export function getFantasySquadBudget(gameSlug?: string | null): number {
   if (gameSlug === 'fc-mobile') return GAME_FANTASY_BUDGETS['fc-mobile'];
+  if (gameSlug === 'free-fire') return GAME_FANTASY_BUDGETS['free-fire'];
   return GAME_FANTASY_BUDGETS.default;
 }
 

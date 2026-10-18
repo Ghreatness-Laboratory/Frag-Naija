@@ -76,8 +76,16 @@ function SquadQuickTray({ open, reduceMotion, athletes, starters, bench, captain
 
 export default function FantasyLeaguePage() {
   const { selectedGame } = useGame();
-  const fantasyGameSlug = selectedGame?.slug === 'fc-mobile' ? 'fc-mobile' : 'pubg-mobile';
-  const fantasyGameName = fantasyGameSlug === 'fc-mobile' ? 'FC Mobile' : 'PUBG Mobile';
+  const fantasyGameSlug = selectedGame?.slug === 'fc-mobile'
+    ? 'fc-mobile'
+    : selectedGame?.slug === 'free-fire'
+    ? 'free-fire'
+    : 'pubg-mobile';
+  const fantasyGameName = selectedGame?.slug === 'fc-mobile'
+    ? 'FC Mobile'
+    : selectedGame?.slug === 'free-fire'
+    ? 'Free Fire'
+    : 'PUBG Mobile';
   const welcomeKey = gameStorageKey(WELCOME_KEY, fantasyGameSlug);
   const transferWindowKey = gameStorageKey(TRANSFER_WINDOW_KEY, fantasyGameSlug);
   const confirmedSquadKey = gameStorageKey(CONFIRMED_SQUAD_KEY, fantasyGameSlug);
@@ -147,7 +155,7 @@ export default function FantasyLeaguePage() {
     setWelcomeComplete(localStorage.getItem(welcomeKey) === "true");
     const savedWindow = readTransferWindow(fantasyGameSlug);
     setTransferWindow(savedWindow);
-    fetch("/api/fantasy/settings", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((settings) => { if (settings?.transferWindow) { setTransferWindow(settings.transferWindow); localStorage.setItem(transferWindowKey, JSON.stringify(settings.transferWindow)); } if (settings?.chipWindows) setChipWindows(settings.chipWindows); }).catch(() => null);
+    fetch(`/api/fantasy/settings?game_slug=${fantasyGameSlug}`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((settings) => { if (settings?.transferWindow) { setTransferWindow(settings.transferWindow); localStorage.setItem(transferWindowKey, JSON.stringify(settings.transferWindow)); } if (settings?.chipWindows) setChipWindows(settings.chipWindows); }).catch(() => null);
     const confirmed = localStorage.getItem(confirmedSquadKey);
     const inProgress = localStorage.getItem(inProgressSquadKey);
     const savedSquad = confirmed || inProgress;

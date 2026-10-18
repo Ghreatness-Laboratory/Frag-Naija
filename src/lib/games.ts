@@ -98,11 +98,12 @@ export const GAMES: Game[] = [
     available: true,
     hasModeMenu: true,
     modes: [
+      { key: 'virtual', label: 'Virtual', variant: 'Players', status: 'live', route: '/games' },
       { key: 'clash_squad_4v4_teams', label: 'Clash Squad 4v4 — Teams', variant: 'Teams', status: 'locked-tbd' },
       { key: 'clash_squad_4v4_players', label: 'Clash Squad 4v4 — Players', variant: 'Players', status: 'locked-tbd' },
       { key: 'clash_squad_2v2_teams', label: 'Clash Squad 2v2 — Teams', variant: 'Teams', status: 'locked-tbd' },
       { key: 'clash_squad_2v2_players', label: 'Clash Squad 2v2 — Players', variant: 'Players', status: 'locked-tbd' },
-      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'locked-tbd' },
+      { key: 'fantasy_league', label: 'Fantasy League', variant: 'Players', status: 'live', route: '/fantasy-league' },
     ],
   },
   {

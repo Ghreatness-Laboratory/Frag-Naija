@@ -56,6 +56,7 @@ function GenericHub({ game }: { game: Game }) {
   const links = [
     ['Athletes', '/athletes'], ['Teams', '/teams'], ['Tournaments', '/tournaments'],
     ['Communities', '/communities'], ['Wager', '/wager'], ['Shop', '/shop'], ['Transfers', '/transfer-window'],
+    ['Virtual', '/games'], ['Fantasy League', '/fantasy-league'],
   ];
 
   return (

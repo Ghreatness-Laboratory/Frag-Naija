@@ -20,6 +20,8 @@ const MOCK_TEAMS = [
   { id: 'team-2', name: 'Naija Force', logo_url: '/logos/cod-mobile.svg', region: 'Abuja HQ', rank: 2, points: 1280, gold_count: 3, silver_count: 4, bronze_count: 2, kills: 247, strength: 89, game_slug: 'pubg-mobile' },
   { id: 'team-3', name: 'Lagos Lions', logo_url: '/logos/free-fire.svg', region: 'Lagos Command', rank: 3, points: 1190, gold_count: 2, silver_count: 3, bronze_count: 3, kills: 198, strength: 82, game_slug: 'pubg-mobile' },
   { id: 'team-4', name: 'Abuja Storm', logo_url: '/logos/ea-fc-26.svg', region: 'Abuja HQ', rank: 4, points: 1080, gold_count: 1, silver_count: 2, bronze_count: 4, kills: 171, strength: 77, game_slug: 'pubg-mobile' },
+  { id: 'ff-tm1', name: 'Lagos Lions FF', logo_url: '/logos/free-fire.svg', region: 'South-West', rank: 1, points: 1420, gold_count: 4, silver_count: 2, bronze_count: 1, kills: 412, strength: 94, game_slug: 'free-fire' },
+  { id: 'ff-tm2', name: 'Abuja Apex Gaming', logo_url: '/logos/free-fire.svg', region: 'North-Central', rank: 2, points: 1260, gold_count: 3, silver_count: 3, bronze_count: 2, kills: 359, strength: 88, game_slug: 'free-fire' },
 ];
 
 const MOCK_ATHLETES = [
@@ -27,6 +29,14 @@ const MOCK_ATHLETES = [
   { id: 'ath-1', name: 'Emeka Okafor', ign: 'Phantom_NG', known_name: 'Phantom_NG', team: 'Athlegame', role: 'Entry Fragger', rating: 96, overall_rating: 96, kills: 42, assists: 18, winrate: 78, status: 'active', fantasy_status: 'available', game_slug: 'pubg-mobile', photo_url: null, jersey_number: 7, fantasy_price: 3200000, recent_fantasy_points: 30, total_fantasy_points: 120 },
   { id: 'ath-2', name: 'Tunde Adeyemi', ign: 'ZeroX_Lag', known_name: 'ZeroX_Lag', team: 'Naija Force', role: 'Support IGL', rating: 89, overall_rating: 89, kills: 38, assists: 24, winrate: 71, status: 'active', fantasy_status: 'available', game_slug: 'pubg-mobile', photo_url: null, jersey_number: 10, fantasy_price: 1550000, recent_fantasy_points: 25, total_fantasy_points: 95 },
   { id: 'ath-3', name: 'Chidi Nwosu', ign: 'Blazeking', known_name: 'Blazeking', team: 'Lagos Lions', role: 'Sniper Elite', rating: 82, overall_rating: 82, kills: 49, assists: 12, winrate: 82, status: 'active', fantasy_status: 'available', game_slug: 'pubg-mobile', photo_url: null, jersey_number: 11, fantasy_price: 850000, recent_fantasy_points: 20, total_fantasy_points: 80 },
+
+  // Free Fire athletes
+  { id: 'ff-a1', name: 'Chukwuemeka Obi', ign: 'BlazeKing_NG', known_name: 'BlazeKing_NG', team: 'Lagos Lions FF', role: 'Rush / Entry', attack: 96, defense: 78, iq: 85, rating: 94, overall_rating: 94, kills: 8.4, assists: 3.1, winrate: 74, status: 'active', fantasy_status: 'available', game_slug: 'free-fire', photo_url: null, jersey_number: 7, fantasy_price: 3100000, recent_fantasy_points: 32, total_fantasy_points: 125 },
+  { id: 'ff-a2', name: 'Femi Adeyemi', ign: 'SniperGod_NG', known_name: 'SniperGod_NG', team: 'Abuja Apex Gaming', role: 'Sniper / AWP', attack: 88, defense: 82, iq: 92, rating: 91, overall_rating: 91, kills: 6.2, assists: 4.5, winrate: 69, status: 'active', fantasy_status: 'available', game_slug: 'free-fire', photo_url: null, jersey_number: 10, fantasy_price: 2450000, recent_fantasy_points: 27, total_fantasy_points: 105 },
+  { id: 'ff-a3', name: 'Ikenna Nwosu', ign: 'PhantomFF', known_name: 'PhantomFF', team: 'PHC Raiders', role: 'IGL / Support', attack: 79, defense: 88, iq: 97, rating: 89, overall_rating: 89, kills: 4.8, assists: 7.2, winrate: 71, status: 'active', fantasy_status: 'available', game_slug: 'free-fire', photo_url: null, jersey_number: 1, fantasy_price: 1800000, recent_fantasy_points: 23, total_fantasy_points: 92 },
+  { id: 'ff-a4', name: 'Seun Balogun', ign: 'FlameShot_NG', known_name: 'FlameShot_NG', team: 'Warri Wolves', role: 'Flanker', attack: 91, defense: 74, iq: 83, rating: 87, overall_rating: 87, kills: 7.1, assists: 2.9, winrate: 62, status: 'active', fantasy_status: 'available', game_slug: 'free-fire', photo_url: null, jersey_number: 11, fantasy_price: 1350000, recent_fantasy_points: 19, total_fantasy_points: 78 },
+  { id: 'ff-a5', name: 'Dele Martins', ign: 'SurvivX_NG', known_name: 'SurvivX_NG', team: 'Delta Warriors', role: 'Support / Medic', attack: 72, defense: 91, iq: 89, rating: 85, overall_rating: 85, kills: 3.6, assists: 9.1, winrate: 76, status: 'active', fantasy_status: 'available', game_slug: 'free-fire', photo_url: null, jersey_number: 14, fantasy_price: 950000, recent_fantasy_points: 17, total_fantasy_points: 70 },
+  { id: 'ff-a6', name: 'Tochukwu Eze', ign: 'GhostFire_TZ', known_name: 'GhostFire_TZ', team: 'Kano Kings FF', role: 'Fragger / Rush', attack: 89, defense: 71, iq: 80, rating: 83, overall_rating: 83, kills: 7.8, assists: 2.4, winrate: 58, status: 'active', fantasy_status: 'available', game_slug: 'free-fire', photo_url: null, jersey_number: 9, fantasy_price: 700000, recent_fantasy_points: 15, total_fantasy_points: 62 },
 
   // FC Mobile athletes (Dedicated squad budget B = 6,000,000, N = 6, P_min = 70,000, max 2 rated 90+)
   { id: 'fcm-1', name: 'Victor Osimhen', ign: 'StarBoy_Vic', known_name: 'StarBoy_Vic', team: 'Naija Force', role: 'Striker', attack: 96, defense: 88, iq: 97, rating: 94, overall_rating: 94, kills: 28, assists: 14, winrate: 85, status: 'active', fantasy_status: 'available', game_slug: 'fc-mobile', photo_url: null, jersey_number: 9, fantasy_price: 2450000, recent_fantasy_points: 24, total_fantasy_points: 98 },
@@ -64,8 +74,10 @@ const MOCK_SHOP = [
 const MOCK_FANTASY_SETTINGS = [
   { key: 'fc_mobile_budget', value: 6000000 },
   { key: 'pubg_mobile_budget', value: 10000000 },
+  { key: 'free_fire_budget', value: 10000000 },
   { key: 'fc_mobile_transfer_window', value: { gameSlug: 'fc-mobile', status: 'open', transfersRemaining: 2, opens: '', closes: '' } },
   { key: 'pubg_mobile_transfer_window', value: { gameSlug: 'pubg-mobile', status: 'closed', transfersRemaining: 0, opens: '', closes: '' } },
+  { key: 'free_fire_transfer_window', value: { gameSlug: 'free-fire', status: 'open', transfersRemaining: 2, opens: '', closes: '' } },
 ];
 
 const MOCK_FANTASY_SQUADS = [];
