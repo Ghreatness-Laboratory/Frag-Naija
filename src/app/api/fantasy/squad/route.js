@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
-import { getFantasySquadBudget, FC_MOBILE_MAX_NINETY_PLUS, fantasyTeamLimitViolation } from '@/lib/fantasy-pricing';
+import { getFantasySquadBudget, FC_MOBILE_MAX_NINETY_PLUS, fantasyTeamLimitViolation, calculateFantasyBasePrice } from '@/lib/fantasy-pricing';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +9,12 @@ function getAthleteEffectiveRating(athlete) {
   const calculated = calculateAthleteOverallRating(athlete, athlete.game_slug);
   if (Number.isFinite(Number(calculated))) return Number(calculated);
   return Number(athlete.overall_rating ?? athlete.rating ?? 0);
+}
+
+function getAthleteEffectivePrice(athlete) {
+  const explicit = Number(athlete.fantasy_price);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return calculateFantasyBasePrice(athlete);
 }
 
 export async function POST(request) {
@@ -61,7 +67,7 @@ export async function POST(request) {
     }
 
     // Check squad value against budget
-    const squadValue = athletes.reduce((sum, a) => sum + Number(a.fantasy_price || 0), 0);
+    const squadValue = athletes.reduce((sum, a) => sum + getAthleteEffectivePrice(a), 0);
     const budget = getFantasySquadBudget(game_slug);
 
     if (squadValue > budget) {

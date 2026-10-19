@@ -189,11 +189,16 @@ export async function getAthletes({ team, status, game_slug, is_icon } = {}) {
   const achievementMap = await getAchievementsForAthletes((data || []).map((athlete) => athlete.id));
 
   return (data || [])
-    .map((a) => ({
-      ...a,
-      achievements: achievementMap.get(a.id) || [],
-      overall_rating: calculateAthleteOverallRating(a, a.game_slug),
-    }))
+    .map((a) => {
+      const overall_rating = calculateAthleteOverallRating(a, a.game_slug);
+      const explicit = Number(a.fantasy_price);
+      return {
+        ...a,
+        achievements: achievementMap.get(a.id) || [],
+        overall_rating,
+        fantasy_price: Number.isFinite(explicit) && explicit > 0 ? explicit : calculateFantasyBasePrice({ ...a, overall_rating }),
+      };
+    })
     .sort((a, b) => Number(b.overall_rating ?? -1) - Number(a.overall_rating ?? -1));
 }
 
@@ -202,10 +207,13 @@ export async function getAthleteById(id) {
   if (error) throw error;
 
   const achievementMap = await getAchievementsForAthletes([id]);
+  const overall_rating = calculateAthleteOverallRating(data, data.game_slug);
+  const explicit = Number(data.fantasy_price);
   return {
     ...data,
     achievements: achievementMap.get(id) || [],
-    overall_rating: calculateAthleteOverallRating(data, data.game_slug),
+    overall_rating,
+    fantasy_price: Number.isFinite(explicit) && explicit > 0 ? explicit : calculateFantasyBasePrice({ ...data, overall_rating }),
   };
 }
 
