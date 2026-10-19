@@ -16,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
     dir: 'ltr',
     icons: [
       { src: '/therealfavicon.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/therealfavicon.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      { src: '/therealfavicon.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
     shortcuts: [
       {

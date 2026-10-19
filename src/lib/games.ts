@@ -78,7 +78,10 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(255, 215, 0, 0.05)',
     },
     logo: '/logos/cod-mobile.svg',
+    athleteSubtitleFormat: 'role_team',
     available: false,
+    hasModeMenu: false,
+    modes: [],
   },
   {
     id: 'free-fire',
@@ -165,7 +168,10 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(0, 212, 255, 0.05)',
     },
     logo: '/logos/ea-fc-26.svg',
+    athleteSubtitleFormat: 'role_team',
     available: false,
+    hasModeMenu: false,
+    modes: [],
   },
   {
     id: 'mortal-kombat',
@@ -181,7 +187,10 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(204, 0, 0, 0.05)',
     },
     logo: '/logos/mortal-kombat.svg',
+    athleteSubtitleFormat: 'role_team',
     available: false,
+    hasModeMenu: false,
+    modes: [],
   },
   {
     id: 'efootball',
@@ -197,7 +206,10 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(33, 150, 243, 0.05)',
     },
     logo: '/logos/efootball.svg',
+    athleteSubtitleFormat: 'role_team',
     available: false,
+    hasModeMenu: false,
+    modes: [],
   },
   {
     id: 'mobile-legends',
@@ -213,7 +225,10 @@ export const GAMES: Game[] = [
       cardBg:    'rgba(156, 39, 176, 0.05)',
     },
     logo: '/logos/mobile-legends.svg',
+    athleteSubtitleFormat: 'role_team',
     available: false,
+    hasModeMenu: false,
+    modes: [],
   },
 ];
 

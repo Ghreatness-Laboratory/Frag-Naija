@@ -41,8 +41,11 @@ export async function getUserProfile(userId) {
 export async function updateUserProfile(userId, { username, first_name, middle_name, last_name, date_of_birth }) {
   if (date_of_birth && !validateMinimumAge(date_of_birth, 16)) throw new Error('You must be at least 16 years old to use FragNaija.');
   const { data, error } = await supabaseAdmin.from('user_profiles').upsert({ user_id: userId, username: username || null, first_name: first_name || null, middle_name: middle_name || null, last_name: last_name || null, date_of_birth: date_of_birth || null, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).select(USER_PROFILE_SELECT).single();
-  if (error) throw error;
-  if (username) await supabaseAdmin.auth.admin.updateUserById(userId, { user_metadata: { username } }).catch(() => {});
+  if (username) {
+    try {
+      await supabaseAdmin.auth.admin.updateUserById(userId, { user_metadata: { username } });
+    } catch {}
+  }
   return data;
 }
 

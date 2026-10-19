@@ -131,7 +131,7 @@ export default function AthletePageClient({ id }: { id: string }) {
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><BrandedLoader label="Checking athlete access" /></div>;
   if (!user) return <LoginGate heading="Login to view athlete profile" message="Athlete cards, stats, achievements, loadouts, and profile details are hidden until you log in." next={`/athletes/${id}`} />;
-  if (notFound) return <div className="min-h-screen p-8"><p className="text-fn-muted">Athlete not found.</p><Link href="/athletes" className="text-fn-green">Back to roster</Link></div>;
+  if (notFound || !a) return <div className="min-h-screen p-8"><p className="text-fn-muted">Athlete not found.</p><Link href="/athletes" className="text-fn-green">Back to roster</Link></div>;
 
   const activeGame = selectedGame ?? GAMES.find((game) => game.slug === a.game_slug);
   const primary = activeGame?.colors.primary ?? 'rgb(var(--fn-green))';

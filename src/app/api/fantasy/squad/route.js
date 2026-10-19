@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/features/shared/server/supabaseAdmin';
+import { getCurrentUser } from '@/features/auth/server';
 import { getFantasySquadBudget, FC_MOBILE_MAX_NINETY_PLUS, fantasyTeamLimitViolation, calculateFantasyBasePrice } from '@/lib/fantasy-pricing';
 import { calculateAthleteOverallRating } from '@/lib/athlete-rating';
 
@@ -101,9 +102,17 @@ export async function POST(request) {
 
     // Persist squad in fantasy_squads if user_id is available
     const remaining_budget = budget - squadValue;
-    if (user_id) {
-      await supabaseAdmin.from('fantasy_squads').upsert({
-        user_id,
+    let effectiveUserId = user_id;
+    if (!effectiveUserId) {
+      try {
+        const currentUser = await getCurrentUser();
+        effectiveUserId = currentUser?.id || null;
+      } catch {}
+    }
+
+    if (effectiveUserId) {
+      const { error: squadSaveError } = await supabaseAdmin.from('fantasy_squads').upsert({
+        user_id: effectiveUserId,
         game_slug,
         starter_ids,
         bench_ids,
@@ -112,7 +121,13 @@ export async function POST(request) {
         remaining_budget,
         active_chip: active_chip || null,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,game_slug' }).catch(() => null);
+      }, { onConflict: 'user_id,game_slug' });
+
+      if (squadSaveError) {
+        return NextResponse.json({
+          error: squadSaveError.message || 'Failed to save fantasy squad to database.',
+        }, { status: 500 });
+      }
     }
 
     return NextResponse.json({

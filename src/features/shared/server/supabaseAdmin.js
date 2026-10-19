@@ -146,7 +146,11 @@ function createMockClient() {
         upsert: (items) => {
           const list = Array.isArray(items) ? items : [items];
           for (const item of list) {
-            const matchIndex = dataStore.findIndex((row) => (item.id && row.id === item.id) || (item.key && row.key === item.key));
+            const matchIndex = dataStore.findIndex((row) =>
+              (item.id && row.id === item.id) ||
+              (item.key && row.key === item.key) ||
+              (item.user_id && item.game_slug && row.user_id === item.user_id && row.game_slug === item.game_slug)
+            );
             if (matchIndex >= 0) {
               dataStore[matchIndex] = { ...dataStore[matchIndex], ...item };
             } else {

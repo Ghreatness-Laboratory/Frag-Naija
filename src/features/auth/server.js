@@ -37,7 +37,9 @@ export async function registerUser({ email, password, username, first_name, midd
   } catch (profileError) {
     // A profile stores the date of birth required for wagering, so do not allow
     // registration to succeed if it could not be persisted.
-    await supabaseAdmin.auth.admin.deleteUser(data.user.id).catch(() => {});
+    try {
+      await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+    } catch {}
     throw profileError;
   }
 

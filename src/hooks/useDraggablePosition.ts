@@ -134,7 +134,7 @@ export function useDraggablePosition(
   }, [position, storageKey]);
 
   // Handle pointer cancel/leave - abort drag
-  const handlePointerCancel = useCallback(() => {
+  const handlePointerCancel = useCallback((_e?: React.PointerEvent) => {
     setIsDragging(false);
     dragStartRef.current = null;
     hasDraggedRef.current = false;

@@ -212,7 +212,7 @@ export function DuelSimViewer({
   const [players, setPlayers] = useState<DuelPlayer[]>([]);
   const [matchEnded, setMatchEnded] = useState(false);
   const [zoneRadius, setZoneRadius] = useState(ARENA_WIDTH);
-  const [activeEffects, setActiveEffects] = useState<Array<{ type: string; x: number; y: number; life: number }>[]>([]);
+  const [activeEffects, setActiveEffects] = useState<Array<{ type: string; x: number; y: number; life: number }>>([]);
   
   const animationFrameRef = useRef<number>();
   const startTimeRef = useRef<number>(0);

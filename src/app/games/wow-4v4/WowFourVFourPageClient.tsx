@@ -230,7 +230,7 @@ export default function WowFourVFourPage() {
       mvp={matchResult.mvp}
       stake={Number(stake)}
       odds={pickedOdds}
-      pickedTeam={picked}
+      pickedTeam={picked === 'b' ? 'b' : 'a'}
       onReturnHome={handleReturnHome}
     />
   </motion.section> : null}</AnimatePresence>{step !== 'grid' && <button type="button" onClick={resetToGrid} className="fixed right-4 top-16 z-50 border border-fn-gborder bg-fn-card px-3 py-2 text-[10px] font-black uppercase tracking-widest text-fn-muted hover:text-fn-green"><X size={12} className="inline" /> Reset</button>}</main>;
