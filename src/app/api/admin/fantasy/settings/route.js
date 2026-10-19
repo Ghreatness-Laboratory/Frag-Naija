@@ -40,7 +40,22 @@ export async function PUT(request) {
     upserts.push({ key: `${prefix}_budget`, value: Number(body.budget), updated_at: new Date().toISOString() });
   }
 
+  if (body.allow_repick !== undefined) {
+    upserts.push({ key: `${prefix}_allow_repick`, value: Boolean(body.allow_repick), updated_at: new Date().toISOString() });
+  }
+
+  if (body.reset_at !== undefined) {
+    upserts.push({ key: `${prefix}_reset_at`, value: body.reset_at, updated_at: new Date().toISOString() });
+  }
+
   const { error } = await supabaseAdmin.from('fantasy_settings').upsert(upserts, { onConflict: 'key' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ gameSlug, transferWindow, chipWindows, budget: body.budget });
+  return NextResponse.json({
+    gameSlug,
+    transferWindow,
+    chipWindows,
+    budget: body.budget,
+    allow_repick: body.allow_repick,
+    reset_at: body.reset_at,
+  });
 }

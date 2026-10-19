@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save, ShieldCheck } from 'lucide-react';
+import { RefreshCw, RotateCcw, Save, ShieldCheck } from 'lucide-react';
 
 const fields = [
   { key: 'appearance_points', label: 'Appearance' },
@@ -24,6 +24,10 @@ export default function FCMobileFantasyScoringPage() {
   const [budget, setBudget] = useState(6000000);
   const [message, setMessage] = useState('');
   const [budgetMessage, setBudgetMessage] = useState('');
+  const [repickOpen, setRepickOpen] = useState(true);
+  const [lastResetTime, setLastResetTime] = useState<string | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [repickMessage, setRepickMessage] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/fantasy/scoring')
@@ -43,6 +47,12 @@ export default function FCMobileFantasyScoringPage() {
       .then((settings) => {
         if (settings?.budget) {
           setBudget(Number(settings.budget) || 6000000);
+        }
+        if (settings?.allow_repick !== undefined) {
+          setRepickOpen(Boolean(settings.allow_repick));
+        }
+        if (settings?.reset_at) {
+          setLastResetTime(new Date(settings.reset_at).toLocaleString());
         }
       })
       .catch(() => null);
@@ -65,6 +75,27 @@ export default function FCMobileFantasyScoringPage() {
     });
     setBudgetMessage(r.ok ? 'FC Mobile squad budget saved.' : (await r.json()).error || 'Unable to save budget.');
     window.setTimeout(() => setBudgetMessage(''), 2500);
+  }
+
+  async function handleAllowRepick() {
+    if (!window.confirm('Reset all FC Mobile squads and allow everyone to pick again? Previous locked squads will be cleared.')) return;
+    setResetBusy(true);
+    setRepickMessage('');
+    try {
+      const res = await fetch('/api/admin/fantasy/fc-mobile/repick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to trigger re-pick reset.');
+      setRepickOpen(true);
+      setLastResetTime(new Date().toLocaleString());
+      setRepickMessage('Success! FC Mobile squads reset. All managers can now pick again.');
+    } catch (err: unknown) {
+      setRepickMessage(err instanceof Error ? err.message : 'Error triggering re-pick reset.');
+    } finally {
+      setResetBusy(false);
+    }
   }
 
   return (
@@ -112,6 +143,53 @@ export default function FCMobileFantasyScoringPage() {
           </button>
           {budgetMessage && <span className="text-xs font-bold text-fn-green">{budgetMessage}</span>}
         </div>
+      </section>
+
+      {/* FC Mobile Squad Re-Pick / Reset Section */}
+      <section className="mt-6 border border-fn-yellow/40 bg-fn-card p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="fn-label text-fn-yellow">FC Mobile Fantasy Re-Pick</p>
+            <h2 className="font-display text-lg font-black uppercase">Let Everyone Pick Again</h2>
+            <p className="mt-1 text-xs text-fn-muted">
+              Opens the squad builder for all FC Mobile managers, resets locked squad states, and enables everyone to pick again with the ₦6,000,000 budget.
+            </p>
+          </div>
+          <RotateCcw className="text-fn-yellow" size={24} />
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="border border-fn-gborder bg-fn-black p-3">
+            <span className="fn-label">Re-Pick Status</span>
+            <p className="mt-2 text-sm font-black text-fn-green">
+              {repickOpen ? 'ACTIVE / OPEN' : 'LOCKED'}
+            </p>
+            <p className="mt-1 text-[10px] text-fn-muted">Managers can build or replace squads</p>
+          </div>
+          <div className="border border-fn-gborder bg-fn-black p-3">
+            <span className="fn-label">Transfer Window</span>
+            <p className="mt-2 text-sm font-black text-fn-green">OPEN (Full 6 Transfers)</p>
+            <p className="mt-1 text-[10px] text-fn-muted">Full squad overhaul allowed</p>
+          </div>
+          <div className="border border-fn-gborder bg-fn-black p-3">
+            <span className="fn-label">Last Reset</span>
+            <p className="mt-2 truncate text-xs font-bold text-fn-text">{lastResetTime || 'Active Now'}</p>
+            <p className="mt-1 text-[10px] text-fn-muted">Triggered by admin</p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleAllowRepick}
+            disabled={resetBusy}
+            className="inline-flex items-center bg-fn-green px-5 py-3 text-xs font-black uppercase tracking-widest text-fn-black hover:bg-fn-gdim disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={`mr-2 ${resetBusy ? 'animate-spin' : ''}`} />
+            {resetBusy ? 'Resetting Squads...' : 'Allow Everyone to Pick Again (Reset Squads)'}
+          </button>
+        </div>
+        {repickMessage && <p className="mt-3 text-xs font-bold text-fn-green">{repickMessage}</p>}
       </section>
 
       {/* Scoring Matrix */}

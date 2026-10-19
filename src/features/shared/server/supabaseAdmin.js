@@ -75,7 +75,9 @@ const MOCK_FANTASY_SETTINGS = [
   { key: 'fc_mobile_budget', value: 6000000 },
   { key: 'pubg_mobile_budget', value: 10000000 },
   { key: 'free_fire_budget', value: 10000000 },
-  { key: 'fc_mobile_transfer_window', value: { gameSlug: 'fc-mobile', status: 'open', transfersRemaining: 2, opens: '', closes: '' } },
+  { key: 'fc_mobile_transfer_window', value: { gameSlug: 'fc-mobile', status: 'open', transfersRemaining: 6, opens: '2026-10-19T00:00:00Z', closes: '' } },
+  { key: 'fc_mobile_allow_repick', value: true },
+  { key: 'fc_mobile_reset_at', value: '2026-10-19T00:00:00Z' },
   { key: 'pubg_mobile_transfer_window', value: { gameSlug: 'pubg-mobile', status: 'closed', transfersRemaining: 0, opens: '', closes: '' } },
   { key: 'free_fire_transfer_window', value: { gameSlug: 'free-fire', status: 'open', transfersRemaining: 2, opens: '', closes: '' } },
 ];
