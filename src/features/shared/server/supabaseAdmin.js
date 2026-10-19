@@ -78,6 +78,9 @@ const MOCK_FANTASY_SETTINGS = [
   { key: 'fc_mobile_transfer_window', value: { gameSlug: 'fc-mobile', status: 'open', transfersRemaining: 6, opens: '2026-10-19T00:00:00Z', closes: '' } },
   { key: 'fc_mobile_allow_repick', value: true },
   { key: 'fc_mobile_reset_at', value: '2026-10-19T00:00:00Z' },
+  { key: 'fc_mobile_roster_locked', value: false },
+  { key: 'pubg_mobile_roster_locked', value: false },
+  { key: 'free_fire_roster_locked', value: false },
   { key: 'pubg_mobile_transfer_window', value: { gameSlug: 'pubg-mobile', status: 'closed', transfersRemaining: 0, opens: '', closes: '' } },
   { key: 'free_fire_transfer_window', value: { gameSlug: 'free-fire', status: 'open', transfersRemaining: 2, opens: '', closes: '' } },
 ];

@@ -32,6 +32,20 @@ export async function POST(request) {
 
     const allIds = [...starter_ids, ...bench_ids];
 
+    // Check if roster editing has been locked by admin
+    const prefix = game_slug.replace(/-/g, '_');
+    const { data: lockRow } = await supabaseAdmin
+      .from('fantasy_settings')
+      .select('value')
+      .eq('key', `${prefix}_roster_locked`)
+      .maybeSingle();
+
+    if (lockRow?.value === true) {
+      return NextResponse.json({
+        error: 'Roster editing has been locked by the admin for this Gameweek.',
+      }, { status: 403 });
+    }
+
     if (starter_ids.length !== 4) {
       return NextResponse.json({ error: 'Starting 4 requires exactly 4 players.' }, { status: 400 });
     }

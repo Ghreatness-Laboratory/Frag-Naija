@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Crosshair, ListChecks, Lock, Search, Shield, Sparkles, Star, Trophy, X } from "lucide-react";
+import { Crosshair, ListChecks, Lock, Search, Shield, Sparkles, Star, Trophy, Unlock, X } from "lucide-react";
 import PlayerCardTemplate from "@/components/athletes/PlayerCardTemplate";
 import RouteLoadingScreen from "@/components/common/RouteLoadingScreen";
 import { calculateAthleteOverallRating } from "@/lib/athlete-rating";
@@ -23,7 +23,6 @@ const QUICK_BUTTON_MARGIN = 16;
 const QUICK_BUTTON_TOP_SAFE = 80;
 const QUICK_BUTTON_BOTTOM_SAFE = 160;
 const QUICK_BUTTON_DRAG_THRESHOLD = 8;
-const LONG_PRESS_DURATION = 600; // ms
 
 type Athlete = { id: string; name: string; ign: string; known_name?: string | null; team: string | null; role: string | null; status: string; photo_url: string | null; game_slug?: string | null; overall_rating?: number; attack?: number; defense?: number; clutch?: number; survival?: number; iq?: number; kills?: number; assists?: number; fantasy_price?: number | string | null; recent_fantasy_points?: number | string | null; total_fantasy_points?: number | string | null; fantasy_status?: string | null; };
 type SortKey = "points" | "price-high" | "price-low";
@@ -35,6 +34,11 @@ type ChipWindows = { triple_captain?: ChipWindow; manual_substitute?: ChipWindow
 type SavedSquad = { starters: string[]; bench: string[]; captain: string; activeChip?: string; chipUsage?: Record<string, number>; updatedAt?: string; confirmedAt?: string; locked?: boolean; };
 type LeaderboardRow = { rank: number; username: string; total_points: number; gameweek_points?: number; squad_value?: number };
 
+function cleanText(value?: string | number | null): string {
+  if (value === undefined || value === null) return "";
+  return String(value).replace(/_/g, " ");
+}
+
 function currency(value: number) { return `₦${Math.max(0, Math.round(value)).toLocaleString()}`; }
 function rating(a: Athlete) { return calculateAthleteOverallRating(a as unknown as Record<string, unknown>, a.game_slug) ?? Number(a.overall_rating ?? 50); }
 function fantasyPrice(a: Athlete) { const explicit = Number(a.fantasy_price); if (Number.isFinite(explicit) && explicit > 0) return explicit; return calculateFantasyBasePrice(a); }
@@ -42,8 +46,7 @@ function fantasyStatus(a: Athlete) { const status = String(a.fantasy_status || a
 function gameStorageKey(key: string, gameSlug: string) { return `${key}:${gameSlug}`; }
 function readTransferWindow(gameSlug: string): TransferWindow { if (typeof window === "undefined") return {}; const value = window.localStorage.getItem(gameStorageKey(TRANSFER_WINDOW_KEY, gameSlug)); if (!value) return {}; try { return JSON.parse(value) as TransferWindow; } catch { return {}; } }
 function transferWindowState(windowConfig: TransferWindow) { const now = Date.now(); const opens = windowConfig.opens ? new Date(windowConfig.opens).getTime() : 0; const closes = windowConfig.closes ? new Date(windowConfig.closes).getTime() : Number.POSITIVE_INFINITY; const scheduled = windowConfig.status === "scheduled" || (windowConfig.status === "open" && now < opens); if (scheduled) return "scheduled"; if (windowConfig.status === "open" && now >= opens && now <= closes) return "open"; return "closed"; }
-function formatWindowDate(value?: string) { if (!value) return "the next transfer window"; const date = new Date(value); if (Number.isNaN(date.getTime())) return "the next transfer window"; return date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }); }
-function displayName(a?: Athlete | null) { return a?.known_name || a?.ign || a?.name || "Unknown Player"; }
+function displayName(a?: Athlete | null) { return cleanText(a?.known_name || a?.ign || a?.name || "Unknown Player"); }
 function fantasyPoints(a: Athlete, key: "recent" | "total") { const explicit = Number(key === "recent" ? a.recent_fantasy_points : a.total_fantasy_points); if (Number.isFinite(explicit)) return explicit; return key === "recent" ? Math.round(Number(a.kills ?? 0) * 2 + Number(a.assists ?? 0) + rating(a) / 5) : Math.round(Number(a.kills ?? 0) * 7 + Number(a.assists ?? 0) * 3 + rating(a) * 1.8); }
 
 function clampQuickButtonPosition(position: { x: number; y: number }) {
@@ -58,20 +61,199 @@ function defaultQuickButtonPosition() {
   return clampQuickButtonPosition({ x: window.innerWidth - QUICK_BUTTON_SIZE - 32, y: window.innerHeight - QUICK_BUTTON_SIZE - QUICK_BUTTON_BOTTOM_SAFE });
 }
 
-function HudStat({ label, value, tone = "green" }: { label: string; value: string; tone?: "green" | "paper" | "yellow" }) { const color = tone === "yellow" ? "text-fn-yellow" : tone === "paper" ? "text-fn-text" : "text-fn-green"; return <div className="border border-fn-gborder bg-fn-card p-3"><p className="fn-label">{label}</p><p className={`mt-1 font-display text-lg font-black uppercase ${color}`}>{value}</p></div>; }
-
+function HudStat({ label, value, tone = "green" }: { label: string; value: string; tone?: "green" | "paper" | "yellow" }) { const color = tone === "yellow" ? "text-fn-yellow" : tone === "paper" ? "text-fn-text" : "text-fn-green"; return <div className="border border-fn-gborder bg-fn-card p-3"><p className="fn-label">{cleanText(label)}</p><p className={`mt-1 font-display text-lg font-black uppercase ${color}`}>{cleanText(value)}</p></div>; }
 
 function CombatReveal({ reduceMotion }: { reduceMotion: boolean }) { return <motion.div key="combat-reveal" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }} animate={reduceMotion ? { opacity: [0, 1, 0.9] } : { opacity: 1, scale: [0.98, 1.025, 1], x: [0, -4, 3, 0] }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0.12 : 0.46 }} className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-fn-black text-fn-text"><div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(77,255,110,.3),transparent_34%),linear-gradient(135deg,rgba(77,255,110,.08),transparent_42%,rgba(255,90,60,.08))]" />{!reduceMotion && <><motion.div className="absolute left-[-12%] top-[44%] h-1 w-[124%] -rotate-6 bg-fn-green/70 shadow-[0_0_28px_rgba(77,255,110,.95)]" initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: [0, 1, 0.25], opacity: [0, 1, 0] }} transition={{ duration: 0.38 }} /><motion.div className="absolute right-[18%] top-[38%] h-24 w-24 rounded-full bg-fn-green/30 blur-xl" initial={{ scale: 0, opacity: 0 }} animate={{ scale: [0, 1.6, 0.2], opacity: [0, 1, 0] }} transition={{ duration: 0.42 }} /></>}<div className="relative z-10 border border-fn-green/40 bg-fn-card/90 px-8 py-6 text-center shadow-[0_0_48px_rgba(77,255,110,.22)]"><Crosshair className="mx-auto mb-3 text-fn-green" size={32} /><p className="fn-label text-fn-green">Combat Reveal</p><h2 className="mt-1 font-display text-2xl font-black uppercase tracking-widest">Squad Confirmed</h2></div></motion.div>; }
 
-function TacticalPlayerCard({ athlete, captain, tripleCaptainActive = false }: { athlete: Athlete; captain: boolean; tripleCaptainActive?: boolean }) { return <div className={`relative overflow-hidden border bg-fn-black/80 p-2 ${captain ? "border-fn-green shadow-[0_0_20px_rgba(77,255,110,.18)]" : "border-fn-gborder"}`}><div className="flex items-center gap-2"><div className="h-12 w-12 shrink-0 overflow-hidden border border-fn-gborder bg-fn-card">{athlete.photo_url ? <OptimizedImage src={athlete.photo_url} alt={displayName(athlete)} className="h-full w-full object-cover grayscale" /> : <Shield className="m-3 text-fn-green" />}</div><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-black uppercase tracking-wider">{displayName(athlete)}</p><p className="mt-1 text-[9px] uppercase text-fn-muted">{athlete.team ?? "Free Agent"}</p></div><div className="text-right"><p className="bg-fn-green px-2 py-1 text-[10px] font-black text-fn-black">{fantasyPoints(athlete, "total")} PTS</p>{captain && <p className="mt-1 inline-flex items-center gap-1 border border-fn-green/40 px-1.5 py-0.5 text-[8px] font-black text-fn-green"><Star size={9} fill="currentColor" /> {tripleCaptainActive ? "TRIPLE CAPTAIN ACTIVE" : "C"}</p>}</div></div></div>; }
+function TacticalPlayerCard({ athlete, captain, tripleCaptainActive = false }: { athlete: Athlete; captain: boolean; tripleCaptainActive?: boolean }) {
+  return (
+    <div className={`relative overflow-hidden border bg-fn-black/80 p-2 ${captain ? "border-fn-green shadow-[0_0_20px_rgba(77,255,110,.18)]" : "border-fn-gborder"}`}>
+      <div className="flex items-center gap-2">
+        <div className="h-12 w-12 shrink-0 overflow-hidden border border-fn-gborder bg-fn-card">
+          {athlete.photo_url ? (
+            <OptimizedImage src={athlete.photo_url} alt={displayName(athlete)} className="h-full w-full object-cover grayscale" />
+          ) : (
+            <Shield className="m-3 text-fn-green" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] font-black uppercase tracking-wider">{displayName(athlete)}</p>
+          <p className="mt-1 text-[9px] uppercase text-fn-muted">{cleanText(athlete.team ?? "Free Agent")}</p>
+        </div>
+        <div className="text-right">
+          <p className="bg-fn-green px-2 py-1 text-[10px] font-black text-fn-black">{fantasyPoints(athlete, "total")} PTS</p>
+          {captain && (
+            <p className="mt-1 inline-flex items-center gap-1 border border-fn-green/40 px-1.5 py-0.5 text-[8px] font-black text-fn-green">
+              <Star size={9} fill="currentColor" /> {tripleCaptainActive ? "TRIPLE CAPTAIN ACTIVE" : "C"}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-function Welcome({ onStart }: { onStart: () => void }) { const [explainerOpen, setExplainerOpen] = useState(false); return <main className="relative min-h-screen overflow-hidden bg-fn-black text-fn-text"><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(77,255,110,.22),transparent_32%),linear-gradient(135deg,#050705,#11180f_45%,#040504)]" /><div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.88))]" /><section className="relative z-10 mx-auto flex min-h-screen max-w-xl flex-col px-5 pb-10 pt-24 text-center"><p className="fn-label text-fn-green">FragNaija Fantasy League</p><h1 className="mt-4 font-display text-5xl font-black uppercase tracking-widest text-fn-text sm:text-6xl">Welcome to Fantasy</h1><p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-fn-muted">Build your squad, make transfers, and top the leaderboard every Gameweek.</p><div className="relative mx-auto mt-14 flex h-44 w-44 items-center justify-center border border-fn-green/30 bg-fn-green/10 shadow-[0_0_55px_rgba(77,255,110,.2)]"><Sparkles className="absolute -right-5 top-3 text-fn-green" size={18} /><Sparkles className="absolute -left-4 bottom-8 text-fn-green/70" size={14} /><Shield className="h-24 w-24 text-fn-green drop-shadow-[0_0_24px_rgba(77,255,110,.55)]" /></div><div className="mt-auto"><button type="button" onClick={onStart} className="w-full bg-fn-green px-5 py-4 text-sm font-black uppercase tracking-widest text-fn-black">Get Started</button><button type="button" onClick={() => setExplainerOpen(true)} className="mt-4 text-xs font-bold uppercase tracking-widest text-fn-muted underline decoration-fn-muted/60 underline-offset-4 hover:text-fn-green">What is Fantasy League?</button></div></section>{explainerOpen && <div className="fixed inset-0 z-50 flex items-end bg-black/70 p-3 sm:items-center sm:justify-center"><div className="w-full max-w-md border border-fn-green/30 bg-fn-card p-5"><div className="flex items-center justify-between"><h2 className="font-display text-xl font-black uppercase">Fantasy Basics</h2><button type="button" onClick={() => setExplainerOpen(false)}><X size={18} /></button></div><p className="mt-3 text-sm leading-relaxed text-fn-muted">You get a virtual ₦10,000,000 fantasy budget, pick 4 starters and 2 bench players from the existing FragNaija athlete roster, choose a captain for double points, and use limited chips like Triple Captain to climb the leaderboard as simplified match stats are scored.</p></div></div>}</main>; }
+function Welcome({ onStart }: { onStart: () => void }) {
+  const [explainerOpen, setExplainerOpen] = useState(false);
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-fn-black text-fn-text">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(77,255,110,.22),transparent_32%),linear-gradient(135deg,#050705,#11180f_45%,#040504)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.88))]" />
+      <section className="relative z-10 mx-auto flex min-h-screen max-w-xl flex-col px-5 pb-10 pt-24 text-center">
+        <p className="fn-label text-fn-green">FragNaija Fantasy League</p>
+        <h1 className="mt-4 font-display text-5xl font-black uppercase tracking-widest text-fn-text sm:text-6xl">Welcome to Fantasy</h1>
+        <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-fn-muted">Build your squad, make transfers, and top the leaderboard every Gameweek.</p>
+        <div className="relative mx-auto mt-14 flex h-44 w-44 items-center justify-center border border-fn-green/30 bg-fn-green/10 shadow-[0_0_55px_rgba(77,255,110,.2)]">
+          <Sparkles className="absolute -right-5 top-3 text-fn-green" size={18} />
+          <Sparkles className="absolute -left-4 bottom-8 text-fn-green/70" size={14} />
+          <Shield className="h-24 w-24 text-fn-green drop-shadow-[0_0_24px_rgba(77,255,110,.55)]" />
+        </div>
+        <div className="mt-auto">
+          <button type="button" onClick={onStart} className="w-full bg-fn-green px-5 py-4 text-sm font-black uppercase tracking-widest text-fn-black">Get Started</button>
+          <button type="button" onClick={() => setExplainerOpen(true)} className="mt-4 text-xs font-bold uppercase tracking-widest text-fn-muted underline decoration-fn-muted/60 underline-offset-4 hover:text-fn-green">What is Fantasy League?</button>
+        </div>
+      </section>
+      {explainerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/70 p-3 sm:items-center sm:justify-center">
+          <div className="w-full max-w-md border border-fn-green/30 bg-fn-card p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-xl font-black uppercase">Fantasy Basics</h2>
+              <button type="button" onClick={() => setExplainerOpen(false)}><X size={18} /></button>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-fn-muted">
+              You get a virtual fantasy budget, pick 4 starters and 2 bench players from the existing FragNaija athlete roster, choose a captain for double points, and use limited chips like Triple Captain to climb the leaderboard as match stats are scored. You can edit your squad freely until the admin locks roster editing.
+            </p>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
 
-function Squad({ title, ids, athletes, captain, setCaptain, remove }: { title: string; ids: string[]; athletes: Athlete[]; captain: string; setCaptain?: (id: string) => void; remove: (id: string) => void }) { return <div className="mt-4"><p className="fn-label text-fn-green">{title}</p><div className="mt-2 space-y-2">{ids.length === 0 && <p className="border border-dashed border-fn-gborder px-3 py-3 text-xs text-fn-muted">No players selected.</p>}{ids.map((id, index) => { const a = athletes.find((x) => x.id === id); if (!a) return null; return <div key={id} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2"><div><p className="text-xs font-black uppercase">{a.ign}{captain === id && <span className="ml-2 bg-fn-green px-1.5 py-0.5 text-[8px] text-fn-black">CAPTAIN</span>}</p><p className="text-[9px] uppercase text-fn-muted">{title === "Bench" ? `${index + 1}${index === 0 ? "st" : "nd"} sub priority` : a.team ?? "Free Agent"}</p></div><div className="flex gap-1">{setCaptain && <button type="button" onClick={() => setCaptain(id)} className="border border-fn-green/40 px-2 py-1 text-[9px] text-fn-green"><Star size={10} /></button>}<button type="button" onClick={() => remove(id)} className="px-2 py-1 text-fn-red"><X size={12} /></button></div></div>; })}</div></div>; }
+function Squad({ title, ids, athletes, captain, setCaptain, remove, disabled = false }: { title: string; ids: string[]; athletes: Athlete[]; captain: string; setCaptain?: (id: string) => void; remove: (id: string) => void; disabled?: boolean }) {
+  return (
+    <div className="mt-4">
+      <p className="fn-label text-fn-green">{title}</p>
+      <div className="mt-2 space-y-2">
+        {ids.length === 0 && <p className="border border-dashed border-fn-gborder px-3 py-3 text-xs text-fn-muted">No players selected.</p>}
+        {ids.map((id, index) => {
+          const a = athletes.find((x) => x.id === id);
+          if (!a) return null;
+          return (
+            <div key={id} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2">
+              <div>
+                <p className="text-xs font-black uppercase">
+                  {cleanText(a.ign || a.name)}
+                  {captain === id && <span className="ml-2 bg-fn-green px-1.5 py-0.5 text-[8px] text-fn-black">CAPTAIN</span>}
+                </p>
+                <p className="text-[9px] uppercase text-fn-muted">
+                  {title === "Bench" ? `${index + 1}${index === 0 ? "st" : "nd"} sub priority` : cleanText(a.team ?? "Free Agent")}
+                </p>
+              </div>
+              <div className="flex gap-1">
+                {setCaptain && (
+                  <button type="button" disabled={disabled} onClick={() => setCaptain(id)} className="border border-fn-green/40 px-2 py-1 text-[9px] text-fn-green disabled:opacity-40">
+                    <Star size={10} fill={captain === id ? "currentColor" : "none"} />
+                  </button>
+                )}
+                <button type="button" disabled={disabled} onClick={() => remove(id)} className="px-2 py-1 text-fn-red disabled:opacity-40">
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-function SquadQuickTray({ open, reduceMotion, athletes, starters, bench, captain, squadValue, remaining, validation, message, setCaptain, remove, moveToBench, moveToStarter, onConfirm, onClose }: { open: boolean; reduceMotion: boolean; athletes: Athlete[]; starters: string[]; bench: string[]; captain: string; squadValue: number; remaining: number; validation: string[]; message: string; setCaptain: (id: string) => void; remove: (id: string) => void; moveToBench: (id: string) => void; moveToStarter: (id: string) => void; onConfirm: () => void; onClose: () => void }) {
-  const renderRow = (id: string, section: "starter" | "bench", index: number) => { const a = athletes.find((x) => x.id === id); if (!a) return null; const isStarter = section === "starter"; return <div key={id} className="flex items-center justify-between gap-3 border border-fn-gborder bg-fn-black px-3 py-2"><div className="min-w-0"><p className="truncate text-xs font-black uppercase">{a.ign}{captain === id && <span className="ml-2 bg-fn-green px-1.5 py-0.5 text-[8px] text-fn-black">CAPTAIN</span>}</p><p className="text-[9px] uppercase text-fn-muted">{isStarter ? a.team ?? "Free Agent" : `${index + 1}${index === 0 ? "st" : "nd"} sub priority`} · {currency(fantasyPrice(a))}</p></div><div className="flex shrink-0 items-center gap-1"><button type="button" onClick={() => isStarter ? moveToBench(id) : moveToStarter(id)} className="border border-fn-green/40 px-2 py-1 text-[9px] font-black uppercase text-fn-green">{isStarter ? "Bench" : "Start"}</button><button type="button" onClick={() => isStarter ? setCaptain(id) : undefined} disabled={!isStarter} className="border border-fn-green/40 px-2 py-1 text-fn-green disabled:border-fn-gborder disabled:text-fn-muted"><Star size={10} fill={captain === id ? "currentColor" : "none"} /></button><button type="button" onClick={() => remove(id)} className="px-2 py-1 text-fn-red"><X size={12} /></button></div></div>; };
-  return <AnimatePresence>{open && <div className="fixed inset-0 z-40"><motion.button type="button" aria-label="Close squad tray" className="absolute inset-0 bg-black/55" onClick={onClose} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} /><motion.aside id="fantasy-squad-quick-tray" role="dialog" aria-modal="true" aria-label="Squad quick view" initial={reduceMotion ? false : { y: "100%" }} animate={{ y: 0 }} exit={reduceMotion ? undefined : { y: "100%" }} transition={{ type: "spring", stiffness: 420, damping: 38 }} className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[min(78dvh,calc(100dvh-5rem))] max-w-3xl flex-col overflow-hidden border border-fn-green/50 bg-fn-card shadow-[0_-18px_50px_rgba(0,0,0,.55)]"><div className="shrink-0 border-b border-fn-gborder bg-fn-card p-4"><button type="button" aria-label="Close squad tray" onClick={onClose} className="mx-auto mb-3 block h-1.5 w-14 bg-fn-green/60" /><div className="flex items-start justify-between gap-3"><div><p className="fn-label text-fn-green">Squad shortcut</p><h2 className="font-display text-xl font-black uppercase">Quick Manage Squad</h2></div><button type="button" onClick={onClose} className="border border-fn-gborder p-2 text-fn-muted hover:text-fn-green"><X size={16} /></button></div></div><div className="min-h-0 flex-1 overscroll-contain overflow-y-auto p-4 pb-5"><div className="grid gap-2 sm:grid-cols-2"><HudStat label="Squad Value" value={currency(squadValue)} tone="paper" /><HudStat label="Remaining Budget" value={currency(remaining)} tone={remaining < 0 ? "yellow" : "green"} /></div>{message && <p className="mt-3 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-xs font-bold text-fn-red">{message}</p>}{starters.length + bench.length === 0 ? <p className="mt-4 border border-dashed border-fn-gborder px-3 py-4 text-center text-xs text-fn-muted">No players selected yet — tap a player below to add them.</p> : <><div className="mt-4"><p className="fn-label text-fn-green">Starting 4</p><div className="mt-2 space-y-2">{starters.length === 0 && <p className="border border-dashed border-fn-gborder px-3 py-3 text-xs text-fn-muted">No starters selected.</p>}{starters.map((id, i) => renderRow(id, "starter", i))}</div></div><div className="mt-4"><p className="fn-label text-fn-green">Bench 2</p><div className="mt-2 space-y-2">{bench.length === 0 && <p className="border border-dashed border-fn-gborder px-3 py-3 text-xs text-fn-muted">No bench players selected.</p>}{bench.map((id, i) => renderRow(id, "bench", i))}</div></div></>}{validation.map((v) => <p key={v} className="mt-2 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-[10px] text-fn-red">{v}</p>)}</div><div className="shrink-0 border-t border-fn-green/30 bg-fn-black/90 p-4"><button type="button" onClick={onConfirm} className="w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Confirm Squad</button><p className="mt-2 text-center text-[10px] uppercase tracking-widest text-fn-muted">Runs the same squad validation as the full builder.</p></div></motion.aside></div>}</AnimatePresence>;
+function SquadQuickTray({ open, reduceMotion, athletes, starters, bench, captain, squadValue, remaining, validation, message, setCaptain, remove, moveToBench, moveToStarter, onConfirm, onClose, disabled = false }: { open: boolean; reduceMotion: boolean; athletes: Athlete[]; starters: string[]; bench: string[]; captain: string; squadValue: number; remaining: number; validation: string[]; message: string; setCaptain: (id: string) => void; remove: (id: string) => void; moveToBench: (id: string) => void; moveToStarter: (id: string) => void; onConfirm: () => void; onClose: () => void; disabled?: boolean }) {
+  const renderRow = (id: string, section: "starter" | "bench", index: number) => {
+    const a = athletes.find((x) => x.id === id);
+    if (!a) return null;
+    const isStarter = section === "starter";
+    return (
+      <div key={id} className="flex items-center justify-between gap-3 border border-fn-gborder bg-fn-black px-3 py-2">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-black uppercase">
+            {cleanText(a.ign || a.name)}
+            {captain === id && <span className="ml-2 bg-fn-green px-1.5 py-0.5 text-[8px] text-fn-black">CAPTAIN</span>}
+          </p>
+          <p className="text-[9px] uppercase text-fn-muted">
+            {isStarter ? cleanText(a.team ?? "Free Agent") : `${index + 1}${index === 0 ? "st" : "nd"} sub priority`} · {currency(fantasyPrice(a))}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <button type="button" disabled={disabled} onClick={() => isStarter ? moveToBench(id) : moveToStarter(id)} className="border border-fn-green/40 px-2 py-1 text-[9px] font-black uppercase text-fn-green disabled:opacity-40">
+            {isStarter ? "Bench" : "Start"}
+          </button>
+          <button type="button" onClick={() => isStarter ? setCaptain(id) : undefined} disabled={disabled || !isStarter} className="border border-fn-green/40 px-2 py-1 text-fn-green disabled:border-fn-gborder disabled:text-fn-muted disabled:opacity-40">
+            <Star size={10} fill={captain === id ? "currentColor" : "none"} />
+          </button>
+          <button type="button" disabled={disabled} onClick={() => remove(id)} className="px-2 py-1 text-fn-red disabled:opacity-40">
+            <X size={12} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-40">
+          <motion.button type="button" aria-label="Close squad tray" className="absolute inset-0 bg-black/55" onClick={onClose} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} />
+          <motion.aside id="fantasy-squad-quick-tray" role="dialog" aria-modal="true" aria-label="Squad quick view" initial={reduceMotion ? false : { y: "100%" }} animate={{ y: 0 }} exit={reduceMotion ? undefined : { y: "100%" }} transition={{ type: "spring", stiffness: 420, damping: 38 }} className="absolute bottom-0 left-0 right-0 mx-auto flex max-h-[min(78dvh,calc(100dvh-5rem))] max-w-3xl flex-col overflow-hidden border border-fn-green/50 bg-fn-card shadow-[0_-18px_50px_rgba(0,0,0,.55)]">
+            <div className="shrink-0 border-b border-fn-gborder bg-fn-card p-4">
+              <button type="button" aria-label="Close squad tray" onClick={onClose} className="mx-auto mb-3 block h-1.5 w-14 bg-fn-green/60" />
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="fn-label text-fn-green">Squad shortcut</p>
+                  <h2 className="font-display text-xl font-black uppercase">Quick Manage Squad</h2>
+                </div>
+                <button type="button" onClick={onClose} className="border border-fn-gborder p-2 text-fn-muted hover:text-fn-green"><X size={16} /></button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto p-4 pb-5">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <HudStat label="Squad Value" value={currency(squadValue)} tone="paper" />
+                <HudStat label="Remaining Budget" value={currency(remaining)} tone={remaining < 0 ? "yellow" : "green"} />
+              </div>
+              {message && <p className="mt-3 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-xs font-bold text-fn-red">{message}</p>}
+              {starters.length + bench.length === 0 ? (
+                <p className="mt-4 border border-dashed border-fn-gborder px-3 py-4 text-center text-xs text-fn-muted">No players selected yet — tap a player below to add them.</p>
+              ) : (
+                <>
+                  <div className="mt-4">
+                    <p className="fn-label text-fn-green">Starting 4</p>
+                    <div className="mt-2 space-y-2">
+                      {starters.length === 0 && <p className="border border-dashed border-fn-gborder px-3 py-3 text-xs text-fn-muted">No starters selected.</p>}
+                      {starters.map((id, i) => renderRow(id, "starter", i))}
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <p className="fn-label text-fn-green">Bench 2</p>
+                    <div className="mt-2 space-y-2">
+                      {bench.length === 0 && <p className="border border-dashed border-fn-gborder px-3 py-3 text-xs text-fn-muted">No bench players selected.</p>}
+                      {bench.map((id, i) => renderRow(id, "bench", i))}
+                    </div>
+                  </div>
+                </>
+              )}
+              {validation.map((v) => <p key={v} className="mt-2 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-[10px] text-fn-red">{v}</p>)}
+            </div>
+            <div className="shrink-0 border-t border-fn-green/30 bg-fn-black/90 p-4">
+              <button type="button" disabled={disabled || validation.length > 0} onClick={onConfirm} className="w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black disabled:opacity-40">
+                Confirm Squad
+              </button>
+              <p className="mt-2 text-center text-[10px] uppercase tracking-widest text-fn-muted">Runs the same squad validation as the full builder.</p>
+            </div>
+          </motion.aside>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 }
 
 export default function FantasyLeaguePage() {
@@ -86,11 +268,13 @@ export default function FantasyLeaguePage() {
     : selectedGame?.slug === 'free-fire'
     ? 'Free Fire'
     : 'PUBG Mobile';
+
   const welcomeKey = gameStorageKey(WELCOME_KEY, fantasyGameSlug);
   const transferWindowKey = gameStorageKey(TRANSFER_WINDOW_KEY, fantasyGameSlug);
   const confirmedSquadKey = gameStorageKey(CONFIRMED_SQUAD_KEY, fantasyGameSlug);
   const inProgressSquadKey = gameStorageKey(IN_PROGRESS_SQUAD_KEY, fantasyGameSlug);
   const reduceMotion = Boolean(useReducedMotion());
+
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(true);
   const [welcomeComplete, setWelcomeComplete] = useState(true);
@@ -108,40 +292,44 @@ export default function FantasyLeaguePage() {
   const [dashboardMode, setDashboardMode] = useState<DashboardMode>("battleground");
   const [transferWindow, setTransferWindow] = useState<TransferWindow>({});
   const [chipWindows, setChipWindows] = useState<ChipWindows>({});
-  const [squadLocked, setSquadLocked] = useState(false);
+
+  // Admin roster lock control: when true, users cannot edit squad
+  const [rosterLocked, setRosterLocked] = useState(false);
+
   const { user: currentUser } = useAuth();
   const [activeChip, setActiveChip] = useState("");
   const [chipUsage, setChipUsage] = useState<Record<string, number>>({});
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
 
   // Fantasy FAB dismiss state
-  const { dismissed: fabDismissed, handleDismiss: handleFabDismiss, handleReenable: handleFabReenable } = useFloatingIconDismiss('fantasy-fab');
-
-  // Long-press detection for Fantasy FAB
-  const fabPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleFabPressStart = useCallback(() => {
-    quickButtonDragged.current = false;
-    if (fabPressTimerRef.current) clearTimeout(fabPressTimerRef.current);
-    fabPressTimerRef.current = setTimeout(() => {
-      handleFabDismiss();
-    }, LONG_PRESS_DURATION);
-  }, [handleFabDismiss]);
-
-  const handleFabPressEnd = useCallback(() => {
-    if (fabPressTimerRef.current) {
-      clearTimeout(fabPressTimerRef.current);
-      fabPressTimerRef.current = null;
-    }
-  }, []);
-
+  const { dismissed: fabDismissed } = useFloatingIconDismiss('fantasy-fab');
   void fabDismissed;
-  void handleFabReenable;
-  void handleFabPressStart;
-  void handleFabPressEnd;
+
+  const fetchSettings = useCallback(() => {
+    fetch(`/api/fantasy/settings?game_slug=${fantasyGameSlug}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((settings) => {
+        if (settings?.transferWindow) {
+          setTransferWindow(settings.transferWindow);
+          localStorage.setItem(transferWindowKey, JSON.stringify(settings.transferWindow));
+        }
+        if (settings?.chipWindows) setChipWindows(settings.chipWindows);
+        if (settings?.roster_locked !== undefined) {
+          setRosterLocked(Boolean(settings.roster_locked));
+        }
+      })
+      .catch(() => null);
+  }, [fantasyGameSlug, transferWindowKey]);
 
   useEffect(() => {
-    setStarters([]); setBench([]); setCaptain(""); setActiveChip(""); setChipUsage({}); setSquadLocked(false); setView("builder");
+    setStarters([]);
+    setBench([]);
+    setCaptain("");
+    setActiveChip("");
+    setChipUsage({});
+    setRosterLocked(false);
+    setView("builder");
+
     setQuickButtonPosition(() => {
       const savedPosition = localStorage.getItem(QUICK_BUTTON_POSITION_KEY);
       if (savedPosition) {
@@ -152,22 +340,13 @@ export default function FantasyLeaguePage() {
       }
       return defaultQuickButtonPosition();
     });
+
     setWelcomeComplete(localStorage.getItem(welcomeKey) === "true");
     const savedWindow = readTransferWindow(fantasyGameSlug);
     setTransferWindow(savedWindow);
-    fetch(`/api/fantasy/settings?game_slug=${fantasyGameSlug}`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((settings) => {
-        if (settings?.transferWindow) {
-          setTransferWindow(settings.transferWindow);
-          localStorage.setItem(transferWindowKey, JSON.stringify(settings.transferWindow));
-        }
-        if (settings?.chipWindows) setChipWindows(settings.chipWindows);
-        if (fantasyGameSlug === 'fc-mobile' || settings?.allow_repick) {
-          setSquadLocked(false);
-        }
-      })
-      .catch(() => null);
+
+    fetchSettings();
+
     const confirmed = localStorage.getItem(confirmedSquadKey);
     const inProgress = localStorage.getItem(inProgressSquadKey);
     const savedSquad = confirmed || inProgress;
@@ -179,14 +358,19 @@ export default function FantasyLeaguePage() {
         setCaptain(parsed.captain || "");
         setActiveChip(parsed.activeChip || "");
         setChipUsage(parsed.chipUsage || {});
-        const isLocked = Boolean(confirmed) && parsed.locked !== false && fantasyGameSlug !== 'fc-mobile';
-        setSquadLocked(isLocked);
         setView(confirmed ? "dashboard" : "builder");
         setWelcomeComplete(true);
         localStorage.setItem(welcomeKey, "true");
       } catch {}
     }
-  }, [fantasyGameSlug, welcomeKey, transferWindowKey, confirmedSquadKey, inProgressSquadKey]);
+  }, [fantasyGameSlug, welcomeKey, confirmedSquadKey, inProgressSquadKey, fetchSettings]);
+
+  // Periodic poll to keep lock status in sync with admin actions
+  useEffect(() => {
+    const timer = setInterval(fetchSettings, 20000);
+    return () => clearInterval(timer);
+  }, [fetchSettings]);
+
   useEffect(() => {
     function handleResize() {
       setQuickButtonPosition((position) => position ? clampQuickButtonPosition(position) : defaultQuickButtonPosition());
@@ -194,38 +378,79 @@ export default function FantasyLeaguePage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-  useEffect(() => { fetch(`/api/fantasy/leaderboard?game_slug=${fantasyGameSlug}`, { cache: "no-store", credentials: "include" }).then((r) => r.ok ? r.json() : { rows: [] }).then((payload) => setLeaderboardRows(Array.isArray(payload.rows) ? payload.rows : [])).catch(() => setLeaderboardRows([])); }, [currentUser, fantasyGameSlug]);
 
-  const windowState = transferWindowState(transferWindow);
-  const isRepickAllowed = fantasyGameSlug === 'fc-mobile';
-  const canEditSquad = !squadLocked || windowState === "open" || isRepickAllowed;
-  const lockMessage = isRepickAllowed
-    ? "FC Mobile squad re-pick is open — pick your squad again."
-    : windowState === "scheduled"
-    ? `Squad locked until the next transfer window — ${formatWindowDate(transferWindow.opens)}.`
-    : windowState === "closed"
-    ? `Squad locked until the next transfer window${transferWindow.opens ? ` — ${formatWindowDate(transferWindow.opens)}.` : "."}`
-    : "Transfer window open — squad edits are available.";
-
-  const load = useCallback(async () => { setLoading(true); const started = Date.now(); try { const res = await fetch(`/api/athletes?game_slug=${fantasyGameSlug}&is_icon=false`, { cache: "no-store" }); const data = res.ok ? await res.json() : []; setAthletes(Array.isArray(data) ? data : []); } finally { window.setTimeout(() => setLoading(false), Math.max(0, MIN_LOADER_MS - (Date.now() - started))); } }, [fantasyGameSlug]);
-  useEffect(() => { if (welcomeComplete) load(); }, [welcomeComplete, load]);
   useEffect(() => {
-    if (!welcomeComplete || squadLocked) return;
+    fetch(`/api/fantasy/leaderboard?game_slug=${fantasyGameSlug}`, { cache: "no-store", credentials: "include" })
+      .then((r) => r.ok ? r.json() : { rows: [] })
+      .then((payload) => setLeaderboardRows(Array.isArray(payload.rows) ? payload.rows : []))
+      .catch(() => setLeaderboardRows([]));
+  }, [currentUser, fantasyGameSlug]);
+
+  // Users can edit their roster UNTIL the admin locks it!
+  const canEditSquad = !rosterLocked;
+  const lockMessage = rosterLocked
+    ? "Roster editing has been locked by the admin for this Gameweek."
+    : "Roster editing is open — you can adjust your squad freely until the admin locks it.";
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const started = Date.now();
+    try {
+      const res = await fetch(`/api/athletes?game_slug=${fantasyGameSlug}&is_icon=false`, { cache: "no-store" });
+      const data = res.ok ? await res.json() : [];
+      setAthletes(Array.isArray(data) ? data : []);
+    } finally {
+      window.setTimeout(() => setLoading(false), Math.max(0, MIN_LOADER_MS - (Date.now() - started)));
+    }
+  }, [fantasyGameSlug]);
+
+  useEffect(() => {
+    if (welcomeComplete) load();
+  }, [welcomeComplete, load]);
+
+  useEffect(() => {
+    if (!welcomeComplete || rosterLocked) return;
     const hasProgress = starters.length > 0 || bench.length > 0 || Boolean(captain) || Boolean(activeChip);
-    if (hasProgress) localStorage.setItem(inProgressSquadKey, JSON.stringify({ starters, bench, captain, activeChip, chipUsage, updatedAt: new Date().toISOString(), locked: false }));
-  }, [activeChip, bench, captain, chipUsage, inProgressSquadKey, squadLocked, starters, welcomeComplete]);
-  function startFantasy() { localStorage.setItem(welcomeKey, "true"); setWelcomeComplete(true); }
+    if (hasProgress) {
+      localStorage.setItem(inProgressSquadKey, JSON.stringify({
+        starters,
+        bench,
+        captain,
+        activeChip,
+        chipUsage,
+        updatedAt: new Date().toISOString(),
+        locked: false,
+      }));
+    }
+  }, [activeChip, bench, captain, chipUsage, inProgressSquadKey, rosterLocked, starters, welcomeComplete]);
+
+  function startFantasy() {
+    localStorage.setItem(welcomeKey, "true");
+    setWelcomeComplete(true);
+  }
+
   const selectedIds = useMemo(() => [...starters, ...bench], [starters, bench]);
   const selectedAthletes = useMemo(() => selectedIds.map((id) => athletes.find((a) => a.id === id)).filter(Boolean) as Athlete[], [selectedIds, athletes]);
   const currentBudget = getFantasySquadBudget(fantasyGameSlug);
-  const squadValue = selectedAthletes.reduce((sum, a) => sum + fantasyPrice(a), 0); const remaining = currentBudget - squadValue;
+  const squadValue = selectedAthletes.reduce((sum, a) => sum + fantasyPrice(a), 0);
+  const remaining = currentBudget - squadValue;
+
   const list = useMemo(() => athletes.filter((a) => `${a.name} ${a.ign} ${a.team ?? ""} ${a.role ?? ""}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => sort === "price-high" ? fantasyPrice(b) - fantasyPrice(a) : sort === "price-low" ? fantasyPrice(a) - fantasyPrice(b) : fantasyPoints(b, "total") - fantasyPoints(a, "total")), [athletes, search, sort]);
-  function blockIfLocked() { if (canEditSquad) return false; setMessage(lockMessage); return true; }
+
+  function blockIfLocked() {
+    if (canEditSquad) return false;
+    setMessage(lockMessage);
+    return true;
+  }
+
   function addAthlete(a: Athlete, slot: "starter" | "bench") {
     setMessage("");
     if (blockIfLocked()) return;
     if (selectedIds.includes(a.id)) return;
-    if (fantasyStatus(a) !== "available") { setMessage(`${a.ign} is unavailable for selection.`); return; }
+    if (fantasyStatus(a) !== "available") {
+      setMessage(`${cleanText(a.ign || a.name)} is unavailable for selection.`);
+      return;
+    }
     if (fantasyGameSlug === 'fc-mobile' && rating(a) >= 90) {
       const ninetyPlusCount = selectedAthletes.filter((x) => rating(x) >= 90).length;
       if (ninetyPlusCount >= 2) {
@@ -238,7 +463,10 @@ export default function FantasyLeaguePage() {
       return;
     }
     const teamLimitMessage = fantasyTeamLimitViolation(selectedAthletes, a);
-    if (teamLimitMessage) { setMessage(teamLimitMessage); return; }
+    if (teamLimitMessage) {
+      setMessage(teamLimitMessage);
+      return;
+    }
     if (slot === "starter") {
       if (starters.length >= 4) { setMessage("Starting 4 is already full."); return; }
       setStarters((c) => [...c, a.id]);
@@ -247,9 +475,37 @@ export default function FantasyLeaguePage() {
       setBench((c) => [...c, a.id]);
     }
   }
-  function remove(id: string) { if (blockIfLocked()) return; setStarters((s) => s.filter((x) => x !== id)); setBench((b) => b.filter((x) => x !== id)); if (captain === id) setCaptain(""); }
-  function moveToBench(id: string) { setMessage(""); if (blockIfLocked()) return; if (bench.length >= 2) { setMessage("Bench is already full."); return; } setStarters((s) => s.filter((x) => x !== id)); setBench((b) => [...b, id]); if (captain === id) setCaptain(""); }
-  function moveToStarter(id: string) { setMessage(""); if (blockIfLocked()) return; const athlete = athletes.find((a) => a.id === id); if (!athlete) return; if (starters.length >= 4) { setMessage("Starting 4 is already full."); return; } if (fantasyStatus(athlete) !== "available") { setMessage(`${athlete.ign} is unavailable for selection.`); return; } setBench((b) => b.filter((x) => x !== id)); setStarters((s) => [...s, id]); }
+
+  function remove(id: string) {
+    if (blockIfLocked()) return;
+    setStarters((s) => s.filter((x) => x !== id));
+    setBench((b) => b.filter((x) => x !== id));
+    if (captain === id) setCaptain("");
+  }
+
+  function moveToBench(id: string) {
+    setMessage("");
+    if (blockIfLocked()) return;
+    if (bench.length >= 2) { setMessage("Bench is already full."); return; }
+    setStarters((s) => s.filter((x) => x !== id));
+    setBench((b) => [...b, id]);
+    if (captain === id) setCaptain("");
+  }
+
+  function moveToStarter(id: string) {
+    setMessage("");
+    if (blockIfLocked()) return;
+    const athlete = athletes.find((a) => a.id === id);
+    if (!athlete) return;
+    if (starters.length >= 4) { setMessage("Starting 4 is already full."); return; }
+    if (fantasyStatus(athlete) !== "available") {
+      setMessage(`${cleanText(athlete.ign || athlete.name)} is unavailable for selection.`);
+      return;
+    }
+    setBench((b) => b.filter((x) => x !== id));
+    setStarters((s) => [...s, id]);
+  }
+
   const teamLimitValidation = fantasyTeamLimitViolation(selectedAthletes);
   const fcMobileNinetyPlusError = fantasyGameSlug === 'fc-mobile' && selectedAthletes.filter((a) => rating(a) >= 90).length > 2
     ? "FC Mobile squad limit: Maximum 2 players rated 90 or higher allowed."
@@ -265,7 +521,12 @@ export default function FantasyLeaguePage() {
     captain && !starters.includes(captain) && "Captain must be in your Starting 4.",
     selectedAthletes.some((a) => fantasyStatus(a) !== "available") && "Unavailable player selected."
   ].filter(Boolean) as string[];
+
   async function confirmSquad() {
+    if (rosterLocked) {
+      setMessage("Roster editing has been locked by the admin for this Gameweek.");
+      return;
+    }
     if (validation.length > 0) { setMessage(validation[0]); return; }
     try {
       const res = await fetch("/api/fantasy/squad", {
@@ -288,23 +549,25 @@ export default function FantasyLeaguePage() {
     } catch {
       // Allow fallback if offline
     }
-    const confirmed: SavedSquad = { starters, bench, captain, activeChip, chipUsage, confirmedAt: new Date().toISOString(), locked: true };
+
+    const confirmed: SavedSquad = { starters, bench, captain, activeChip, chipUsage, confirmedAt: new Date().toISOString(), locked: false };
     localStorage.setItem(confirmedSquadKey, JSON.stringify(confirmed));
     localStorage.removeItem(inProgressSquadKey);
-    setSquadLocked(true);
-    setTransferWindow(readTransferWindow(fantasyGameSlug));
     setQuickTrayOpen(false);
     setMessage("");
     setView("reveal");
     window.setTimeout(() => setView("dashboard"), reduceMotion ? 140 : 460);
   }
+
   const quickButtonStyle = quickButtonPosition ? { left: quickButtonPosition.x, top: quickButtonPosition.y } : undefined;
   const quickButtonDragConstraints = quickButtonPosition ? { left: QUICK_BUTTON_MARGIN, right: Math.max(QUICK_BUTTON_MARGIN, window.innerWidth - QUICK_BUTTON_SIZE - QUICK_BUTTON_MARGIN), top: QUICK_BUTTON_TOP_SAFE, bottom: Math.max(QUICK_BUTTON_TOP_SAFE, window.innerHeight - QUICK_BUTTON_SIZE - QUICK_BUTTON_BOTTOM_SAFE) } : undefined;
+
   function persistQuickButtonPosition(position: { x: number; y: number }) {
     const next = clampQuickButtonPosition(position);
     setQuickButtonPosition(next);
     localStorage.setItem(QUICK_BUTTON_POSITION_KEY, JSON.stringify(next));
   }
+
   const startersAthletes = starters.map((id) => athletes.find((a) => a.id === id)).filter(Boolean) as Athlete[];
   const benchAthletes = bench.map((id) => athletes.find((a) => a.id === id)).filter(Boolean) as Athlete[];
   const latestPoints = startersAthletes.reduce((sum, a) => sum + fantasyPoints(a, "recent") * (a.id === captain ? (activeChip === "triple_captain" ? 3 : 2) : 1), 0);
@@ -317,7 +580,12 @@ export default function FantasyLeaguePage() {
   const isLoggedIn = Boolean(currentUser);
   const tripleCaptainOpen = transferWindowState(chipWindows.triple_captain || {}) === "open";
   const manualSubOpen = transferWindowState(chipWindows.manual_substitute || {}) === "open";
+
   function repickSquad(clear = false) {
+    if (rosterLocked) {
+      setMessage("Roster editing has been locked by the admin for this Gameweek.");
+      return;
+    }
     if (clear) {
       setStarters([]);
       setBench([]);
@@ -329,16 +597,429 @@ export default function FantasyLeaguePage() {
     } else {
       setMessage("You can now adjust your Starting 4, Bench, and Captain.");
     }
-    setSquadLocked(false);
     setView("builder");
   }
 
-  function activateTripleCaptain() { if (!tripleCaptainOpen) { setMessage("Triple Captain is not currently open. Admins can open its chip window in Fantasy League admin."); return; } if (!captain) { setMessage("Choose a captain before activating Triple Captain."); return; } if ((chipUsage.triple_captain ?? 0) >= 1) { setMessage("Triple Captain has already been used for this season."); return; } if (!window.confirm("Activate Triple Captain for this Gameweek? This limited chip changes your captain multiplier from x2 to x3.")) return; setActiveChip("triple_captain"); setChipUsage((usage) => ({ ...usage, triple_captain: (usage.triple_captain ?? 0) + 1 })); setMessage("Triple Captain active for this Gameweek."); }
-  const leaderboardPanel = <section className="mt-4 border border-fn-gborder bg-fn-card p-4"><div className="flex items-center justify-between"><div><p className="fn-label text-fn-green">National Leaderboard</p><h2 className="font-display text-xl font-black uppercase">{isLoggedIn ? "All Managers" : "All Managers"}</h2></div><Trophy className="text-fn-green" size={18} /></div>{leader ? <div className="mt-3 border border-fn-green/30 bg-fn-green/10 p-3"><p className="text-[10px] font-black uppercase tracking-widest text-fn-green">#1 Highest Points</p><p className="mt-1 font-display text-2xl font-black uppercase">{leader.username}</p><p className="text-xs text-fn-muted">{leader.total_points} total pts</p></div> : <p className="mt-3 border border-dashed border-fn-gborder p-3 text-xs text-fn-muted">Leaderboard will appear once points are available.</p>}{isLoggedIn ? <div className="mt-3 space-y-2">{topLeaderboard.map((row) => <div key={`${row.rank}-${row.username}`} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2"><span className="font-black text-fn-green">#{row.rank}</span><span className="flex-1 px-3 text-xs font-black uppercase text-fn-text">{row.username}</span><span className="text-xs font-black text-fn-yellow">{row.total_points} pts{typeof row.gameweek_points === "number" ? ` · GW ${row.gameweek_points}` : ""}{typeof row.squad_value === "number" ? ` · ${currency(row.squad_value)}` : ""}</span></div>)}</div> : <p className="mt-3 border border-fn-gborder bg-fn-black px-3 py-3 text-xs font-black uppercase tracking-widest text-fn-muted">Leaderboard is public for every visitor.</p>}<p className="mt-3 text-[10px] leading-relaxed text-fn-muted">Leaderboard is live from current total accumulated fantasy points and sorted highest to lowest.</p></section>;
+  function activateTripleCaptain() {
+    if (!canEditSquad) {
+      setMessage(lockMessage);
+      return;
+    }
+    if (!tripleCaptainOpen) {
+      setMessage("Triple Captain is not currently open. Admins can open its chip window in Fantasy League admin.");
+      return;
+    }
+    if (!captain) {
+      setMessage("Choose a captain before activating Triple Captain.");
+      return;
+    }
+    if ((chipUsage.triple_captain ?? 0) >= 1) {
+      setMessage("Triple Captain has already been used for this season.");
+      return;
+    }
+    if (!window.confirm("Activate Triple Captain for this Gameweek? This limited chip changes your captain multiplier from x2 to x3.")) return;
+    setActiveChip("triple_captain");
+    setChipUsage((usage) => ({ ...usage, triple_captain: (usage.triple_captain ?? 0) + 1 }));
+    setMessage("Triple Captain active for this Gameweek.");
+  }
+
+  const leaderboardPanel = (
+    <section className="mt-4 border border-fn-gborder bg-fn-card p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="fn-label text-fn-green">National Leaderboard</p>
+          <h2 className="font-display text-xl font-black uppercase">All Managers</h2>
+        </div>
+        <Trophy className="text-fn-green" size={18} />
+      </div>
+      {leader ? (
+        <div className="mt-3 border border-fn-green/30 bg-fn-green/10 p-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-fn-green">#1 Highest Points</p>
+          <p className="mt-1 font-display text-2xl font-black uppercase">{cleanText(leader.username)}</p>
+          <p className="text-xs text-fn-muted">{leader.total_points} total pts</p>
+        </div>
+      ) : (
+        <p className="mt-3 border border-dashed border-fn-gborder p-3 text-xs text-fn-muted">Leaderboard will appear once points are available.</p>
+      )}
+      {isLoggedIn ? (
+        <div className="mt-3 space-y-2">
+          {topLeaderboard.map((row) => (
+            <div key={`${row.rank}-${row.username}`} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2">
+              <span className="font-black text-fn-green">#{row.rank}</span>
+              <span className="flex-1 px-3 text-xs font-black uppercase text-fn-text">{cleanText(row.username)}</span>
+              <span className="text-xs font-black text-fn-yellow">
+                {row.total_points} pts{typeof row.gameweek_points === "number" ? ` · GW ${row.gameweek_points}` : ""}{typeof row.squad_value === "number" ? ` · ${currency(row.squad_value)}` : ""}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 border border-fn-gborder bg-fn-black px-3 py-3 text-xs font-black uppercase tracking-widest text-fn-muted">Leaderboard is public for every visitor.</p>
+      )}
+      <p className="mt-3 text-[10px] leading-relaxed text-fn-muted">Leaderboard is live from current total accumulated fantasy points and sorted highest to lowest.</p>
+    </section>
+  );
 
   if (currentUser === undefined) return <RouteLoadingScreen subtitle="LOADING FANTASY" ariaLabel="Loading Fantasy League" reduceMotion={reduceMotion} loaderKey="fantasy-auth-loader" />;
   if (!welcomeComplete && isLoggedIn) return <Welcome onStart={startFantasy} />;
-  const statHeader = <><div className="grid gap-3 sm:grid-cols-3"><HudStat label="Average Points" value={`${avgPoints}`} tone="paper" /><HudStat label="Latest Points" value={`${latestPoints}`} /><HudStat label="GW Rank" value={`#${myRank}`} tone="paper" /></div><div className="mt-3 grid gap-2 sm:grid-cols-3"><HudStat label="Highest Points" value={`${highest}`} tone="yellow" /><HudStat label="Transfers Remaining" value={`${Number(transferWindow.transfersRemaining ?? 0)}`} /><HudStat label="Team Captain of the Week" value={startersAthletes[0] ? displayName(startersAthletes[0]) : "Pending"} tone="paper" /></div></>;
-  const squadContent = <><div className="flex border border-fn-gborder bg-fn-black p-1 text-[10px] font-black uppercase tracking-widest"><button type="button" onClick={() => setDashboardMode("battleground")} className={`flex-1 px-3 py-2 ${dashboardMode === "battleground" ? "bg-fn-green text-fn-black" : "text-fn-muted"}`}>Battleground View</button><button type="button" onClick={() => setDashboardMode("list")} className={`flex-1 px-3 py-2 ${dashboardMode === "list" ? "bg-fn-green text-fn-black" : "text-fn-muted"}`}>List View</button></div>{dashboardMode === "battleground" ? <section className="relative mt-4 overflow-hidden border border-fn-green/25 bg-fn-card p-4"><div className="absolute inset-0 opacity-30 bg-[linear-gradient(rgba(77,255,110,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(77,255,110,.08)_1px,transparent_1px),radial-gradient(circle_at_20%_20%,rgba(77,255,110,.2),transparent_22%),radial-gradient(circle_at_80%_30%,rgba(255,255,255,.08),transparent_18%)] bg-[size:38px_38px,38px_38px,100%_100%,100%_100%]" /><div className="relative"><p className="fn-label text-fn-green">Starting 4 / tactical formation</p><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{startersAthletes.map((a) => <TacticalPlayerCard key={a.id} athlete={a} captain={captain === a.id} tripleCaptainActive={activeChip === "triple_captain" && captain === a.id} />)}</div><div className="my-5 border-t border-fn-green/25 pt-3"><p className="fn-label text-fn-muted">SUBS</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{benchAthletes.map((a) => <TacticalPlayerCard key={a.id} athlete={a} captain={false} />)}</div></div></div></section> : <section className="mt-4 space-y-3 border border-fn-gborder bg-fn-card p-4"><p className="fn-label text-fn-green">Starting 4</p>{startersAthletes.map((a) => <TacticalPlayerCard key={a.id} athlete={a} captain={captain === a.id} tripleCaptainActive={activeChip === "triple_captain" && captain === a.id} />)}<p className="fn-label border-t border-fn-gborder pt-3 text-fn-muted">SUBS / BENCH</p>{benchAthletes.map((a) => <TacticalPlayerCard key={a.id} athlete={a} captain={false} />)}</section>}</>;
-  return <AnimatePresence mode="wait">{loading ? <RouteLoadingScreen subtitle="LOADING FANTASY" ariaLabel="Loading Fantasy League" reduceMotion={reduceMotion} loaderKey="fantasy-loader" /> : view === "reveal" ? <CombatReveal reduceMotion={reduceMotion} /> : <motion.main key="fantasy-dashboard" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-fn-black px-3 py-5 pb-32 text-fn-text sm:px-6 lg:px-8"><section className="mx-auto max-w-7xl"><div className="mb-5 border border-fn-green/25 bg-fn-card p-4"><p className="fn-label text-fn-green">Fantasy League</p><h1 className="font-display text-3xl font-black uppercase tracking-widest">{fantasyGameName} Gameweek Command</h1>{squadLocked && <p className="mt-3 inline-flex items-center gap-2 border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-xs font-black uppercase text-fn-green"><Lock size={14} /> Squad Locked — {lockMessage}</p>}</div>{view === "dashboard" ? <div className="grid gap-5 lg:grid-cols-[1fr_.34fr]"><section>{/* Squad Re-pick / Lineup Action Banner */}<div className="mb-4 border border-fn-green/40 bg-fn-card p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="fn-label text-fn-green">{fantasyGameSlug === 'fc-mobile' ? 'FC Mobile Squad Re-Pick Active' : 'Squad Selection'}</p><h3 className="font-display text-lg font-black uppercase text-fn-text">{fantasyGameSlug === 'fc-mobile' ? 'Pick Your Squad Again' : 'Manage Lineup'}</h3><p className="mt-1 text-xs text-fn-muted">{fantasyGameSlug === 'fc-mobile' ? 'Everyone can pick again within the ₦6,000,000 budget and max 2 players rated 90+. Update your picks or build fresh.' : 'Make changes to your starters, bench, or captain.'}</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => repickSquad(false)} className="bg-fn-green px-4 py-2 text-xs font-black uppercase tracking-widest text-fn-black hover:bg-fn-gdim">Re-pick Squad</button><button type="button" onClick={() => { if (window.confirm("Clear all current players and pick fresh from scratch?")) repickSquad(true); }} className="border border-fn-yellow/40 bg-fn-yellow/10 px-3 py-2 text-xs font-black uppercase tracking-widest text-fn-yellow hover:bg-fn-yellow hover:text-fn-black">Pick Fresh</button></div></div></div>{statHeader}<section className="mt-4 border border-fn-green/30 bg-fn-card p-4"><p className="fn-label text-fn-green">Chips</p><div className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={activateTripleCaptain} disabled={activeChip === "triple_captain" || !canEditSquad || !tripleCaptainOpen} className="border border-fn-green/40 px-3 py-3 text-xs font-black uppercase text-fn-green disabled:opacity-40">Triple Captain {activeChip === "triple_captain" ? "Active" : "Activate"}</button><button type="button" onClick={() => setMessage(manualSubOpen ? "Manual Substitute is open — use Start/Bench controls before Gameweek lock to substitute bench players." : "Manual Substitute is currently closed by admin.")} disabled={!canEditSquad || !manualSubOpen} className="border border-fn-green/40 px-3 py-3 text-xs font-black uppercase text-fn-green disabled:opacity-40">Manual Substitute</button></div></section>{squadContent}{leaderboardPanel}</section><aside className="space-y-3"><HudStat label="National Rank" value={`#${myRank}`} /><HudStat label="Average Points / Gameweek" value={`${avgPoints}`} tone="paper" /><HudStat label="Total Accumulated Points" value={`${totalPoints}`} /><HudStat label="Current Gameweek Points" value={`${latestPoints}`} tone="yellow" /><HudStat label="Squad Value" value={currency(squadValue)} tone="paper" /><HudStat label="Remaining Budget" value={currency(remaining)} /></aside></div> : !isLoggedIn ? <div className="grid gap-5 lg:grid-cols-[1fr_.34fr]"><section>{leaderboardPanel}</section><aside className="space-y-3"><HudStat label="Fantasy Access" value="Login Required" tone="paper" /><HudStat label="Leaderboard Teaser" value={leader ? `#1 ${leader.total_points} pts` : "Pending"} /></aside></div> : <><div className="grid gap-3 sm:grid-cols-3"><HudStat label="Budget" value={currency(currentBudget)} /><HudStat label="Squad Value" value={currency(squadValue)} tone="paper" /><HudStat label="Remaining Budget" value={currency(remaining)} tone={remaining < 0 ? "yellow" : "green"} /></div>{!canEditSquad && <p className="mt-3 border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-xs font-bold text-fn-green"><Lock className="mr-2 inline" size={14} />Squad Locked. {lockMessage}</p>}{fantasyGameSlug === 'fc-mobile' && <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border border-fn-green/40 bg-fn-card p-3"><p className="text-xs text-fn-muted"><strong className="text-fn-green uppercase">FC Mobile Re-Pick Active:</strong> Pick 4 starters and 2 bench players (Budget: ₦6,000,000 · Max 2 players rated 90+).</p><div className="flex gap-2">{(starters.length > 0 || bench.length > 0) && <button type="button" onClick={() => { if (window.confirm("Clear all picks?")) repickSquad(true); }} className="border border-fn-yellow/40 bg-fn-yellow/10 px-2.5 py-1 text-[10px] font-black uppercase text-fn-yellow hover:bg-fn-yellow hover:text-fn-black">Clear All</button>}</div></div>}<div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_.85fr]"><section className="border border-fn-gborder bg-fn-card"><div className="flex flex-col gap-2 border-b border-fn-gborder p-3 sm:flex-row"><div className="flex flex-1 items-center gap-2 border border-fn-gborder bg-fn-black px-3 py-2"><Search size={14} className="text-fn-green" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search athletes / IGN" className="w-full bg-transparent text-xs outline-none" /></div><select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="border border-fn-gborder bg-fn-black px-3 py-2 text-xs uppercase outline-none"><option value="points">Fantasy points</option><option value="price-high">Price high</option><option value="price-low">Price low</option></select></div>{message && <p className="m-3 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-xs font-bold text-fn-red">{message}</p>}<div className="grid gap-2 p-3 md:grid-cols-2">{list.map((a, index) => { const isThirdNinetyPlus = fantasyGameSlug === 'fc-mobile' && rating(a) >= 90 && selectedAthletes.filter((x) => rating(x) >= 90).length >= 2 && !selectedIds.includes(a.id); return <div key={a.id} className={`border border-fn-gborder p-2 ${fantasyStatus(a) === "available" ? "bg-fn-black/60" : "bg-fn-black/25 opacity-55 grayscale"}`}><PlayerCardTemplate athlete={a} rating={rating(a)} primary="rgb(var(--fn-green))" gameName={fantasyGameName} rank={index + 1} variant="compact" /><div className="mt-2 grid grid-cols-3 gap-1 text-[9px] uppercase tracking-widest"><span className="text-fn-green">{currency(fantasyPrice(a))}</span><span>{fantasyPoints(a, "recent")} recent</span><span>{fantasyPoints(a, "total")} total</span></div><div className="mt-2 flex items-center justify-between gap-2"><span className={`text-[9px] font-black uppercase ${fantasyStatus(a) === "available" ? (isThirdNinetyPlus ? "text-fn-yellow" : "text-fn-green") : "text-fn-red"}`}>{isThirdNinetyPlus ? "● 90+ Limit" : `● ${fantasyStatus(a)}`}</span><div className="flex gap-1"><button type="button" onClick={() => addAthlete(a, "starter")} disabled={!canEditSquad || selectedIds.includes(a.id) || fantasyStatus(a) !== "available" || isThirdNinetyPlus} title={isThirdNinetyPlus ? "FC Mobile squad limit: Maximum 2 players rated 90+ allowed" : undefined} className="bg-fn-green px-2 py-1 text-[9px] font-black uppercase text-fn-black disabled:opacity-40">{isThirdNinetyPlus ? "90+ Full" : "Start"}</button><button type="button" onClick={() => addAthlete(a, "bench")} disabled={!canEditSquad || selectedIds.includes(a.id) || fantasyStatus(a) !== "available" || isThirdNinetyPlus} title={isThirdNinetyPlus ? "FC Mobile squad limit: Maximum 2 players rated 90+ allowed" : undefined} className="border border-fn-green/40 px-2 py-1 text-[9px] font-black uppercase text-fn-green disabled:opacity-40">{isThirdNinetyPlus ? "90+ Full" : "Bench"}</button></div></div></div>; })}</div></section><aside className="space-y-4"><section className="border border-fn-gborder bg-fn-card p-4"><div className="flex items-center justify-between"><h2 className="font-display text-xl font-black uppercase">My Squad</h2><div className="flex gap-1">{(starters.length > 0 || bench.length > 0) && <button type="button" onClick={() => { if (window.confirm("Clear current squad selections?")) repickSquad(true); }} className="border border-fn-yellow/40 bg-fn-yellow/10 px-2 py-1 text-[9px] font-black uppercase text-fn-yellow hover:bg-fn-yellow hover:text-fn-black">Clear All</button>}</div></div><Squad title="Starting 4" ids={starters} athletes={athletes} captain={captain} setCaptain={canEditSquad ? setCaptain : undefined} remove={remove} /><Squad title="Bench" ids={bench} athletes={athletes} captain={captain} remove={remove} /><button type="button" onClick={confirmSquad} disabled={validation.length > 0} className="mt-4 w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black disabled:opacity-40">Confirm Squad</button>{validation.map((v) => <p key={v} className="mt-2 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-[10px] text-fn-red">{v}</p>)}</section><section className="grid grid-cols-2 gap-2"><HudStat label="Rank" value={`#${myRank}`} /><HudStat label="GW Points" value="0" tone="paper" /><HudStat label="Next GW" value="GW 1" tone="yellow" /><HudStat label="Transfers" value={`${Number(transferWindow.transfersRemaining ?? 0)}`} /></section></aside></div></>}</section><motion.button type="button" aria-expanded={quickTrayOpen} aria-controls="fantasy-squad-quick-tray" drag dragMomentum={false} dragConstraints={quickButtonDragConstraints} onPointerDown={(event) => { quickButtonDragStart.current = { x: event.clientX, y: event.clientY }; quickButtonDragged.current = false; }} onPointerMove={(event) => { const start = quickButtonDragStart.current; if (!start) return; if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > QUICK_BUTTON_DRAG_THRESHOLD) quickButtonDragged.current = true; }} onDragEnd={(_, info) => { const base = quickButtonPosition ?? defaultQuickButtonPosition(); persistQuickButtonPosition({ x: base.x + info.offset.x, y: base.y + info.offset.y }); window.setTimeout(() => { quickButtonDragged.current = false; }, 0); }} onClick={() => { if (quickButtonDragged.current) return; setQuickTrayOpen((open) => !open); }} style={quickButtonStyle} className="fixed z-50 flex h-16 w-16 touch-none items-center justify-center rounded-full bg-fn-green text-fn-black shadow-[0_0_28px_rgba(77,255,110,.35)] ring-4 ring-fn-black/80"><ListChecks size={28} /><span className="absolute -right-1 -top-1 rounded-full border border-fn-black bg-fn-card px-2 py-1 text-[10px] font-black text-fn-green">{selectedIds.length}/6</span></motion.button><SquadQuickTray open={quickTrayOpen} reduceMotion={reduceMotion} athletes={athletes} starters={starters} bench={bench} captain={captain} squadValue={squadValue} remaining={remaining} validation={validation} message={message} setCaptain={canEditSquad ? setCaptain : () => setMessage(lockMessage)} remove={remove} moveToBench={moveToBench} moveToStarter={moveToStarter} onConfirm={confirmSquad} onClose={() => setQuickTrayOpen(false)} /></motion.main>}</AnimatePresence>;
+
+  const statHeader = (
+    <>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <HudStat label="Average Points" value={`${avgPoints}`} tone="paper" />
+        <HudStat label="Latest Points" value={`${latestPoints}`} />
+        <HudStat label="GW Rank" value={`#${myRank}`} tone="paper" />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <HudStat label="Highest Points" value={`${highest}`} tone="yellow" />
+        <HudStat label="Transfers Remaining" value={`${Number(transferWindow.transfersRemaining ?? 0)}`} />
+        <HudStat label="Team Captain of the Week" value={startersAthletes[0] ? displayName(startersAthletes[0]) : "Pending"} tone="paper" />
+      </div>
+    </>
+  );
+
+  const squadContent = (
+    <>
+      <div className="flex border border-fn-gborder bg-fn-black p-1 text-[10px] font-black uppercase tracking-widest">
+        <button type="button" onClick={() => setDashboardMode("battleground")} className={`flex-1 px-3 py-2 ${dashboardMode === "battleground" ? "bg-fn-green text-fn-black" : "text-fn-muted"}`}>Battleground View</button>
+        <button type="button" onClick={() => setDashboardMode("list")} className={`flex-1 px-3 py-2 ${dashboardMode === "list" ? "bg-fn-green text-fn-black" : "text-fn-muted"}`}>List View</button>
+      </div>
+      {dashboardMode === "battleground" ? (
+        <section className="relative mt-4 overflow-hidden border border-fn-green/25 bg-fn-card p-4">
+          <div className="absolute inset-0 opacity-30 bg-[linear-gradient(rgba(77,255,110,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(77,255,110,.08)_1px,transparent_1px),radial-gradient(circle_at_20%_20%,rgba(77,255,110,.2),transparent_22%),radial-gradient(circle_at_80%_30%,rgba(255,255,255,.08),transparent_18%)] bg-[size:38px_38px,38px_38px,100%_100%,100%_100%]" />
+          <div className="relative">
+            <p className="fn-label text-fn-green">Starting 4 / Tactical Formation</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {startersAthletes.map((a) => (
+                <TacticalPlayerCard key={a.id} athlete={a} captain={captain === a.id} tripleCaptainActive={activeChip === "triple_captain" && captain === a.id} />
+              ))}
+            </div>
+            <div className="my-5 border-t border-fn-green/25 pt-3">
+              <p className="fn-label text-fn-muted">SUBS</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {benchAthletes.map((a) => (
+                  <TacticalPlayerCard key={a.id} athlete={a} captain={false} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="mt-4 space-y-3 border border-fn-gborder bg-fn-card p-4">
+          <p className="fn-label text-fn-green">Starting 4</p>
+          {startersAthletes.map((a) => (
+            <TacticalPlayerCard key={a.id} athlete={a} captain={captain === a.id} tripleCaptainActive={activeChip === "triple_captain" && captain === a.id} />
+          ))}
+          <p className="fn-label border-t border-fn-gborder pt-3 text-fn-muted">SUBS / BENCH</p>
+          {benchAthletes.map((a) => (
+            <TacticalPlayerCard key={a.id} athlete={a} captain={false} />
+          ))}
+        </section>
+      )}
+    </>
+  );
+
+  return (
+    <AnimatePresence mode="wait">
+      {loading ? (
+        <RouteLoadingScreen subtitle="LOADING FANTASY" ariaLabel="Loading Fantasy League" reduceMotion={reduceMotion} loaderKey="fantasy-loader" />
+      ) : view === "reveal" ? (
+        <CombatReveal reduceMotion={reduceMotion} />
+      ) : (
+        <motion.main key="fantasy-dashboard" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-fn-black px-3 py-5 pb-32 text-fn-text sm:px-6 lg:px-8">
+          <section className="mx-auto max-w-7xl">
+            {/* Main Header with Lock/Unlock State */}
+            <div className="mb-5 border border-fn-green/25 bg-fn-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="fn-label text-fn-green">Fantasy League</p>
+                  <h1 className="font-display text-3xl font-black uppercase tracking-widest">{fantasyGameName} Gameweek Command</h1>
+                </div>
+                <div>
+                  {rosterLocked ? (
+                    <span className="inline-flex items-center gap-1.5 border border-fn-red/50 bg-fn-red/20 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-fn-red">
+                      <Lock size={14} /> Rosters Locked By Admin
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 border border-fn-green/50 bg-fn-green/20 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-fn-green">
+                      <Unlock size={14} /> Roster Editing Open
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {rosterLocked ? (
+                <p className="mt-3 inline-flex items-center gap-2 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-xs font-black uppercase text-fn-red">
+                  <Lock size={14} /> Squad Locked — {lockMessage}
+                </p>
+              ) : (
+                <p className="mt-3 inline-flex items-center gap-2 border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-xs font-black uppercase text-fn-green">
+                  <Unlock size={14} /> Squad Edits Active — {lockMessage}
+                </p>
+              )}
+            </div>
+
+            {view === "dashboard" ? (
+              <div className="grid gap-5 lg:grid-cols-[1fr_.34fr]">
+                <section>
+                  {/* Lineup & Roster Action Banner */}
+                  <div className={`mb-4 border p-4 ${rosterLocked ? 'border-fn-red/40 bg-fn-card' : 'border-fn-green/40 bg-fn-card'}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${rosterLocked ? 'bg-fn-red' : 'bg-fn-green animate-pulse'}`} />
+                          <p className={`fn-label ${rosterLocked ? 'text-fn-red' : 'text-fn-green'}`}>
+                            {rosterLocked ? 'Roster Editing Locked' : 'Roster Editing Open'}
+                          </p>
+                        </div>
+                        <h3 className="font-display text-lg font-black uppercase text-fn-text">
+                          {rosterLocked ? 'Lineup Locked by Admin' : 'Manage & Edit Lineup'}
+                        </h3>
+                        <p className="mt-1 text-xs text-fn-muted">
+                          {rosterLocked
+                            ? 'The admin has locked squad editing. You cannot make changes or transfers at this time.'
+                            : 'You can make changes to your starters, bench, captain, or squad selections freely until the admin locks it.'}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => repickSquad(false)}
+                          disabled={rosterLocked}
+                          className="bg-fn-green px-4 py-2 text-xs font-black uppercase tracking-widest text-fn-black hover:bg-fn-gdim disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Edit Roster
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Clear all current players and pick fresh from scratch?")) repickSquad(true);
+                          }}
+                          disabled={rosterLocked}
+                          className="border border-fn-yellow/40 bg-fn-yellow/10 px-3 py-2 text-xs font-black uppercase tracking-widest text-fn-yellow hover:bg-fn-yellow hover:text-fn-black disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Pick Fresh
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {statHeader}
+
+                  <section className="mt-4 border border-fn-green/30 bg-fn-card p-4">
+                    <p className="fn-label text-fn-green">Chips</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={activateTripleCaptain}
+                        disabled={activeChip === "triple_captain" || !canEditSquad || !tripleCaptainOpen}
+                        className="border border-fn-green/40 px-3 py-3 text-xs font-black uppercase text-fn-green disabled:opacity-40"
+                      >
+                        Triple Captain {activeChip === "triple_captain" ? "Active" : "Activate"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMessage(manualSubOpen ? "Manual Substitute is open — use Start/Bench controls before Gameweek lock to substitute bench players." : "Manual Substitute is currently closed by admin.")}
+                        disabled={!canEditSquad || !manualSubOpen}
+                        className="border border-fn-green/40 px-3 py-3 text-xs font-black uppercase text-fn-green disabled:opacity-40"
+                      >
+                        Manual Substitute
+                      </button>
+                    </div>
+                  </section>
+
+                  {squadContent}
+                  {leaderboardPanel}
+                </section>
+
+                <aside className="space-y-3">
+                  <HudStat label="National Rank" value={`#${myRank}`} />
+                  <HudStat label="Average Points / Gameweek" value={`${avgPoints}`} tone="paper" />
+                  <HudStat label="Total Accumulated Points" value={`${totalPoints}`} />
+                  <HudStat label="Current Gameweek Points" value={`${latestPoints}`} tone="yellow" />
+                  <HudStat label="Squad Value" value={currency(squadValue)} tone="paper" />
+                  <HudStat label="Remaining Budget" value={currency(remaining)} />
+                </aside>
+              </div>
+            ) : !isLoggedIn ? (
+              <div className="grid gap-5 lg:grid-cols-[1fr_.34fr]">
+                <section>{leaderboardPanel}</section>
+                <aside className="space-y-3">
+                  <HudStat label="Fantasy Access" value="Login Required" tone="paper" />
+                  <HudStat label="Leaderboard Teaser" value={leader ? `#1 ${leader.total_points} pts` : "Pending"} />
+                </aside>
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <HudStat label="Budget" value={currency(currentBudget)} />
+                  <HudStat label="Squad Value" value={currency(squadValue)} tone="paper" />
+                  <HudStat label="Remaining Budget" value={currency(remaining)} tone={remaining < 0 ? "yellow" : "green"} />
+                </div>
+
+                {rosterLocked ? (
+                  <p className="mt-3 border border-fn-red/40 bg-fn-red/10 px-3 py-2 text-xs font-bold text-fn-red">
+                    <Lock className="mr-2 inline" size={14} /> Squad Locked. {lockMessage}
+                  </p>
+                ) : (
+                  <p className="mt-3 border border-fn-green/40 bg-fn-green/10 px-3 py-2 text-xs font-bold text-fn-green">
+                    <Unlock className="mr-2 inline" size={14} /> Roster editing is active. Make your squad changes and confirm before the admin locks it.
+                  </p>
+                )}
+
+                <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_.85fr]">
+                  <section className="border border-fn-gborder bg-fn-card">
+                    <div className="flex flex-col gap-2 border-b border-fn-gborder p-3 sm:flex-row">
+                      <div className="flex flex-1 items-center gap-2 border border-fn-gborder bg-fn-black px-3 py-2">
+                        <Search size={14} className="text-fn-green" />
+                        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search athletes / IGN" className="w-full bg-transparent text-xs outline-none" />
+                      </div>
+                      <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="border border-fn-gborder bg-fn-black px-3 py-2 text-xs uppercase outline-none">
+                        <option value="points">Fantasy points</option>
+                        <option value="price-high">Price high</option>
+                        <option value="price-low">Price low</option>
+                      </select>
+                    </div>
+
+                    {message && <p className="m-3 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-xs font-bold text-fn-red">{message}</p>}
+
+                    <div className="grid gap-2 p-3 md:grid-cols-2">
+                      {list.map((a, index) => {
+                        const isThirdNinetyPlus = fantasyGameSlug === 'fc-mobile' && rating(a) >= 90 && selectedAthletes.filter((x) => rating(x) >= 90).length >= 2 && !selectedIds.includes(a.id);
+                        const cleanAthlete = {
+                          ...a,
+                          name: cleanText(a.name),
+                          ign: cleanText(a.ign),
+                          known_name: cleanText(a.known_name),
+                          team: a.team ? cleanText(a.team) : null,
+                          role: a.role ? cleanText(a.role) : null,
+                        };
+
+                        return (
+                          <div key={a.id} className={`border border-fn-gborder p-2 ${fantasyStatus(a) === "available" ? "bg-fn-black/60" : "bg-fn-black/25 opacity-55 grayscale"}`}>
+                            <PlayerCardTemplate athlete={cleanAthlete} rating={rating(a)} primary="rgb(var(--fn-green))" gameName={fantasyGameName} rank={index + 1} variant="compact" />
+                            <div className="mt-2 grid grid-cols-3 gap-1 text-[9px] uppercase tracking-widest">
+                              <span className="text-fn-green">{currency(fantasyPrice(a))}</span>
+                              <span>{fantasyPoints(a, "recent")} recent</span>
+                              <span>{fantasyPoints(a, "total")} total</span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <span className={`text-[9px] font-black uppercase ${fantasyStatus(a) === "available" ? (isThirdNinetyPlus ? "text-fn-yellow" : "text-fn-green") : "text-fn-red"}`}>
+                                {isThirdNinetyPlus ? "● 90+ Limit" : `● ${cleanText(fantasyStatus(a))}`}
+                              </span>
+                              <div className="flex gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => addAthlete(a, "starter")}
+                                  disabled={!canEditSquad || selectedIds.includes(a.id) || fantasyStatus(a) !== "available" || isThirdNinetyPlus}
+                                  title={isThirdNinetyPlus ? "FC Mobile squad limit: Maximum 2 players rated 90+ allowed" : undefined}
+                                  className="bg-fn-green px-2 py-1 text-[9px] font-black uppercase text-fn-black disabled:opacity-40"
+                                >
+                                  {isThirdNinetyPlus ? "90+ Full" : "Start"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => addAthlete(a, "bench")}
+                                  disabled={!canEditSquad || selectedIds.includes(a.id) || fantasyStatus(a) !== "available" || isThirdNinetyPlus}
+                                  title={isThirdNinetyPlus ? "FC Mobile squad limit: Maximum 2 players rated 90+ allowed" : undefined}
+                                  className="border border-fn-green/40 px-2 py-1 text-[9px] font-black uppercase text-fn-green disabled:opacity-40"
+                                >
+                                  {isThirdNinetyPlus ? "90+ Full" : "Bench"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  <aside className="space-y-4">
+                    <section className="border border-fn-gborder bg-fn-card p-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="font-display text-xl font-black uppercase">My Squad</h2>
+                        <div className="flex gap-1">
+                          {(starters.length > 0 || bench.length > 0) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm("Clear current squad selections?")) repickSquad(true);
+                              }}
+                              disabled={!canEditSquad}
+                              className="border border-fn-yellow/40 bg-fn-yellow/10 px-2 py-1 text-[9px] font-black uppercase text-fn-yellow hover:bg-fn-yellow hover:text-fn-black disabled:opacity-40"
+                            >
+                              Clear All
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <Squad title="Starting 4" ids={starters} athletes={athletes} captain={captain} setCaptain={canEditSquad ? setCaptain : undefined} remove={remove} disabled={!canEditSquad} />
+                      <Squad title="Bench" ids={bench} athletes={athletes} captain={captain} remove={remove} disabled={!canEditSquad} />
+
+                      <button
+                        type="button"
+                        onClick={confirmSquad}
+                        disabled={!canEditSquad || validation.length > 0}
+                        className="mt-4 w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black disabled:opacity-40"
+                      >
+                        {rosterLocked ? "Roster Locked by Admin" : "Confirm Squad"}
+                      </button>
+
+                      {validation.map((v) => <p key={v} className="mt-2 border border-fn-red/30 bg-fn-red/10 px-3 py-2 text-[10px] text-fn-red">{v}</p>)}
+                    </section>
+
+                    <section className="grid grid-cols-2 gap-2">
+                      <HudStat label="Rank" value={`#${myRank}`} />
+                      <HudStat label="GW Points" value="0" tone="paper" />
+                      <HudStat label="Next GW" value="GW 1" tone="yellow" />
+                      <HudStat label="Transfers" value={`${Number(transferWindow.transfersRemaining ?? 0)}`} />
+                    </section>
+                  </aside>
+                </div>
+              </>
+            )}
+          </section>
+
+          <motion.button
+            type="button"
+            aria-expanded={quickTrayOpen}
+            aria-controls="fantasy-squad-quick-tray"
+            drag
+            dragMomentum={false}
+            dragConstraints={quickButtonDragConstraints}
+            onPointerDown={(event) => { quickButtonDragStart.current = { x: event.clientX, y: event.clientY }; quickButtonDragged.current = false; }}
+            onPointerMove={(event) => { const start = quickButtonDragStart.current; if (!start) return; if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > QUICK_BUTTON_DRAG_THRESHOLD) quickButtonDragged.current = true; }}
+            onDragEnd={(_, info) => { const base = quickButtonPosition ?? defaultQuickButtonPosition(); persistQuickButtonPosition({ x: base.x + info.offset.x, y: base.y + info.offset.y }); window.setTimeout(() => { quickButtonDragged.current = false; }, 0); }}
+            onClick={() => { if (quickButtonDragged.current) return; setQuickTrayOpen((open) => !open); }}
+            style={quickButtonStyle}
+            className="fixed z-50 flex h-16 w-16 touch-none items-center justify-center rounded-full bg-fn-green text-fn-black shadow-[0_0_28px_rgba(77,255,110,.35)] ring-4 ring-fn-black/80"
+          >
+            <ListChecks size={28} />
+            <span className="absolute -right-1 -top-1 rounded-full border border-fn-black bg-fn-card px-2 py-1 text-[10px] font-black text-fn-green">{selectedIds.length}/6</span>
+          </motion.button>
+
+          <SquadQuickTray
+            open={quickTrayOpen}
+            reduceMotion={reduceMotion}
+            athletes={athletes}
+            starters={starters}
+            bench={bench}
+            captain={captain}
+            squadValue={squadValue}
+            remaining={remaining}
+            validation={validation}
+            message={message}
+            setCaptain={canEditSquad ? setCaptain : () => setMessage(lockMessage)}
+            remove={remove}
+            moveToBench={moveToBench}
+            moveToStarter={moveToStarter}
+            onConfirm={confirmSquad}
+            onClose={() => setQuickTrayOpen(false)}
+            disabled={!canEditSquad}
+          />
+        </motion.main>
+      )}
+    </AnimatePresence>
+  );
 }

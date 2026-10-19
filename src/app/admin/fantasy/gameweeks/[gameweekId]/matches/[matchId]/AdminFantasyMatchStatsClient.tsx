@@ -8,7 +8,7 @@ type Row = { id: string; athleteId: string; athleteName: string; participated: b
 type Athlete = { id: string; name?: string; ign?: string; known_name?: string | null };
 type Config = Record<string, number>;
 type SavedStat = { athlete_id: string; participated?: boolean; kills?: number; top_three_finish?: boolean; match_win?: boolean; mvp?: boolean; goals?: number; result?: 'win' | 'loss' | 'draw'; goals_conceded?: number; fantasy_points?: number };
-const label = (athlete: Athlete) => athlete.known_name || athlete.ign || athlete.name || 'Unknown athlete';
+const label = (athlete: Athlete) => (athlete.known_name || athlete.ign || athlete.name || 'Unknown athlete').replace(/_/g, ' ');
 
 export default function AdminFantasyMatchStatsPage({ params }: { params: { gameweekId: string; matchId: string } }) {
   const [rows, setRows] = useState<Row[]>([]); const [gameSlug, setGameSlug] = useState('pubg-mobile'); const [config, setConfig] = useState<Config>({}); const [error, setError] = useState(''); const football = gameSlug === 'fc-mobile';

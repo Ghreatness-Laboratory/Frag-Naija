@@ -48,6 +48,10 @@ export async function PUT(request) {
     upserts.push({ key: `${prefix}_reset_at`, value: body.reset_at, updated_at: new Date().toISOString() });
   }
 
+  if (body.roster_locked !== undefined) {
+    upserts.push({ key: `${prefix}_roster_locked`, value: Boolean(body.roster_locked), updated_at: new Date().toISOString() });
+  }
+
   const { error } = await supabaseAdmin.from('fantasy_settings').upsert(upserts, { onConflict: 'key' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({
@@ -57,5 +61,28 @@ export async function PUT(request) {
     budget: body.budget,
     allow_repick: body.allow_repick,
     reset_at: body.reset_at,
+    roster_locked: body.roster_locked,
+  });
+}
+
+export async function GET(request) {
+  const unauthorized = await checkAdmin();
+  if (unauthorized) return unauthorized;
+
+  const { searchParams } = new URL(request.url);
+  const gameSlug = searchParams.get('game_slug') || 'pubg-mobile';
+  const prefix = gameSlug.replace(/-/g, '_');
+
+  const { data } = await supabaseAdmin.from('fantasy_settings').select('key, value');
+  const settingsMap = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+
+  return NextResponse.json({
+    game_slug: gameSlug,
+    roster_locked: Boolean(settingsMap[`${prefix}_roster_locked`]),
+    budget: settingsMap[`${prefix}_budget`] ?? (gameSlug === 'fc-mobile' ? 6000000 : 10000000),
+    transferWindow: settingsMap[`${prefix}_transfer_window`],
+    chipWindows: settingsMap[`${prefix}_chip_windows`],
+    allow_repick: settingsMap[`${prefix}_allow_repick`] ?? true,
+    all_settings: settingsMap,
   });
 }

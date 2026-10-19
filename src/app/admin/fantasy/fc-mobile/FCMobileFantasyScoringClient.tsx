@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, RotateCcw, Save, ShieldCheck } from 'lucide-react';
+import { Lock, RefreshCw, RotateCcw, Save, ShieldCheck, Unlock } from 'lucide-react';
 
 const fields = [
   { key: 'appearance_points', label: 'Appearance' },
@@ -28,6 +28,9 @@ export default function FCMobileFantasyScoringPage() {
   const [lastResetTime, setLastResetTime] = useState<string | null>(null);
   const [resetBusy, setResetBusy] = useState(false);
   const [repickMessage, setRepickMessage] = useState('');
+  const [rosterLocked, setRosterLocked] = useState(false);
+  const [lockBusy, setLockBusy] = useState(false);
+  const [lockMessage, setLockMessage] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/fantasy/scoring')
@@ -54,9 +57,34 @@ export default function FCMobileFantasyScoringPage() {
         if (settings?.reset_at) {
           setLastResetTime(new Date(settings.reset_at).toLocaleString());
         }
+        if (settings?.roster_locked !== undefined) {
+          setRosterLocked(Boolean(settings.roster_locked));
+        }
       })
       .catch(() => null);
   }, []);
+
+  async function toggleRosterLock() {
+    const nextState = !rosterLocked;
+    setLockBusy(true);
+    setLockMessage('');
+    try {
+      const res = await fetch('/api/admin/fantasy/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameSlug: 'fc-mobile', roster_locked: nextState }),
+      });
+      if (res.ok) {
+        setRosterLocked(nextState);
+        setLockMessage(`FC Mobile roster editing is now ${nextState ? 'LOCKED' : 'UNLOCKED'}.`);
+        window.setTimeout(() => setLockMessage(''), 3000);
+      }
+    } catch {
+      setLockMessage('Error updating lock status.');
+    } finally {
+      setLockBusy(false);
+    }
+  }
 
   async function save() {
     const r = await fetch('/api/admin/fantasy/scoring', {
@@ -103,8 +131,53 @@ export default function FCMobileFantasyScoringPage() {
       <p className="fn-label text-fn-green">Fantasy League / FC Mobile</p>
       <h1 className="mt-2 font-display text-2xl font-black uppercase">FC Mobile Squad & Scoring Rules</h1>
       <p className="mt-2 text-sm text-fn-muted">
-        Tactical squad limits and football scoring configurations specific to FC Mobile (game_slug = &apos;fc-mobile&apos;). EA FC 26 and other games are unchanged.
+        Tactical squad limits and football scoring configurations specific to FC Mobile (game: FC Mobile). EA FC 26 and other games are unchanged.
       </p>
+
+      {/* FC Mobile Roster Lock Control */}
+      <section className={`mt-6 border p-5 ${rosterLocked ? 'border-fn-red/40 bg-fn-red/5' : 'border-fn-green/40 bg-fn-green/5'}`}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1 border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${rosterLocked ? 'border-fn-red/60 bg-fn-red/20 text-fn-red' : 'border-fn-green/60 bg-fn-green/20 text-fn-green'}`}>
+                {rosterLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                {rosterLocked ? 'Rosters Locked' : 'Roster Editing Unlocked'}
+              </span>
+            </div>
+            <h2 className="mt-1 font-display text-lg font-black uppercase">
+              FC Mobile Roster Lock Control
+            </h2>
+            <p className="mt-1 text-xs text-fn-muted">
+              {rosterLocked
+                ? 'FC Mobile managers cannot edit their rosters, swap players, or confirm changes.'
+                : 'Users can freely edit their rosters until you click Lock.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggleRosterLock}
+            disabled={lockBusy}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-widest ${
+              rosterLocked
+                ? 'bg-fn-green text-fn-black hover:bg-fn-gdim'
+                : 'border border-fn-red/60 bg-fn-red/20 text-fn-red hover:bg-fn-red hover:text-white'
+            } disabled:opacity-50`}
+          >
+            {lockBusy ? (
+              'Updating...'
+            ) : rosterLocked ? (
+              <>
+                <Unlock size={14} /> Unlock Rosters (Allow Edits)
+              </>
+            ) : (
+              <>
+                <Lock size={14} /> Lock Rosters (Stop Edits)
+              </>
+            )}
+          </button>
+        </div>
+        {lockMessage && <p className="mt-3 text-xs font-bold text-fn-green">{lockMessage}</p>}
+      </section>
 
       {/* FC Mobile Squad Rules Card */}
       <section className="mt-6 border border-fn-green/30 bg-fn-card p-5">

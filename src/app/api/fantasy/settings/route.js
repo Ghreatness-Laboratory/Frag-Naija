@@ -26,12 +26,14 @@ export async function GET(request) {
   const defaultBudget = getFantasySquadBudget(gameSlug);
 
   try {
-    const [transferWindow, chipWindows, customBudget, allowRepick, resetAt] = await Promise.all([
-      getSetting(`${gameSlug.replace(/-/g, '_')}_transfer_window`, DEFAULT_SETTINGS.transferWindow),
-      getSetting(`${gameSlug.replace(/-/g, '_')}_chip_windows`, DEFAULT_SETTINGS.chipWindows),
+    const prefix = gameSlug.replace(/-/g, '_');
+    const [transferWindow, chipWindows, customBudget, allowRepick, resetAt, rosterLocked] = await Promise.all([
+      getSetting(`${prefix}_transfer_window`, DEFAULT_SETTINGS.transferWindow),
+      getSetting(`${prefix}_chip_windows`, DEFAULT_SETTINGS.chipWindows),
       getSetting(budgetKey, defaultBudget),
-      getSetting(`${gameSlug.replace(/-/g, '_')}_allow_repick`, gameSlug === 'fc-mobile'),
-      getSetting(`${gameSlug.replace(/-/g, '_')}_reset_at`, null),
+      getSetting(`${prefix}_allow_repick`, true),
+      getSetting(`${prefix}_reset_at`, null),
+      getSetting(`${prefix}_roster_locked`, false),
     ]);
 
     const budget = Number(customBudget) || defaultBudget;
@@ -44,6 +46,7 @@ export async function GET(request) {
       chipWindows,
       allow_repick: Boolean(allowRepick),
       reset_at: resetAt || null,
+      roster_locked: Boolean(rosterLocked),
     });
   } catch (error) {
     return NextResponse.json({
@@ -51,8 +54,9 @@ export async function GET(request) {
       game_slug: gameSlug,
       budget: defaultBudget,
       max_90_plus_players: gameSlug === 'fc-mobile' ? 2 : null,
-      allow_repick: gameSlug === 'fc-mobile',
+      allow_repick: true,
       reset_at: null,
+      roster_locked: false,
       warning: error.message || 'Using default fantasy settings.',
     });
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarClock, Save, Trophy } from 'lucide-react';
+import { CalendarClock, Lock, Unlock, Save, Trophy, CheckCircle2 } from 'lucide-react';
 
 const scoringRows = [
   ['Participation (played)', '+1'], ['Kill', '+2'], ['Top 3 finish', '+5'], ['Match win', '+10'], ['MVP', '+5'], ['Captain multiplier', '2'],
@@ -14,6 +14,12 @@ const gameweekRows = ['Selection opens', 'Captain selection', 'Transfers', 'Line
 const TRANSFER_WINDOW_KEY = 'fn-pubg-fantasy-transfer-window';
 const CHIP_WINDOW_KEY = 'fn-pubg-fantasy-chip-windows';
 
+const GAMES = [
+  { slug: 'pubg-mobile', name: 'PUBG Mobile' },
+  { slug: 'fc-mobile', name: 'FC Mobile' },
+  { slug: 'free-fire', name: 'Free Fire' },
+];
+
 export default function AdminFantasyPage() {
   const [transferStatus, setTransferStatus] = useState("closed");
   const [transfersRemaining, setTransfersRemaining] = useState("0");
@@ -24,9 +30,336 @@ export default function AdminFantasyPage() {
   const [gameweekDeadline, setGameweekDeadline] = useState('');
   const [createdGameweeks, setCreatedGameweeks] = useState<{ id: string; name: string; deadline: string; status: string }[]>([]);
   const [chipWindows, setChipWindows] = useState({ triple_captain: { status: 'closed', opens: '', closes: '' }, manual_substitute: { status: 'closed', opens: '', closes: '' } });
-  useEffect(() => { const savedWindow = window.localStorage.getItem(TRANSFER_WINDOW_KEY); if (savedWindow) { try { const parsed = JSON.parse(savedWindow); setTransferStatus(parsed.status || "closed"); setTransfersRemaining(String(parsed.transfersRemaining ?? "0")); setWindowOpens(parsed.opens || ""); setWindowCloses(parsed.closes || ""); } catch {} } const savedChips = window.localStorage.getItem(CHIP_WINDOW_KEY); if (savedChips) { try { setChipWindows(JSON.parse(savedChips)); } catch {} } fetch("/api/fantasy/settings", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((settings) => { if (settings?.transferWindow) { setTransferStatus(settings.transferWindow.status || "closed"); setTransfersRemaining(String(settings.transferWindow.transfersRemaining ?? "0")); setWindowOpens(settings.transferWindow.opens || ""); setWindowCloses(settings.transferWindow.closes || ""); window.localStorage.setItem(TRANSFER_WINDOW_KEY, JSON.stringify(settings.transferWindow)); } if (settings?.chipWindows) { setChipWindows(settings.chipWindows); window.localStorage.setItem(CHIP_WINDOW_KEY, JSON.stringify(settings.chipWindows)); } }).catch(() => null); }, []);
-  async function saveTransferWindow() { const transferWindow = { gameSlug: "pubg-mobile", status: transferStatus, transfersRemaining: Number(transfersRemaining) || 0, opens: windowOpens, closes: windowCloses }; window.localStorage.setItem(TRANSFER_WINDOW_KEY, JSON.stringify(transferWindow)); window.localStorage.setItem(CHIP_WINDOW_KEY, JSON.stringify(chipWindows)); await fetch("/api/admin/fantasy/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ transferWindow, chipWindows }) }).catch(() => null); setSaved(true); window.setTimeout(() => setSaved(false), 1800); }
-  function updateChipWindow(chip: "triple_captain" | "manual_substitute", field: "status" | "opens" | "closes", value: string) { setChipWindows((current) => ({ ...current, [chip]: { ...current[chip], [field]: value } })); }
-  function createOrUpdateGameweek() { const id = (gameweekName || "gameweek").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `gw-${Date.now()}`; setCreatedGameweeks((current) => [{ id, name: gameweekName || "New Gameweek", deadline: gameweekDeadline, status: "selection" }, ...current.filter((gw) => gw.id !== id)]); }
-  return <div className="p-8"><div className="mb-6"><p className="text-xs font-black uppercase tracking-widest text-fn-green">Fantasy League Admin</p><h1 className="mt-1 text-xl font-bold uppercase tracking-widest text-fn-text">Gameweeks, scoring, stats & leagues</h1><p className="mt-1 max-w-3xl text-xs leading-relaxed text-fn-muted">Athlete fantasy price and availability are managed on the existing Athletes admin screen. This command panel defines the dedicated Fantasy League admin surface for configurable simplified scoring, Gameweeks, match stat entry, manual chip usage limits, auto-sub rules, and leaderboard league operations.</p></div><div className="grid gap-5 xl:grid-cols-2"><section className="rounded-sm border border-fn-gborder bg-fn-card p-5"><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-lg font-black uppercase text-fn-text">Scoring configuration</h2><button className="inline-flex items-center gap-2 bg-fn-green px-3 py-2 text-[10px] font-black uppercase text-fn-black"><Save size={12} /> Save & recalc</button></div><div className="grid gap-2 sm:grid-cols-2">{scoringRows.map(([label, value]) => <label key={label} className="border border-fn-gborder bg-fn-black p-3"><span className="fn-label">{label}</span><input defaultValue={value} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-sm text-fn-text outline-none focus:border-fn-green" /></label>)}</div><p className="mt-3 border border-fn-green/20 bg-fn-green/10 px-3 py-2 text-[10px] leading-relaxed text-fn-green">Default placement behavior is intentionally mutually exclusive: a match win uses the Match win value, 2nd/3rd use Top 3 finish, and they do not stack. Historical gameweeks are left as awarded; use Save & recalc only when you intentionally want a migration.</p><label className="mt-3 block border border-fn-gborder bg-fn-black p-3"><span className="fn-label">Substitution rules JSON</span><textarea defaultValue={'{"auto_sub_when_no_participation":true,"bench_priority":"user_order"}'} className="mt-2 min-h-24 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" /></label><div className="mt-3 grid gap-2 sm:grid-cols-2">{chipRows.map(([label, value]) => <label key={label} className="border border-fn-gborder bg-fn-black p-3"><span className="fn-label">{label} usage limit</span><input defaultValue={value} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-sm text-fn-text outline-none focus:border-fn-green" /></label>)}</div></section><section className="rounded-sm border border-fn-gborder bg-fn-card p-5"><h2 className="font-display text-lg font-black uppercase text-fn-text">Manage Gameweeks</h2><div className="mt-4 grid gap-3"><input value={gameweekName} onChange={(event) => setGameweekName(event.target.value)} placeholder="Gameweek name" className="border border-fn-gborder bg-fn-black px-3 py-3 text-xs outline-none focus:border-fn-green" /><input value={gameweekDeadline} onChange={(event) => setGameweekDeadline(event.target.value)} type="datetime-local" className="border border-fn-gborder bg-fn-black px-3 py-3 text-xs outline-none focus:border-fn-green" /><button type="button" onClick={createOrUpdateGameweek} className="bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Create / update Gameweek</button>{createdGameweeks.map((gw) => <Link key={gw.id} href={`/admin/fantasy/gameweeks/${gw.id}`} className="border border-fn-green/40 bg-fn-green/10 px-3 py-3 text-xs font-black uppercase text-fn-green">Open {gw.name}</Link>)}</div><div className="mt-5 space-y-2">{gameweekRows.map((step, index) => <div key={step} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2"><span className="font-black text-fn-green">#{index + 1}</span><span className="text-xs uppercase tracking-widest text-fn-muted">{step}</span></div>)}</div></section><section className="rounded-sm border border-fn-gborder bg-fn-card p-5"><h2 className="font-display text-lg font-black uppercase text-fn-text">Chip availability windows</h2><p className="mt-2 text-xs text-fn-muted">Open or close the user-facing Triple Captain and Manual Substitute controls.</p><div className="mt-4 grid gap-3 sm:grid-cols-2">{(["triple_captain", "manual_substitute"] as const).map((chip) => <div key={chip} className="border border-fn-gborder bg-fn-black p-3"><p className="fn-label text-fn-green">{chip.replace("_", " ")}</p><select value={chipWindows[chip].status} onChange={(event) => updateChipWindow(chip, "status", event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs uppercase text-fn-text outline-none focus:border-fn-green"><option value="open">Open</option><option value="closed">Closed</option><option value="scheduled">Scheduled</option></select><input type="datetime-local" value={chipWindows[chip].opens} onChange={(event) => updateChipWindow(chip, "opens", event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" /><input type="datetime-local" value={chipWindows[chip].closes} onChange={(event) => updateChipWindow(chip, "closes", event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" /></div>)}</div></section><section className="rounded-sm border border-fn-green/30 bg-fn-card p-5"><div className="mb-4 flex items-center justify-between"><div><p className="fn-label text-fn-green">PUBG Mobile only</p><h2 className="font-display text-lg font-black uppercase text-fn-text">Transfer week window</h2></div><CalendarClock size={18} className="text-fn-green" /></div><p className="text-xs leading-relaxed text-fn-muted">Controls when confirmed PUBG Mobile Fantasy squads can make swaps again. Outside this window, the squad builder shows the locked state and blocks player purchases, removals, and starter/bench moves.</p><div className="mt-3 inline-flex border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-fn-green">Current status: {transferStatus}</div><div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="border border-fn-gborder bg-fn-black p-3"><span className="fn-label">Manual status</span><select value={transferStatus} onChange={(event) => setTransferStatus(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs uppercase text-fn-text outline-none focus:border-fn-green"><option value="open">Open transfer window</option><option value="closed">Close transfer window</option><option value="scheduled">Schedule transfer window</option></select></label><label className="border border-fn-gborder bg-fn-black p-3"><span className="fn-label">Transfers remaining</span><input type="number" min="0" value={transfersRemaining} onChange={(event) => setTransfersRemaining(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" /></label><label className="border border-fn-gborder bg-fn-black p-3"><span className="fn-label">Window opens</span><input type="datetime-local" value={windowOpens} onChange={(event) => setWindowOpens(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" /></label><label className="border border-fn-gborder bg-fn-black p-3"><span className="fn-label">Window closes</span><input type="datetime-local" value={windowCloses} onChange={(event) => setWindowCloses(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" /></label></div><button type="button" onClick={saveTransferWindow} className="mt-4 w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black">{saved ? "Transfer window saved" : "Save transfer window"}</button></section><section className="rounded-sm border border-fn-gborder bg-fn-card p-5"><h2 className="font-display text-lg font-black uppercase text-fn-text">Gameweeks & match stat entry</h2><p className="mt-2 text-xs text-fn-muted">Admin Panel → Fantasy League → Gameweeks → a Gameweek → Matches → a Match opens the per-athlete stat grid for manual PUBG Mobile data entry. Saving calculates participation, kills, top-3, match win, MVP, and captain impacts immediately.</p><div className="mt-4 space-y-2">{['Gameweek #4', 'Gameweek #5'].map((name, index) => <Link key={name} href={`/admin/fantasy/gameweeks/gw-${index + 4}`} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-3 hover:border-fn-green"><span className="text-xs font-black uppercase text-fn-text">{name}</span><span className="text-[10px] uppercase text-fn-green">Open matches</span></Link>)}</div><p className="mt-3 text-[10px] leading-relaxed text-fn-muted">Stats are tracked with last-edited timestamps in the database; the match screen displays that timestamp after every save.</p></section><section className="rounded-sm border border-fn-gborder bg-fn-card p-5"><h2 className="font-display text-lg font-black uppercase text-fn-text">Leagues & leaderboards</h2>{['National leaderboard', 'Private/friends invite codes', 'Clan/community leagues', 'Gameweek-specific ranking'].map((item, index) => <div key={item} className="mt-2 flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2"><span className="inline-flex items-center gap-2 text-xs font-black uppercase text-fn-text"><Trophy size={12} className="text-fn-green" /> {item}</span><span className="text-[10px] uppercase text-fn-muted">#{index + 1}</span></div>)}</section></div></div>;
+
+  // Roster lock state per game
+  const [rosterLocks, setRosterLocks] = useState<Record<string, boolean>>({
+    'pubg-mobile': false,
+    'fc-mobile': false,
+    'free-fire': false,
+  });
+  const [lockUpdating, setLockUpdating] = useState<string | null>(null);
+  const [lockToast, setLockToast] = useState('');
+
+  useEffect(() => {
+    const savedWindow = window.localStorage.getItem(TRANSFER_WINDOW_KEY);
+    if (savedWindow) {
+      try {
+        const parsed = JSON.parse(savedWindow);
+        setTransferStatus(parsed.status || "closed");
+        setTransfersRemaining(String(parsed.transfersRemaining ?? "0"));
+        setWindowOpens(parsed.opens || "");
+        setWindowCloses(parsed.closes || "");
+      } catch {}
+    }
+    const savedChips = window.localStorage.getItem(CHIP_WINDOW_KEY);
+    if (savedChips) {
+      try { setChipWindows(JSON.parse(savedChips)); } catch {}
+    }
+
+    // Fetch settings for all games to get roster lock status
+    GAMES.forEach((g) => {
+      fetch(`/api/fantasy/settings?game_slug=${g.slug}`, { cache: "no-store" })
+        .then((r) => r.ok ? r.json() : null)
+        .then((settings) => {
+          if (settings) {
+            setRosterLocks((prev) => ({ ...prev, [g.slug]: Boolean(settings.roster_locked) }));
+            if (g.slug === 'pubg-mobile') {
+              if (settings.transferWindow) {
+                setTransferStatus(settings.transferWindow.status || "closed");
+                setTransfersRemaining(String(settings.transferWindow.transfersRemaining ?? "0"));
+                setWindowOpens(settings.transferWindow.opens || "");
+                setWindowCloses(settings.transferWindow.closes || "");
+                window.localStorage.setItem(TRANSFER_WINDOW_KEY, JSON.stringify(settings.transferWindow));
+              }
+              if (settings.chipWindows) {
+                setChipWindows(settings.chipWindows);
+                window.localStorage.setItem(CHIP_WINDOW_KEY, JSON.stringify(settings.chipWindows));
+              }
+            }
+          }
+        })
+        .catch(() => null);
+    });
+  }, []);
+
+  async function toggleRosterLock(gameSlug: string) {
+    const currentState = Boolean(rosterLocks[gameSlug]);
+    const nextState = !currentState;
+    setLockUpdating(gameSlug);
+    try {
+      const res = await fetch('/api/admin/fantasy/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameSlug, roster_locked: nextState }),
+      });
+      if (res.ok) {
+        setRosterLocks((prev) => ({ ...prev, [gameSlug]: nextState }));
+        const gameName = GAMES.find(g => g.slug === gameSlug)?.name || gameSlug;
+        setLockToast(`${gameName} roster editing is now ${nextState ? 'LOCKED' : 'UNLOCKED'}.`);
+        window.setTimeout(() => setLockToast(''), 3500);
+      }
+    } catch {} finally {
+      setLockUpdating(null);
+    }
+  }
+
+  async function saveTransferWindow() {
+    const transferWindow = { gameSlug: "pubg-mobile", status: transferStatus, transfersRemaining: Number(transfersRemaining) || 0, opens: windowOpens, closes: windowCloses };
+    window.localStorage.setItem(TRANSFER_WINDOW_KEY, JSON.stringify(transferWindow));
+    window.localStorage.setItem(CHIP_WINDOW_KEY, JSON.stringify(chipWindows));
+    await fetch("/api/admin/fantasy/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ transferWindow, chipWindows }) }).catch(() => null);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1800);
+  }
+
+  function updateChipWindow(chip: "triple_captain" | "manual_substitute", field: "status" | "opens" | "closes", value: string) {
+    setChipWindows((current) => ({ ...current, [chip]: { ...current[chip], [field]: value } }));
+  }
+
+  function createOrUpdateGameweek() {
+    const id = (gameweekName || "gameweek").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `gw-${Date.now()}`;
+    setCreatedGameweeks((current) => [{ id, name: gameweekName || "New Gameweek", deadline: gameweekDeadline, status: "selection" }, ...current.filter((gw) => gw.id !== id)]);
+  }
+
+  return (
+    <div className="p-8">
+      <div className="mb-6">
+        <p className="text-xs font-black uppercase tracking-widest text-fn-green">Fantasy League Admin</p>
+        <h1 className="mt-1 text-xl font-bold uppercase tracking-widest text-fn-text">Gameweeks, Scoring, Stats & Leagues</h1>
+        <p className="mt-1 max-w-3xl text-xs leading-relaxed text-fn-muted">
+          Athlete fantasy price and availability are managed on the existing Athletes admin screen. This command panel defines the dedicated Fantasy League admin surface for configurable simplified scoring, Gameweeks, match stat entry, manual chip usage limits, auto-sub rules, and leaderboard league operations.
+        </p>
+      </div>
+
+      {/* Roster Lock / Unlock Control Panel */}
+      <section className="mb-6 rounded-sm border border-fn-green/40 bg-fn-card p-5 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-fn-green animate-pulse" />
+              <p className="fn-label text-fn-green">Roster Editing Access Control</p>
+            </div>
+            <h2 className="mt-1 font-display text-xl font-black uppercase tracking-wide text-fn-text">
+              Lock & Unlock User Roster Editing
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs text-fn-muted">
+              Users can edit their rosters freely (swap starters, bench, captain, transfers) until you trigger the Lock button below. You can lock or unlock editing at any time for any game title.
+            </p>
+          </div>
+        </div>
+
+        {lockToast && (
+          <div className="mt-3 flex items-center gap-2 border border-fn-green/50 bg-fn-green/10 p-3 text-xs font-bold uppercase tracking-wide text-fn-green">
+            <CheckCircle2 size={16} />
+            {lockToast}
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {GAMES.map((game) => {
+            const isLocked = Boolean(rosterLocks[game.slug]);
+            const isUpdating = lockUpdating === game.slug;
+            return (
+              <div
+                key={game.slug}
+                className={`relative flex flex-col justify-between border p-4 transition-all ${
+                  isLocked
+                    ? 'border-fn-red/40 bg-fn-red/5'
+                    : 'border-fn-green/40 bg-fn-green/5'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-display text-sm font-black uppercase text-fn-text">{game.name}</span>
+                    <span
+                      className={`inline-flex items-center gap-1 border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                        isLocked
+                          ? 'border-fn-red/50 bg-fn-red/20 text-fn-red'
+                          : 'border-fn-green/50 bg-fn-green/20 text-fn-green'
+                      }`}
+                    >
+                      {isLocked ? <Lock size={10} /> : <Unlock size={10} />}
+                      {isLocked ? 'Rosters Locked' : 'Editing Open'}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-fn-muted">
+                    {isLocked
+                      ? 'Users are blocked from editing their squad, changing players, or confirming new lineups.'
+                      : 'Users can freely edit starters, bench, captain, and lineup picks.'}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-fn-gborder">
+                  <button
+                    type="button"
+                    onClick={() => toggleRosterLock(game.slug)}
+                    disabled={isUpdating}
+                    className={`w-full py-2.5 px-3 text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
+                      isLocked
+                        ? 'bg-fn-green text-fn-black hover:bg-fn-gdim'
+                        : 'border border-fn-red/60 bg-fn-red/20 text-fn-red hover:bg-fn-red hover:text-white'
+                    } disabled:opacity-50`}
+                  >
+                    {isUpdating ? (
+                      'Updating...'
+                    ) : isLocked ? (
+                      <>
+                        <Unlock size={14} /> Unlock Rosters (Allow Edits)
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={14} /> Lock Rosters (Stop Edits)
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <section className="rounded-sm border border-fn-gborder bg-fn-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-lg font-black uppercase text-fn-text">Scoring configuration</h2>
+            <button className="inline-flex items-center gap-2 bg-fn-green px-3 py-2 text-[10px] font-black uppercase text-fn-black">
+              <Save size={12} /> Save & recalc
+            </button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {scoringRows.map(([label, value]) => (
+              <label key={label} className="border border-fn-gborder bg-fn-black p-3">
+                <span className="fn-label">{label}</span>
+                <input defaultValue={value} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-sm text-fn-text outline-none focus:border-fn-green" />
+              </label>
+            ))}
+          </div>
+          <p className="mt-3 border border-fn-green/20 bg-fn-green/10 px-3 py-2 text-[10px] leading-relaxed text-fn-green">
+            Default placement behavior is intentionally mutually exclusive: a match win uses the Match win value, 2nd/3rd use Top 3 finish, and they do not stack. Historical gameweeks are left as awarded; use Save & recalc only when you intentionally want a migration.
+          </p>
+          <label className="mt-3 block border border-fn-gborder bg-fn-black p-3">
+            <span className="fn-label">Substitution rules JSON</span>
+            <textarea defaultValue={'{"auto_sub_when_no_participation":true,"bench_priority":"user_order"}'} className="mt-2 min-h-24 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" />
+          </label>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {chipRows.map(([label, value]) => (
+              <label key={label} className="border border-fn-gborder bg-fn-black p-3">
+                <span className="fn-label">{label} usage limit</span>
+                <input defaultValue={value} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-sm text-fn-text outline-none focus:border-fn-green" />
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-sm border border-fn-gborder bg-fn-card p-5">
+          <h2 className="font-display text-lg font-black uppercase text-fn-text">Manage Gameweeks</h2>
+          <div className="mt-4 grid gap-3">
+            <input value={gameweekName} onChange={(event) => setGameweekName(event.target.value)} placeholder="Gameweek name" className="border border-fn-gborder bg-fn-black px-3 py-3 text-xs outline-none focus:border-fn-green" />
+            <input value={gameweekDeadline} onChange={(event) => setGameweekDeadline(event.target.value)} type="datetime-local" className="border border-fn-gborder bg-fn-black px-3 py-3 text-xs outline-none focus:border-fn-green" />
+            <button type="button" onClick={createOrUpdateGameweek} className="bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black">Create / update Gameweek</button>
+            {createdGameweeks.map((gw) => <Link key={gw.id} href={`/admin/fantasy/gameweeks/${gw.id}`} className="border border-fn-green/40 bg-fn-green/10 px-3 py-3 text-xs font-black uppercase text-fn-green">Open {gw.name}</Link>)}
+          </div>
+          <div className="mt-5 space-y-2">
+            {gameweekRows.map((step, index) => (
+              <div key={step} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2">
+                <span className="font-black text-fn-green">#{index + 1}</span>
+                <span className="text-xs uppercase tracking-widest text-fn-muted">{step}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-sm border border-fn-gborder bg-fn-card p-5">
+          <h2 className="font-display text-lg font-black uppercase text-fn-text">Chip availability windows</h2>
+          <p className="mt-2 text-xs text-fn-muted">Open or close the user-facing Triple Captain and Manual Substitute controls.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {(["triple_captain", "manual_substitute"] as const).map((chip) => (
+              <div key={chip} className="border border-fn-gborder bg-fn-black p-3">
+                <p className="fn-label text-fn-green">{chip.replace(/_/g, " ")}</p>
+                <select value={chipWindows[chip].status} onChange={(event) => updateChipWindow(chip, "status", event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs uppercase text-fn-text outline-none focus:border-fn-green">
+                  <option value="open">Open</option>
+                  <option value="closed">Closed</option>
+                  <option value="scheduled">Scheduled</option>
+                </select>
+                <input type="datetime-local" value={chipWindows[chip].opens} onChange={(event) => updateChipWindow(chip, "opens", event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" />
+                <input type="datetime-local" value={chipWindows[chip].closes} onChange={(event) => updateChipWindow(chip, "closes", event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-sm border border-fn-green/30 bg-fn-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="fn-label text-fn-green">PUBG Mobile only</p>
+              <h2 className="font-display text-lg font-black uppercase text-fn-text">Transfer week window</h2>
+            </div>
+            <CalendarClock size={18} className="text-fn-green" />
+          </div>
+          <p className="text-xs leading-relaxed text-fn-muted">
+            Controls scheduled transfer periods for PUBG Mobile squads. When locked above, editing is blocked immediately regardless of window schedules.
+          </p>
+          <div className="mt-3 inline-flex border border-fn-green/30 bg-fn-green/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-fn-green">
+            Current status: {transferStatus}
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="border border-fn-gborder bg-fn-black p-3">
+              <span className="fn-label">Manual status</span>
+              <select value={transferStatus} onChange={(event) => setTransferStatus(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs uppercase text-fn-text outline-none focus:border-fn-green">
+                <option value="open">Open transfer window</option>
+                <option value="closed">Close transfer window</option>
+                <option value="scheduled">Schedule transfer window</option>
+              </select>
+            </label>
+            <label className="border border-fn-gborder bg-fn-black p-3">
+              <span className="fn-label">Transfers remaining</span>
+              <input type="number" min="0" value={transfersRemaining} onChange={(event) => setTransfersRemaining(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" />
+            </label>
+            <label className="border border-fn-gborder bg-fn-black p-3">
+              <span className="fn-label">Window opens</span>
+              <input type="datetime-local" value={windowOpens} onChange={(event) => setWindowOpens(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" />
+            </label>
+            <label className="border border-fn-gborder bg-fn-black p-3">
+              <span className="fn-label">Window closes</span>
+              <input type="datetime-local" value={windowCloses} onChange={(event) => setWindowCloses(event.target.value)} className="mt-2 w-full border border-fn-gborder bg-fn-dark px-3 py-2 text-xs text-fn-text outline-none focus:border-fn-green" />
+            </label>
+          </div>
+          <button type="button" onClick={saveTransferWindow} className="mt-4 w-full bg-fn-green px-4 py-3 text-xs font-black uppercase tracking-widest text-fn-black">
+            {saved ? "Transfer window saved" : "Save transfer window"}
+          </button>
+        </section>
+
+        <section className="rounded-sm border border-fn-gborder bg-fn-card p-5">
+          <h2 className="font-display text-lg font-black uppercase text-fn-text">Gameweeks & match stat entry</h2>
+          <p className="mt-2 text-xs text-fn-muted">
+            Admin Panel → Fantasy League → Gameweeks → a Gameweek → Matches → a Match opens the per-athlete stat grid for manual PUBG Mobile data entry. Saving calculates participation, kills, top-3, match win, MVP, and captain impacts immediately.
+          </p>
+          <div className="mt-4 space-y-2">
+            {['Gameweek #4', 'Gameweek #5'].map((name, index) => (
+              <Link key={name} href={`/admin/fantasy/gameweeks/gw-${index + 4}`} className="flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-3 hover:border-fn-green">
+                <span className="text-xs font-black uppercase text-fn-text">{name}</span>
+                <span className="text-[10px] uppercase text-fn-green">Open matches</span>
+              </Link>
+            ))}
+          </div>
+          <p className="mt-3 text-[10px] leading-relaxed text-fn-muted">
+            Stats are tracked with last-edited timestamps in the database; the match screen displays that timestamp after every save.
+          </p>
+        </section>
+
+        <section className="rounded-sm border border-fn-gborder bg-fn-card p-5">
+          <h2 className="font-display text-lg font-black uppercase text-fn-text">Leagues & leaderboards</h2>
+          {['National leaderboard', 'Private/friends invite codes', 'Clan/community leagues', 'Gameweek-specific ranking'].map((item, index) => (
+            <div key={item} className="mt-2 flex items-center justify-between border border-fn-gborder bg-fn-black px-3 py-2">
+              <span className="inline-flex items-center gap-2 text-xs font-black uppercase text-fn-text">
+                <Trophy size={12} className="text-fn-green" /> {item}
+              </span>
+              <span className="text-[10px] uppercase text-fn-muted">#{index + 1}</span>
+            </div>
+          ))}
+        </section>
+      </div>
+    </div>
+  );
 }
