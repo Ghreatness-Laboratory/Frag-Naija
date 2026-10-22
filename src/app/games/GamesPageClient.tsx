@@ -34,7 +34,7 @@ function ModesMenu({ game }: { game: Game }) {
         <div>
           <p className="fn-label" style={{ color: game.colors.primary }}>Choose Mode</p>
           <h2 className="mt-1 text-sm font-black uppercase tracking-widest text-fn-text">Virtual Games</h2>
-          <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">{game.modes.length} scoped modes · collapsed by default</p>
+          <p className="mt-1 text-[10px] uppercase tracking-widest text-fn-muted">{(game.modes || []).length} scoped modes · collapsed by default</p>
         </div>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex h-9 w-9 items-center justify-center border border-fn-gborder bg-fn-black text-fn-green">
           <ChevronDown size={16} />
@@ -52,7 +52,7 @@ function ModesMenu({ game }: { game: Game }) {
             className="overflow-hidden border-t border-fn-gborder"
           >
             <div className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
-              {game.modes.map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
+              {(game.modes || []).map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
             </div>
           </motion.div>
         )}

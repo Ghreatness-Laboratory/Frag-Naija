@@ -126,9 +126,9 @@ export default function SupportChatbot() {
           handlePressEnd();
           dragHandlers.onPointerUp(e);
         }}
-        onPointerLeave={(e) => {
+        onPointerLeave={() => {
           handlePressEnd();
-          dragHandlers.onPointerLeave(e);
+          dragHandlers.onPointerLeave();
         }}
         onPointerCancel={dragHandlers.onPointerCancel}
         style={style}

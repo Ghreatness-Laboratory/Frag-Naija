@@ -27,11 +27,11 @@ export interface Game {
   description: string;
   colors: GameColors;
   logo: string;
-  athleteSubtitleFormat: AthleteSubtitleFormat;
+  athleteSubtitleFormat?: AthleteSubtitleFormat;
   badge?: string;
   available: boolean;
-  modes: GameMode[];
-  hasModeMenu: boolean;
+  modes?: GameMode[];
+  hasModeMenu?: boolean;
 }
 
 export const GAMES: Game[] = [

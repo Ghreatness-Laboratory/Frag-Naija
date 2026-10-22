@@ -69,7 +69,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/therealfavicon.png',
     shortcut: '/therealfavicon.png',
-    apple: '/therealfavicon.png',
+    apple: '/icons/icon-192.png',
   },
 };
 

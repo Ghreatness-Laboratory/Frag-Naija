@@ -37,7 +37,7 @@ function VirtualGamesAccordion({ game }: { game: Game }) {
         <span>
           <span className="fn-label" style={{ color: game.colors.primary }}>Choose Mode</span>
           <span className="mt-1 block text-sm font-black uppercase tracking-widest text-fn-text">Virtual Games</span>
-          <span className="mt-1 block text-[10px] uppercase tracking-widest text-fn-muted">{game.modes.length} scoped modes · collapsed by default</span>
+          <span className="mt-1 block text-[10px] uppercase tracking-widest text-fn-muted">{(game.modes || []).length} scoped modes · collapsed by default</span>
         </span>
         <span className="flex h-9 w-9 items-center justify-center border border-fn-gborder bg-fn-black text-fn-green transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
           <ChevronDown size={16} />
@@ -45,7 +45,7 @@ function VirtualGamesAccordion({ game }: { game: Game }) {
       </button>
       {open && (
         <div id={`${game.slug}-virtual-games-panel`} className="grid gap-3 border-t border-fn-gborder p-3 sm:grid-cols-2 lg:grid-cols-3">
-          {game.modes.map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
+          {(game.modes || []).map((mode) => <ModeCard key={mode.key} mode={mode} game={game} />)}
         </div>
       )}
     </div>

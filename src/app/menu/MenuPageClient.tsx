@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronRight, Download, Gamepad2, Newspaper, Search, Settings, Sparkles, Swords, Ticket } from 'lucide-react';
+import { Bell, ChevronRight, Download, Newspaper, Search, Settings, Sparkles, Swords, Ticket } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { usePWAInstallPrompt } from '@/components/usePWAInstallPrompt';
-import { useGame } from '@/context/GameContext';
 
 const PENDING_MENU_ITEMS = ['Virtual', 'Casino'];
 
@@ -13,14 +12,8 @@ const menuLinkClass = 'flex items-center justify-between rounded-sm border borde
 
 export default function MenuPageClient() {
   const router = useRouter();
-  const { install: installPWA, installable: pwaInstallable } = usePWAInstallPrompt();
-  const [installMessage, setInstallMessage] = useState('');
+  const { promptInstall, canInstall } = usePWAInstallPrompt();
   const [bookingCode, setBookingCode] = useState('');
-
-  async function handleInstall() {
-    const result = await installPWA();
-    setInstallMessage(result.message);
-  }
 
   function submitBookingCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,12 +21,6 @@ export default function MenuPageClient() {
     if (!code) return;
     router.push(`/wager?code=${encodeURIComponent(code)}`);
   }
-
-  const { selectedGame } = useGame();
-  const isFreeFire = selectedGame?.slug === 'free-fire';
-  const pendingItems = isFreeFire
-    ? PENDING_MENU_ITEMS.filter((item) => item !== 'Virtual')
-    : PENDING_MENU_ITEMS;
 
   return (
     <main className="min-h-screen bg-fn-black px-4 py-8 pb-28 text-fn-text sm:px-8 lg:px-12">
@@ -45,15 +32,9 @@ export default function MenuPageClient() {
         </div>
 
         <div className="grid gap-2">
-          {isFreeFire ? (
-            <Link href="/games" className={menuLinkClass}>
-              <span className="flex items-center gap-2"><Gamepad2 size={15} /> Virtual</span><ChevronRight size={15} />
-            </Link>
-          ) : (
-            <Link href="/select-game" className={menuLinkClass}>
-              <span>Virtual Games</span><ChevronRight size={15} />
-            </Link>
-          )}
+          <Link href="/select-game" className={menuLinkClass}>
+            <span>Virtual Games</span><ChevronRight size={15} />
+          </Link>
           <Link href="/fantasy-league" className={menuLinkClass}>
             <span className="flex items-center gap-2"><Sparkles size={15} /> Fantasy League</span><ChevronRight size={15} />
           </Link>
@@ -69,13 +50,12 @@ export default function MenuPageClient() {
           <Link href="/news" className={menuLinkClass}>
             <span className="flex items-center gap-2"><Newspaper size={15} /> News</span><ChevronRight size={15} />
           </Link>
-          {pwaInstallable && (
-            <button type="button" onClick={handleInstall} className={menuLinkClass}>
+          {canInstall && (
+            <button type="button" onClick={promptInstall} className={menuLinkClass}>
               <span className="flex items-center gap-2"><Download size={15} /> Install App</span><ChevronRight size={15} />
             </button>
           )}
-          {installMessage && <p className="rounded-sm border border-fn-gborder bg-fn-card px-4 py-3 text-xs leading-relaxed text-fn-muted">{installMessage}</p>}
-          {pendingItems.map((item) => (
+          {PENDING_MENU_ITEMS.map((item) => (
             <button key={item} type="button" disabled title="Pending destination confirmation" className="flex items-center justify-between rounded-sm border border-fn-gborder bg-fn-dark px-4 py-4 text-left text-[11px] font-bold uppercase tracking-widest text-fn-muted opacity-70">
               {item}<span className="text-[9px]">TBD</span>
             </button>

@@ -16,10 +16,20 @@ const nextConfig = {
   eslint:     { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
 
-  async headers() {
+  async redirects() {
     return [
       {
         source: '/manifest.webmanifest',
+        destination: '/manifest.json',
+        permanent: true,
+      },
+    ];
+  },
+
+  async headers() {
+    return [
+      {
+        source: '/manifest.json',
         headers: [
           { key: 'Content-Type',  value: 'application/manifest+json' },
           { key: 'Cache-Control', value: 'public, max-age=86400' },
