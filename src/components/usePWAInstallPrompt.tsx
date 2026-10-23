@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Download, Share, PlusSquare, X, Smartphone, AlertCircle } from 'lucide-react';
+import { Share, PlusSquare, X, AlertCircle } from 'lucide-react';
 import OptimizedImage from '@/components/common/OptimizedImage';
 
 export interface BeforeInstallPromptEvent extends Event {
