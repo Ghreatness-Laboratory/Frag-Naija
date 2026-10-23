@@ -85,22 +85,39 @@ const MOCK_FANTASY_SETTINGS = [
   { key: 'free_fire_transfer_window', value: { gameSlug: 'free-fire', status: 'open', transfersRemaining: 2, opens: '', closes: '' } },
 ];
 
+const MOCK_FANTASY_MATCHES = [
+  { id: 'match-1', gameweek_id: 'gw-4', game_slug: 'pubg-mobile', title: 'Team Pride vs Tribe Warriors', date: '2026-08-17', status: 'not started' },
+  { id: 'match-2', gameweek_id: 'gw-4', game_slug: 'pubg-mobile', title: 'Lagos Kings vs Abuja Titans', date: '2026-08-18', status: 'stats entered' },
+  { id: 'fcm-match-1', gameweek_id: 'gw-4', game_slug: 'fc-mobile', title: 'Naija Force FC vs Athlegame FC', date: '2026-08-19', status: 'not started' },
+  { id: 'fcm-match-2', gameweek_id: 'gw-5', game_slug: 'fc-mobile', title: 'Lagos Lions FC vs Abuja Storm FC', date: '2026-08-20', status: 'not started' },
+];
+
 const MOCK_FANTASY_SQUADS = [];
 
+const MOCK_TABLES = {
+  teams: [...MOCK_TEAMS],
+  athletes: [...MOCK_ATHLETES],
+  tournaments: [...MOCK_TOURNAMENTS],
+  wagers: [...MOCK_WAGERS],
+  transfers: [...MOCK_TRANSFERS],
+  shop_items: [...MOCK_SHOP],
+  fantasy_settings: [...MOCK_FANTASY_SETTINGS],
+  fantasy_squads: [...MOCK_FANTASY_SQUADS],
+  fantasy_matches: [...MOCK_FANTASY_MATCHES],
+  fantasy_match_stats: [],
+  fantasy_scoring_config: [
+    { id: 'sc-1', game_slug: 'fc-mobile', appearance_points: 1, goal_points: 5, win_points: 3, loss_points: -1, conceded_points: -1 },
+    { id: 'sc-2', game_slug: 'pubg-mobile', participation_points: 1, kill_points: 2, match_win_points: 10, top_three_finish_points: 5, mvp_bonus: 5 },
+  ],
+  homepage_settings: [{ id: 'default', hero_headline: 'FRAG NAIJA', show_athletes: 'true', show_teams: 'true', show_shop: 'true' }],
+  company_profile: [{ id: 'default', company_name: 'Ghreatness Laboratory', headline: 'Meet the Creators of FragNaija' }],
+};
+
 function getMockTableData(table) {
-  switch (table) {
-    case 'teams': return MOCK_TEAMS;
-    case 'athletes': return MOCK_ATHLETES;
-    case 'tournaments': return MOCK_TOURNAMENTS;
-    case 'wagers': return MOCK_WAGERS;
-    case 'transfers': return MOCK_TRANSFERS;
-    case 'shop_items': return MOCK_SHOP;
-    case 'fantasy_settings': return MOCK_FANTASY_SETTINGS;
-    case 'fantasy_squads': return MOCK_FANTASY_SQUADS;
-    case 'homepage_settings': return [{ id: 'default', hero_headline: 'FRAG NAIJA', show_athletes: 'true', show_teams: 'true', show_shop: 'true' }];
-    case 'company_profile': return [{ id: 'default', company_name: 'Ghreatness Laboratory', headline: 'Meet the Creators of FragNaija' }];
-    default: return [];
+  if (!MOCK_TABLES[table]) {
+    MOCK_TABLES[table] = [];
   }
+  return MOCK_TABLES[table];
 }
 
 function createMockClient() {
@@ -109,13 +126,15 @@ function createMockClient() {
   return {
     from(table) {
       let isSingle = false;
-      let dataStore = [...getMockTableData(table)];
+      const dataStore = getMockTableData(table);
+      let workingSet = [...dataStore];
 
       const builder = {
         select: () => builder,
         insert: (data) => {
           const inserted = Array.isArray(data) ? data : [data];
           dataStore.push(...inserted);
+          workingSet = [...dataStore];
           return {
             select: () => builder,
             single: () => { isSingle = true; return builder; },
@@ -125,12 +144,22 @@ function createMockClient() {
         },
         update: (data) => ({
           eq: (col, val) => {
-            dataStore = dataStore.map((row) => (row[col] === val ? { ...row, ...data } : row));
+            for (let i = 0; i < dataStore.length; i++) {
+              if (String(dataStore[i][col] ?? '') === String(val ?? '')) {
+                dataStore[i] = { ...dataStore[i], ...data };
+              }
+            }
+            workingSet = [...dataStore];
             return builder;
           },
           in: (col, vals) => {
-            const set = new Set(vals);
-            dataStore = dataStore.map((row) => (set.has(row[col]) ? { ...row, ...data } : row));
+            const set = new Set((vals || []).map(v => String(v)));
+            for (let i = 0; i < dataStore.length; i++) {
+              if (set.has(String(dataStore[i][col] ?? ''))) {
+                dataStore[i] = { ...dataStore[i], ...data };
+              }
+            }
+            workingSet = [...dataStore];
             return builder;
           },
           select: () => builder,
@@ -140,7 +169,10 @@ function createMockClient() {
         }),
         delete: () => ({
           eq: (col, val) => {
-            dataStore = dataStore.filter((row) => row[col] !== val);
+            const filtered = dataStore.filter((row) => String(row[col] ?? '') !== String(val ?? ''));
+            dataStore.length = 0;
+            dataStore.push(...filtered);
+            workingSet = [...dataStore];
             return builder;
           },
           then: (resolve) => resolve({ data: null, error: null }),
@@ -152,6 +184,7 @@ function createMockClient() {
             const matchIndex = dataStore.findIndex((row) =>
               (item.id && row.id === item.id) ||
               (item.key && row.key === item.key) ||
+              (item.match_id && item.athlete_id && row.match_id === item.match_id && row.athlete_id === item.athlete_id) ||
               (item.user_id && item.game_slug && row.user_id === item.user_id && row.game_slug === item.game_slug)
             );
             if (matchIndex >= 0) {
@@ -160,39 +193,40 @@ function createMockClient() {
               dataStore.push(item);
             }
           }
+          workingSet = [...dataStore];
           return builder;
         },
         eq: (col, val) => {
-          dataStore = dataStore.filter((row) => String(row[col] ?? '') === String(val ?? ''));
+          workingSet = workingSet.filter((row) => String(row[col] ?? '') === String(val ?? ''));
           return builder;
         },
         neq: (col, val) => {
-          dataStore = dataStore.filter((row) => String(row[col] ?? '') !== String(val ?? ''));
+          workingSet = workingSet.filter((row) => String(row[col] ?? '') !== String(val ?? ''));
           return builder;
         },
         gt: (col, val) => {
-          dataStore = dataStore.filter((row) => Number(row[col]) > Number(val));
+          workingSet = workingSet.filter((row) => Number(row[col]) > Number(val));
           return builder;
         },
         gte: (col, val) => {
-          dataStore = dataStore.filter((row) => Number(row[col]) >= Number(val));
+          workingSet = workingSet.filter((row) => Number(row[col]) >= Number(val));
           return builder;
         },
         lt: (col, val) => {
-          dataStore = dataStore.filter((row) => Number(row[col]) < Number(val));
+          workingSet = workingSet.filter((row) => Number(row[col]) < Number(val));
           return builder;
         },
         lte: (col, val) => {
-          dataStore = dataStore.filter((row) => Number(row[col]) <= Number(val));
+          workingSet = workingSet.filter((row) => Number(row[col]) <= Number(val));
           return builder;
         },
         in: (col, vals) => {
           const set = new Set((vals || []).map((v) => String(v)));
-          dataStore = dataStore.filter((row) => set.has(String(row[col])));
+          workingSet = workingSet.filter((row) => set.has(String(row[col])));
           return builder;
         },
         is: (col, val) => {
-          dataStore = dataStore.filter((row) => (val === null ? row[col] === null || row[col] === undefined : row[col] === val));
+          workingSet = workingSet.filter((row) => (val === null ? row[col] === null || row[col] === undefined : row[col] === val));
           return builder;
         },
         or: () => builder,
@@ -204,7 +238,7 @@ function createMockClient() {
         range: () => builder,
         order: (col, opts = {}) => {
           const asc = opts?.ascending !== false;
-          dataStore.sort((a, b) => {
+          workingSet.sort((a, b) => {
             const va = a[col];
             const vb = b[col];
             if (va === vb) return 0;
@@ -214,24 +248,24 @@ function createMockClient() {
           return builder;
         },
         limit: (n) => {
-          dataStore.splice(n);
+          workingSet.splice(n);
           return builder;
         },
         single: () => { isSingle = true; return builder; },
         maybeSingle: () => { isSingle = true; return builder; },
         then: (onfulfilled, onrejected) => {
           const result = {
-            data: isSingle ? (dataStore[0] || null) : dataStore,
+            data: isSingle ? (workingSet[0] || null) : workingSet,
             error: null,
-            count: dataStore.length,
+            count: workingSet.length,
           };
           return Promise.resolve(result).then(onfulfilled, onrejected);
         },
         catch: (onrejected) => {
           const result = {
-            data: isSingle ? (dataStore[0] || null) : dataStore,
+            data: isSingle ? (workingSet[0] || null) : workingSet,
             error: null,
-            count: dataStore.length,
+            count: workingSet.length,
           };
           return Promise.resolve(result).catch(onrejected);
         },
@@ -252,7 +286,32 @@ function createMockClient() {
         getPublicUrl: (path) => ({ data: { publicUrl: `/uploads/${path}` } }),
       }),
     },
-    rpc: async () => ({ data: null, error: null }),
+    rpc: async (fnName, params = {}) => {
+      if (fnName === 'calculate_fantasy_match_points') {
+        const { p_game_slug, p_participated, p_kills, p_top_three_finish, p_match_win, p_mvp, p_goals, p_assists, p_clean_sheet, p_result, p_goals_conceded } = params;
+        if (p_game_slug === 'fc-mobile' || p_game_slug === 'efootball' || p_game_slug === 'ea-fc-26') {
+          let pts = 0;
+          if (p_participated) pts += 1;
+          pts += (Number(p_goals) || 0) * 5;
+          pts += (Number(p_assists) || 0) * 3;
+          if (p_result === 'win') pts += 3;
+          else if (p_result === 'loss') pts -= 1;
+          if (p_clean_sheet) pts += 4;
+          pts += (Number(p_goals_conceded) || 0) * -1;
+          if (p_mvp) pts += 3;
+          return { data: pts, error: null };
+        } else {
+          let pts = 0;
+          if (p_participated) pts += 1;
+          pts += (Number(p_kills) || 0) * 2;
+          if (p_match_win) pts += 10;
+          else if (p_top_three_finish) pts += 5;
+          if (p_mvp) pts += 5;
+          return { data: pts, error: null };
+        }
+      }
+      return { data: null, error: null };
+    },
     channel: () => ({ on: () => ({ subscribe: () => ({}) }) }),
   };
 }
